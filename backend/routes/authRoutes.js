@@ -17,13 +17,6 @@ const safeRegisterUser = (() => {
     res.status(501).json({ message: 'Rejestracja tymczasowo niedostępna' });
 })();
 
-// Zabezpieczenie przed sytuacją, w której import nie zwróci funkcji (np. błąd require)
-const safeRegisterUser =
-  typeof registerUser === 'function'
-    ? registerUser
-    : (req, res) =>
-        res.status(501).json({ message: 'Rejestracja tymczasowo niedostępna' });
-
 const { protect } = require('../middleware/authMiddleware');
 
 // Logowanie
