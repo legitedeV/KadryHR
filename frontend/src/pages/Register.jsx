@@ -49,8 +49,8 @@ const Register = () => {
         throw new Error(data.message || 'Błąd rejestracji. Spróbuj ponownie.');
       }
 
-      login(data.token, data.user);
-      navigate('/');
+      login(data);
+      navigate('/app');
     } catch (err) {
       setError(err.message || 'Błąd rejestracji. Spróbuj ponownie.');
     } finally {

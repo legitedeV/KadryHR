@@ -10,6 +10,9 @@ router.use(protect);
 // tworzenie / aktualizacja wpisu grafiku
 router.post('/', scheduleController.createOrUpdateScheduleEntry);
 
+// generator miesięcznego grafiku dla admina
+router.post('/monthly-template', scheduleController.createMonthlyTemplate);
+
 // pobieranie grafiku
 router.get('/', scheduleController.getSchedule);
 

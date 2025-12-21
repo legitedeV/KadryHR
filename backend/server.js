@@ -80,6 +80,28 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const payrollRoutes = require('./routes/payrollRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const suggestionRoutes = require('./routes/suggestionRoutes');
+const swapRoutes = require('./routes/swapRoutes');
+
+// W środowisku produkcyjnym zdarzało się, że require zwracał obiekt { default: router }
+// (np. przy mieszanym ESM/CJS). Poniżej helper, który bezpiecznie wyciągnie router
+// i nie pozwoli, żeby app.use wysadziło backend błędem "Router.use() requires middleware".
+const normalizeRouter = (maybeRouter) => {
+  if (maybeRouter && typeof maybeRouter === 'object' && maybeRouter.default) {
+    return maybeRouter.default;
+  }
+
+  if (maybeRouter && typeof maybeRouter === 'function') {
+    return maybeRouter;
+  }
+
+  if (maybeRouter && typeof maybeRouter.use === 'function') {
+    return maybeRouter;
+  }
+
+  console.error('[ROUTER] Niepoprawny eksport routera, pomijam mount:', maybeRouter);
+  return null;
+};
 
 // === ROUTES MOUNT ===
 
@@ -88,16 +110,27 @@ app.get('/', (req, res) => {
   res.json({ message: 'KadryHR API działa (root)' });
 });
 
-// API
-app.use('/api/auth', authRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/invites', inviteRoutes);
-app.use('/api/leaves', leaveRoutes);
-app.use('/api/sick-leaves', sickLeaveRoutes);
-app.use('/api/schedule', scheduleRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/payroll', payrollRoutes);
-app.use('/api/reports', reportRoutes);
+// API (z bezpiecznym montowaniem routerów)
+const safeUse = (path, router) => {
+  const normalized = normalizeRouter(router);
+  if (normalized) {
+    app.use(path, normalized);
+  } else {
+    console.error(`[ROUTER] Pomijam mount ${path} – eksport nie jest routerem.`);
+  }
+};
+
+safeUse('/api/auth', authRoutes);
+safeUse('/api/employees', employeeRoutes);
+safeUse('/api/invites', inviteRoutes);
+safeUse('/api/leaves', leaveRoutes);
+safeUse('/api/sick-leaves', sickLeaveRoutes);
+safeUse('/api/schedule', scheduleRoutes);
+safeUse('/api/notifications', notificationRoutes);
+safeUse('/api/payroll', payrollRoutes);
+safeUse('/api/reports', reportRoutes);
+safeUse('/api/suggestions', suggestionRoutes);
+safeUse('/api/swap-requests', swapRoutes);
 
 // 404 dla nieistniejących endpointów API
 app.all('/api/*', (req, res) => {
