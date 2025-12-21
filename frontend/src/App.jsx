@@ -69,6 +69,26 @@ const App = () => {
         element={
           <AdminRoute>
             <Layout>
+              <SelfService />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/schedule-builder"
+        element={
+          <AdminRoute>
+            <Layout>
+              <ScheduleBuilder />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/employees"
+        element={
+          <AdminRoute>
+            <Layout>
               <Employees />
             </Layout>
           </AdminRoute>
