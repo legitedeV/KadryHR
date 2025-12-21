@@ -1,10 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import StatCard from '../components/StatCard';
 
@@ -29,8 +24,23 @@ const statusBadge = (statusKey) => {
     case 'rejected':
     case 'Odrzucony':
       return 'bg-red-100 text-red-700';
+    case 'Zaplanowany':
+      return 'bg-indigo-100 text-indigo-700';
     default:
       return 'bg-slate-100 text-slate-700';
+  }
+};
+
+const getStatusLabel = (status) => {
+  switch (status) {
+    case 'approved':
+      return 'Zatwierdzony';
+    case 'pending':
+      return 'Oczekuje';
+    case 'rejected':
+      return 'Odrzucony';
+    default:
+      return status || 'Brak statusu';
   }
 };
 
@@ -51,18 +61,26 @@ const leaveTypeLabel = (type) => {
 
 const Dashboard = () => {
   const [newNotification, setNewNotification] = useState('');
+  const [notificationError, setNotificationError] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: summary, isLoading: summaryLoading, error: summaryError } =
-    useQuery({
-      queryKey: ['dashboard-summary'],
-      queryFn: async () => {
-        const { data } = await api.get('/employees/summary');
-        return data;
-      },
-    });
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useQuery({
+    queryKey: ['dashboard-summary'],
+    queryFn: async () => {
+      const { data } = await api.get('/employees/summary');
+      return data;
+    },
+  });
 
-  const { data: scheduleData, isLoading: scheduleLoading } = useQuery({
+  const {
+    data: scheduleData,
+    isLoading: scheduleLoading,
+    error: scheduleError,
+  } = useQuery({
     queryKey: ['schedule', 'upcoming'],
     queryFn: async () => {
       const from = new Date();
@@ -80,7 +98,11 @@ const Dashboard = () => {
     },
   });
 
-  const { data: leavesData, isLoading: leavesLoading } = useQuery({
+  const {
+    data: leavesData,
+    isLoading: leavesLoading,
+    error: leavesError,
+  } = useQuery({
     queryKey: ['leaves', 'dashboard'],
     queryFn: async () => {
       const { data } = await api.get('/leaves', {
@@ -90,7 +112,11 @@ const Dashboard = () => {
     },
   });
 
-  const { data: sickLeavesData, isLoading: sickLoading } = useQuery({
+  const {
+    data: sickLeavesData,
+    isLoading: sickLoading,
+    error: sickError,
+  } = useQuery({
     queryKey: ['sick-leaves', 'dashboard'],
     queryFn: async () => {
       const { data } = await api.get('/sick-leaves');
@@ -98,89 +124,12 @@ const Dashboard = () => {
     },
   });
 
-  const { data: notificationsData, isLoading: notificationsLoading } = useQuery({
+  const {
+    data: notificationsData,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+  } = useQuery({
     queryKey: ['notifications'],
-  const [alerts, setAlerts] = useState([
-    {
-      id: 'shift-approval',
-      title: 'Grafik - zatwierdzenie',
-      detail: 'Zmiana z 18:00 na 16:00 dla Anny Kowalskiej czeka na akceptację.',
-      type: 'grafik',
-      read: false,
-    },
-    {
-      id: 'vacation',
-      title: 'Urlop',
-      detail: 'Potwierdź urlop 12-16 maja dla Pawła Nowaka.',
-      type: 'urlop',
-      read: false,
-    },
-    {
-      id: 'l4',
-      title: 'L4',
-      detail: 'Nowe zwolnienie lekarskie Janiny Malec (7 dni).',
-      type: 'l4',
-      read: true,
-    },
-  ]);
-  const [newNotification, setNewNotification] = useState('');
-
-  const upcomingShifts = useMemo(
-    () => [
-      {
-        id: 'mon',
-        label: 'Poniedziałek',
-        time: '08:00 - 16:00',
-        person: 'Anna Kowalska',
-        location: 'Biuro Kraków',
-      },
-      {
-        id: 'tue',
-        label: 'Wtorek',
-        time: '09:00 - 17:00',
-        person: 'Paweł Nowak',
-        location: 'Biuro Warszawa',
-      },
-      {
-        id: 'wed',
-        label: 'Środa',
-        time: '07:00 - 15:00',
-        person: 'Janina Malec',
-        location: 'Magazyn Łódź',
-      },
-    ],
-    []
-  );
-
-  const timeOffItems = useMemo(
-    () => [
-      {
-        id: 'vac',
-        employee: 'Paweł Nowak',
-        range: '12 - 16 maja',
-        status: 'Oczekuje',
-        type: 'Urlop wypoczynkowy',
-      },
-      {
-        id: 'sick',
-        employee: 'Janina Malec',
-        range: '7 dni',
-        status: 'Zatwierdzony',
-        type: 'L4',
-      },
-      {
-        id: 'remote',
-        employee: 'Anna Kowalska',
-        range: 'Piątek 08:00 - 14:00',
-        status: 'Zaplanowany',
-        type: 'Praca zdalna',
-      },
-    ],
-    []
-  );
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard-summary'],
     queryFn: async () => {
       const { data } = await api.get('/notifications');
       return data;
@@ -190,16 +139,20 @@ const Dashboard = () => {
   const createNotificationMutation = useMutation({
     mutationFn: (payload) => api.post('/notifications', payload),
     onSuccess: () => {
-      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       setNewNotification('');
+      setNotificationError(null);
     },
+    onError: () => setNotificationError('Nie udało się zapisać powiadomienia.'),
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: (id) => api.patch(`/notifications/${id}/read`),
     onSuccess: () => {
-      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      setNotificationError(null);
     },
+    onError: () => setNotificationError('Nie udało się oznaczyć powiadomienia jako przeczytane.'),
   });
 
   const addNotification = () => {
@@ -209,45 +162,6 @@ const Dashboard = () => {
       message: newNotification.trim(),
       type: 'general',
     });
-  const statusBadge = (status) => {
-    switch (status) {
-      case 'Zatwierdzony':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'Oczekuje':
-        return 'bg-amber-100 text-amber-700';
-      case 'Zaplanowany':
-        return 'bg-indigo-100 text-indigo-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
-    }
-  };
-
-  const addNotification = () => {
-    if (!newNotification.trim()) return;
-    setAlerts((prev) => [
-      {
-        id: `custom-${Date.now()}`,
-        title: 'Nowe powiadomienie',
-        detail: newNotification.trim(),
-        type: 'manual',
-        read: false,
-      },
-      ...prev,
-    ]);
-    setNewNotification('');
-  };
-
-  const toggleRead = (id) => {
-    setAlerts((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              read: !item.read,
-            }
-          : item
-      )
-    );
   };
 
   const quickActionTemplates = {
@@ -265,18 +179,6 @@ const Dashboard = () => {
       title: 'Komunikat e-mail',
       message: 'Wysłano komunikat do pracowników o nadchodzącym zebraniu.',
       type: 'general',
-      detail: 'Dodano nową zmianę w grafiku na kolejny tydzień.',
-      type: 'grafik',
-    },
-    leave: {
-      title: 'Nowy wniosek urlopowy',
-      detail: 'Utworzono szkic wniosku urlopowego dla zespołu.',
-      type: 'urlop',
-    },
-    notify: {
-      title: 'Powiadomienie e-mail',
-      detail: 'Wysłano komunikat do pracowników o nadchodzącym zebraniu.',
-      type: 'powiadomienie',
     },
   };
 
@@ -344,74 +246,42 @@ const Dashboard = () => {
 
     return [...leaveItems, ...sickItems]
       .sort((a, b) => a.sortKey - b.sortKey)
-      .slice(0, 4);
+      .slice(0, 5);
   }, [leavesData, sickLeavesData]);
 
-  const unreadCount = useMemo(
-    () => (notificationsData || []).filter((n) => !n.read).length,
-    [notificationsData]
-  );
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'Oczekuje';
-      case 'approved':
-        return 'Zatwierdzony';
-      case 'rejected':
-        return 'Odrzucony';
-      default:
-        return status || 'Status';
-    }
-    setAlerts((prev) => [
-      {
-        id: `${key}-${Date.now()}`,
-        read: false,
-        ...template,
-      },
-      ...prev,
-    ]);
-  };
+  const alerts = useMemo(() => notificationsData || [], [notificationsData]);
+  const unreadCount = alerts.filter((a) => !a.read).length;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold text-slate-800">Dashboard</h1>
-        <p className="text-xs text-slate-500">
-          Podsumowanie kadrowo-płacowe oraz statystyki czasu pracy.
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {summaryLoading && (
+          <div className="col-span-3 text-sm text-slate-500">Ładowanie podsumowania...</div>
+        )}
+        {summaryError && (
+          <div className="col-span-3 text-sm text-red-600">Nie udało się pobrać podsumowania.</div>
+        )}
+
+        {summary && (
+          <>
+            <StatCard
+              label="Pracownicy (łącznie)"
+              value={summary.totalEmployees}
+              hint="Łączna liczba pracowników"
+            />
+            <StatCard
+              label="Aktywni pracownicy"
+              value={summary.activeEmployees}
+              hint="Obecnie zatrudnieni"
+            />
+            <StatCard
+              label="Miesięczne wynagrodzenia (PLN)"
+              value={(summary.totalPayrollAmount || 0).toLocaleString('pl-PL')}
+              hint="Szacowana suma brutto"
+            />
+          </>
+        )}
       </div>
-
-      {(summaryLoading || scheduleLoading || leavesLoading || sickLoading ||
-        notificationsLoading) && (
-        <p className="text-xs text-slate-500">Ładowanie danych...</p>
-      )}
-
-      {(summaryError) && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-          Nie udało się załadować danych dashboardu
-        </p>
-      )}
-
-      {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            label="Pracownicy ogółem"
-            value={summary.totalEmployees}
-            hint="Łączna liczba pracowników"
-          />
-          <StatCard
-            label="Aktywni pracownicy"
-            value={summary.activeEmployees}
-            hint="Obecnie zatrudnieni"
-          />
-          <StatCard
-            label="Miesięczne wynagrodzenia (PLN)"
-            value={(summary.totalPayrollAmount || 0).toLocaleString('pl-PL')}
-            hint="Szacowana suma brutto"
-          />
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="app-card p-4 lg:col-span-2">
@@ -423,8 +293,15 @@ const Dashboard = () => {
             <span className="text-[11px] font-medium text-indigo-600">Grafik</span>
           </div>
 
-          {upcomingShifts.length === 0 && (
-            <div className="text-[11px] text-slate-500">Brak zaplanowanych zmian.</div>
+          {(scheduleLoading || upcomingShifts.length === 0) && !scheduleError && (
+            <div className="text-[11px] text-slate-500">
+              {scheduleLoading ? 'Ładowanie grafiku...' : 'Brak zaplanowanych zmian.'}
+            </div>
+          )}
+          {scheduleError && (
+            <div className="text-[11px] text-red-600">
+              Nie udało się pobrać grafiku. Odśwież stronę lub spróbuj ponownie.
+            </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -433,9 +310,6 @@ const Dashboard = () => {
                 key={shift.id}
                 className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3"
               >
-                <div className="text-[11px] font-semibold text-indigo-700">
-                  {shift.label}
-                </div>
                 <div className="text-[11px] font-semibold text-indigo-700">{shift.label}</div>
                 <div className="text-sm font-semibold text-slate-900">{shift.time}</div>
                 <div className="text-[11px] text-slate-600">{shift.person}</div>
@@ -455,16 +329,21 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-3">
-            {timeOffItems.length === 0 && (
+            {(leavesLoading || sickLoading) && !leavesError && !sickError && (
+              <div className="text-[11px] text-slate-500">Ładowanie wniosków...</div>
+            )}
+            {(leavesError || sickError) && (
+              <div className="text-[11px] text-red-600">
+                Nie udało się pobrać wniosków urlopowych lub L4. Spróbuj ponownie później.
+              </div>
+            )}
+            {timeOffItems.length === 0 && !leavesLoading && !sickLoading && !leavesError && !sickError && (
               <div className="text-[11px] text-slate-500">Brak wniosków urlopowych ani L4.</div>
             )}
             {timeOffItems.map((item) => (
               <div key={item.id} className="rounded-lg border border-slate-100 p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">
-                      {item.employee}
-                    </div>
                     <div className="text-sm font-semibold text-slate-900">{item.employee}</div>
                     <div className="text-[11px] text-slate-500">{item.type}</div>
                   </div>
@@ -474,7 +353,6 @@ const Dashboard = () => {
                     )}`}
                   >
                     {getStatusLabel(item.status)}
-                    {item.status}
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-600 mt-1">{item.range}</div>
@@ -489,8 +367,11 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-800">Powiadomienia wewnętrzne</h2>
             <span className="text-[11px] font-medium text-indigo-600">
-              {unreadCount} do przeczytania
-              {alerts.filter((a) => !a.read).length} do przeczytania
+              {notificationsLoading
+                ? 'Ładowanie...'
+                : notificationsError
+                  ? 'Błąd pobierania'
+                  : `${unreadCount} do przeczytania`}
             </span>
           </div>
 
@@ -509,19 +390,17 @@ const Dashboard = () => {
               className="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
             >
               {createNotificationMutation.isLoading ? 'Zapisywanie...' : 'Dodaj'}
-              className="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
-            >
-              Dodaj
             </button>
           </div>
 
+          {notificationError && (
+            <div className="mb-3 text-[11px] text-red-600">{notificationError}</div>
+          )}
+
           <div className="space-y-2">
-            {(notificationsData || []).map((alert) => (
-              <div
-                key={alert._id}
             {alerts.map((alert) => (
               <div
-                key={alert.id}
+                key={alert._id}
                 className="flex items-start justify-between rounded-xl border border-slate-100 bg-white px-3 py-2"
               >
                 <div>
@@ -534,13 +413,7 @@ const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => markAsReadMutation.mutate(alert._id)}
-                  disabled={markAsReadMutation.isLoading}
-                  <div className="text-[11px] text-slate-600">{alert.detail}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-indigo-600 mt-1">{alert.type}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleRead(alert.id)}
+                  disabled={markAsReadMutation.isLoading || alert.read}
                   className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border ${
                     alert.read
                       ? 'border-slate-200 text-slate-500 bg-slate-50'
@@ -551,9 +424,14 @@ const Dashboard = () => {
                 </button>
               </div>
             ))}
-            {(notificationsData || []).length === 0 && (
+            {notificationsError && (
+              <div className="text-[11px] text-red-600">
+                Nie udało się pobrać powiadomień. Spróbuj ponownie później.
+              </div>
+            )}
+            {alerts.length === 0 && !notificationsLoading && !notificationsError && (
               <div className="text-[11px] text-slate-500">
-                Brak powiadomień. Dodaj komunikat lub poczekaj na automatyczne wpisy z grafiku i urlopów.
+                Brak powiadomień. Dodaj komunikat lub poczekaj na automatyczne wpisy.
               </div>
             )}
           </div>
@@ -592,8 +470,6 @@ const Dashboard = () => {
           <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
             Powiadomienia zapisują się w bazie i możesz je oznaczać jako przeczytane.
             Wpisy w grafiku, urlopach i L4 pobierane są bezpośrednio z API.
-            Zapisane wpisy nie są jeszcze wysyłane do API — służą do szybkiego szkicowania
-            zadań i synchronizacji z modułami grafików, urlopów oraz powiadomień.
           </div>
         </div>
       </div>
