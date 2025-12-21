@@ -36,12 +36,29 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-3">
           {user && (
             <>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  Pracownik
-                </span>
-                <NavLink to="/self-service" className={linkClasses}>
-                  Panel pracownika
+              <NavLink to="/app" className={linkClasses} end>
+                Dashboard
+              </NavLink>
+              <NavLink to="/self-service" className={linkClasses}>
+                Panel pracownika
+              </NavLink>
+              <NavLink to="/employees" className={linkClasses}>
+                Pracownicy
+              </NavLink>
+              <NavLink to="/payroll" className={linkClasses}>
+                Kalkulator
+              </NavLink>
+              <NavLink to="/reports" className={linkClasses}>
+                Raporty
+              </NavLink>
+              {isAdmin && (
+                <NavLink to="/schedule-builder" className={linkClasses}>
+                  Grafik miesięczny
+                </NavLink>
+              )}
+              {isAdmin && (
+                <NavLink to="/invites" className={linkClasses}>
+                  Zaproszenia
                 </NavLink>
               </div>
 
@@ -161,61 +178,58 @@ const Navbar = () => {
               Pracownik
             </div>
             <NavLink
+              to="/app"
+              end
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
               to="/self-service"
               onClick={() => setOpen(false)}
               className={linkClasses}
             >
               Panel pracownika
             </NavLink>
+            <NavLink
+              to="/employees"
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Pracownicy
+            </NavLink>
+            <NavLink
+              to="/payroll"
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Kalkulator
+            </NavLink>
+            <NavLink
+              to="/reports"
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Panel pracownika
+            </NavLink>
             {isAdmin && (
-              <>
-                <div className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  Admin
-                </div>
-                <NavLink
-                  to="/app"
-                  end
-                  onClick={() => setOpen(false)}
-                  className={linkClasses}
-                >
-                  Dashboard
-                </NavLink>
-                <NavLink
-                  to="/employees"
-                  onClick={() => setOpen(false)}
-                  className={linkClasses}
-                >
-                  Pracownicy
-                </NavLink>
-                <NavLink
-                  to="/schedule-builder"
-                  onClick={() => setOpen(false)}
-                  className={linkClasses}
-                >
-                  Grafik miesięczny
-                </NavLink>
-                <NavLink
-                  to="/payroll"
-                  onClick={() => setOpen(false)}
-                  className={linkClasses}
-                >
-                  Kalkulator
-                </NavLink>
-                <NavLink
-                  to="/reports"
-                  onClick={() => setOpen(false)}
-                  className={linkClasses}
-                >
-                  Raporty
-                </NavLink>
-                <NavLink
-                  to="/invites"
-                  onClick={() => setOpen(false)}
-                  className={linkClasses}
-                >
-                  Zaproszenia
-                </NavLink>
-              </>
+              <NavLink
+                to="/schedule-builder"
+                onClick={() => setOpen(false)}
+                className={linkClasses}
+              >
+                Grafik miesięczny
+              </NavLink>
+            )}
+            {isAdmin && (
+              <NavLink
+                to="/invites"
+                onClick={() => setOpen(false)}
+                className={linkClasses}
+              >
+                Zaproszenia
+              </NavLink>
             )}
 
             <div className="pt-1">

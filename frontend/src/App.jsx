@@ -55,13 +55,23 @@ const App = () => {
         }
       />
       <Route
+        path="/self-service"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <SelfService />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/schedule-builder"
         element={
-          <AdminRoute>
+          <PrivateRoute>
             <Layout>
               <ScheduleBuilder />
             </Layout>
-          </AdminRoute>
+          </PrivateRoute>
         }
       />
       <Route
