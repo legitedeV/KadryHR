@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '../api/axios';
 import StatCard from '../components/StatCard';
 
@@ -99,6 +100,87 @@ const Dashboard = () => {
 
   const { data: notificationsData, isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications'],
+  const [alerts, setAlerts] = useState([
+    {
+      id: 'shift-approval',
+      title: 'Grafik - zatwierdzenie',
+      detail: 'Zmiana z 18:00 na 16:00 dla Anny Kowalskiej czeka na akceptację.',
+      type: 'grafik',
+      read: false,
+    },
+    {
+      id: 'vacation',
+      title: 'Urlop',
+      detail: 'Potwierdź urlop 12-16 maja dla Pawła Nowaka.',
+      type: 'urlop',
+      read: false,
+    },
+    {
+      id: 'l4',
+      title: 'L4',
+      detail: 'Nowe zwolnienie lekarskie Janiny Malec (7 dni).',
+      type: 'l4',
+      read: true,
+    },
+  ]);
+  const [newNotification, setNewNotification] = useState('');
+
+  const upcomingShifts = useMemo(
+    () => [
+      {
+        id: 'mon',
+        label: 'Poniedziałek',
+        time: '08:00 - 16:00',
+        person: 'Anna Kowalska',
+        location: 'Biuro Kraków',
+      },
+      {
+        id: 'tue',
+        label: 'Wtorek',
+        time: '09:00 - 17:00',
+        person: 'Paweł Nowak',
+        location: 'Biuro Warszawa',
+      },
+      {
+        id: 'wed',
+        label: 'Środa',
+        time: '07:00 - 15:00',
+        person: 'Janina Malec',
+        location: 'Magazyn Łódź',
+      },
+    ],
+    []
+  );
+
+  const timeOffItems = useMemo(
+    () => [
+      {
+        id: 'vac',
+        employee: 'Paweł Nowak',
+        range: '12 - 16 maja',
+        status: 'Oczekuje',
+        type: 'Urlop wypoczynkowy',
+      },
+      {
+        id: 'sick',
+        employee: 'Janina Malec',
+        range: '7 dni',
+        status: 'Zatwierdzony',
+        type: 'L4',
+      },
+      {
+        id: 'remote',
+        employee: 'Anna Kowalska',
+        range: 'Piątek 08:00 - 14:00',
+        status: 'Zaplanowany',
+        type: 'Praca zdalna',
+      },
+    ],
+    []
+  );
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboard-summary'],
     queryFn: async () => {
       const { data } = await api.get('/notifications');
       return data;
@@ -127,6 +209,45 @@ const Dashboard = () => {
       message: newNotification.trim(),
       type: 'general',
     });
+  const statusBadge = (status) => {
+    switch (status) {
+      case 'Zatwierdzony':
+        return 'bg-emerald-100 text-emerald-700';
+      case 'Oczekuje':
+        return 'bg-amber-100 text-amber-700';
+      case 'Zaplanowany':
+        return 'bg-indigo-100 text-indigo-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const addNotification = () => {
+    if (!newNotification.trim()) return;
+    setAlerts((prev) => [
+      {
+        id: `custom-${Date.now()}`,
+        title: 'Nowe powiadomienie',
+        detail: newNotification.trim(),
+        type: 'manual',
+        read: false,
+      },
+      ...prev,
+    ]);
+    setNewNotification('');
+  };
+
+  const toggleRead = (id) => {
+    setAlerts((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              read: !item.read,
+            }
+          : item
+      )
+    );
   };
 
   const quickActionTemplates = {
@@ -144,6 +265,18 @@ const Dashboard = () => {
       title: 'Komunikat e-mail',
       message: 'Wysłano komunikat do pracowników o nadchodzącym zebraniu.',
       type: 'general',
+      detail: 'Dodano nową zmianę w grafiku na kolejny tydzień.',
+      type: 'grafik',
+    },
+    leave: {
+      title: 'Nowy wniosek urlopowy',
+      detail: 'Utworzono szkic wniosku urlopowego dla zespołu.',
+      type: 'urlop',
+    },
+    notify: {
+      title: 'Powiadomienie e-mail',
+      detail: 'Wysłano komunikat do pracowników o nadchodzącym zebraniu.',
+      type: 'powiadomienie',
     },
   };
 
@@ -230,6 +363,14 @@ const Dashboard = () => {
       default:
         return status || 'Status';
     }
+    setAlerts((prev) => [
+      {
+        id: `${key}-${Date.now()}`,
+        read: false,
+        ...template,
+      },
+      ...prev,
+    ]);
   };
 
   return (
@@ -295,6 +436,7 @@ const Dashboard = () => {
                 <div className="text-[11px] font-semibold text-indigo-700">
                   {shift.label}
                 </div>
+                <div className="text-[11px] font-semibold text-indigo-700">{shift.label}</div>
                 <div className="text-sm font-semibold text-slate-900">{shift.time}</div>
                 <div className="text-[11px] text-slate-600">{shift.person}</div>
                 <div className="text-[11px] text-slate-500 mt-1">{shift.location}</div>
@@ -323,6 +465,7 @@ const Dashboard = () => {
                     <div className="text-sm font-semibold text-slate-900">
                       {item.employee}
                     </div>
+                    <div className="text-sm font-semibold text-slate-900">{item.employee}</div>
                     <div className="text-[11px] text-slate-500">{item.type}</div>
                   </div>
                   <span
@@ -331,6 +474,7 @@ const Dashboard = () => {
                     )}`}
                   >
                     {getStatusLabel(item.status)}
+                    {item.status}
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-600 mt-1">{item.range}</div>
@@ -346,6 +490,7 @@ const Dashboard = () => {
             <h2 className="text-sm font-semibold text-slate-800">Powiadomienia wewnętrzne</h2>
             <span className="text-[11px] font-medium text-indigo-600">
               {unreadCount} do przeczytania
+              {alerts.filter((a) => !a.read).length} do przeczytania
             </span>
           </div>
 
@@ -364,6 +509,9 @@ const Dashboard = () => {
               className="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
             >
               {createNotificationMutation.isLoading ? 'Zapisywanie...' : 'Dodaj'}
+              className="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+            >
+              Dodaj
             </button>
           </div>
 
@@ -371,6 +519,9 @@ const Dashboard = () => {
             {(notificationsData || []).map((alert) => (
               <div
                 key={alert._id}
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
                 className="flex items-start justify-between rounded-xl border border-slate-100 bg-white px-3 py-2"
               >
                 <div>
@@ -384,6 +535,12 @@ const Dashboard = () => {
                   type="button"
                   onClick={() => markAsReadMutation.mutate(alert._id)}
                   disabled={markAsReadMutation.isLoading}
+                  <div className="text-[11px] text-slate-600">{alert.detail}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-indigo-600 mt-1">{alert.type}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleRead(alert.id)}
                   className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border ${
                     alert.read
                       ? 'border-slate-200 text-slate-500 bg-slate-50'
@@ -435,6 +592,8 @@ const Dashboard = () => {
           <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
             Powiadomienia zapisują się w bazie i możesz je oznaczać jako przeczytane.
             Wpisy w grafiku, urlopach i L4 pobierane są bezpośrednio z API.
+            Zapisane wpisy nie są jeszcze wysyłane do API — służą do szybkiego szkicowania
+            zadań i synchronizacji z modułami grafików, urlopów oraz powiadomień.
           </div>
         </div>
       </div>
