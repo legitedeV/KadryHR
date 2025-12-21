@@ -8,26 +8,32 @@ const mongoose = require('mongoose');
 const User = require('../models/User'); // tylko po to, żeby mieć dostęp do kolekcji
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev';
-const JWT_EXPIRES_IN = '7d';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const SECURE_COOKIE = process.env.NODE_ENV === 'production';
 
-// helper do wysyłania tokena w cookie + JSON
-function sendAuthResponse(res, userDoc) {
-  const safeUser = {
+function buildSafeUser(userDoc) {
+  return {
     id: userDoc._id.toString(),
     email: userDoc.email,
     name: userDoc.name || 'Użytkownik',
     role: userDoc.role || 'user',
   };
+}
 
-  const token = jwt.sign(
-    { userId: safeUser.id, role: safeUser.role },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
+function signToken(safeUser) {
+  return jwt.sign({ id: safeUser.id, role: safeUser.role }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
+}
 
-  res.cookie('token', token, {
+// helper do wysyłania tokena w cookie + JSON
+function sendAuthResponse(res, userDoc) {
+  const safeUser = buildSafeUser(userDoc);
+  const token = signToken(safeUser);
+
+  res.cookie('jwt', token, {
     httpOnly: true,
-    secure: false,        // na produkcji z SSL możesz dać true
+    secure: SECURE_COOKIE,
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dni
   });
@@ -40,7 +46,7 @@ function sendAuthResponse(res, userDoc) {
 }
 
 // POST /api/auth/login
-exports.login = asyncHandler(async (req, res) => {
+const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -107,7 +113,7 @@ exports.login = asyncHandler(async (req, res) => {
 });
 
 // POST /api/auth/register – prosta wersja (raczej tylko dla zaproszeń / testów)
-exports.register = asyncHandler(async (req, res) => {
+const registerUser = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body || {};
 
   if (!email || !password || !name) {
@@ -144,8 +150,7 @@ exports.register = asyncHandler(async (req, res) => {
 });
 
 // GET /api/auth/me – zwraca dane zalogowanego usera
-exports.getMe = asyncHandler(async (req, res) => {
-  // zakładam, że authMiddleware wstawia req.userId
+const getMe = asyncHandler(async (req, res) => {
   const userId = req.userId || (req.user && req.user.id);
 
   if (!userId) {
@@ -160,10 +165,25 @@ exports.getMe = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Użytkownik nie istnieje' });
   }
 
-  return res.status(200).json({
-    id: rawUser._id.toString(),
-    email: rawUser.email,
-    name: rawUser.name || 'Użytkownik',
-    role: rawUser.role || 'user',
-  });
+  const safeUser = buildSafeUser(rawUser);
+
+  return res.status(200).json(safeUser);
 });
+
+// POST /api/auth/logout – usuwa cookie z tokenem
+const logoutUser = asyncHandler(async (req, res) => {
+  res.clearCookie('jwt', {
+    httpOnly: true,
+    secure: SECURE_COOKIE,
+    sameSite: 'lax',
+  });
+
+  return res.status(200).json({ message: 'Wylogowano' });
+});
+
+module.exports = {
+  loginUser,
+  registerUser,
+  getMe,
+  logoutUser,
+};
