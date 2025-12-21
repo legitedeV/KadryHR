@@ -80,6 +80,8 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const payrollRoutes = require('./routes/payrollRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const suggestionRoutes = require('./routes/suggestionRoutes');
+const swapRoutes = require('./routes/swapRoutes');
 
 // === ROUTES MOUNT ===
 
@@ -98,6 +100,8 @@ app.use('/api/schedule', scheduleRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/suggestions', suggestionRoutes);
+app.use('/api/swap-requests', swapRoutes);
 
 // 404 dla nieistniejących endpointów API
 app.all('/api/*', (req, res) => {

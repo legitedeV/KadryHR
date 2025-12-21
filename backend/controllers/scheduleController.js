@@ -8,6 +8,30 @@ const toMinutes = (timeStr) => {
   return h * 60 + m;
 };
 
+const buildMonthRange = (monthInput) => {
+  // monthInput w formacie YYYY-MM
+  const [yearStr, monthStr] = String(monthInput || '').split('-');
+  const year = Number(yearStr);
+  const monthIndex = Number(monthStr) - 1;
+
+  if (
+    Number.isNaN(year) ||
+    Number.isNaN(monthIndex) ||
+    monthIndex < 0 ||
+    monthIndex > 11
+  ) {
+    return null;
+  }
+
+  const start = new Date(year, monthIndex, 1);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(year, monthIndex + 1, 0);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+};
+
 /**
  * Tworzenie lub aktualizacja pojedynczego wpisu grafiku.
  * - tylko admin
@@ -158,6 +182,103 @@ exports.getSchedule = async (req, res, next) => {
       .sort({ date: 1, startTime: 1 });
 
     res.json(entries);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.createMonthlyTemplate = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user || {};
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'Tylko administrator może generować grafik.' });
+    }
+
+    const { month, employeeIds, startTime, endTime, daysOfWeek } = req.body || {};
+
+    if (!month || !startTime || !endTime || !Array.isArray(employeeIds)) {
+      return res.status(400).json({
+        message: 'Wymagane pola: month (YYYY-MM), employeeIds[], startTime, endTime.',
+      });
+    }
+
+    const startMinutes = toMinutes(startTime);
+    const endMinutes = toMinutes(endTime);
+
+    if (
+      Number.isNaN(startMinutes) ||
+      Number.isNaN(endMinutes) ||
+      startMinutes >= endMinutes
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'Godziny są nieprawidłowe lub start >= end.' });
+    }
+
+    const monthRange = buildMonthRange(month);
+    if (!monthRange) {
+      return res
+        .status(400)
+        .json({ message: 'Parametr month musi mieć format YYYY-MM.' });
+    }
+
+    const dayWhitelist = Array.isArray(daysOfWeek) && daysOfWeek.length
+      ? daysOfWeek
+      : [1, 2, 3, 4, 5];
+
+    const employees = await Employee.find({ _id: { $in: employeeIds } });
+    if (employees.length === 0) {
+      return res.status(404).json({ message: 'Brak wskazanych pracowników.' });
+    }
+
+    const existing = await ScheduleEntry.find({
+      employee: { $in: employeeIds },
+      date: { $gte: monthRange.start, $lte: monthRange.end },
+    });
+
+    const newEntries = [];
+    const cursor = new Date(monthRange.start);
+
+    while (cursor <= monthRange.end) {
+      const dayIndex = cursor.getDay();
+      const isAllowed = dayWhitelist.includes(dayIndex);
+
+      if (isAllowed) {
+        employees.forEach((emp) => {
+          const hasOverlap = existing.some((entry) => {
+            const sameEmployee = String(entry.employee) === String(emp._id);
+            const sameDay = new Date(entry.date).setHours(0, 0, 0, 0) === cursor.setHours(0, 0, 0, 0);
+            if (!sameEmployee || !sameDay) return false;
+
+            const existingStart = toMinutes(entry.startTime);
+            const existingEnd = toMinutes(entry.endTime);
+            return startMinutes < existingEnd && endMinutes > existingStart;
+          });
+
+          if (!hasOverlap) {
+            newEntries.push({
+              employee: emp._id,
+              date: new Date(cursor),
+              startTime,
+              endTime,
+              type: 'regular',
+              notes: 'Grafik miesięczny',
+              createdBy: userId,
+            });
+          }
+        });
+      }
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const inserted = newEntries.length ? await ScheduleEntry.insertMany(newEntries) : [];
+
+    res.status(201).json({
+      created: inserted.length,
+      month,
+      range: monthRange,
+    });
   } catch (err) {
     next(err);
   }

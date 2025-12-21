@@ -36,6 +36,20 @@ router.get(
   })
 );
 
+// uproszczona lista do wyborów (np. zamiany w grafiku)
+router.get(
+  '/compact',
+  protect,
+  asyncHandler(async (req, res) => {
+    const employees = await Employee.find(
+      {},
+      'firstName lastName position isActive'
+    ).sort({ firstName: 1 });
+
+    res.json({ employees });
+  })
+);
+
 /**
  * GET /api/employees
  * Lista wszystkich pracowników
