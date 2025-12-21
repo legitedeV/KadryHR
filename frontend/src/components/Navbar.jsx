@@ -60,7 +60,7 @@ const Navbar = () => {
                 <NavLink to="/invites" className={linkClasses}>
                   Zaproszenia
                 </NavLink>
-              </div>
+              )}
 
               {isAdmin && <div className="h-6 w-px bg-slate-200" aria-hidden />}
 

@@ -7,21 +7,61 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('kadryhr_token');
-  if (token && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('kadryhr_token');
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('[API] Dodano token do żądania:', {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        tokenPreview: token.substring(0, 20) + '...',
+      });
+    } else if (!token) {
+      console.warn('[API] Brak tokenu w localStorage dla żądania:', {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+      });
+    }
+    return config;
+  },
+  (error) => {
+    console.error('[API] Błąd w request interceptor:', error);
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('[API] Sukces:', {
+      status: response.status,
+      method: response.config?.method?.toUpperCase(),
+      url: response.config?.url,
+    });
+    return response;
+  },
   (error) => {
     if (error.response) {
-      console.warn(
-        `API error ${error.response.status} ${error.response.config?.method?.toUpperCase()} ${error.response.config?.url}`
-      );
+      console.warn('[API] Błąd odpowiedzi:', {
+        status: error.response.status,
+        method: error.response.config?.method?.toUpperCase(),
+        url: error.response.config?.url,
+        message: error.response.data?.message,
+      });
+
+      // Jeśli 401 (Unauthorized), wyczyść localStorage i przekieruj do logowania
+      if (error.response.status === 401) {
+        console.error('[API] Token nieważny lub wygasł - czyszczenie sesji');
+        localStorage.removeItem('kadryhr_token');
+        localStorage.removeItem('kadryhr_user');
+        
+        // Przekieruj do logowania tylko jeśli nie jesteśmy już na stronie logowania
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
+    } else {
+      console.error('[API] Błąd sieci lub brak odpowiedzi:', error.message);
     }
     return Promise.reject(error);
   }
