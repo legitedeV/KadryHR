@@ -9,6 +9,13 @@ const User = require('../models/User'); // tylko po to, żeby mieć dostęp do k
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev';
 const JWT_EXPIRES_IN = '7d';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+const DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL || 'admin@demo.pl';
+const DEMO_USER_NAME = process.env.DEMO_USER_NAME || 'Demo Admin';
+const DEMO_USER_ROLE = process.env.DEMO_USER_ROLE || 'admin';
+const DEMO_USER_PASSWORD =
+  process.env.DEMO_USER_PASSWORD || 'DemoHaslo123!';
+const DEMO_PASSWORD_HASH = bcrypt.hashSync(DEMO_USER_PASSWORD, 10);
 
 // helper do wysyłania tokena w cookie + JSON
 function sendAuthResponse(res, userDoc) {
@@ -40,7 +47,7 @@ function sendAuthResponse(res, userDoc) {
 }
 
 // POST /api/auth/login
-exports.login = asyncHandler(async (req, res) => {
+exports.loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -48,6 +55,29 @@ exports.login = asyncHandler(async (req, res) => {
   }
 
   const normalizedEmail = String(email).toLowerCase().trim();
+
+  // Tryb demo pozwala się zalogować bez MongoDB
+  if (DEMO_MODE) {
+    if (normalizedEmail !== DEMO_USER_EMAIL) {
+      return res
+        .status(401)
+        .json({ message: 'Nieprawidłowy email lub hasło (tryb demo)' });
+    }
+
+    const ok = await bcrypt.compare(password, DEMO_PASSWORD_HASH);
+    if (!ok) {
+      return res
+        .status(401)
+        .json({ message: 'Nieprawidłowy email lub hasło (tryb demo)' });
+    }
+
+    return sendAuthResponse(res, {
+      _id: 'demo-user',
+      email: DEMO_USER_EMAIL,
+      name: DEMO_USER_NAME,
+      role: DEMO_USER_ROLE,
+    });
+  }
 
   // surowy dokument z Mongo – BEZ schemy Mongoose
   const rawUser = await User.collection.findOne({ email: normalizedEmail });
@@ -107,8 +137,14 @@ exports.login = asyncHandler(async (req, res) => {
 });
 
 // POST /api/auth/register – prosta wersja (raczej tylko dla zaproszeń / testów)
-exports.register = asyncHandler(async (req, res) => {
+exports.registerUser = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body || {};
+
+  if (DEMO_MODE) {
+    return res
+      .status(501)
+      .json({ message: 'Rejestracja wyłączona w trybie demo' });
+  }
 
   if (!email || !password || !name) {
     return res.status(400).json({ message: 'Imię, email i hasło są wymagane' });
@@ -145,6 +181,15 @@ exports.register = asyncHandler(async (req, res) => {
 
 // GET /api/auth/me – zwraca dane zalogowanego usera
 exports.getMe = asyncHandler(async (req, res) => {
+  if (DEMO_MODE) {
+    return res.status(200).json({
+      id: 'demo-user',
+      email: DEMO_USER_EMAIL,
+      name: DEMO_USER_NAME,
+      role: DEMO_USER_ROLE,
+    });
+  }
+
   // zakładam, że authMiddleware wstawia req.userId
   const userId = req.userId || (req.user && req.user.id);
 
@@ -166,4 +211,10 @@ exports.getMe = asyncHandler(async (req, res) => {
     name: rawUser.name || 'Użytkownik',
     role: rawUser.role || 'user',
   });
+});
+
+// POST /api/auth/logout – czyści cookie z tokenem
+exports.logoutUser = asyncHandler(async (req, res) => {
+  res.clearCookie('token');
+  return res.status(200).json({ message: 'Wylogowano pomyślnie' });
 });
