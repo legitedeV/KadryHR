@@ -2,12 +2,20 @@
 const express = require('express');
 const router = express.Router();
 
-const {
-  loginUser,
-  getMe,
-  logoutUser,
-  registerUser,
-} = require('../controllers/authController');
+const authController = require('../controllers/authController');
+
+const { loginUser, getMe, logoutUser } = authController;
+
+// Zabezpieczenie przed sytuacją, w której import nie zwróci funkcji (np. błąd require)
+const safeRegisterUser = (() => {
+  if (typeof authController.registerUser === 'function') {
+    return authController.registerUser;
+  }
+
+  console.error('[AUTH] Brak handlera registerUser – zwracam 501');
+  return (req, res) =>
+    res.status(501).json({ message: 'Rejestracja tymczasowo niedostępna' });
+})();
 
 // Zabezpieczenie przed sytuacją, w której import nie zwróci funkcji (np. błąd require)
 const safeRegisterUser =
