@@ -19,6 +19,15 @@ const PrivateRoute = ({ children }) => {
   return children;
 };
 
+const AdminRoute = ({ children }) => {
+  const { user } = useAuth();
+
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/self-service" replace />;
+
+  return children;
+};
+
 const App = () => {
   return (
     <Routes>
@@ -28,9 +37,19 @@ const App = () => {
       <Route
         path="/app"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Layout>
               <Dashboard />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/self-service"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <SelfService />
             </Layout>
           </PrivateRoute>
         }
@@ -58,41 +77,41 @@ const App = () => {
       <Route
         path="/employees"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Layout>
               <Employees />
             </Layout>
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route
         path="/payroll"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Layout>
               <Payroll />
             </Layout>
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route
         path="/reports"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Layout>
               <Reports />
             </Layout>
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route
         path="/invites"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Layout>
               <Invites />
             </Layout>
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
