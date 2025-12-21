@@ -30,27 +30,45 @@ const SelfService = () => {
     reason: '',
   });
 
-  const { data: employeesData } = useQuery({
+  const { data: employeesData, error: employeesError, isLoading: employeesLoading } = useQuery({
     queryKey: ['employees', 'compact'],
     queryFn: async () => {
+      console.log('[SelfService] Pobieranie listy pracowników...');
       const { data } = await api.get('/employees/compact');
+      console.log('[SelfService] Pobrano pracowników:', data.employees?.length || 0);
       return data.employees || [];
     },
-  });
-
-  const { data: suggestions } = useQuery({
-    queryKey: ['suggestions'],
-    queryFn: async () => {
-      const { data } = await api.get('/suggestions');
-      return data;
+    retry: 1,
+    onError: (err) => {
+      console.error('[SelfService] Błąd pobierania pracowników:', err.response?.data?.message || err.message);
     },
   });
 
-  const { data: swapRequests } = useQuery({
+  const { data: suggestions, error: suggestionsError, isLoading: suggestionsLoading } = useQuery({
+    queryKey: ['suggestions'],
+    queryFn: async () => {
+      console.log('[SelfService] Pobieranie sugestii...');
+      const { data } = await api.get('/suggestions');
+      console.log('[SelfService] Pobrano sugestie:', data?.length || 0);
+      return data;
+    },
+    retry: 1,
+    onError: (err) => {
+      console.error('[SelfService] Błąd pobierania sugestii:', err.response?.data?.message || err.message);
+    },
+  });
+
+  const { data: swapRequests, error: swapRequestsError, isLoading: swapRequestsLoading } = useQuery({
     queryKey: ['swap-requests'],
     queryFn: async () => {
+      console.log('[SelfService] Pobieranie próśb o zamianę...');
       const { data } = await api.get('/swap-requests');
+      console.log('[SelfService] Pobrano prośby o zamianę:', data?.length || 0);
       return data;
+    },
+    retry: 1,
+    onError: (err) => {
+      console.error('[SelfService] Błąd pobierania próśb o zamianę:', err.response?.data?.message || err.message);
     },
   });
 
@@ -83,6 +101,13 @@ const SelfService = () => {
 
   const compactEmployees = useMemo(() => employeesData || [], [employeesData]);
 
+  // Sprawdź czy są błędy autoryzacji
+  const hasAuthError = employeesError || suggestionsError || swapRequestsError;
+  const authErrorMessage = 
+    employeesError?.response?.data?.message || 
+    suggestionsError?.response?.data?.message || 
+    swapRequestsError?.response?.data?.message;
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -91,6 +116,41 @@ const SelfService = () => {
           Zgłaszaj sugestie, wnioski urlopowe oraz prośby o zamianę zmian w jednym miejscu.
         </p>
       </header>
+
+      {hasAuthError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Błąd autoryzacji</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{authErrorMessage || 'Wystąpił problem z autoryzacją. Spróbuj zalogować się ponownie.'}</p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => window.location.href = '/login'}
+                  className="text-sm font-medium text-red-800 hover:text-red-900 underline"
+                >
+                  Przejdź do logowania
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(employeesLoading || suggestionsLoading || swapRequestsLoading) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <p className="ml-3 text-sm text-blue-700">Ładowanie danych...</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="app-card p-4 space-y-3 lg:col-span-2">
