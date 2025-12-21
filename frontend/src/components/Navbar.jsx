@@ -36,8 +36,11 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-2">
           {user && (
             <>
-              <NavLink to="/" className={linkClasses} end>
+              <NavLink to="/app" className={linkClasses} end>
                 Dashboard
+              </NavLink>
+              <NavLink to="/self-service" className={linkClasses}>
+                Panel pracownika
               </NavLink>
               <NavLink to="/employees" className={linkClasses}>
                 Pracownicy
@@ -48,6 +51,11 @@ const Navbar = () => {
               <NavLink to="/reports" className={linkClasses}>
                 Raporty
               </NavLink>
+              {isAdmin && (
+                <NavLink to="/schedule-builder" className={linkClasses}>
+                  Grafik miesięczny
+                </NavLink>
+              )}
               {isAdmin && (
                 <NavLink to="/invites" className={linkClasses}>
                   Zaproszenia
@@ -139,12 +147,19 @@ const Navbar = () => {
         <div className="md:hidden border-t border-slate-100 bg-white">
           <div className="app-shell py-2 space-y-1">
             <NavLink
-              to="/"
+              to="/app"
               end
               onClick={() => setOpen(false)}
               className={linkClasses}
             >
               Dashboard
+            </NavLink>
+            <NavLink
+              to="/self-service"
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Panel pracownika
             </NavLink>
             <NavLink
               to="/employees"
@@ -167,6 +182,15 @@ const Navbar = () => {
             >
               Raporty
             </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/schedule-builder"
+                onClick={() => setOpen(false)}
+                className={linkClasses}
+              >
+                Grafik miesięczny
+              </NavLink>
+            )}
             {isAdmin && (
               <NavLink
                 to="/invites"
