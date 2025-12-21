@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const { createNotification } = require('../utils/notificationService');
 
 /**
  * Powiadomienia zalogowanego użytkownika.
@@ -43,6 +44,36 @@ exports.markAsRead = async (req, res, next) => {
     await notification.save();
 
     res.json(notification);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Ręczne utworzenie powiadomienia (np. szybka notatka z dashboardu).
+ * Jeśli nie podamy userId – powiadomienie trafia do aktualnego użytkownika.
+ */
+exports.createNotificationManual = async (req, res, next) => {
+  try {
+    const { id: userId } = req.user || {};
+    const { userId: targetUserId, title, message, type } = req.body || {};
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Brak autoryzacji.' });
+    }
+
+    if (!title || !message) {
+      return res.status(400).json({ message: 'Tytuł i treść są wymagane.' });
+    }
+
+    const notification = await createNotification(
+      targetUserId || userId,
+      type || 'general',
+      title,
+      message
+    );
+
+    res.status(201).json(notification);
   } catch (err) {
     next(err);
   }

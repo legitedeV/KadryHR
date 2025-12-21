@@ -14,14 +14,24 @@ router.get(
   protect,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const totalEmployees = await Employee.countDocuments();
-    const activeEmployees = await Employee.countDocuments({ active: true }).catch(
-      () => 0
-    );
+    const employees = await Employee.find({}, 'monthlySalary hourlyRate hoursPerMonth isActive');
+
+    const totalEmployees = employees.length;
+    const activeEmployees = employees.filter((e) => e.isActive !== false).length;
+
+    const totalPayrollAmount = employees.reduce((sum, emp) => {
+      const baseSalary =
+        (emp.monthlySalary && emp.monthlySalary > 0)
+          ? emp.monthlySalary
+          : (emp.hourlyRate || 0) * (emp.hoursPerMonth || 160);
+
+      return sum + baseSalary;
+    }, 0);
 
     res.json({
       totalEmployees,
       activeEmployees,
+      totalPayrollAmount: Math.round(totalPayrollAmount),
     });
   })
 );
