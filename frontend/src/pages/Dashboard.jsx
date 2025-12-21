@@ -61,6 +61,7 @@ const leaveTypeLabel = (type) => {
 
 const Dashboard = () => {
   const [newNotification, setNewNotification] = useState('');
+  const [notificationError, setNotificationError] = useState(null);
   const queryClient = useQueryClient();
 
   const {
@@ -75,7 +76,11 @@ const Dashboard = () => {
     },
   });
 
-  const { data: scheduleData, isLoading: scheduleLoading } = useQuery({
+  const {
+    data: scheduleData,
+    isLoading: scheduleLoading,
+    error: scheduleError,
+  } = useQuery({
     queryKey: ['schedule', 'upcoming'],
     queryFn: async () => {
       const from = new Date();
@@ -93,7 +98,11 @@ const Dashboard = () => {
     },
   });
 
-  const { data: leavesData, isLoading: leavesLoading } = useQuery({
+  const {
+    data: leavesData,
+    isLoading: leavesLoading,
+    error: leavesError,
+  } = useQuery({
     queryKey: ['leaves', 'dashboard'],
     queryFn: async () => {
       const { data } = await api.get('/leaves', {
@@ -103,7 +112,11 @@ const Dashboard = () => {
     },
   });
 
-  const { data: sickLeavesData, isLoading: sickLoading } = useQuery({
+  const {
+    data: sickLeavesData,
+    isLoading: sickLoading,
+    error: sickError,
+  } = useQuery({
     queryKey: ['sick-leaves', 'dashboard'],
     queryFn: async () => {
       const { data } = await api.get('/sick-leaves');
@@ -111,7 +124,11 @@ const Dashboard = () => {
     },
   });
 
-  const { data: notificationsData, isLoading: notificationsLoading } = useQuery({
+  const {
+    data: notificationsData,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+  } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const { data } = await api.get('/notifications');
@@ -124,7 +141,9 @@ const Dashboard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       setNewNotification('');
+      setNotificationError(null);
     },
+    onError: () => setNotificationError('Nie udało się zapisać powiadomienia.'),
   });
 
   const markAsReadMutation = useMutation({
@@ -132,6 +151,7 @@ const Dashboard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
+    onError: () => setNotificationError('Nie udało się oznaczyć powiadomienia jako przeczytane.'),
   });
 
   const addNotification = () => {
@@ -357,6 +377,10 @@ const Dashboard = () => {
               {createNotificationMutation.isLoading ? 'Zapisywanie...' : 'Dodaj'}
             </button>
           </div>
+
+          {notificationError && (
+            <div className="mb-3 text-[11px] text-red-600">{notificationError}</div>
+          )}
 
           <div className="space-y-2">
             {alerts.map((alert) => (
