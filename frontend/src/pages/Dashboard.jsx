@@ -150,7 +150,6 @@ const Dashboard = () => {
     mutationFn: (id) => api.patch(`/notifications/${id}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      setNotificationError(null);
     },
     onError: () => setNotificationError('Nie udało się oznaczyć powiadomienia jako przeczytane.'),
   });
@@ -293,14 +292,9 @@ const Dashboard = () => {
             <span className="text-[11px] font-medium text-indigo-600">Grafik</span>
           </div>
 
-          {(scheduleLoading || upcomingShifts.length === 0) && !scheduleError && (
+          {(scheduleLoading || upcomingShifts.length === 0) && (
             <div className="text-[11px] text-slate-500">
               {scheduleLoading ? 'Ładowanie grafiku...' : 'Brak zaplanowanych zmian.'}
-            </div>
-          )}
-          {scheduleError && (
-            <div className="text-[11px] text-red-600">
-              Nie udało się pobrać grafiku. Odśwież stronę lub spróbuj ponownie.
             </div>
           )}
 
@@ -329,15 +323,10 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-3">
-            {(leavesLoading || sickLoading) && !leavesError && !sickError && (
+            {(leavesLoading || sickLoading) && (
               <div className="text-[11px] text-slate-500">Ładowanie wniosków...</div>
             )}
-            {(leavesError || sickError) && (
-              <div className="text-[11px] text-red-600">
-                Nie udało się pobrać wniosków urlopowych lub L4. Spróbuj ponownie później.
-              </div>
-            )}
-            {timeOffItems.length === 0 && !leavesLoading && !sickLoading && !leavesError && !sickError && (
+            {timeOffItems.length === 0 && !leavesLoading && !sickLoading && (
               <div className="text-[11px] text-slate-500">Brak wniosków urlopowych ani L4.</div>
             )}
             {timeOffItems.map((item) => (
@@ -367,11 +356,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-800">Powiadomienia wewnętrzne</h2>
             <span className="text-[11px] font-medium text-indigo-600">
-              {notificationsLoading
-                ? 'Ładowanie...'
-                : notificationsError
-                  ? 'Błąd pobierania'
-                  : `${unreadCount} do przeczytania`}
+              {notificationsLoading ? 'Ładowanie...' : `${unreadCount} do przeczytania`}
             </span>
           </div>
 
@@ -424,12 +409,7 @@ const Dashboard = () => {
                 </button>
               </div>
             ))}
-            {notificationsError && (
-              <div className="text-[11px] text-red-600">
-                Nie udało się pobrać powiadomień. Spróbuj ponownie później.
-              </div>
-            )}
-            {alerts.length === 0 && !notificationsLoading && !notificationsError && (
+            {alerts.length === 0 && !notificationsLoading && (
               <div className="text-[11px] text-slate-500">
                 Brak powiadomień. Dodaj komunikat lub poczekaj na automatyczne wpisy.
               </div>
