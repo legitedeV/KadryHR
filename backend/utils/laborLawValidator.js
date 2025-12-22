@@ -237,6 +237,19 @@ const validateWeeklyRest = (shifts) => {
  * Kompleksowa walidacja grafiku
  */
 const validateSchedule = (shifts, options = {}) => {
+  // Walidacja wejścia
+  if (!Array.isArray(shifts) || shifts.length === 0) {
+    return {
+      isValid: true,
+      violations: [],
+      summary: {
+        total: 0,
+        errors: 0,
+        warnings: 0,
+      },
+    };
+  }
+  
   const {
     checkDailyRest = true,
     checkMaxHours = true,

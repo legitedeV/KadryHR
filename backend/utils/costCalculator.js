@@ -72,9 +72,34 @@ const calculateShiftCost = (shift, employee, options = {}) => {
  * Obliczanie całkowitego kosztu grafiku
  */
 const calculateScheduleCost = (shifts, employees, options = {}) => {
+  // Walidacja wejścia
+  if (!Array.isArray(shifts) || shifts.length === 0) {
+    return {
+      totalCost: 0,
+      totalHours: 0,
+      totalOvertimeHours: 0,
+      averageCostPerHour: 0,
+      employeeCosts: [],
+      shiftCosts: [],
+    };
+  }
+  
+  if (!Array.isArray(employees) || employees.length === 0) {
+    return {
+      totalCost: 0,
+      totalHours: 0,
+      totalOvertimeHours: 0,
+      averageCostPerHour: 0,
+      employeeCosts: [],
+      shiftCosts: [],
+    };
+  }
+  
   const employeeMap = {};
   employees.forEach(emp => {
-    employeeMap[emp._id.toString()] = emp;
+    if (emp && emp._id) {
+      employeeMap[emp._id.toString()] = emp;
+    }
   });
   
   let totalCost = 0;
@@ -84,8 +109,15 @@ const calculateScheduleCost = (shifts, employees, options = {}) => {
   const shiftCosts = [];
   
   shifts.forEach(shift => {
-    const employee = employeeMap[shift.employee.toString()];
-    if (!employee) return;
+    if (!shift || !shift.employee) return;
+    
+    const employeeId = shift.employee._id ? shift.employee._id.toString() : shift.employee.toString();
+    const employee = employeeMap[employeeId];
+    
+    if (!employee) {
+      console.warn(`Employee not found for shift: ${employeeId}`);
+      return;
+    }
     
     const cost = calculateShiftCost(shift, employee, options);
     totalCost += cost.totalCost;

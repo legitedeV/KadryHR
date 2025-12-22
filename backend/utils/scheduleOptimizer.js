@@ -22,6 +22,19 @@ const generateIntelligentSchedule = async (params) => {
     budget = null,
   } = params;
   
+  // Walidacja parametrów wejściowych
+  if (!employees || !Array.isArray(employees) || employees.length === 0) {
+    throw new Error('Brak dostępnych pracowników do wygenerowania grafiku');
+  }
+  
+  if (!startDate || !endDate) {
+    throw new Error('Wymagane są daty rozpoczęcia i zakończenia');
+  }
+  
+  if (!shiftTemplates || !Array.isArray(shiftTemplates) || shiftTemplates.length === 0) {
+    throw new Error('Brak szablonów zmian do wygenerowania grafiku');
+  }
+  
   const {
     minStaffPerShift = 1,
     maxStaffPerShift = 10,
@@ -142,7 +155,11 @@ const generateIntelligentSchedule = async (params) => {
   }
   
   // Walidacja całego grafiku
-  const validation = validateSchedule(schedule);
+  const validation = schedule.length > 0 ? validateSchedule(schedule) : {
+    isValid: true,
+    violations: [],
+    summary: { total: 0, errors: 0, warnings: 0 }
+  };
   
   // Obliczenie kosztów
   const costs = calculateScheduleCost(schedule, employees);
@@ -154,6 +171,11 @@ const generateIntelligentSchedule = async (params) => {
     withinBudget: costs.totalCost <= budget,
     difference: budget - costs.totalCost,
   } : null;
+  
+  // Ostrzeżenie jeśli grafik jest pusty
+  if (schedule.length === 0) {
+    console.warn('Wygenerowano pusty grafik - sprawdź ograniczenia i dostępność pracowników');
+  }
   
   return {
     schedule,
