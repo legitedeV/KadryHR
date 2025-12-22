@@ -55,3 +55,40 @@ git pull origin main
 - Plików zmienionych: 5
 - Nowych funkcji: 3
 - Poprawionych bugów: 3
+
+## ⚠️ WAŻNE - Konfiguracja po wdrożeniu:
+
+### 1. Powiąż użytkowników z pracownikami:
+
+Na VPS uruchom:
+```bash
+cd /home/deploy/apps/kadryhr-app/backend
+node scripts/linkUserToEmployee.js
+```
+
+To automatycznie powiąże test.pracownik@kadryhr.pl z pracownikiem testowym.
+
+### 2. Weryfikacja:
+
+```bash
+node scripts/verifySetup.js
+```
+
+Pokaże status wszystkich użytkowników i pracowników.
+
+### 3. Ręczne powiązanie (jeśli potrzeba):
+
+```bash
+node scripts/linkUserToEmployee.js user@email.pl employee_id_here
+```
+
+## 🐛 Troubleshooting:
+
+**Problem:** Dashboard użytkownika nie pokazuje zmian
+**Rozwiązanie:** Uruchom `node scripts/linkUserToEmployee.js`
+
+**Problem:** Endpoint /me zwraca 404
+**Rozwiązanie:** Sprawdź czy employee ma pole `user` ustawione
+
+**Problem:** Kolory się nie zmieniły
+**Rozwiązanie:** Wyczyść cache (Ctrl+Shift+R) lub tryb incognito
