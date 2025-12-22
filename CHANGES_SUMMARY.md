@@ -1,11 +1,50 @@
 # 🎨 KadryHR - Changes Summary
 
 ## Overview
-This document summarizes all changes made to improve the KadryHR application, including color scheme updates, employee email integration, SSL setup, and demo version implementation.
+This document summarizes all changes made to improve the KadryHR application, including color scheme updates, employee email integration, SSL setup, demo version implementation, and CORS configuration fix.
 
 ---
 
 ## ✅ Changes Completed
+
+### 0. 🔧 CORS Configuration Fix (Latest)
+
+**Objective:** Fix CORS rejection error for `https://www.kadryhr.pl` origin.
+
+#### Issue:
+The application was rejecting requests from `https://www.kadryhr.pl` with error:
+```
+Nieautoryzowany origin: https://www.kadryhr.pl
+```
+
+#### Files Modified:
+- ✅ `/backend/server.js`
+
+#### Changes:
+- Added HTTPS variants to allowed origins:
+  - `https://kadryhr.pl` (HTTPS without www)
+  - `https://www.kadryhr.pl` (HTTPS with www - production)
+  - `http://www.kadryhr.pl` (HTTP with www)
+- Kept existing origins:
+  - `FRONTEND_URL` environment variable
+  - `http://kadryhr.pl`
+  - `http://localhost:5173`
+  - `http://127.0.0.1:5173`
+
+#### Result:
+- ✅ Application now accepts requests from both `kadryhr.pl` and `www.kadryhr.pl`
+- ✅ Works with both HTTP and HTTPS protocols
+- ✅ Maintains security with specific origin whitelist
+- ✅ Credentials (cookies) work correctly across all domains
+
+#### Deployment:
+```bash
+cd /home/deploy/apps/kadryhr-app
+git pull origin main
+pm2 restart kadryhr-backend
+```
+
+---
 
 ### 1. 🎨 Color Scheme Updates
 
