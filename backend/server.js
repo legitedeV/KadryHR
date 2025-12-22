@@ -59,16 +59,32 @@ app.use(cors(corsOptions));
 // === RATE LIMIT (bez custom keyGenerator, domyślny jest OK i bezpieczny) ===
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuta
-  limit: 30,           // max 30 requestów / minutę na IP
+  limit: 60,           // max 60 requestów / minutę na IP (zwiększone dla lepszej UX)
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
     message: 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.',
   },
+  skip: (req) => {
+    // Pomijaj rate limiting dla healthcheck
+    return req.path === '/' || req.path === '/health';
+  },
+});
+
+// Bardziej restrykcyjny limit dla logowania
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  limit: 5,                  // max 5 prób logowania
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    message: 'Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.',
+  },
 });
 
 // ograniczamy tylko /api
 app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
 
 // === ROUTES IMPORTY ===
 const authRoutes = require('./routes/authRoutes');
@@ -112,13 +128,23 @@ app.all('/api/*', (req, res) => {
 
 // === GLOBAL ERROR HANDLER ===
 app.use((err, req, res, next) => {
-  console.error('🔥 Global error handler:', err);
+  console.error('🔥 Global error handler:', {
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method,
+  });
 
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Wewnętrzny błąd serwera';
 
-  // jeżeli to błąd CORS / rate-limit, też trafia tutaj
-  res.status(statusCode).json({ message });
+  // Zwracaj stack trace tylko w development
+  const response = {
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  };
+
+  res.status(statusCode).json(response);
 });
 
 // === START SERWERA PO POŁĄCZENIU Z MONGO ===

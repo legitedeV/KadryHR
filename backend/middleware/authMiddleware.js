@@ -27,12 +27,16 @@ async function protect(req, res, next) {
       console.warn('[AUTH] Brak tokenu w żądaniu:', {
         path: req.path,
         method: req.method,
+        ip: req.ip,
         hasCookies: !!req.cookies,
         hasAuthHeader: !!req.headers.authorization,
       });
       return res
         .status(401)
-        .json({ message: 'Brak tokenu. Zaloguj się ponownie.' });
+        .json({ 
+          message: 'Brak tokenu. Zaloguj się ponownie.',
+          code: 'NO_TOKEN'
+        });
     }
 
     console.log('[AUTH] Token znaleziony:', {
@@ -45,8 +49,11 @@ async function protect(req, res, next) {
     const userId = decoded.id || decoded.userId;
 
     if (!userId) {
-      console.warn('[AUTH] Brak userId w tokenie:', { decoded });
-      return res.status(401).json({ message: 'Nieautoryzowany - nieprawidłowy token.' });
+      console.warn('[AUTH] Brak userId w tokenie:', { decoded, ip: req.ip });
+      return res.status(401).json({ 
+        message: 'Nieautoryzowany - nieprawidłowy token.',
+        code: 'INVALID_TOKEN'
+      });
     }
 
     const rawUser = await User.collection.findOne({
@@ -54,8 +61,11 @@ async function protect(req, res, next) {
     });
 
     if (!rawUser) {
-      console.warn('[AUTH] Użytkownik nie istnieje w bazie:', { userId });
-      return res.status(401).json({ message: 'Użytkownik nie istnieje.' });
+      console.warn('[AUTH] Użytkownik nie istnieje w bazie:', { userId, ip: req.ip });
+      return res.status(401).json({ 
+        message: 'Użytkownik nie istnieje.',
+        code: 'USER_NOT_FOUND'
+      });
     }
 
     req.user = {
@@ -79,16 +89,26 @@ async function protect(req, res, next) {
       error: err.message,
       name: err.name,
       path: req.path,
+      ip: req.ip,
     });
     
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token wygasł. Zaloguj się ponownie.' });
+      return res.status(401).json({ 
+        message: 'Token wygasł. Zaloguj się ponownie.',
+        code: 'TOKEN_EXPIRED'
+      });
     }
     if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Nieprawidłowy token. Zaloguj się ponownie.' });
+      return res.status(401).json({ 
+        message: 'Nieprawidłowy token. Zaloguj się ponownie.',
+        code: 'INVALID_TOKEN'
+      });
     }
     
-    return res.status(401).json({ message: 'Nieautoryzowany.' });
+    return res.status(401).json({ 
+      message: 'Nieautoryzowany.',
+      code: 'UNAUTHORIZED'
+    });
   }
 }
 
