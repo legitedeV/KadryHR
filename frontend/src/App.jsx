@@ -18,9 +18,9 @@ const PrivateRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
           <p className="mt-4 text-sm text-slate-600">Ładowanie...</p>
         </div>
       </div>
@@ -36,9 +36,9 @@ const AdminRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
           <p className="mt-4 text-sm text-slate-600">Ładowanie...</p>
         </div>
       </div>
@@ -46,7 +46,9 @@ const AdminRoute = ({ children }) => {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin' && user.role !== 'super_admin') return <Navigate to="/self-service" replace />;
+  if (user.role !== 'admin' && user.role !== 'super_admin') {
+    return <Navigate to="/app" replace />;
+  }
 
   return children;
 };
@@ -57,16 +59,20 @@ const App = () => {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      
+      {/* Dashboard - accessible to all logged-in users */}
       <Route
         path="/app"
         element={
-          <AdminRoute>
+          <PrivateRoute>
             <Layout>
               <Dashboard />
             </Layout>
-          </AdminRoute>
+          </PrivateRoute>
         }
       />
+      
+      {/* Self-service panel */}
       <Route
         path="/self-service"
         element={
@@ -77,16 +83,8 @@ const App = () => {
           </PrivateRoute>
         }
       />
-      <Route
-        path="/self-service"
-        element={
-          <PrivateRoute>
-            <Layout>
-              <SelfService />
-            </Layout>
-          </PrivateRoute>
-        }
-      />
+      
+      {/* Schedule builder - accessible to all */}
       <Route
         path="/schedule-builder"
         element={
@@ -97,6 +95,8 @@ const App = () => {
           </PrivateRoute>
         }
       />
+      
+      {/* Admin-only routes */}
       <Route
         path="/employees"
         element={
@@ -137,6 +137,7 @@ const App = () => {
           </AdminRoute>
         }
       />
+      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
