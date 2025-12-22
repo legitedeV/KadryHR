@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const defaultForm = {
   firstName: '',
   lastName: '',
+  email: '',
   position: '',
   hourlyRate: '',
   monthlySalary: '',
@@ -69,6 +70,7 @@ const Employees = () => {
     const body = {
       firstName: form.firstName,
       lastName: form.lastName,
+      email: form.email,
       position: form.position,
       hourlyRate: Number(form.hourlyRate) || 0,
       monthlySalary: Number(form.monthlySalary) || 0,
@@ -126,7 +128,7 @@ const Employees = () => {
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                 required
               />
             </div>
@@ -140,9 +142,27 @@ const Employees = () => {
                 name="lastName"
                 value={form.lastName}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                 required
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Email (konto pracownika)
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="pracownik@firma.pl"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                required
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Zostanie utworzone konto pracownika z tym adresem email
+              </p>
             </div>
 
             <div>
@@ -154,7 +174,7 @@ const Employees = () => {
                 name="position"
                 value={form.position}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
               />
             </div>
 
@@ -167,7 +187,7 @@ const Employees = () => {
                 name="hourlyRate"
                 value={form.hourlyRate}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                 min="0"
                 step="0.01"
               />
@@ -182,7 +202,7 @@ const Employees = () => {
                 name="monthlySalary"
                 value={form.monthlySalary}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                 min="0"
                 step="0.01"
               />
@@ -197,7 +217,7 @@ const Employees = () => {
                 name="hoursPerMonth"
                 value={form.hoursPerMonth}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                 min="0"
               />
             </div>
@@ -207,7 +227,7 @@ const Employees = () => {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {createMutation.isPending ? 'Dodawanie...' : 'Dodaj pracownika'}
             </button>
@@ -235,6 +255,7 @@ const Employees = () => {
                 <thead>
                   <tr className="border-b border-slate-100 text-slate-500">
                     <th className="py-2 pr-4 text-left font-medium">Imię i nazwisko</th>
+                    <th className="py-2 px-4 text-left font-medium">Email</th>
                     <th className="py-2 px-4 text-left font-medium">Stanowisko</th>
                     <th className="py-2 px-4 text-right font-medium">Stawka (PLN/h)</th>
                     <th className="py-2 px-4 text-right font-medium">
@@ -253,6 +274,9 @@ const Employees = () => {
                         <div className="font-medium text-slate-900">
                           {emp.firstName} {emp.lastName}
                         </div>
+                      </td>
+                      <td className="py-2 px-4 text-slate-600 text-xs">
+                        {emp.user?.email || '-'}
                       </td>
                       <td className="py-2 px-4 text-slate-700">
                         {emp.position || '-'}
@@ -297,7 +321,7 @@ const Employees = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-semibold text-indigo-600">
+                      <div className="text-xs font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
                         {emp.monthlySalary != null
                           ? `${emp.monthlySalary.toFixed(2)} zł / m-c`
                           : '-'}
