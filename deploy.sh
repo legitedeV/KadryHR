@@ -5,6 +5,8 @@ APP_DIR="/home/deploy/apps/kadryhr-app"
 BACKEND_DIR="$APP_DIR/backend"
 FRONTEND_DIR="$APP_DIR/frontend"
 
+git pull origin main
+
 echo ">>> [deploy] Start deploya KadryHR"
 
 cd "$APP_DIR"
