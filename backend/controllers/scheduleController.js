@@ -1,6 +1,13 @@
 const ScheduleEntry = require('../models/ScheduleEntry');
 const Employee = require('../models/Employee');
+const Leave = require('../models/Leave');
+const EmployeeAvailability = require('../models/EmployeeAvailability');
+const ShiftTemplate = require('../models/ShiftTemplate');
+const ScheduleConstraint = require('../models/ScheduleConstraint');
 const { createNotification } = require('../utils/notificationService');
+const { validateSchedule } = require('../utils/laborLawValidator');
+const { calculateScheduleCost, optimizeCosts, forecastCosts } = require('../utils/costCalculator');
+const { generateIntelligentSchedule, optimizeExistingSchedule } = require('../utils/scheduleOptimizer');
 
 // prosty helper do konwersji "HH:MM" -> minuty od północy
 const toMinutes = (timeStr) => {
@@ -279,6 +286,361 @@ exports.createMonthlyTemplate = async (req, res, next) => {
       month,
       range: monthRange,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Inteligentne generowanie grafiku
+ * - uwzględnia dostępność pracowników
+ * - prognozy sprzedaży/zapotrzebowania
+ * - ograniczenia budżetowe
+ * - zgodność z Kodeksem Pracy
+ */
+exports.generateIntelligentSchedule = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user || {};
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'Tylko administrator może generować grafik.' });
+    }
+
+    const {
+      startDate,
+      endDate,
+      employeeIds,
+      shiftTemplateIds,
+      constraints = {},
+      forecastData = null,
+      budget = null,
+      autoSave = false,
+    } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        message: 'Wymagane pola: startDate, endDate',
+      });
+    }
+
+    // Pobranie pracowników
+    const employeeQuery = employeeIds && employeeIds.length > 0
+      ? { _id: { $in: employeeIds }, isActive: true }
+      : { companyId: userId, isActive: true };
+    
+    const employees = await Employee.find(employeeQuery);
+    
+    if (employees.length === 0) {
+      return res.status(404).json({ message: 'Brak dostępnych pracowników.' });
+    }
+
+    // Pobranie szablonów zmian
+    let shiftTemplates;
+    if (shiftTemplateIds && shiftTemplateIds.length > 0) {
+      shiftTemplates = await ShiftTemplate.find({
+        _id: { $in: shiftTemplateIds },
+        isActive: true,
+      });
+    } else {
+      shiftTemplates = await ShiftTemplate.find({
+        companyId: userId,
+        isActive: true,
+      });
+    }
+
+    // Jeśli brak szablonów, utwórz domyślny
+    if (shiftTemplates.length === 0) {
+      shiftTemplates = [{
+        name: 'Zmiana standardowa',
+        shiftType: 'full-day',
+        startTime: '08:00',
+        endTime: '16:00',
+        requiredStaff: 1,
+      }];
+    }
+
+    // Pobranie dostępności pracowników
+    const availabilities = await EmployeeAvailability.find({
+      employee: { $in: employees.map(e => e._id) },
+      status: 'approved',
+      startDate: { $lte: new Date(endDate) },
+      endDate: { $gte: new Date(startDate) },
+    });
+
+    // Pobranie urlopów
+    const leaves = await Leave.find({
+      employee: { $in: employees.map(e => e._id) },
+      status: 'approved',
+      startDate: { $lte: new Date(endDate) },
+      endDate: { $gte: new Date(startDate) },
+    });
+
+    // Generowanie grafiku
+    const result = await generateIntelligentSchedule({
+      employees,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      shiftTemplates,
+      constraints,
+      availabilities,
+      leaves,
+      forecastData,
+      budget,
+    });
+
+    // Automatyczny zapis jeśli włączony
+    if (autoSave && result.schedule.length > 0) {
+      const scheduleEntries = result.schedule.map(shift => ({
+        ...shift,
+        createdBy: userId,
+      }));
+
+      const saved = await ScheduleEntry.insertMany(scheduleEntries);
+      
+      return res.status(201).json({
+        ...result,
+        saved: saved.length,
+        message: `Wygenerowano i zapisano ${saved.length} zmian`,
+      });
+    }
+
+    res.status(200).json({
+      ...result,
+      message: `Wygenerowano ${result.schedule.length} zmian (podgląd)`,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Walidacja zgodności grafiku z Kodeksem Pracy
+ */
+exports.validateCompliance = async (req, res, next) => {
+  try {
+    const { employeeId, from, to } = req.query;
+
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Wymagane: employeeId' });
+    }
+
+    const query = { employee: employeeId };
+
+    if (from && to) {
+      query.date = {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      };
+    }
+
+    const shifts = await ScheduleEntry.find(query).sort({ date: 1 });
+
+    if (shifts.length === 0) {
+      return res.status(404).json({ message: 'Brak zmian do walidacji' });
+    }
+
+    const validation = validateSchedule(shifts);
+
+    res.json({
+      employeeId,
+      period: { from, to },
+      shiftsCount: shifts.length,
+      ...validation,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Analiza kosztów grafiku
+ */
+exports.analyzeCosts = async (req, res, next) => {
+  try {
+    const { from, to, employeeIds } = req.query;
+
+    if (!from || !to) {
+      return res.status(400).json({ message: 'Wymagane: from, to' });
+    }
+
+    const query = {
+      date: {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      },
+    };
+
+    if (employeeIds) {
+      const ids = employeeIds.split(',');
+      query.employee = { $in: ids };
+    }
+
+    const shifts = await ScheduleEntry.find(query).populate('employee');
+
+    if (shifts.length === 0) {
+      return res.status(404).json({ message: 'Brak zmian w podanym okresie' });
+    }
+
+    const employees = [...new Set(shifts.map(s => s.employee))];
+    const costs = calculateScheduleCost(shifts, employees);
+
+    res.json({
+      period: { from, to },
+      ...costs,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Optymalizacja kosztów grafiku
+ */
+exports.optimizeScheduleCosts = async (req, res, next) => {
+  try {
+    const { role } = req.user || {};
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'Tylko administrator może optymalizować grafik.' });
+    }
+
+    const { from, to, budget } = req.body;
+
+    if (!from || !to || !budget) {
+      return res.status(400).json({ message: 'Wymagane: from, to, budget' });
+    }
+
+    const shifts = await ScheduleEntry.find({
+      date: {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      },
+    }).populate('employee');
+
+    if (shifts.length === 0) {
+      return res.status(404).json({ message: 'Brak zmian do optymalizacji' });
+    }
+
+    const employees = [...new Set(shifts.map(s => s.employee))];
+    const optimization = optimizeCosts(shifts, employees, budget);
+
+    res.json(optimization);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Prognoza kosztów na podstawie danych historycznych
+ */
+exports.forecastScheduleCosts = async (req, res, next) => {
+  try {
+    const { historicalDays = 30, forecastDays = 30 } = req.query;
+
+    const historicalFrom = new Date();
+    historicalFrom.setDate(historicalFrom.getDate() - parseInt(historicalDays));
+
+    const shifts = await ScheduleEntry.find({
+      date: { $gte: historicalFrom },
+    }).populate('employee');
+
+    if (shifts.length === 0) {
+      return res.status(404).json({ message: 'Brak danych historycznych' });
+    }
+
+    const employees = [...new Set(shifts.map(s => s.employee))];
+    const forecast = forecastCosts(shifts, employees, parseInt(forecastDays));
+
+    res.json(forecast);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Wykrywanie konfliktów w grafiku
+ */
+exports.detectConflicts = async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+
+    if (!from || !to) {
+      return res.status(400).json({ message: 'Wymagane: from, to' });
+    }
+
+    const shifts = await ScheduleEntry.find({
+      date: {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      },
+    }).populate('employee').sort({ employee: 1, date: 1 });
+
+    const conflicts = [];
+    const employeeShifts = {};
+
+    // Grupowanie zmian po pracownikach
+    shifts.forEach(shift => {
+      const empId = shift.employee._id.toString();
+      if (!employeeShifts[empId]) {
+        employeeShifts[empId] = [];
+      }
+      employeeShifts[empId].push(shift);
+    });
+
+    // Sprawdzanie konfliktów dla każdego pracownika
+    Object.entries(employeeShifts).forEach(([empId, empShifts]) => {
+      const validation = validateSchedule(empShifts);
+      
+      if (!validation.isValid) {
+        conflicts.push({
+          employeeId: empId,
+          employeeName: `${empShifts[0].employee.firstName} ${empShifts[0].employee.lastName}`,
+          violations: validation.violations,
+        });
+      }
+    });
+
+    res.json({
+      period: { from, to },
+      totalShifts: shifts.length,
+      employeesChecked: Object.keys(employeeShifts).length,
+      conflictsFound: conflicts.length,
+      conflicts,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Optymalizacja istniejącego grafiku
+ */
+exports.optimizeExistingSchedule = async (req, res, next) => {
+  try {
+    const { role } = req.user || {};
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'Tylko administrator może optymalizować grafik.' });
+    }
+
+    const { from, to, constraints = {} } = req.body;
+
+    if (!from || !to) {
+      return res.status(400).json({ message: 'Wymagane: from, to' });
+    }
+
+    const shifts = await ScheduleEntry.find({
+      date: {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      },
+    }).populate('employee');
+
+    if (shifts.length === 0) {
+      return res.status(404).json({ message: 'Brak zmian do optymalizacji' });
+    }
+
+    const employees = [...new Set(shifts.map(s => s.employee))];
+    const optimization = await optimizeExistingSchedule(shifts, employees, constraints);
+
+    res.json(optimization);
   } catch (err) {
     next(err);
   }
