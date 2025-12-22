@@ -33,7 +33,11 @@ app.use(cookieParser());
 
 // === CORS ===
 const allowedOrigins = [
-  FRONTEND_URL,            // np. http://kadryhr.pl
+  FRONTEND_URL,            // np. http://kadryhr.pl lub https://kadryhr.pl
+  'http://kadryhr.pl',
+  'https://kadryhr.pl',
+  'http://www.kadryhr.pl',
+  'https://www.kadryhr.pl',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
 ];
