@@ -120,12 +120,8 @@ const Dashboard = () => {
   const { data: currentEmployee } = useQuery({
     queryKey: ['current-employee'],
     queryFn: async () => {
-      const { data } = await api.get('/employees/compact');
-      const employees = data.employees || [];
-      // Find employee linked to current user
-      // Note: This assumes employee.user field exists and matches user.id
-      // If not available, you may need a dedicated endpoint
-      return employees.find(emp => emp._id) || null;
+      const { data } = await api.get('/employees/me');
+      return data.employee || null;
     },
     enabled: !isAdmin,
   });
@@ -136,7 +132,7 @@ const Dashboard = () => {
     isLoading: scheduleLoading,
     error: scheduleError,
   } = useQuery({
-    queryKey: ['schedule', isAdmin ? 'all' : 'user'],
+    queryKey: ['schedule', isAdmin ? 'all' : 'user', currentEmployee?._id],
     queryFn: async () => {
       const from = new Date();
       const to = new Date();
@@ -205,7 +201,7 @@ const Dashboard = () => {
     data: availabilityData,
     isLoading: availabilityLoading,
   } = useQuery({
-    queryKey: ['availability', 'user'],
+    queryKey: ['availability', 'user', currentEmployee?._id],
     queryFn: async () => {
       if (!currentEmployee?._id) return [];
       const { data } = await api.get('/availability', {
