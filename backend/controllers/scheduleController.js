@@ -403,11 +403,30 @@ exports.generateIntelligentSchedule = async (req, res, next) => {
       });
     }
 
+    // Jeśli grafik jest pusty, zwróć informacyjną wiadomość
+    if (result.schedule.length === 0) {
+      return res.status(200).json({
+        ...result,
+        message: 'Nie udało się wygenerować żadnych zmian. Sprawdź ograniczenia, dostępność pracowników i szablony zmian.',
+        warning: 'Grafik jest pusty',
+      });
+    }
+
     res.status(200).json({
       ...result,
       message: `Wygenerowano ${result.schedule.length} zmian (podgląd)`,
     });
   } catch (err) {
+    console.error('Error in generateIntelligentSchedule:', err);
+    
+    // Przekaż bardziej szczegółowy błąd
+    if (err.message) {
+      return res.status(400).json({
+        message: err.message,
+        error: true,
+      });
+    }
+    
     next(err);
   }
 };
