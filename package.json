@@ -1,5 +1,25 @@
 {
-  "dependencies": {
-    "puppeteer": "^24.34.0"
-  }
+  "name": "kadryhr-app",
+  "version": "1.1.0",
+  "description": "KadryHR - Nowoczesny system zarządzania zasobami ludzkimi",
+  "private": true,
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/legitedeV/KadryHR.git"
+  },
+  "keywords": [
+    "hr",
+    "kadry",
+    "zarządzanie",
+    "pracownicy"
+  ],
+  "author": "KadryHR Team",
+  "license": "MIT"
 }
