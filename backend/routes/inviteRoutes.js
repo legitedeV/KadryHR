@@ -2,6 +2,7 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const Invite = require('../models/Invite');
 const { protect, requireRole } = require('../middleware/authMiddleware');
+const { sendInviteEmail } = require('../utils/email');
 
 const router = express.Router();
 
@@ -48,7 +49,27 @@ router.post(
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dni
     });
 
-    res.status(201).json({ invite });
+    // Generuj pełny URL zaproszenia
+    const frontendUrl = process.env.FRONTEND_URL || 'http://kadryhr.pl';
+    const inviteUrl = `${frontendUrl}/register?token=${token}&email=${encodeURIComponent(email)}`;
+
+    // Wyślij email z zaproszeniem
+    try {
+      await sendInviteEmail({
+        to: email,
+        inviteUrl,
+        invitedBy: req.user ? req.user.name : 'Administrator',
+      });
+      console.log(`✅ Wysłano zaproszenie email do: ${email}`);
+    } catch (emailError) {
+      console.error('❌ Błąd wysyłki email zaproszenia:', emailError);
+      // Nie przerywamy procesu - zaproszenie zostało utworzone
+    }
+
+    res.status(201).json({ 
+      invite,
+      link: inviteUrl,
+    });
   })
 );
 
