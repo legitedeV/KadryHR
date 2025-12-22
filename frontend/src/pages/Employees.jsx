@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
 const defaultForm = {
@@ -13,39 +15,44 @@ const defaultForm = {
 const Employees = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const queryClient = useQueryClient();
 
-  const [employees, setEmployees] = useState([]);
   const [form, setForm] = useState(defaultForm);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [listError, setListError] = useState('');
 
-  const fetchEmployees = async () => {
-    try {
-      setListError('');
-      const res = await fetch('/api/employees');
-      const data = await res.json().catch(() => []);
+  // Pobieranie listy pracowników
+  const { data: employeesData, isLoading, error: listError } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const { data } = await api.get('/employees');
+      return data;
+    },
+    enabled: isAdmin,
+  });
 
-      if (!res.ok) {
-        throw new Error(
-          data.message || 'Nie udało się załadować listy pracowników.'
-        );
-      }
+  const employees = employeesData?.employees || [];
 
-      setEmployees(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setListError(
-        err.message || 'Nie udało się załadować listy pracowników.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Mutacja dodawania pracownika
+  const createMutation = useMutation({
+    mutationFn: async (payload) => {
+      const { data } = await api.post('/employees', payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['employees']);
+      setForm(defaultForm);
+    },
+  });
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+  // Mutacja usuwania pracownika
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const { data } = await api.delete(`/employees/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['employees']);
+    },
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,64 +66,32 @@ const Employees = () => {
     e.preventDefault();
     if (!isAdmin) return;
 
-    setError('');
-    setSaving(true);
+    const body = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      position: form.position,
+      hourlyRate: Number(form.hourlyRate) || 0,
+      monthlySalary: Number(form.monthlySalary) || 0,
+      hoursPerMonth: Number(form.hoursPerMonth) || 160,
+    };
 
-    try {
-      const body = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        position: form.position,
-        hourlyRate: Number(form.hourlyRate) || 0,
-        monthlySalary: Number(form.monthlySalary) || 0,
-        hoursPerMonth: Number(form.hoursPerMonth) || 160,
-      };
-
-      const res = await fetch('/api/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(
-          data.message || 'Nie udało się dodać pracownika. Spróbuj ponownie.'
-        );
-      }
-
-      setForm(defaultForm);
-      await fetchEmployees();
-    } catch (err) {
-      setError(
-        err.message || 'Nie udało się dodać pracownika. Spróbuj ponownie.'
-      );
-    } finally {
-      setSaving(false);
-    }
+    createMutation.mutate(body);
   };
 
   const handleDelete = async (id) => {
     if (!isAdmin) return;
     if (!window.confirm('Na pewno chcesz usunąć tego pracownika?')) return;
 
-    try {
-      const res = await fetch(`/api/employees/${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Nie udało się usunąć pracownika.');
-      }
-
-      setEmployees((prev) => prev.filter((emp) => emp._id !== id));
-    } catch (err) {
-      alert(err.message || 'Nie udało się usunąć pracownika.');
-    }
+    deleteMutation.mutate(id);
   };
+
+  if (!isAdmin) {
+    return (
+      <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        Tylko administrator ma dostęp do zarządzania pracownikami.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -129,126 +104,128 @@ const Employees = () => {
         </div>
       </div>
 
-      {isAdmin && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
-          <h2 className="text-sm font-semibold text-slate-800 mb-3">
-            Dodaj pracownika
-          </h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          Dodaj pracownika
+        </h2>
 
-          {error && (
-            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-              {error}
-            </div>
-          )}
+        {createMutation.isError && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {createMutation.error?.response?.data?.message || 'Nie udało się dodać pracownika. Spróbuj ponownie.'}
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Imię
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Nazwisko
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Stanowisko
-                </label>
-                <input
-                  type="text"
-                  name="position"
-                  value={form.position}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Stawka godzinowa (PLN)
-                </label>
-                <input
-                  type="number"
-                  name="hourlyRate"
-                  value={form.hourlyRate}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Pensja miesięczna (PLN)
-                </label>
-                <input
-                  type="number"
-                  name="monthlySalary"
-                  value={form.monthlySalary}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Godziny w miesiącu
-                </label>
-                <input
-                  type="number"
-                  name="hoursPerMonth"
-                  value={form.hoursPerMonth}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  min="0"
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Imię
+              </label>
+              <input
+                type="text"
+                name="firstName"
+                value={form.firstName}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
             </div>
 
-            <div className="pt-1">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Dodawanie...' : 'Dodaj pracownika'}
-              </button>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Nazwisko
+              </label>
+              <input
+                type="text"
+                name="lastName"
+                value={form.lastName}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
             </div>
-          </form>
-        </div>
-      )}
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Stanowisko
+              </label>
+              <input
+                type="text"
+                name="position"
+                value={form.position}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Stawka godzinowa (PLN)
+              </label>
+              <input
+                type="number"
+                name="hourlyRate"
+                value={form.hourlyRate}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Pensja miesięczna (PLN)
+              </label>
+              <input
+                type="number"
+                name="monthlySalary"
+                value={form.monthlySalary}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Godziny w miesiącu
+              </label>
+              <input
+                type="number"
+                name="hoursPerMonth"
+                value={form.hoursPerMonth}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {createMutation.isPending ? 'Dodawanie...' : 'Dodaj pracownika'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           Lista pracowników
         </h2>
 
-        {loading ? (
+        {isLoading ? (
           <p className="text-xs text-slate-500">Ładowanie...</p>
+        ) : listError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {listError?.response?.data?.message || 'Nie udało się załadować listy pracowników.'}
+          </div>
         ) : employees.length === 0 ? (
           <p className="text-xs text-slate-500">Brak pracowników.</p>
         ) : (
@@ -289,15 +266,14 @@ const Employees = () => {
                           : '-'}
                       </td>
                       <td className="py-2 pl-4 text-right">
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(emp._id)}
-                            className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
-                          >
-                            Usuń
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(emp._id)}
+                          disabled={deleteMutation.isPending}
+                          className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -341,27 +317,20 @@ const Employees = () => {
                     </div>
                   </div>
 
-                  {isAdmin && (
-                    <div className="mt-2 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(emp._id)}
-                        className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
-                      >
-                        Usuń
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(emp._id)}
+                      disabled={deleteMutation.isPending}
+                      className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </>
-        )}
-
-        {listError && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            {listError}
-          </div>
         )}
       </div>
     </div>
