@@ -51,6 +51,28 @@ router.get(
 );
 
 /**
+ * GET /api/employees/me
+ * Dane powiązanego pracownika dla aktualnie zalogowanego użytkownika
+ */
+router.get(
+  '/me',
+  protect,
+  asyncHandler(async (req, res) => {
+    const { id: userId } = req.user || {};
+
+    const employee = await Employee.findOne({ user: userId, isActive: true });
+
+    if (!employee) {
+      return res.status(404).json({
+        message: 'Brak przypisanego profilu pracownika do tego użytkownika.',
+      });
+    }
+
+    res.json({ employee });
+  })
+);
+
+/**
  * GET /api/employees
  * Lista wszystkich pracowników
  */

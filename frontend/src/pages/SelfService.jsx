@@ -164,12 +164,12 @@ const SelfService = () => {
               value={suggestionPayload.title}
               onChange={(e) => setSuggestionPayload((p) => ({ ...p, title: e.target.value }))}
               placeholder="Tytuł"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
             <select
               value={suggestionPayload.category}
               onChange={(e) => setSuggestionPayload((p) => ({ ...p, category: e.target.value }))}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
             >
               {Object.entries(categoryLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -183,14 +183,14 @@ const SelfService = () => {
             onChange={(e) => setSuggestionPayload((p) => ({ ...p, content: e.target.value }))}
             placeholder="Opisz swoją sugestię"
             rows={3}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
           <div className="flex justify-end">
             <button
               type="button"
               onClick={() => suggestionMutation.mutate(suggestionPayload)}
               disabled={suggestionMutation.isLoading}
-              className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
             >
               {suggestionMutation.isLoading ? 'Wysyłanie...' : 'Dodaj sugestię'}
             </button>
@@ -204,7 +204,7 @@ const SelfService = () => {
                     <div className="text-sm font-semibold text-slate-900">{item.title}</div>
                     <div className="text-[11px] text-slate-500">{categoryLabels[item.category] || item.category}</div>
                   </div>
-                  <span className="text-[11px] font-semibold text-indigo-700">{item.status}</span>
+                  <span className="text-[11px] font-semibold text-pink-700">{item.status}</span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1">{item.content}</p>
               </div>
@@ -223,7 +223,7 @@ const SelfService = () => {
           <select
             value={leavePayload.employeeId}
             onChange={(e) => setLeavePayload((p) => ({ ...p, employeeId: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="">Wybierz pracownika</option>
             {compactEmployees.map((emp) => (
@@ -235,7 +235,7 @@ const SelfService = () => {
           <select
             value={leavePayload.type}
             onChange={(e) => setLeavePayload((p) => ({ ...p, type: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="annual">Urlop wypoczynkowy</option>
             <option value="on_demand">Urlop na żądanie</option>
@@ -247,13 +247,13 @@ const SelfService = () => {
               type="date"
               value={leavePayload.startDate}
               onChange={(e) => setLeavePayload((p) => ({ ...p, startDate: e.target.value }))}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
             <input
               type="date"
               value={leavePayload.endDate}
               onChange={(e) => setLeavePayload((p) => ({ ...p, endDate: e.target.value }))}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
           <textarea
@@ -261,13 +261,13 @@ const SelfService = () => {
             onChange={(e) => setLeavePayload((p) => ({ ...p, reason: e.target.value }))}
             placeholder="Powód (opcjonalnie)"
             rows={2}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
           <button
             type="button"
             onClick={() => leaveMutation.mutate(leavePayload)}
             disabled={leaveMutation.isLoading}
-            className="w-full rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="w-full rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
           >
             {leaveMutation.isLoading ? 'Wysyłanie...' : 'Złóż wniosek urlopowy'}
           </button>
@@ -286,14 +286,14 @@ const SelfService = () => {
             <div className="text-sm font-semibold text-slate-900">Prośba o zamianę zmiany</div>
             <p className="text-xs text-slate-600">Wybierz datę i pracownika, z którym chcesz się zamienić.</p>
           </div>
-          <span className="text-[11px] font-semibold text-indigo-700">Grafik</span>
+          <span className="text-[11px] font-semibold text-pink-700">Grafik</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <select
             value={swapPayload.requesterEmployee}
             onChange={(e) => setSwapPayload((p) => ({ ...p, requesterEmployee: e.target.value }))}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="">Ja / mój profil</option>
             {compactEmployees.map((emp) => (
@@ -305,7 +305,7 @@ const SelfService = () => {
           <select
             value={swapPayload.swapWithEmployee}
             onChange={(e) => setSwapPayload((p) => ({ ...p, swapWithEmployee: e.target.value }))}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="">Pracownik do zamiany</option>
             {compactEmployees.map((emp) => (
@@ -318,14 +318,14 @@ const SelfService = () => {
             type="date"
             value={swapPayload.date}
             onChange={(e) => setSwapPayload((p) => ({ ...p, date: e.target.value }))}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
           <input
             type="text"
             value={swapPayload.reason}
             onChange={(e) => setSwapPayload((p) => ({ ...p, reason: e.target.value }))}
             placeholder="Powód (opcjonalnie)"
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
 
@@ -334,7 +334,7 @@ const SelfService = () => {
             type="button"
             onClick={() => swapMutation.mutate(swapPayload)}
             disabled={swapMutation.isLoading}
-            className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
           >
             {swapMutation.isLoading ? 'Wysyłanie...' : 'Poproś o zamianę'}
           </button>
@@ -347,7 +347,7 @@ const SelfService = () => {
                 <div className="text-sm font-semibold text-slate-900">
                   {swap.requesterEmployee?.firstName} {swap.requesterEmployee?.lastName}
                 </div>
-                <span className="text-[11px] font-semibold text-indigo-700">{swap.status}</span>
+                <span className="text-[11px] font-semibold text-pink-700">{swap.status}</span>
               </div>
               <div className="text-xs text-slate-600">
                 Zamiana z {swap.swapWithEmployee?.firstName} {swap.swapWithEmployee?.lastName} - {new Date(swap.date).toLocaleDateString('pl-PL')}
