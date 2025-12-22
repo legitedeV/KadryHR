@@ -1,6 +1,7 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const Employee = require('../models/Employee');
+const User = require('../models/User');
 const { protect, requireRole } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -81,22 +82,74 @@ router.get(
   protect,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const employees = await Employee.find().sort({ createdAt: -1 });
+    const employees = await Employee.find()
+      .populate('user', 'email name')
+      .sort({ createdAt: -1 });
     res.json({ employees });
   })
 );
 
 /**
  * POST /api/employees
- * Dodanie pracownika
+ * Dodanie pracownika z utworzeniem konta użytkownika
  */
 router.post(
   '/',
   protect,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const employee = await Employee.create(req.body);
-    res.status(201).json({ employee });
+    const { email, firstName, lastName, ...employeeData } = req.body;
+
+    // Walidacja email
+    if (!email) {
+      return res.status(400).json({ message: 'Email jest wymagany' });
+    }
+
+    // Sprawdź czy email już istnieje
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'Użytkownik z tym adresem email już istnieje' 
+      });
+    }
+
+    // Generuj losowe hasło (8 znaków)
+    const generatePassword = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+      let password = '';
+      for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
+
+    const temporaryPassword = generatePassword();
+
+    // Utwórz konto użytkownika
+    const user = await User.create({
+      name: `${firstName} ${lastName}`,
+      email: email.toLowerCase(),
+      password: temporaryPassword,
+      role: 'user',
+    });
+
+    // Utwórz pracownika z powiązaniem do użytkownika
+    const employee = await Employee.create({
+      firstName,
+      lastName,
+      ...employeeData,
+      user: user._id,
+      companyId: req.user.id, // Przypisz do admina który tworzy
+    });
+
+    // TODO: Wyślij email z hasłem tymczasowym
+    console.log(`[EMPLOYEE] Utworzono konto dla ${email} z hasłem: ${temporaryPassword}`);
+
+    res.status(201).json({ 
+      employee,
+      message: `Pracownik dodany. Konto utworzone z emailem: ${email}`,
+      temporaryPassword, // W produkcji usuń to i wyślij emailem
+    });
   })
 );
 

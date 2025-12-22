@@ -4,7 +4,7 @@ const router = express.Router();
 
 const authController = require('../controllers/authController');
 
-const { loginUser, getMe, logoutUser } = authController;
+const { loginUser, getMe, logoutUser, demoLogin } = authController;
 
 // Zabezpieczenie przed sytuacją, w której import nie zwróci funkcji (np. błąd require)
 const safeRegisterUser = (() => {
@@ -21,6 +21,9 @@ const { protect } = require('../middleware/authMiddleware');
 
 // Logowanie
 router.post('/login', loginUser);
+
+// Demo login (automatyczne logowanie)
+router.post('/demo', demoLogin);
 
 // Ewentualna rejestracja (na razie zwraca 501 – patrz kontroler)
 router.post('/register', safeRegisterUser);

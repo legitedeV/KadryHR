@@ -181,9 +181,48 @@ const logoutUser = asyncHandler(async (req, res) => {
   return res.status(200).json({ message: 'Wylogowano' });
 });
 
+// POST /api/auth/demo – automatyczne logowanie do konta demo
+const demoLogin = asyncHandler(async (req, res) => {
+  const DEMO_EMAIL = 'demo@kadryhr.pl';
+  
+  // Znajdź lub utwórz użytkownika demo
+  let demoUser = await User.collection.findOne({ email: DEMO_EMAIL });
+  
+  if (!demoUser) {
+    // Utwórz konto demo jeśli nie istnieje
+    const demoPassword = await bcrypt.hash('Demo1234!', 10);
+    
+    const insertResult = await User.collection.insertOne({
+      name: 'Demo User',
+      email: DEMO_EMAIL,
+      passwordHash: demoPassword,
+      role: 'admin', // Demo ma dostęp admina
+      isActive: true,
+      isDemo: true, // Flaga demo
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    demoUser = await User.collection.findOne({ _id: insertResult.insertedId });
+    
+    console.log('[AUTH] Utworzono konto demo:', {
+      _id: demoUser._id.toString(),
+      email: demoUser.email,
+    });
+  }
+  
+  console.log('[AUTH] Logowanie demo:', {
+    _id: demoUser._id.toString(),
+    email: demoUser.email,
+  });
+  
+  return sendAuthResponse(res, demoUser);
+});
+
 module.exports = {
   loginUser,
   registerUser,
   getMe,
   logoutUser,
+  demoLogin,
 };
