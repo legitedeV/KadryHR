@@ -1,10 +1,10 @@
 import React from 'react';
 
 const StatCard = ({ label, value, hint }) => (
-  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-    <div className="text-xs text-slate-500 mb-1">{label}</div>
-    <div className="text-xl font-semibold text-slate-800">{value}</div>
-    {hint && <div className="text-[11px] text-slate-400 mt-1">{hint}</div>}
+  <div className="bg-white rounded-2xl border border-pink-100 shadow-sm hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 hover:-translate-y-1 p-6">
+    <div className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-2">{label}</div>
+    <div className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">{value}</div>
+    {hint && <div className="text-xs text-slate-500 mt-2">{hint}</div>}
   </div>
 );
 
