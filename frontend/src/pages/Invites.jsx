@@ -26,7 +26,10 @@ const Invites = () => {
       queryClient.invalidateQueries(['invites']);
       setEmail('');
       setRole('user');
-      setLastLink(response.data.link);
+      // Backend zwraca link w response.data.link
+      if (response.data.link) {
+        setLastLink(response.data.link);
+      }
     },
   });
 
@@ -88,12 +91,32 @@ const Invites = () => {
         </div>
 
         {lastLink && (
-          <p className="text-[11px] text-slate-600">
-            Ostatni link zaproszenia:{' '}
-            <span className="break-all font-mono bg-slate-50 px-2 py-1 rounded">
-              {lastLink}
-            </span>
-          </p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-semibold text-green-800">
+              ✅ Zaproszenie utworzone i wysłane!
+            </p>
+            <p className="text-[11px] text-slate-600">
+              Link zaproszenia:{' '}
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={lastLink}
+                className="flex-1 text-[11px] font-mono bg-white border border-slate-200 rounded px-2 py-1.5"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(lastLink);
+                  alert('Link skopiowany do schowka!');
+                }}
+                className="px-3 py-1.5 bg-indigo-600 text-white text-[11px] font-semibold rounded hover:bg-indigo-700"
+              >
+                Kopiuj
+              </button>
+            </div>
+          </div>
         )}
       </form>
 
