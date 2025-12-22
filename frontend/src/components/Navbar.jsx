@@ -9,6 +9,7 @@ const Navbar = () => {
 
   const isAdmin = user?.role === 'admin';
 
+  // Style helper for active vs. inactive links
   const linkClasses = ({ isActive }) =>
     [
       'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap',
@@ -17,6 +18,7 @@ const Navbar = () => {
         : 'text-slate-600 hover:bg-pink-50 hover:text-pink-700',
     ].join(' ');
 
+  // Handle sign out and navigation
   const handleLogout = () => {
     logout();
     setOpen(false);
@@ -26,16 +28,21 @@ const Navbar = () => {
   return (
     <header className="border-b border-slate-100 bg-white/80 backdrop-blur">
       <nav className="app-shell flex items-center justify-between h-14 gap-2">
+        {/* Logo */}
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-pink-500/30">
             KH
           </div>
-          <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">KadryHR</span>
+          <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+            KadryHR
+          </span>
         </div>
 
+        {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-3">
           {user && (
             <>
+              {/* Always visible links */}
               <NavLink to="/app" className={linkClasses} end>
                 Dashboard
               </NavLink>
@@ -51,6 +58,7 @@ const Navbar = () => {
               <NavLink to="/reports" className={linkClasses}>
                 Raporty
               </NavLink>
+              {/* Admin-only links */}
               {isAdmin && (
                 <NavLink to="/schedule-builder" className={linkClasses}>
                   Grafik miesięczny
@@ -61,38 +69,11 @@ const Navbar = () => {
                   Zaproszenia
                 </NavLink>
               )}
-
-              {isAdmin && <div className="h-6 w-px bg-slate-200" aria-hidden />}
-
-              {isAdmin && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Admin
-                  </span>
-                  <NavLink to="/app" className={linkClasses} end>
-                    Dashboard
-                  </NavLink>
-                  <NavLink to="/employees" className={linkClasses}>
-                    Pracownicy
-                  </NavLink>
-                  <NavLink to="/schedule-builder" className={linkClasses}>
-                    Grafik miesięczny
-                  </NavLink>
-                  <NavLink to="/payroll" className={linkClasses}>
-                    Kalkulator
-                  </NavLink>
-                  <NavLink to="/reports" className={linkClasses}>
-                    Raporty
-                  </NavLink>
-                  <NavLink to="/invites" className={linkClasses}>
-                    Zaproszenia
-                  </NavLink>
-                </div>
-              )}
             </>
           )}
         </div>
 
+        {/* User info and auth actions (desktop) */}
         <div className="hidden md:flex items-center gap-3">
           {user && (
             <div className="text-right">
@@ -122,6 +103,7 @@ const Navbar = () => {
           )}
         </div>
 
+        {/* Mobile button for opening menu */}
         <div className="md:hidden flex items-center gap-2">
           {user && (
             <div className="text-right">
@@ -171,11 +153,12 @@ const Navbar = () => {
         </div>
       </nav>
 
+      {/* Mobile navigation panel */}
       {user && open && (
         <div className="md:hidden border-t border-slate-100 bg-white">
           <div className="app-shell py-2 space-y-1">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Pracownik
+              {isAdmin ? 'Admin' : 'Pracownik'}
             </div>
             <NavLink
               to="/app"
@@ -211,7 +194,7 @@ const Navbar = () => {
               onClick={() => setOpen(false)}
               className={linkClasses}
             >
-              Panel pracownika
+              Raporty
             </NavLink>
             {isAdmin && (
               <NavLink
