@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -7,16 +7,62 @@ const Landing = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const heroRef = useRef(null);
+
+  // Mouse parallax effect
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth - 0.5) * 20,
+        y: (e.clientY / window.innerHeight - 0.5) * 20,
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Scroll reveal animation
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px',
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+        }
+      });
+    }, observerOptions);
+
+    const elements = document.querySelectorAll('.scroll-reveal');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleDemoLogin = async () => {
     setIsDemoLoading(true);
     try {
       const { data } = await api.post('/auth/demo');
+      
+      // Zapisz token i dane użytkownika
+      if (data.token) {
+        localStorage.setItem('kadryhr_token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('kadryhr_user', JSON.stringify(data.user));
+      }
+      
       login(data.user);
-      navigate('/dashboard');
+      navigate('/app');
     } catch (error) {
       console.error('Demo login error:', error);
-      alert('Nie udało się zalogować do wersji demo. Spróbuj ponownie.');
+      const errorMessage = error.response?.data?.message || 'Nie udało się zalogować do wersji demo. Spróbuj ponownie.';
+      alert(errorMessage);
     } finally {
       setIsDemoLoading(false);
     }
@@ -95,17 +141,25 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 relative overflow-hidden">
+      {/* Animated Background Particles */}
+      <div className="particles pointer-events-none">
+        <div className="particle" style={{ width: '100px', height: '100px', top: '10%', left: '10%', animationDelay: '0s' }}></div>
+        <div className="particle" style={{ width: '150px', height: '150px', top: '60%', right: '10%', animationDelay: '2s' }}></div>
+        <div className="particle" style={{ width: '80px', height: '80px', bottom: '20%', left: '20%', animationDelay: '4s' }}></div>
+        <div className="particle" style={{ width: '120px', height: '120px', top: '40%', right: '30%', animationDelay: '1s' }}></div>
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-pink-100">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-pink-100 transition-smooth">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30">
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30 group-hover:shadow-pink-500/50 transition-smooth group-hover:scale-110">
                 <span className="text-sm font-bold text-white">KH</span>
               </div>
               <div>
-                <div className="text-lg font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                <div className="text-lg font-bold gradient-text">
                   KadryHR
                 </div>
                 <p className="text-xs text-slate-500">Nowoczesny system HR</p>
@@ -114,13 +168,13 @@ const Landing = () => {
             <div className="flex items-center gap-3">
               <Link
                 to="/login"
-                className="hidden sm:inline-flex items-center rounded-full border-2 border-pink-200 px-5 py-2 text-sm font-semibold text-pink-700 hover:bg-pink-50 transition-all duration-200"
+                className="hidden sm:inline-flex items-center rounded-full border-2 border-pink-200 px-5 py-2 text-sm font-semibold text-pink-700 hover:bg-pink-50 transition-smooth hover-lift"
               >
                 Zaloguj się
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-all duration-200"
+                className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple"
               >
                 Rozpocznij
               </Link>
@@ -130,11 +184,17 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 sm:py-32">
-        <div className="absolute inset-0 bg-gradient-radial from-pink-100/50 via-transparent to-transparent"></div>
+      <section ref={heroRef} className="relative overflow-hidden py-20 sm:py-32">
+        <div 
+          className="absolute inset-0 bg-gradient-radial from-pink-100/50 via-transparent to-transparent animate-gradient"
+          style={{
+            transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`,
+            transition: 'transform 0.3s ease-out',
+          }}
+        ></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center space-y-8 animate-fade-in">
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-100 to-rose-100 px-4 py-2 text-sm font-semibold text-pink-700 border border-pink-200 shadow-sm">
+          <div className="text-center space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-100 to-rose-100 px-4 py-2 text-sm font-semibold text-pink-700 border border-pink-200 shadow-sm animate-fade-in hover-lift">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
@@ -142,40 +202,37 @@ const Landing = () => {
               Kompleksowe rozwiązanie HR dla Twojej firmy
             </div>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight animate-slide-up">
               Zarządzaj zespołem
               <br />
-              <span className="bg-gradient-to-r from-pink-600 via-rose-500 to-pink-600 bg-clip-text text-transparent">
+              <span className="gradient-text">
                 z łatwością i elegancją
               </span>
             </h1>
             
-            <p className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-600 leading-relaxed">
+            <p className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-600 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
               KadryHR to nowoczesna platforma do zarządzania pracownikami, grafikami, urlopami i wynagrodzeniami. 
               Wszystko w jednym miejscu, dostępne z każdego urządzenia.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-pink-500/30 hover:shadow-2xl hover:shadow-pink-500/40 transition-all duration-200 hover:scale-105"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-pink-500/30 hover:shadow-2xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple animate-glow"
               >
                 Utwórz konto za darmo
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 animate-bounce-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
               <button
                 onClick={handleDemoLogin}
                 disabled={isDemoLoading}
-                className="inline-flex items-center gap-2 rounded-full border-2 border-pink-200 bg-white px-8 py-4 text-base font-semibold text-pink-700 hover:bg-pink-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-pink-200 bg-white px-8 py-4 text-base font-semibold text-pink-700 hover:bg-pink-50 transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed btn-ripple"
               >
                 {isDemoLoading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <div className="spinner w-5 h-5"></div>
                     Ładowanie...
                   </>
                 ) : (
@@ -190,7 +247,7 @@ const Landing = () => {
               </button>
             </div>
 
-            <div className="pt-8 flex items-center justify-center gap-8 text-sm text-slate-500">
+            <div className="pt-8 flex items-center justify-center gap-8 text-sm text-slate-500 animate-fade-in" style={{ animationDelay: '0.6s' }}>
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -209,9 +266,9 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white/50 backdrop-blur-sm">
+      <section className="py-20 bg-white/50 backdrop-blur-sm relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-4 mb-16 animate-slide-up">
+          <div className="text-center space-y-4 mb-16 scroll-reveal">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
               Wszystko czego potrzebujesz
             </h2>
@@ -224,12 +281,11 @@ const Landing = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group relative bg-white rounded-2xl p-8 shadow-sm border border-pink-100 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 hover:-translate-y-1 animate-scale-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className={`group relative bg-white rounded-2xl p-8 shadow-sm border border-pink-100 hover:shadow-xl hover:shadow-pink-500/10 transition-smooth hover-lift card-3d scroll-reveal stagger-${(index % 6) + 1}`}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-smooth"></div>
                 <div className="relative">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30 mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30 mb-6 group-hover:scale-110 transition-smooth animate-float">
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-3">
@@ -246,12 +302,12 @@ const Landing = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20">
+      <section className="py-20 scroll-reveal">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-3xl shadow-2xl shadow-pink-500/30 overflow-hidden">
+          <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-3xl shadow-2xl shadow-pink-500/30 overflow-hidden animate-gradient">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-12 lg:p-16">
               <div className="space-y-6 text-white">
-                <h2 className="text-3xl sm:text-4xl font-bold">
+                <h2 className="text-3xl sm:text-4xl font-bold animate-slide-up">
                   Dlaczego KadryHR?
                 </h2>
                 <p className="text-lg text-pink-100 leading-relaxed">
@@ -260,7 +316,7 @@ const Landing = () => {
                 </p>
                 <div className="space-y-4 pt-4">
                   {benefits.map((benefit, index) => (
-                    <div key={index} className="flex items-start gap-4">
+                    <div key={index} className="flex items-start gap-4 animate-slide-in-left" style={{ animationDelay: `${index * 0.1}s` }}>
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
                         <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -275,17 +331,17 @@ const Landing = () => {
                 </div>
               </div>
               <div className="flex items-center justify-center">
-                <div className="relative w-full max-w-md">
+                <div className="relative w-full max-w-md animate-float-slow">
                   <div className="absolute inset-0 bg-white/10 rounded-3xl backdrop-blur-sm"></div>
-                  <div className="relative bg-white/20 backdrop-blur-md rounded-3xl p-8 border border-white/30">
+                  <div className="relative glass-strong rounded-3xl p-8 border border-white/30">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <span className="text-white/80 text-sm">Token JWT</span>
-                        <span className="px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold">Aktywny</span>
+                        <span className="px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold animate-pulse-slow">Aktywny</span>
                       </div>
                       <div className="h-px bg-white/20"></div>
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 animate-slide-in-right" style={{ animationDelay: '0.2s' }}>
                           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -296,7 +352,7 @@ const Landing = () => {
                             <div className="text-white/60 text-xs">HTTPS + JWT</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 animate-slide-in-right" style={{ animationDelay: '0.4s' }}>
                           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -307,7 +363,7 @@ const Landing = () => {
                             <div className="text-white/60 text-xs">Node.js 20 + React</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 animate-slide-in-right" style={{ animationDelay: '0.6s' }}>
                           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -329,7 +385,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
+      <section className="py-20 scroll-reveal">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
             Gotowy na zmianę?
@@ -340,7 +396,7 @@ const Landing = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/register"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-pink-500/30 hover:shadow-2xl hover:shadow-pink-500/40 transition-all duration-200 hover:scale-105"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-pink-500/30 hover:shadow-2xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple"
             >
               Rozpocznij za darmo
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -350,7 +406,7 @@ const Landing = () => {
             <button
               onClick={handleDemoLogin}
               disabled={isDemoLoading}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-pink-200 bg-white px-8 py-4 text-base font-semibold text-pink-700 hover:bg-pink-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-pink-200 bg-white px-8 py-4 text-base font-semibold text-pink-700 hover:bg-pink-50 transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed btn-ripple"
             >
               {isDemoLoading ? 'Ładowanie...' : 'Wypróbuj demo'}
             </button>
@@ -368,7 +424,7 @@ const Landing = () => {
                   <span className="text-sm font-bold text-white">KH</span>
                 </div>
                 <div>
-                  <div className="text-lg font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                  <div className="text-lg font-bold gradient-text">
                     KadryHR
                   </div>
                 </div>

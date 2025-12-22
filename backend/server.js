@@ -8,6 +8,12 @@ const xssClean = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const { rateLimit } = require('express-rate-limit');
+const compression = require('compression');
+
+// Custom middleware i utilities
+const performanceMonitor = require('./middleware/performanceMonitor');
+const { cacheMiddleware, getCacheStats } = require('./middleware/cacheMiddleware');
+const logger = require('./utils/logger');
 
 // === KONFIGURACJA PODSTAWOWA ===
 const app = express();
@@ -16,9 +22,24 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/kadryhr';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://kadryhr.pl';
 
-// do logów, żeby widzieć co przychodzi
+// === COMPRESSION ===
+app.use(compression({
+  level: 6, // Poziom kompresji (0-9)
+  threshold: 1024, // Kompresuj tylko odpowiedzi > 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+}));
+
+// === PERFORMANCE MONITORING ===
+app.use(performanceMonitor);
+
+// Kolorowe logowanie requestów
 app.use((req, res, next) => {
-  console.log(new Date().toISOString(), req.method, req.path, 'IP:', req.ip);
+  logger.request(req);
   next();
 });
 
@@ -112,20 +133,55 @@ app.get('/', (req, res) => {
   res.json({ message: 'KadryHR API działa (root)' });
 });
 
-// API
+// Enhanced health check endpoint
+app.get('/health', (req, res) => {
+  const uptime = process.uptime();
+  const memoryUsage = process.memoryUsage();
+  const cacheStats = getCacheStats();
+  
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: {
+      seconds: Math.floor(uptime),
+      formatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+    },
+    memory: {
+      heapUsed: `${(memoryUsage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+      heapTotal: `${(memoryUsage.heapTotal / 1024 / 1024).toFixed(2)} MB`,
+      external: `${(memoryUsage.external / 1024 / 1024).toFixed(2)} MB`,
+      rss: `${(memoryUsage.rss / 1024 / 1024).toFixed(2)} MB`,
+    },
+    cache: {
+      entries: cacheStats.size,
+      enabled: true,
+    },
+    database: {
+      connected: mongoose.connection.readyState === 1,
+      state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+    },
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.1.0',
+  };
+  
+  logger.info('Health check requested', { status: health.status });
+  res.json(health);
+});
+
+// API - z cache dla GET requestów (5 minut)
 app.use('/api/auth', authRoutes);
-app.use('/api/employees', employeeRoutes);
+app.use('/api/employees', cacheMiddleware(3 * 60 * 1000), employeeRoutes); // 3 min cache
 app.use('/api/invites', inviteRoutes);
-app.use('/api/leaves', leaveRoutes);
-app.use('/api/sick-leaves', sickLeaveRoutes);
-app.use('/api/schedule', scheduleRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/api/leaves', cacheMiddleware(2 * 60 * 1000), leaveRoutes); // 2 min cache
+app.use('/api/sick-leaves', cacheMiddleware(2 * 60 * 1000), sickLeaveRoutes); // 2 min cache
+app.use('/api/schedule', cacheMiddleware(5 * 60 * 1000), scheduleRoutes); // 5 min cache
+app.use('/api/notifications', notificationRoutes); // Bez cache - dane real-time
 app.use('/api/payroll', payrollRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/suggestions', suggestionRoutes);
+app.use('/api/reports', cacheMiddleware(10 * 60 * 1000), reportRoutes); // 10 min cache
+app.use('/api/suggestions', cacheMiddleware(5 * 60 * 1000), suggestionRoutes); // 5 min cache
 app.use('/api/swap-requests', swapRoutes);
-app.use('/api/availability', availabilityRoutes);
-app.use('/api/shift-templates', shiftTemplateRoutes);
+app.use('/api/availability', cacheMiddleware(5 * 60 * 1000), availabilityRoutes); // 5 min cache
+app.use('/api/shift-templates', cacheMiddleware(10 * 60 * 1000), shiftTemplateRoutes); // 10 min cache
 
 // 404 dla nieistniejących endpointów API
 app.all('/api/*', (req, res) => {
@@ -136,20 +192,33 @@ app.all('/api/*', (req, res) => {
 
 // === GLOBAL ERROR HANDLER ===
 app.use((err, req, res, next) => {
-  console.error('🔥 Global error handler:', {
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    path: req.path,
-    method: req.method,
-  });
-
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Wewnętrzny błąd serwera';
 
+  // Kategoryzacja błędów
+  let errorType = 'UNKNOWN';
+  if (statusCode >= 400 && statusCode < 500) errorType = 'CLIENT_ERROR';
+  if (statusCode >= 500) errorType = 'SERVER_ERROR';
+  if (err.name === 'ValidationError') errorType = 'VALIDATION_ERROR';
+  if (err.name === 'CastError') errorType = 'CAST_ERROR';
+  if (err.name === 'MongoError') errorType = 'DATABASE_ERROR';
+
+  logger.error(`${errorType}: ${message}`, {
+    path: req.path,
+    method: req.method,
+    statusCode,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
+
   // Zwracaj stack trace tylko w development
   const response = {
+    error: true,
+    type: errorType,
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(process.env.NODE_ENV === 'development' && { 
+      stack: err.stack,
+      details: err.errors,
+    }),
   };
 
   res.status(statusCode).json(response);
@@ -158,16 +227,62 @@ app.use((err, req, res, next) => {
 // === START SERWERA PO POŁĄCZENIU Z MONGO ===
 mongoose.set('strictQuery', true);
 
+// Optymalizacja połączenia MongoDB
+const mongooseOptions = {
+  maxPoolSize: 10, // Maksymalna liczba połączeń w puli
+  minPoolSize: 2,  // Minimalna liczba połączeń w puli
+  socketTimeoutMS: 45000, // Timeout dla operacji
+  serverSelectionTimeoutMS: 5000, // Timeout dla wyboru serwera
+  family: 4, // Użyj IPv4
+};
+
+// Event listeners dla MongoDB
+mongoose.connection.on('connected', () => {
+  logger.success('MongoDB connected', { uri: MONGO_URI.replace(/\/\/.*@/, '//***@') });
+});
+
+mongoose.connection.on('error', (err) => {
+  logger.error('MongoDB connection error', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  logger.warn('MongoDB disconnected');
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  logger.warn('SIGINT received, closing MongoDB connection...');
+  await mongoose.connection.close();
+  logger.info('MongoDB connection closed');
+  process.exit(0);
+});
+
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, mongooseOptions)
   .then(() => {
-    console.log(`✅ Połączono z MongoDB: ${MONGO_URI}`);
+    logger.separator();
+    logger.startup('KadryHR Backend Started Successfully! 🎉');
+    logger.separator();
+    
     app.listen(PORT, () => {
-      console.log(`✅ KadryHR backend słucha na porcie ${PORT}`);
-      console.log(`   FRONTEND_URL: ${FRONTEND_URL}`);
+      logger.info(`Server listening on port ${PORT}`);
+      logger.info(`Frontend URL: ${FRONTEND_URL}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Node version: ${process.version}`);
+      logger.separator();
+      
+      // Wyświetl dostępne endpointy
+      logger.info('Available endpoints:');
+      console.log('  GET  / - Root healthcheck');
+      console.log('  GET  /health - Enhanced health check');
+      console.log('  POST /api/auth/login - User login');
+      console.log('  POST /api/auth/demo - Demo login');
+      console.log('  POST /api/auth/register - User registration');
+      console.log('  GET  /api/auth/me - Get current user');
+      logger.separator();
     });
   })
   .catch((err) => {
-    console.error('❌ Błąd połączenia z MongoDB', err);
+    logger.error('Failed to connect to MongoDB', err);
     process.exit(1);
   });
