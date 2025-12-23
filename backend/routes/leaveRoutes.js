@@ -12,9 +12,10 @@ router.post('/', leaveController.createLeave);
 // Lista wniosków (na razie tylko admin – logika w kontrolerze)
 router.get('/', leaveController.getLeaves);
 
-// Akceptacja / odrzucenie (admin – logika w kontrolerze)
+// Akceptacja / odrzucenie / wstrzymanie (admin – logika w kontrolerze)
 router.patch('/:id/approve', leaveController.approveLeave);
 router.patch('/:id/reject', leaveController.rejectLeave);
+router.patch('/:id/status', leaveController.updateLeaveStatus);
 
 module.exports = router;
 

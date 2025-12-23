@@ -230,3 +230,75 @@ exports.getLeaves = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Aktualizacja statusu wniosku urlopowego (uniwersalny endpoint).
+ * Obsługuje: approved, rejected, on_hold, pending
+ */
+exports.updateLeaveStatus = async (req, res, next) => {
+  try {
+    const { role, id: adminId } = req.user || {};
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'Tylko administrator może zmieniać status wniosków.' });
+    }
+
+    const { id } = req.params;
+    const { status, reason } = req.body;
+
+    if (!status || !['approved', 'rejected', 'on_hold', 'pending'].includes(status)) {
+      return res.status(400).json({ 
+        message: 'Nieprawidłowy status. Dozwolone: approved, rejected, on_hold, pending.' 
+      });
+    }
+
+    const leave = await Leave.findById(id).populate('employee');
+    if (!leave) {
+      return res.status(404).json({ message: 'Wniosek urlopowy nie istnieje.' });
+    }
+
+    leave.status = status;
+    leave.approvedBy = adminId;
+    if (reason) {
+      leave.reason = reason;
+    }
+    await leave.save();
+
+    // Jeśli zatwierdzono, usuń zmiany z grafiku
+    if (status === 'approved') {
+      const days = iterateDays(leave.startDate, leave.endDate);
+      await ScheduleEntry.deleteMany({
+        employee: leave.employee._id,
+        date: {
+          $gte: days[0],
+          $lte: days[days.length - 1],
+        },
+      });
+    }
+
+    // Powiadomienie dla pracownika
+    try {
+      if (leave.employee && leave.employee.user) {
+        const statusMessages = {
+          approved: 'zaakceptowany',
+          rejected: 'odrzucony',
+          on_hold: 'wstrzymany',
+          pending: 'oczekuje na rozpatrzenie'
+        };
+        await createNotification(
+          leave.employee.user,
+          'leave',
+          `Wniosek urlopowy ${statusMessages[status]}`,
+          `Twój wniosek urlopowy od ${leave.startDate
+            .toISOString()
+            .slice(0, 10)} do ${leave.endDate.toISOString().slice(0, 10)} został ${statusMessages[status]}.`
+        );
+      }
+    } catch (err) {
+      console.error('Błąd przy powiadomieniu o zmianie statusu urlopu:', err);
+    }
+
+    res.json(leave);
+  } catch (err) {
+    next(err);
+  }
+};
