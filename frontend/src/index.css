@@ -33,6 +33,23 @@ body {
   @apply bg-slate-800 border-slate-700;
 }
 
+/* Layout Background Gradients */
+.bg-gradient-layout {
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 3%, white), white, color-mix(in srgb, var(--theme-secondary) 3%, white));
+}
+
+.dark .bg-gradient-layout {
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 8%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 8%, #0f172a));
+}
+
+.bg-gradient-loading {
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 5%, white), white, color-mix(in srgb, var(--theme-secondary) 5%, white));
+}
+
+.dark .bg-gradient-loading {
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 10%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 10%, #0f172a));
+}
+
 .dark .bg-white {
   @apply bg-slate-800;
 }

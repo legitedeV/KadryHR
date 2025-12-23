@@ -5,9 +5,7 @@ import FloatingParticles from './FloatingParticles';
 
 const Layout = ({ children }) => {
   return (
-    <div className="min-h-screen relative" style={{
-      background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 3%, white), white, color-mix(in srgb, var(--theme-secondary) 3%, white))'
-    }}>
+    <div className="min-h-screen relative bg-gradient-layout">
       {/* Floating Particles Background */}
       <FloatingParticles count={8} minSize={80} maxSize={160} speed={0.5} />
       
