@@ -20,9 +20,11 @@ const PrivateRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50">
+      <div className="min-h-screen flex items-center justify-center" style={{
+        background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 5%, white), white, color-mix(in srgb, var(--theme-secondary) 5%, white))'
+      }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <div className="spinner h-12 w-12 mx-auto"></div>
           <p className="mt-4 text-sm text-slate-600">Ładowanie...</p>
         </div>
       </div>
@@ -38,9 +40,11 @@ const AdminRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50">
+      <div className="min-h-screen flex items-center justify-center" style={{
+        background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 5%, white), white, color-mix(in srgb, var(--theme-secondary) 5%, white))'
+      }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <div className="spinner h-12 w-12 mx-auto"></div>
           <p className="mt-4 text-sm text-slate-600">Ładowanie...</p>
         </div>
       </div>
