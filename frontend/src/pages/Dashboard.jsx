@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
@@ -77,6 +78,7 @@ const weekdays = [
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const queryClient = useQueryClient();
 
@@ -514,16 +516,16 @@ const Dashboard = () => {
         <div className="app-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-800">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {isAdmin ? 'Najbliższe zmiany (wszyscy)' : 'Moje najbliższe zmiany'}
               </h2>
-              <p className="text-[11px] text-slate-500">Grafik pracy na kolejne dni.</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Grafik pracy na kolejne dni.</p>
             </div>
             <span className="text-[11px] font-medium text-theme-primary">Grafik</span>
           </div>
 
           {(scheduleLoading || upcomingShifts.length === 0) && (
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
               {scheduleLoading ? 'Ładowanie grafiku...' : 'Brak zaplanowanych zmian.'}
             </div>
           )}
@@ -532,44 +534,49 @@ const Dashboard = () => {
             {upcomingShifts.map((shift) => (
               <div
                 key={shift.id}
-                className="rounded-xl border border-theme-light bg-theme-very-light px-3 py-3"
+                className="rounded-xl border border-theme-light dark:border-slate-600 bg-theme-very-light dark:bg-slate-700/50 px-3 py-3"
               >
                 <div className="text-[11px] font-semibold text-theme-primary">{shift.label}</div>
-                <div className="text-sm font-semibold text-slate-900">{shift.time}</div>
-                <div className="text-[11px] text-slate-600">{shift.person}</div>
-                <div className="text-[11px] text-slate-500 mt-1">{shift.location}</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{shift.time}</div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-400">{shift.person}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{shift.location}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Time Off / Availability */}
-        <div className="app-card p-4">
+        <div className="app-card p-4 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/leaves')}>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-800">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {isAdmin ? 'Urlopy i L4' : 'Moje wnioski'}
               </h2>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {isAdmin ? 'Ostatnie zgłoszenia i statusy.' : 'Status wniosków urlopowych.'}
               </p>
             </div>
-            <span className="text-[11px] font-medium text-emerald-600">Czas wolny</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Czas wolny</span>
+              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
           </div>
 
           <div className="space-y-3">
             {(leavesLoading || sickLoading) && (
-              <div className="text-[11px] text-slate-500">Ładowanie wniosków...</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">Ładowanie wniosków...</div>
             )}
             {timeOffItems.length === 0 && !leavesLoading && !sickLoading && (
-              <div className="text-[11px] text-slate-500">Brak wniosków urlopowych ani L4.</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">Brak wniosków urlopowych ani L4.</div>
             )}
             {timeOffItems.map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-100 p-3">
+              <div key={item.id} className="rounded-lg border border-slate-100 dark:border-slate-600 bg-white dark:bg-slate-700/50 p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">{item.employee}</div>
-                    <div className="text-[11px] text-slate-500">{item.type}</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.employee}</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">{item.type}</div>
                   </div>
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${statusBadge(
@@ -579,7 +586,7 @@ const Dashboard = () => {
                     {getStatusLabel(item.status)}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-600 mt-1">{item.range}</div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">{item.range}</div>
               </div>
             ))}
           </div>
@@ -590,43 +597,43 @@ const Dashboard = () => {
       {!isAdmin && (
         <div className="app-card p-4 space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Sugestie dyspozycyjności</h2>
-            <p className="text-xs text-slate-600">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sugestie dyspozycyjności</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Zgłoś swoją dostępność na nadchodzące okresy grafiku. Administrator zatwierdzi Twoje preferencje.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-700">Od (data)</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Od (data)</label>
               <input
                 type="date"
                 value={availabilityForm.startDate}
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, startDate: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700">Do (data)</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Do (data)</label>
               <input
                 type="date"
                 value={availabilityForm.endDate}
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, endDate: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700">Typ dostępności</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Typ dostępności</label>
               <select
                 value={availabilityForm.type}
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, type: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 <option value="available">Dostępny</option>
                 <option value="preferred">Preferowany</option>
@@ -638,7 +645,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-slate-700">Dni tygodnia</div>
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Dni tygodnia</div>
               <div className="flex flex-wrap gap-1.5">
                 {weekdays.map((day) => {
                   const active = availabilityForm.daysOfWeek.includes(day.value);
@@ -651,7 +658,7 @@ const Dashboard = () => {
                         'px-2.5 py-1 rounded-full text-xs border transition-all',
                         active
                           ? 'active-theme border-theme-light'
-                          : 'bg-white border-slate-200 text-slate-600 hover-border-theme',
+                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover-border-theme',
                       ].join(' ')}
                     >
                       {day.label}
@@ -662,28 +669,28 @@ const Dashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-slate-700">Preferowane godziny</div>
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Preferowane godziny</div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] text-slate-600">Od</label>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Od</label>
                   <input
                     type="time"
                     value={availabilityForm.preferredStartTime}
                     onChange={(e) =>
                       setAvailabilityForm((p) => ({ ...p, preferredStartTime: e.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-slate-600">Do</label>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Do</label>
                   <input
                     type="time"
                     value={availabilityForm.preferredEndTime}
                     onChange={(e) =>
                       setAvailabilityForm((p) => ({ ...p, preferredEndTime: e.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
               </div>
@@ -692,7 +699,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-700">Max godz. dziennie</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Max godz. dziennie</label>
               <input
                 type="number"
                 min="1"
@@ -701,11 +708,11 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, maxHoursPerDay: Number(e.target.value) }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700">Max godz. tygodniowo</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Max godz. tygodniowo</label>
               <input
                 type="number"
                 min="1"
@@ -714,11 +721,11 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, maxHoursPerWeek: Number(e.target.value) }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700">Notatki (opcjonalnie)</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Notatki (opcjonalnie)</label>
               <input
                 type="text"
                 value={availabilityForm.notes}
@@ -726,7 +733,7 @@ const Dashboard = () => {
                   setAvailabilityForm((p) => ({ ...p, notes: e.target.value }))
                 }
                 placeholder="Dodatkowe informacje"
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
           </div>
@@ -761,20 +768,20 @@ const Dashboard = () => {
 
           {/* List of submitted availabilities */}
           {availabilityData && availabilityData.length > 0 && (
-            <div className="pt-3 border-t border-slate-100">
-              <div className="text-xs font-semibold text-slate-700 mb-2">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-600">
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Twoje zgłoszenia dostępności
               </div>
               <div className="space-y-2">
                 {availabilityData.slice(0, 5).map((avail) => (
-                  <div key={avail._id} className="rounded-lg border border-slate-100 p-3">
+                  <div key={avail._id} className="rounded-lg border border-slate-100 dark:border-slate-600 bg-white dark:bg-slate-700/50 p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-semibold text-slate-900">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {fullDateFormatter.format(new Date(avail.startDate))} -{' '}
                           {fullDateFormatter.format(new Date(avail.endDate))}
                         </div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
                           {avail.type} · {avail.preferredStartTime} - {avail.preferredEndTime}
                         </div>
                       </div>
@@ -787,7 +794,7 @@ const Dashboard = () => {
                       </span>
                     </div>
                     {avail.notes && (
-                      <div className="text-[11px] text-slate-600 mt-1">{avail.notes}</div>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">{avail.notes}</div>
                     )}
                   </div>
                 ))}
@@ -801,7 +808,12 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="app-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-800">Powiadomienia wewnętrzne</h2>
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/notifications')}>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Powiadomienia wewnętrzne</h2>
+              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
             <span className="text-[11px] font-medium text-theme-primary">
               {notificationsLoading ? 'Ładowanie...' : `${unreadCount} do przeczytania`}
             </span>
@@ -814,7 +826,7 @@ const Dashboard = () => {
                 value={newNotification}
                 onChange={(e) => setNewNotification(e.target.value)}
                 placeholder="Dodaj krótką notatkę / komunikat"
-                className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs input-primary"
+                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs input-primary"
               />
               <button
                 type="button"
@@ -828,18 +840,18 @@ const Dashboard = () => {
           )}
 
           {notificationError && (
-            <div className="mb-3 text-[11px] text-red-600">{notificationError}</div>
+            <div className="mb-3 text-[11px] text-red-600 dark:text-red-400">{notificationError}</div>
           )}
 
           <div className="space-y-2">
             {alerts.map((alert) => (
               <div
                 key={alert._id}
-                className="flex items-start justify-between rounded-xl border border-slate-100 bg-white px-3 py-2"
+                className="flex items-start justify-between rounded-xl border border-slate-100 dark:border-slate-600 bg-white dark:bg-slate-700/50 px-3 py-2"
               >
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">{alert.title}</div>
-                  <div className="text-[11px] text-slate-600">{alert.message}</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{alert.title}</div>
+                  <div className="text-[11px] text-slate-600 dark:text-slate-400">{alert.message}</div>
                   <div className="text-[10px] uppercase tracking-wide text-theme-primary mt-1">
                     {alert.type}
                   </div>
@@ -850,7 +862,7 @@ const Dashboard = () => {
                   disabled={markAsReadMutation.isLoading || alert.read}
                   className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border ${
                     alert.read
-                      ? 'border-slate-200 text-slate-500 bg-slate-50'
+                      ? 'border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700'
                       : 'badge-primary'
                   }`}
                 >
@@ -859,7 +871,7 @@ const Dashboard = () => {
               </div>
             ))}
             {alerts.length === 0 && !notificationsLoading && (
-              <div className="text-[11px] text-slate-500">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">
                 Brak powiadomień. {isAdmin && 'Dodaj komunikat lub poczekaj na automatyczne wpisy.'}
               </div>
             )}
@@ -868,7 +880,7 @@ const Dashboard = () => {
 
         {isAdmin && (
           <div className="app-card p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-800">Szybkie akcje</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Szybkie akcje</h2>
             <p className="text-[11px] text-slate-600">
               Dodawaj natychmiastowe wpisy do grafiku, urlopów i powiadomień.
             </p>

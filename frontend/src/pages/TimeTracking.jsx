@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import Alert from '../components/Alert';
 import QRGenerator from '../components/QRGenerator';
@@ -7,27 +6,15 @@ import QRGenerator from '../components/QRGenerator';
 const TimeTracking = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [scanning, setScanning] = useState(false);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
   const [entries, setEntries] = useState([]);
   const [manualQR, setManualQR] = useState('');
   const [selectedAction, setSelectedAction] = useState('clock-in');
-  const scannerRef = useRef(null);
-  const html5QrcodeScannerRef = useRef(null);
 
   useEffect(() => {
     fetchStatus();
     fetchEntries();
-  }, []);
-
-  useEffect(() => {
-    // Cleanup scanner on unmount
-    return () => {
-      if (html5QrcodeScannerRef.current) {
-        html5QrcodeScannerRef.current.clear().catch(console.error);
-      }
-    };
   }, []);
 
   const fetchStatus = async () => {
@@ -48,46 +35,6 @@ const TimeTracking = () => {
     } catch (err) {
       console.error('Error fetching entries:', err);
     }
-  };
-
-  const startScanner = () => {
-    setScanning(true);
-    setError(null);
-    setSuccess(null);
-
-    setTimeout(() => {
-      if (scannerRef.current && !html5QrcodeScannerRef.current) {
-        const scanner = new Html5QrcodeScanner(
-          'qr-reader',
-          { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
-          false
-        );
-
-        scanner.render(onScanSuccess, onScanError);
-        html5QrcodeScannerRef.current = scanner;
-      }
-    }, 100);
-  };
-
-  const stopScanner = () => {
-    if (html5QrcodeScannerRef.current) {
-      html5QrcodeScannerRef.current.clear().catch(console.error);
-      html5QrcodeScannerRef.current = null;
-    }
-    setScanning(false);
-  };
-
-  const onScanSuccess = async (decodedText) => {
-    stopScanner();
-    await handleScan(decodedText);
-  };
-
-  const onScanError = (errorMessage) => {
-    // Ignore scan errors (they happen frequently during scanning)
   };
 
   const handleScan = async (qrCode) => {
@@ -382,56 +329,28 @@ const TimeTracking = () => {
       {/* QR Generator */}
       <QRGenerator />
 
-      {/* QR Scanner */}
+      {/* Manual QR Input */}
       <div className="app-card p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Skanowanie kodu QR</h2>
-        
-        {!scanning ? (
-          <div className="text-center py-8">
-            <button
-              onClick={startScanner}
-              className="btn-primary inline-flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-              </svg>
-              Uruchom skaner
-            </button>
-          </div>
-        ) : (
-          <div>
-            <div ref={scannerRef} id="qr-reader" className="rounded-xl overflow-hidden"></div>
-            <button
-              onClick={stopScanner}
-              className="btn-secondary mt-4 w-full"
-            >
-              Zatrzymaj skaner
-            </button>
-          </div>
-        )}
-
-        {/* Manual QR Input */}
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
-            Lub wprowadź kod ręcznie
-          </h3>
-          <form onSubmit={handleManualScan} className="flex gap-2">
-            <input
-              type="text"
-              value={manualQR}
-              onChange={(e) => setManualQR(e.target.value)}
-              placeholder="Wprowadź kod QR"
-              className="input-primary flex-1"
-            />
-            <button
-              type="submit"
-              disabled={loading || !manualQR.trim()}
-              className="btn-primary"
-            >
-              Wyślij
-            </button>
-          </form>
-        </div>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Wprowadź kod QR</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          Wprowadź kod QR wygenerowany powyżej, aby zarejestrować czas pracy.
+        </p>
+        <form onSubmit={handleManualScan} className="flex gap-2">
+          <input
+            type="text"
+            value={manualQR}
+            onChange={(e) => setManualQR(e.target.value)}
+            placeholder="Wprowadź kod QR"
+            className="input-primary flex-1"
+          />
+          <button
+            type="submit"
+            disabled={loading || !manualQR.trim()}
+            className="btn-primary"
+          >
+            Wyślij
+          </button>
+        </form>
       </div>
 
       {/* Recent Entries */}

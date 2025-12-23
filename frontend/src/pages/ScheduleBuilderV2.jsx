@@ -305,56 +305,61 @@ const ScheduleBuilderV2 = () => {
               <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-700 p-2 text-left text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600">
-                      Pracownik
-                    </th>
-                    {daysInMonth.map((date, index) => (
-                      <th 
-                        key={index}
-                        className="p-2 text-center text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 min-w-[80px]"
-                      >
-                        <div>{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
-                        <div className="font-bold">{date.getDate()}</div>
+            <div className="overflow-x-auto -mx-6 px-6">
+              <div className="inline-block min-w-full align-middle">
+                <table className="min-w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 min-w-[100px] sm:min-w-[120px]">
+                        Pracownik
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {employeesData?.map((employee) => (
-                    <tr key={employee._id}>
-                      <td className="sticky left-0 z-10 bg-white dark:bg-slate-800 p-2 text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600">
-                        {employee.firstName} {employee.lastName}
-                      </td>
-                      {daysInMonth.map((date, index) => {
-                        const dateStr = date.toISOString().split('T')[0];
-                        const key = `${employee._id}-${dateStr}`;
-                        const assignment = assignmentsByEmployeeAndDate[key];
-                        
-                        return (
-                          <td 
-                            key={index}
-                            onClick={() => handleCellClick(employee, date)}
-                            className="p-1 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                          >
-                            {assignment && (
-                              <div 
-                                className="px-2 py-1 rounded text-xs text-white text-center font-medium"
-                                style={{ backgroundColor: getAssignmentColor(assignment) }}
-                              >
-                                {getAssignmentDisplay(assignment)}
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
+                      {daysInMonth.map((date, index) => (
+                        <th 
+                          key={index}
+                          className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 min-w-[50px] sm:min-w-[80px]"
+                        >
+                          <div className="hidden sm:block">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                          <div className="font-bold">{date.getDate()}</div>
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {employeesData?.map((employee) => (
+                      <tr key={employee._id}>
+                        <td className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-1 sm:p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600">
+                          <div className="truncate max-w-[90px] sm:max-w-none">
+                            {employee.firstName} {employee.lastName}
+                          </div>
+                        </td>
+                        {daysInMonth.map((date, index) => {
+                          const dateStr = date.toISOString().split('T')[0];
+                          const key = `${employee._id}-${dateStr}`;
+                          const assignment = assignmentsByEmployeeAndDate[key];
+                          
+                          return (
+                            <td 
+                              key={index}
+                              onClick={() => handleCellClick(employee, date)}
+                              className="p-0.5 sm:p-1 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              {assignment && (
+                                <div 
+                                  className="px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[9px] sm:text-xs text-white text-center font-medium truncate"
+                                  style={{ backgroundColor: getAssignmentColor(assignment) }}
+                                  title={getAssignmentDisplay(assignment)}
+                                >
+                                  {getAssignmentDisplay(assignment)}
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

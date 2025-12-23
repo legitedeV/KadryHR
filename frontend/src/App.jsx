@@ -20,6 +20,8 @@ import QRCodeGenerator from './pages/QRCodeGenerator';
 import QRStart from './pages/QRStart';
 import Chat from './pages/Chat';
 import AdminRequests from './pages/AdminRequests';
+import AllLeaves from './pages/AllLeaves';
+import AllNotifications from './pages/AllNotifications';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -136,6 +138,30 @@ const App = () => {
           <PrivateRoute>
             <Layout>
               <Chat />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* All Leaves - accessible to all */}
+      <Route
+        path="/leaves"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <AllLeaves />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* All Notifications - accessible to all */}
+      <Route
+        path="/notifications"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <AllNotifications />
             </Layout>
           </PrivateRoute>
         }
