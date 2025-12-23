@@ -103,10 +103,14 @@ const TimeTracking = () => {
         notes: ''
       });
 
-      setSuccess(response.data.message);
+      let successMessage = response.data.message;
       if (response.data.duration) {
-        setSuccess(`${response.data.message} (Czas pracy: ${response.data.duration} min)`);
+        successMessage = `${response.data.message} (Czas pracy: ${response.data.duration} min)`;
       }
+      if (response.data.autoClocked) {
+        successMessage += ' ⚠️ Automatyczne zamknięcie po 10 godzinach';
+      }
+      setSuccess(successMessage);
 
       // Refresh status and entries
       await fetchStatus();
@@ -233,13 +237,18 @@ const TimeTracking = () => {
       {/* Current Status */}
       {status && (
         <div className={`app-card p-6 border-2 ${getStatusColor()}`}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold mb-1">Aktualny status</h2>
               <p className="text-2xl font-bold">{status.statusLabel}</p>
               {status.currentSessionStart && (
                 <p className="text-sm mt-2">
                   Czas trwania: <span className="font-semibold">{status.currentSessionDuration} min</span>
+                  {status.timeRemaining > 0 && (
+                    <span className="ml-2">
+                      (pozostało: <span className="font-semibold">{status.timeRemaining} min</span>)
+                    </span>
+                  )}
                 </p>
               )}
             </div>
@@ -248,6 +257,87 @@ const TimeTracking = () => {
               <p className="text-xs text-slate-600 dark:text-slate-400">{status.employee.position}</p>
             </div>
           </div>
+
+          {/* Time Progress Bar */}
+          {status.currentSessionStart && status.maxWorkMinutes && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 dark:text-slate-400">Czas pracy</span>
+                <span className="font-semibold">
+                  {Math.floor(status.currentSessionDuration / 60)}h {status.currentSessionDuration % 60}m / {Math.floor(status.maxWorkMinutes / 60)}h
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    status.warningLevel === 'critical'
+                      ? 'bg-gradient-to-r from-red-500 to-red-600'
+                      : status.warningLevel === 'warning'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                  }`}
+                  style={{
+                    width: `${Math.min((status.currentSessionDuration / status.maxWorkMinutes) * 100, 100)}%`
+                  }}
+                />
+              </div>
+              
+              {/* Warning Messages */}
+              {status.willAutoClockOut && (
+                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                        Osiągnięto maksymalny czas pracy!
+                      </p>
+                      <p className="text-xs text-red-700 dark:text-red-400 mt-1">
+                        Twoja sesja zostanie automatycznie zakończona. Maksymalny czas pracy to 10 godzin.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {status.warningLevel === 'critical' && !status.willAutoClockOut && (
+                <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                        Zbliżasz się do limitu czasu pracy
+                      </p>
+                      <p className="text-xs text-orange-700 dark:text-orange-400 mt-1">
+                        Pozostało mniej niż 30 minut. Pamiętaj o wylogowaniu się przed osiągnięciem 10 godzin.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {status.warningLevel === 'warning' && (
+                <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                        Uwaga: Długi czas pracy
+                      </p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                        Pracujesz już ponad 9 godzin. Maksymalny czas pracy to 10 godzin.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
