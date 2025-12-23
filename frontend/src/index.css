@@ -951,3 +951,51 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ============================================
+   SIDEBAR STYLES
+   ============================================ */
+
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-link {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.sidebar-link:hover {
+  transform: translateX(2px);
+}
+
+.sidebar-link.active {
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.15), rgba(var(--theme-primary-rgb), 0.1));
+  color: var(--theme-primary);
+  box-shadow: 0 1px 3px rgba(var(--theme-primary-rgb), 0.2);
+}
+
+.dark .sidebar-link.active {
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.25), rgba(var(--theme-primary-rgb), 0.2));
+}
+
+/* Tooltip for collapsed sidebar */
+.sidebar-tooltip {
+  position: absolute;
+  left: 100%;
+  margin-left: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: #1e293b;
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 50;
+}
+
+.sidebar-link:hover .sidebar-tooltip {
+  opacity: 1;
+}
