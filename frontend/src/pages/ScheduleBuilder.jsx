@@ -299,8 +299,8 @@ const ScheduleBuilder = () => {
       className={[
         'px-3 py-1.5 text-xs font-semibold rounded-full transition-all',
         activeTab === key
-          ? 'bg-white text-pink-700 shadow-sm'
-          : 'text-slate-600 hover:text-pink-700',
+          ? 'bg-white text-theme-primary shadow-sm'
+          : 'text-slate-600 hover:text-theme-primary',
       ].join(' ')}
     >
       {label}
@@ -359,7 +359,7 @@ const ScheduleBuilder = () => {
                 onChange={(e) =>
                   setTemplateForm((p) => ({ ...p, month: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
             <div>
@@ -370,7 +370,7 @@ const ScheduleBuilder = () => {
                 onChange={(e) =>
                   setTemplateForm((p) => ({ ...p, startTime: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
             <div>
@@ -381,7 +381,7 @@ const ScheduleBuilder = () => {
                 onChange={(e) =>
                   setTemplateForm((p) => ({ ...p, endTime: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
           </div>
@@ -400,7 +400,7 @@ const ScheduleBuilder = () => {
                       className={[
                         'px-2.5 py-1 rounded-full text-xs border transition-all',
                         active
-                          ? 'bg-gradient-to-r from-pink-100 to-rose-100 border-pink-200 text-pink-700'
+                          ? 'bg-gradient-to-r from-pink-100 to-rose-100 border-theme-light text-theme-primary'
                           : 'bg-white border-slate-200 text-slate-600 hover:border-pink-300',
                       ].join(' ')}
                     >
@@ -455,7 +455,7 @@ const ScheduleBuilder = () => {
               type="button"
               onClick={handleTemplateSubmit}
               disabled={createTemplate.isLoading || !templateForm.month}
-              className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
+              className="inline-flex items-center rounded-full bg-theme-gradient px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
             >
               {createTemplate.isLoading ? 'Generowanie...' : 'Utwórz grafik miesięczny'}
             </button>
@@ -501,7 +501,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setIntelligentForm((p) => ({ ...p, startDate: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
                 />
               </div>
               <div>
@@ -514,7 +514,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setIntelligentForm((p) => ({ ...p, endDate: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
                 />
               </div>
               <div>
@@ -528,7 +528,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setIntelligentForm((p) => ({ ...p, budget: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
                 />
               </div>
             </div>
@@ -590,7 +590,7 @@ const ScheduleBuilder = () => {
                         className={[
                           'px-2.5 py-1 rounded-full text-xs border transition-all text-left',
                           active
-                            ? 'bg-gradient-to-r from-pink-500 to-rose-500 border-pink-600 text-white'
+                            ? 'bg-theme-gradient border-pink-600 text-white'
                             : 'bg-white border-slate-200 text-slate-700 hover:border-pink-300',
                         ].join(' ')}
                       >
@@ -630,7 +630,7 @@ const ScheduleBuilder = () => {
                           minStaffPerShift: Number(e.target.value) || 1,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus-theme"
                     />
                   </div>
                   <div className="flex-1">
@@ -647,7 +647,7 @@ const ScheduleBuilder = () => {
                           maxStaffPerShift: Number(e.target.value) || 1,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus-theme"
                     />
                   </div>
                 </div>
@@ -665,7 +665,7 @@ const ScheduleBuilder = () => {
                         preferredStaffPerShift: Number(e.target.value) || 1,
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus-theme"
                   />
                 </div>
               </div>
@@ -778,7 +778,7 @@ const ScheduleBuilder = () => {
                   !intelligentForm.startDate ||
                   !intelligentForm.endDate
                 }
-                className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
+                className="inline-flex items-center rounded-full bg-theme-gradient px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
               >
                 {generateIntelligent.isLoading
                   ? 'Generowanie...'
@@ -956,7 +956,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setAnalysisForm((p) => ({ ...p, from: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
                 />
               </div>
               <div>
@@ -969,7 +969,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setAnalysisForm((p) => ({ ...p, to: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
                 />
               </div>
               <div>
@@ -983,7 +983,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setAnalysisForm((p) => ({ ...p, budget: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus-theme"
                 />
               </div>
               <div>
@@ -995,7 +995,7 @@ const ScheduleBuilder = () => {
                   onChange={(e) =>
                     setAnalysisForm((p) => ({ ...p, employeeId: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus-theme"
                 >
                   <option value="">— wszyscy / wybierz —</option>
                   {employees.map((emp) => (
@@ -1027,7 +1027,7 @@ const ScheduleBuilder = () => {
                     disabled={
                       optimizeCosts.isLoading || !hasRange || !analysisForm.budget
                     }
-                    className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-sm hover:shadow-md disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold bg-theme-gradient text-white shadow-sm hover:shadow-md disabled:opacity-50"
                   >
                     Optymalizuj koszty
                   </button>
@@ -1053,7 +1053,7 @@ const ScheduleBuilder = () => {
                           historicalDays: Number(e.target.value) || 30,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus-theme"
                     />
                   </div>
                   <div className="flex-1">
@@ -1070,7 +1070,7 @@ const ScheduleBuilder = () => {
                           forecastDays: Number(e.target.value) || 30,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus-theme"
                     />
                   </div>
                 </div>

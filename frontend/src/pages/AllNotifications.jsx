@@ -137,7 +137,7 @@ const AllNotifications = () => {
               onClick={() => setSelectedFilter(filter)}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                 selectedFilter === filter
-                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                  ? 'bg-theme-gradient text-white'
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
             >
@@ -163,14 +163,14 @@ const AllNotifications = () => {
                 className={`p-4 border rounded-xl transition-all ${
                   notification.read
                     ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
-                    : 'border-pink-200 dark:border-pink-900/30 bg-pink-50 dark:bg-pink-900/10'
+                    : 'border-theme-light dark:border-slate-600 bg-theme-very-light dark:bg-slate-700/30'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       {!notification.read && (
-                        <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-theme-very-light0"></div>
                       )}
                       <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                         {notification.title}
@@ -191,7 +191,7 @@ const AllNotifications = () => {
                       <button
                         onClick={() => markAsReadMutation.mutate(notification._id)}
                         disabled={markAsReadMutation.isLoading}
-                        className="px-3 py-1 rounded-lg text-xs font-medium bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 hover:bg-pink-200 dark:hover:bg-pink-900/50 transition-colors"
+                        className="px-3 py-1 rounded-lg text-xs font-medium bg-theme-light text-theme-primary dark:bg-slate-700/50 dark:text-theme-primary hover:bg-pink-200 dark:hover:bg-slate-700 transition-colors"
                       >
                         Oznacz jako przeczytane
                       </button>

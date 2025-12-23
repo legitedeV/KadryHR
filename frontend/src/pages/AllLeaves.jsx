@@ -111,7 +111,7 @@ const AllLeaves = () => {
               onClick={() => setSelectedStatus(status)}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                 selectedStatus === status
-                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                  ? 'bg-theme-gradient text-white'
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
             >

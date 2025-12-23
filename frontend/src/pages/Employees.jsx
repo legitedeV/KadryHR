@@ -155,7 +155,7 @@ const Employees = () => {
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
                 required
               />
             </div>
@@ -169,7 +169,7 @@ const Employees = () => {
                 name="lastName"
                 value={form.lastName}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
                 required
               />
             </div>
@@ -184,7 +184,7 @@ const Employees = () => {
                 value={form.email}
                 onChange={handleChange}
                 placeholder="pracownik@firma.pl"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
                 required
               />
               <p className="mt-1 text-xs text-slate-500">
@@ -204,7 +204,7 @@ const Employees = () => {
                     value={form.password}
                     onChange={handleChange}
                     placeholder="Zostaw puste aby wygenerować automatycznie"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 pr-10 text-sm focus:outline-none focus-theme transition-all duration-200"
                     minLength={6}
                   />
                   <button
@@ -227,7 +227,7 @@ const Employees = () => {
                 <button
                   type="button"
                   onClick={generatePassword}
-                  className="inline-flex items-center gap-1 rounded-xl border border-pink-200 bg-white px-3 py-2 text-xs font-medium text-pink-600 hover:bg-pink-50 transition-all duration-200"
+                  className="inline-flex items-center gap-1 rounded-xl border border-theme-light bg-white px-3 py-2 text-xs font-medium text-theme-primary hover:bg-theme-very-light transition-all duration-200"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -249,7 +249,7 @@ const Employees = () => {
                 name="position"
                 value={form.position}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
               />
             </div>
 
@@ -262,7 +262,7 @@ const Employees = () => {
                 name="hourlyRate"
                 value={form.hourlyRate}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
                 min="0"
                 step="0.01"
               />
@@ -277,7 +277,7 @@ const Employees = () => {
                 name="monthlySalary"
                 value={form.monthlySalary}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
                 min="0"
                 step="0.01"
               />
@@ -292,7 +292,7 @@ const Employees = () => {
                 name="hoursPerMonth"
                 value={form.hoursPerMonth}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus-theme transition-all duration-200"
                 min="0"
               />
             </div>
@@ -302,7 +302,7 @@ const Employees = () => {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-theme-gradient px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-theme hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {createMutation.isPending ? 'Dodawanie...' : 'Dodaj pracownika'}
             </button>
@@ -460,7 +460,7 @@ const Employees = () => {
                   </code>
                   <button
                     onClick={() => copyToClipboard(createdCredentials.email)}
-                    className="p-2 text-slate-400 hover:text-pink-600 transition-colors"
+                    className="p-2 text-slate-400 hover:text-theme-primary transition-colors"
                     title="Kopiuj email"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -473,12 +473,12 @@ const Employees = () => {
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Hasło tymczasowe</label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-sm font-mono bg-white px-3 py-2 rounded-lg border border-slate-200 text-pink-600 font-semibold">
+                  <code className="flex-1 text-sm font-mono bg-white px-3 py-2 rounded-lg border border-slate-200 text-theme-primary font-semibold">
                     {createdCredentials.password}
                   </code>
                   <button
                     onClick={() => copyToClipboard(createdCredentials.password)}
-                    className="p-2 text-slate-400 hover:text-pink-600 transition-colors"
+                    className="p-2 text-slate-400 hover:text-theme-primary transition-colors"
                     title="Kopiuj hasło"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -508,7 +508,7 @@ const Employees = () => {
                 setShowSuccessModal(false);
                 setCreatedCredentials(null);
               }}
-              className="w-full inline-flex justify-center items-center rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
+              className="w-full inline-flex justify-center items-center rounded-xl bg-theme-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-theme hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
             >
               Zamknij
             </button>

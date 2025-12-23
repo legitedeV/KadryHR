@@ -612,7 +612,7 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, startDate: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
             <div>
@@ -623,7 +623,7 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, endDate: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
             <div>
@@ -633,7 +633,7 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, type: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
               >
                 <option value="available">Dostępny</option>
                 <option value="preferred">Preferowany</option>
@@ -679,7 +679,7 @@ const Dashboard = () => {
                     onChange={(e) =>
                       setAvailabilityForm((p) => ({ ...p, preferredStartTime: e.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus-theme"
                   />
                 </div>
                 <div>
@@ -690,7 +690,7 @@ const Dashboard = () => {
                     onChange={(e) =>
                       setAvailabilityForm((p) => ({ ...p, preferredEndTime: e.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus-theme"
                   />
                 </div>
               </div>
@@ -708,7 +708,7 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, maxHoursPerDay: Number(e.target.value) }))
                 }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
             <div>
@@ -721,7 +721,7 @@ const Dashboard = () => {
                 onChange={(e) =>
                   setAvailabilityForm((p) => ({ ...p, maxHoursPerWeek: Number(e.target.value) }))
                 }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
             <div>
@@ -733,7 +733,7 @@ const Dashboard = () => {
                   setAvailabilityForm((p) => ({ ...p, notes: e.target.value }))
                 }
                 placeholder="Dodatkowe informacje"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
               />
             </div>
           </div>

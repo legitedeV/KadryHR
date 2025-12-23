@@ -35,6 +35,31 @@ body {
   @apply bg-slate-800 border-slate-700;
 }
 
+/* Light Mode Enhancements */
+body:not(.dark) {
+  background-color: rgb(248 250 252);
+  color: rgb(15 23 42);
+}
+
+body:not(.dark) .app-card {
+  background-color: white;
+  border-color: rgb(226 232 240);
+}
+
+body:not(.dark) input,
+body:not(.dark) select,
+body:not(.dark) textarea {
+  background-color: white;
+  border-color: rgb(226 232 240);
+  color: rgb(15 23 42);
+}
+
+body:not(.dark) input:focus,
+body:not(.dark) select:focus,
+body:not(.dark) textarea:focus {
+  background-color: white;
+}
+
 /* Layout Background Gradients */
 .bg-gradient-layout {
   background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 3%, white), white, color-mix(in srgb, var(--theme-secondary) 3%, white));

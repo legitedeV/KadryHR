@@ -55,7 +55,7 @@ const Payroll = () => {
             value={form.hourlyRate}
             onChange={handleChange}
             required
-            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus-theme transition-all duration-200"
           />
           <input
             name="baseHours"
@@ -63,7 +63,7 @@ const Payroll = () => {
             type="number"
             value={form.baseHours}
             onChange={handleChange}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus-theme transition-all duration-200"
           />
           <input
             name="overtimeHours"
@@ -71,7 +71,7 @@ const Payroll = () => {
             type="number"
             value={form.overtimeHours}
             onChange={handleChange}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus-theme transition-all duration-200"
           />
           <input
             name="overtimeMultiplier"
@@ -80,7 +80,7 @@ const Payroll = () => {
             step="0.1"
             value={form.overtimeMultiplier}
             onChange={handleChange}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus-theme transition-all duration-200"
           />
           <input
             name="bonus"
@@ -88,11 +88,11 @@ const Payroll = () => {
             type="number"
             value={form.bonus}
             onChange={handleChange}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus-theme transition-all duration-200"
           />
           <button
             type="submit"
-            className="sm:col-span-2 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-semibold py-2 shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
+            className="sm:col-span-2 rounded-lg bg-theme-gradient text-white text-xs font-semibold py-2 shadow-lg shadow-theme hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
           >
             Oblicz wynagrodzenie
           </button>

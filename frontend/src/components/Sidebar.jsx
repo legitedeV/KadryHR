@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -20,11 +22,15 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  SunIcon,
+  MoonIcon,
+  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
+  const { themeMode, updateThemeMode } = useTheme();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
@@ -76,32 +82,22 @@ const Sidebar = () => {
   const employeeLinks = [
     { to: '/app', label: 'Dashboard', icon: HomeIcon, end: true },
     { to: '/self-service', label: 'Panel pracownika', icon: UserCircleIcon },
-    { to: '/time-tracking', label: 'Rejestracja czasu', icon: ClockIcon },
+    { to: '/time-tracking', label: 'Czas pracy', icon: ClockIcon },
     { to: '/chat', label: 'Wiadomości', icon: ChatBubbleLeftRightIcon },
-    { to: '/leaves', label: 'Urlopy', icon: CalendarIcon },
-    { to: '/notifications', label: 'Powiadomienia', icon: BellIcon }
   ];
 
   const adminLinks = [
     { to: '/employees', label: 'Pracownicy', icon: UserGroupIcon },
-    { to: '/payroll', label: 'Kalkulator', icon: CurrencyDollarIcon },
-    { to: '/reports', label: 'Raporty', icon: DocumentChartBarIcon },
-    { to: '/schedule-builder', label: 'Grafik miesięczny', icon: CalendarDaysIcon },
-    { to: '/invites', label: 'Zaproszenia', icon: EnvelopeIcon },
-    { to: '/qr-generator', label: 'Generator QR', icon: QrCodeIcon },
-    { to: '/admin/requests', label: 'Wnioski', icon: ClipboardDocumentListIcon }
-  ];
-
-  const settingsLinks = [
-    { to: '/profile', label: 'Profil', icon: UserCircleIcon },
-    { to: '/settings', label: 'Ustawienia', icon: Cog6ToothIcon }
+    { to: '/payroll', label: 'Narzędzia', icon: CurrencyDollarIcon },
+    { to: '/schedule-builder', label: 'Grafik', icon: CalendarDaysIcon },
+    { to: '/admin/requests', label: 'Wnioski', icon: ClipboardDocumentListIcon },
   ];
 
   const linkClasses = ({ isActive }) =>
     [
-      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative',
+      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative sidebar-link',
       isActive
-        ? 'nav-link-active font-medium'
+        ? 'active font-medium'
         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
     ].join(' ');
 
@@ -117,11 +113,37 @@ const Sidebar = () => {
       <link.icon className="w-5 h-5 flex-shrink-0" />
       {!collapsed && <span className="text-sm">{link.label}</span>}
       {collapsed && (
-        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+        <div className="sidebar-tooltip">
           {link.label}
         </div>
       )}
     </NavLink>
+  );
+
+  const ThemeToggle = ({ mode, icon: Icon, label, isActive }) => (
+    <button
+      onClick={() => updateThemeMode(mode)}
+      className="w-full flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <Icon className="w-5 h-5" />
+        <span>{label}</span>
+      </div>
+      {/* iOS-style toggle */}
+      <div
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          isActive
+            ? 'bg-gradient-to-r from-[var(--theme-primary)] to-[var(--theme-secondary)]'
+            : 'bg-slate-300 dark:bg-slate-600'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+            isActive ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </div>
+    </button>
   );
 
   const sidebarContent = (
@@ -162,10 +184,10 @@ const Sidebar = () => {
         </button>
       </div>
 
-      {/* User Info */}
+      {/* User Info with Dropdown Menu */}
       <div className={`px-4 py-4 border-b border-slate-200 dark:border-slate-700 ${collapsed ? 'flex justify-center' : ''}`}>
-        {collapsed ? (
-          <div className="relative group">
+        <Menu as="div" className="relative">
+          <Menu.Button className={`flex items-center gap-3 w-full rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${collapsed ? 'p-0' : 'p-2'}`}>
             {getAvatarUrl() ? (
               <img
                 src={getAvatarUrl()}
@@ -183,36 +205,101 @@ const Sidebar = () => {
                 {getInitials(user?.name)}
               </div>
             )}
-            <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-              <div className="font-semibold">{user?.name}</div>
-              <div className="text-slate-300">{user?.email}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            {getAvatarUrl() ? (
-              <img
-                src={getAvatarUrl()}
-                alt={user?.name}
-                className="w-10 h-10 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700"
-              />
-            ) : (
-              <div 
-                className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold shadow-lg transition-all duration-300"
-                style={{
-                  background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-                  boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
-                }}
-              >
-                {getInitials(user?.name)}
+            {!collapsed && (
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
-            </div>
-          </div>
-        )}
+          </Menu.Button>
+
+          <Transition
+            as={Fragment}
+            enter="transition ease-out duration-100"
+            enterFrom="transform opacity-0 scale-95"
+            enterTo="transform opacity-100 scale-100"
+            leave="transition ease-in duration-75"
+            leaveFrom="transform opacity-100 scale-100"
+            leaveTo="transform opacity-0 scale-95"
+          >
+            <Menu.Items className={`absolute ${collapsed ? 'left-full ml-2' : 'left-0'} bottom-0 w-64 origin-bottom-left bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 focus:outline-none z-50`}>
+              <div className="py-1">
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      onClick={() => { navigate('/profile'); closeMobile(); }}
+                      className={`${
+                        active ? 'bg-slate-100 dark:bg-slate-700' : ''
+                      } flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300`}
+                    >
+                      <UserCircleIcon className="w-5 h-5" />
+                      Mój profil
+                    </button>
+                  )}
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      onClick={() => { navigate('/settings'); closeMobile(); }}
+                      className={`${
+                        active ? 'bg-slate-100 dark:bg-slate-700' : ''
+                      } flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300`}
+                    >
+                      <Cog6ToothIcon className="w-5 h-5" />
+                      Ustawienia
+                    </button>
+                  )}
+                </Menu.Item>
+
+                {/* Theme Separator */}
+                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                
+                {/* Theme Options */}
+                <div className="px-4 py-2">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                    Motyw
+                  </p>
+                </div>
+                
+                <ThemeToggle
+                  mode="light"
+                  icon={SunIcon}
+                  label="Jasny"
+                  isActive={themeMode === 'light'}
+                />
+                <ThemeToggle
+                  mode="dark"
+                  icon={MoonIcon}
+                  label="Ciemny"
+                  isActive={themeMode === 'dark'}
+                />
+                <ThemeToggle
+                  mode="system"
+                  icon={ComputerDesktopIcon}
+                  label="Systemowy"
+                  isActive={themeMode === 'system'}
+                />
+
+                {/* Logout Separator */}
+                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      onClick={handleLogout}
+                      className={`${
+                        active ? 'bg-red-50 dark:bg-red-900/20' : ''
+                      } flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400`}
+                    >
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      Wyloguj
+                    </button>
+                  )}
+                </Menu.Item>
+              </div>
+            </Menu.Items>
+          </Transition>
+        </Menu>
       </div>
 
       {/* Navigation */}
@@ -237,7 +324,7 @@ const Sidebar = () => {
             {!collapsed && (
               <div className="px-3 mb-2">
                 <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  Panel administratora
+                  Administrator
                 </h3>
               </div>
             )}
@@ -249,41 +336,7 @@ const Sidebar = () => {
             </div>
           </div>
         )}
-
-        {/* Settings Section */}
-        <div>
-          {!collapsed && (
-            <div className="px-3 mb-2">
-              <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Ustawienia
-              </h3>
-            </div>
-          )}
-          {collapsed && (
-            <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
-          )}
-          <div className="space-y-1">
-            {settingsLinks.map(renderLink)}
-          </div>
-        </div>
       </nav>
-
-      {/* Logout Button */}
-      <div className="px-3 py-4 border-t border-slate-200 dark:border-slate-700">
-        <button
-          onClick={handleLogout}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group relative ${collapsed ? 'justify-center' : ''}`}
-          title={collapsed ? 'Wyloguj' : ''}
-        >
-          <ArrowRightOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="text-sm font-medium">Wyloguj</span>}
-          {collapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-              Wyloguj
-            </div>
-          )}
-        </button>
-      </div>
     </>
   );
 
@@ -323,7 +376,7 @@ const Sidebar = () => {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col h-screen bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ${
+        className={`hidden md:flex flex-col h-screen bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 sidebar-transition ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >

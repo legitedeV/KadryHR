@@ -149,11 +149,11 @@ const Landing = () => {
       <FloatingParticles count={15} minSize={60} maxSize={200} speed={0.8} />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-pink-100 transition-smooth">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700 transition-smooth">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3 group cursor-pointer">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30 group-hover:shadow-pink-500/50 transition-smooth group-hover:scale-110">
+              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br bg-theme-gradient flex items-center justify-center shadow-lg shadow-theme group-hover:shadow-pink-500/50 transition-smooth group-hover:scale-110">
                 <span className="text-sm font-bold text-white">KH</span>
               </div>
               <div>
@@ -166,13 +166,13 @@ const Landing = () => {
             <div className="flex items-center gap-3">
               <Link
                 to="/login"
-                className="hidden sm:inline-flex items-center rounded-full border-2 border-pink-200 px-5 py-2 text-sm font-semibold text-pink-700 hover:bg-pink-50 transition-smooth hover-lift"
+                className="hidden sm:inline-flex items-center rounded-full border-2 border-theme-light px-5 py-2 text-sm font-semibold text-theme-primary hover:bg-theme-very-light transition-smooth hover-lift"
               >
                 Zaloguj się
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple"
+                className="inline-flex items-center rounded-full bg-theme-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-theme hover:shadow-xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple"
               >
                 Rozpocznij
               </Link>
@@ -192,10 +192,10 @@ const Landing = () => {
         ></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-100 to-rose-100 px-4 py-2 text-sm font-semibold text-pink-700 border border-pink-200 shadow-sm animate-fade-in hover-lift">
+            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-100 to-rose-100 px-4 py-2 text-sm font-semibold text-theme-primary border border-theme-light shadow-sm animate-fade-in hover-lift">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-theme-very-light0"></span>
               </span>
               Kompleksowe rozwiązanie HR dla Twojej firmy
             </div>
@@ -216,7 +216,7 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-pink-500/30 hover:shadow-2xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple animate-glow"
+                className="inline-flex items-center gap-2 rounded-full bg-theme-gradient px-8 py-4 text-base font-semibold text-white shadow-xl shadow-theme hover:shadow-2xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple animate-glow"
               >
                 Utwórz konto za darmo
                 <svg className="w-5 h-5 animate-bounce-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -226,7 +226,7 @@ const Landing = () => {
               <button
                 onClick={handleDemoLogin}
                 disabled={isDemoLoading}
-                className="inline-flex items-center gap-2 rounded-full border-2 border-pink-200 bg-white px-8 py-4 text-base font-semibold text-pink-700 hover:bg-pink-50 transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed btn-ripple"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-theme-light bg-white px-8 py-4 text-base font-semibold text-theme-primary hover:bg-theme-very-light transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed btn-ripple"
               >
                 {isDemoLoading ? (
                   <>
@@ -247,13 +247,13 @@ const Landing = () => {
 
             <div className="pt-8 flex items-center justify-center gap-8 text-sm text-slate-500 animate-fade-in" style={{ animationDelay: '0.6s' }}>
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-theme-primary" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span>Bez karty kredytowej</span>
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-theme-primary" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span>Gotowe w 5 minut</span>
@@ -279,11 +279,11 @@ const Landing = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className={`group relative bg-white rounded-2xl p-8 shadow-sm border border-pink-100 hover:shadow-xl hover:shadow-pink-500/10 transition-smooth hover-lift card-3d scroll-reveal stagger-${(index % 6) + 1}`}
+                className={`group relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:shadow-theme transition-smooth hover-lift card-3d scroll-reveal stagger-${(index % 6) + 1}`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-smooth"></div>
                 <div className="relative">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30 mb-6 group-hover:scale-110 transition-smooth animate-float">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br bg-theme-gradient text-white shadow-lg shadow-theme mb-6 group-hover:scale-110 transition-smooth animate-float">
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-3">
@@ -302,7 +302,7 @@ const Landing = () => {
       {/* Benefits Section */}
       <section className="py-20 scroll-reveal">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-3xl shadow-2xl shadow-pink-500/30 overflow-hidden animate-gradient">
+          <div className="bg-gradient-to-br bg-theme-gradient rounded-3xl shadow-2xl shadow-theme overflow-hidden animate-gradient">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-12 lg:p-16">
               <div className="space-y-6 text-white">
                 <h2 className="text-3xl sm:text-4xl font-bold animate-slide-up">
@@ -394,7 +394,7 @@ const Landing = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/register"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-pink-500/30 hover:shadow-2xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple"
+              className="inline-flex items-center gap-2 rounded-full bg-theme-gradient px-8 py-4 text-base font-semibold text-white shadow-xl shadow-theme hover:shadow-2xl hover:shadow-pink-500/40 transition-smooth hover-lift btn-ripple"
             >
               Rozpocznij za darmo
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -404,7 +404,7 @@ const Landing = () => {
             <button
               onClick={handleDemoLogin}
               disabled={isDemoLoading}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-pink-200 bg-white px-8 py-4 text-base font-semibold text-pink-700 hover:bg-pink-50 transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed btn-ripple"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-theme-light bg-white px-8 py-4 text-base font-semibold text-theme-primary hover:bg-theme-very-light transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed btn-ripple"
             >
               {isDemoLoading ? 'Ładowanie...' : 'Wypróbuj demo'}
             </button>
@@ -413,12 +413,12 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-pink-100 bg-white/50 backdrop-blur-sm py-12">
+      <footer className="border-t border-slate-200 dark:border-slate-700 bg-white/50 backdrop-blur-sm py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br bg-theme-gradient flex items-center justify-center shadow-lg shadow-theme">
                   <span className="text-sm font-bold text-white">KH</span>
                 </div>
                 <div>
@@ -434,29 +434,29 @@ const Landing = () => {
             <div>
               <h3 className="font-semibold text-slate-900 mb-4">Produkt</h3>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Funkcje</Link></li>
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Cennik</Link></li>
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Demo</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Funkcje</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Cennik</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Demo</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 mb-4">Firma</h3>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">O nas</Link></li>
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Kontakt</Link></li>
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Blog</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">O nas</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Kontakt</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Blog</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 mb-4">Wsparcie</h3>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Dokumentacja</Link></li>
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Pomoc</Link></li>
-                <li><Link to="/login" className="hover:text-pink-600 transition-colors">Status</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Dokumentacja</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Pomoc</Link></li>
+                <li><Link to="/login" className="hover:text-theme-primary transition-colors">Status</Link></li>
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-pink-100 text-center text-sm text-slate-600">
+          <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-700 text-center text-sm text-slate-600">
             <p>&copy; 2025 KadryHR. Wszystkie prawa zastrzeżone.</p>
           </div>
         </div>
