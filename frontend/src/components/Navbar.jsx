@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,8 +6,35 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [showLeftGradient, setShowLeftGradient] = useState(false);
+  const [showRightGradient, setShowRightGradient] = useState(false);
+  const scrollContainerRef = useRef(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+  // Check scroll position to show/hide gradients
+  const checkScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setShowLeftGradient(scrollLeft > 10);
+    setShowRightGradient(scrollLeft < scrollWidth - clientWidth - 10);
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    checkScroll();
+    container.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
+
+    return () => {
+      container.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [user, isAdmin]);
 
   const linkClasses = ({ isActive }) =>
     [
@@ -33,33 +60,54 @@ const Navbar = () => {
           <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">KadryHR</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:block flex-1 relative max-w-2xl mx-4">
           {user && (
             <>
-              <NavLink to="/app" className={linkClasses} end>
-                Dashboard
-              </NavLink>
-              <NavLink to="/self-service" className={linkClasses}>
-                Panel pracownika
-              </NavLink>
-              {isAdmin && (
-                <>
-                  <NavLink to="/employees" className={linkClasses}>
-                    Pracownicy
-                  </NavLink>
-                  <NavLink to="/payroll" className={linkClasses}>
-                    Kalkulator
-                  </NavLink>
-                  <NavLink to="/reports" className={linkClasses}>
-                    Raporty
-                  </NavLink>
-                  <NavLink to="/schedule-builder" className={linkClasses}>
-                    Grafik miesięczny
-                  </NavLink>
-                  <NavLink to="/invites" className={linkClasses}>
-                    Zaproszenia
-                  </NavLink>
-                </>
+              {/* Left gradient indicator */}
+              {showLeftGradient && (
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white/80 to-transparent pointer-events-none z-10" />
+              )}
+              
+              {/* Scrollable navigation */}
+              <div
+                ref={scrollContainerRef}
+                className="flex items-center gap-2 overflow-x-auto scrollbar-hide scroll-smooth"
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch'
+                }}
+              >
+                <NavLink to="/app" className={linkClasses} end>
+                  Dashboard
+                </NavLink>
+                <NavLink to="/self-service" className={linkClasses}>
+                  Panel pracownika
+                </NavLink>
+                {isAdmin && (
+                  <>
+                    <NavLink to="/employees" className={linkClasses}>
+                      Pracownicy
+                    </NavLink>
+                    <NavLink to="/payroll" className={linkClasses}>
+                      Kalkulator
+                    </NavLink>
+                    <NavLink to="/reports" className={linkClasses}>
+                      Raporty
+                    </NavLink>
+                    <NavLink to="/schedule-builder" className={linkClasses}>
+                      Grafik miesięczny
+                    </NavLink>
+                    <NavLink to="/invites" className={linkClasses}>
+                      Zaproszenia
+                    </NavLink>
+                  </>
+                )}
+              </div>
+
+              {/* Right gradient indicator */}
+              {showRightGradient && (
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/80 to-transparent pointer-events-none z-10" />
               )}
             </>
           )}

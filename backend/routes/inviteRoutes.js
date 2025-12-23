@@ -44,8 +44,7 @@ router.post(
       email,
       role: role || 'user',
       token,
-      status: 'pending',
-      invitedBy: req.user ? req.user._id : null,
+      createdBy: req.user._id,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dni
     });
 

@@ -479,3 +479,16 @@ body {
 .transition-fast {
   @apply transition-all duration-150 ease-in-out;
 }
+
+/* ============================================
+   SCROLLBAR UTILITIES
+   ============================================ */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
