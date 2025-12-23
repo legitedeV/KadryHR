@@ -17,6 +17,7 @@ function buildSafeUser(userDoc) {
     email: userDoc.email,
     name: userDoc.name || 'Użytkownik',
     role: userDoc.role || 'user',
+    avatarUrl: userDoc.avatarUrl || null,
   };
 }
 

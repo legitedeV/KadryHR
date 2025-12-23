@@ -23,6 +23,11 @@ const Profile = () => {
     confirmPassword: '',
   });
 
+  // Avatar state
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   const handleProfileChange = (e) => {
     setProfileForm({
       ...profileForm,
@@ -95,6 +100,105 @@ const Profile = () => {
     }
   };
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Plik jest za duży. Maksymalny rozmiar to 5MB');
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Nieprawidłowy typ pliku. Dozwolone: JPEG, PNG, GIF, WEBP');
+        return;
+      }
+
+      setAvatarFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return;
+
+    setUploadingAvatar(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+
+      const { data } = await api.post('/avatar/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Update user in context
+      const updatedUser = { ...user, avatarUrl: data.avatarUrl };
+      login({ token: localStorage.getItem('kadryhr_token'), user: updatedUser });
+
+      setSuccess('Avatar przesłany pomyślnie');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Nie udało się przesłać avatara');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!window.confirm('Czy na pewno chcesz usunąć avatar?')) return;
+
+    setUploadingAvatar(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await api.delete('/avatar');
+
+      // Update user in context
+      const updatedUser = { ...user, avatarUrl: null };
+      login({ token: localStorage.getItem('kadryhr_token'), user: updatedUser });
+
+      setSuccess('Avatar usunięty pomyślnie');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Nie udało się usunąć avatara');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getAvatarUrl = () => {
+    if (avatarPreview) return avatarPreview;
+    if (user?.avatarUrl) {
+      // Ensure the URL is absolute
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      return user.avatarUrl.startsWith('http') ? user.avatarUrl : `${baseUrl}${user.avatarUrl}`;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -132,6 +236,101 @@ const Profile = () => {
           onClose={() => setError(null)}
         />
       )}
+
+      {/* Avatar Upload */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <svg 
+            className="w-5 h-5 transition-colors duration-300" 
+            style={{ color: 'var(--theme-primary)' }}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Zdjęcie profilowe
+        </h2>
+
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            {getAvatarUrl() ? (
+              <img
+                src={getAvatarUrl()}
+                alt="Avatar"
+                className="w-24 h-24 rounded-full object-cover border-4 border-slate-200 dark:border-slate-700"
+              />
+            ) : (
+              <div 
+                className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg"
+                style={{
+                  background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
+                }}
+              >
+                {getInitials(user?.name)}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1">
+            <div className="space-y-3">
+              <div>
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Wybierz zdjęcie
+                </label>
+              </div>
+
+              {avatarFile && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAvatarUpload}
+                    disabled={uploadingAvatar}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploadingAvatar ? 'Przesyłanie...' : 'Prześlij'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAvatarFile(null);
+                      setAvatarPreview(null);
+                    }}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Anuluj
+                  </button>
+                </div>
+              )}
+
+              {user?.avatarUrl && !avatarFile && (
+                <button
+                  onClick={handleAvatarDelete}
+                  disabled={uploadingAvatar}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploadingAvatar ? 'Usuwanie...' : 'Usuń zdjęcie'}
+                </button>
+              )}
+
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Dozwolone formaty: JPEG, PNG, GIF, WEBP. Maksymalny rozmiar: 5MB
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Supervisor Info */}
       {user?.supervisor && (

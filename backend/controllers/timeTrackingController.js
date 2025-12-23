@@ -3,10 +3,10 @@ const mongoose = require('mongoose');
 const TimeEntry = require('../models/TimeEntry');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
+const { checkAndCloseSession, MAX_WORK_MINUTES } = require('../utils/sessionWorker');
 
 // Maximum work time in hours
 const MAX_WORK_HOURS = 10;
-const MAX_WORK_MINUTES = MAX_WORK_HOURS * 60;
 
 // @desc    Clock in/out with QR code
 // @route   POST /api/time-tracking/scan
@@ -39,44 +39,19 @@ const scanQRCode = asyncHandler(async (req, res) => {
     return res.status(403).json({ message: 'Konto pracownika jest nieaktywne' });
   }
 
-  // Get the last entry for this employee
-  const lastEntry = await TimeEntry.findOne({ 
-    employee: employee._id 
-  }).sort({ timestamp: -1 });
-
-  // Auto-close any open sessions that exceed MAX_WORK_HOURS
-  if (lastEntry && (lastEntry.type === 'clock-in' || lastEntry.type === 'break-end')) {
-    const minutesWorked = Math.round((Date.now() - lastEntry.timestamp.getTime()) / 60000);
-    
-    if (minutesWorked >= MAX_WORK_MINUTES) {
-      // Automatically clock out the user
-      const autoClockOut = await TimeEntry.create({
-        employee: employee._id,
-        user: userId,
-        type: 'clock-out',
-        timestamp: new Date(lastEntry.timestamp.getTime() + (MAX_WORK_MINUTES * 60000)),
-        qrCode: qrCode,
-        notes: 'Automatyczne wylogowanie po 10 godzinach pracy',
-        duration: MAX_WORK_MINUTES,
-        sessionId: lastEntry._id,
-        autoClocked: true
-      });
-
-      // If trying to clock in again, allow it after auto-logout
-      if (type === 'clock-in') {
-        // Continue with the new clock-in below
-      } else {
-        return res.status(200).json({
-          message: 'Twoja sesja została automatycznie zakończona po 10 godzinach pracy',
-          timeEntry: autoClockOut,
-          duration: MAX_WORK_MINUTES,
-          autoClocked: true
-        });
-      }
-    }
+  // Fallback: Check and auto-close any expired sessions (close-on-read)
+  const autoClosedEntry = await checkAndCloseSession(employee._id);
+  
+  if (autoClosedEntry && type !== 'clock-in') {
+    return res.status(200).json({
+      message: 'Twoja sesja została automatycznie zakończona po 10 godzinach pracy',
+      timeEntry: autoClosedEntry,
+      duration: MAX_WORK_MINUTES,
+      autoClocked: true
+    });
   }
 
-  // Refresh lastEntry after potential auto-close
+  // Get the last entry for this employee
   const currentLastEntry = await TimeEntry.findOne({ 
     employee: employee._id 
   }).sort({ timestamp: -1 });
@@ -148,7 +123,10 @@ const scanQRCode = asyncHandler(async (req, res) => {
     location: latitude && longitude ? { latitude, longitude } : undefined,
     qrCode,
     notes: notes || '',
-    sessionId: type === 'clock-in' ? null : (clockInEntry?._id || currentLastEntry?._id)
+    sessionId: type === 'clock-in' ? null : (clockInEntry?._id || currentLastEntry?._id),
+    startedAt: type === 'clock-in' ? new Date() : (clockInEntry?.timestamp || null),
+    endedAt: type === 'clock-out' ? new Date() : null,
+    endReason: type === 'clock-out' ? 'manual' : 'manual'
   });
 
   // Calculate duration if clocking out
@@ -160,10 +138,18 @@ const scanQRCode = asyncHandler(async (req, res) => {
       duration = MAX_WORK_MINUTES;
       timeEntry.timestamp = new Date(clockInEntry.timestamp.getTime() + (MAX_WORK_MINUTES * 60000));
       timeEntry.autoClocked = true;
+      timeEntry.endReason = 'auto_10h';
       timeEntry.notes = (notes || '') + ' (Czas pracy ograniczony do 10 godzin)';
     }
     
     timeEntry.duration = duration;
+    timeEntry.startedAt = clockInEntry.timestamp;
+    timeEntry.endedAt = timeEntry.timestamp;
+    
+    // Mark the clock-in session as ended
+    clockInEntry.endedAt = timeEntry.timestamp;
+    await clockInEntry.save();
+    
     await timeEntry.save();
   }
 
@@ -239,6 +225,9 @@ const getCurrentStatus = asyncHandler(async (req, res) => {
   if (!employee) {
     return res.status(404).json({ message: 'Nie znaleziono pracownika powiązanego z tym kontem' });
   }
+
+  // Fallback: Check and auto-close any expired sessions
+  await checkAndCloseSession(employee._id);
 
   // Get the last entry
   const lastEntry = await TimeEntry.findOne({ 

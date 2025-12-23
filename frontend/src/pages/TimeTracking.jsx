@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../api/axios';
 import Alert from '../components/Alert';
+import QRGenerator from '../components/QRGenerator';
 
 const TimeTracking = () => {
   const [status, setStatus] = useState(null);
@@ -377,6 +378,9 @@ const TimeTracking = () => {
           ))}
         </div>
       </div>
+
+      {/* QR Generator */}
+      <QRGenerator />
 
       {/* QR Scanner */}
       <div className="app-card p-6">

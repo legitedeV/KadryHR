@@ -16,6 +16,7 @@ import SelfService from './pages/SelfService';
 import ScheduleBuilder from './pages/ScheduleBuilder';
 import TimeTracking from './pages/TimeTracking';
 import QRCodeGenerator from './pages/QRCodeGenerator';
+import QRStart from './pages/QRStart';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -63,6 +64,7 @@ const App = () => {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/qr/start" element={<QRStart />} />
       
       {/* Dashboard - accessible to all logged-in users */}
       <Route

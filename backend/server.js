@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -9,6 +10,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const { rateLimit } = require('express-rate-limit');
 const compression = require('compression');
+const { Server } = require('socket.io');
 
 // Custom middleware i utilities
 const performanceMonitor = require('./middleware/performanceMonitor');
@@ -17,6 +19,7 @@ const logger = require('./utils/logger');
 
 // === KONFIGURACJA PODSTAWOWA ===
 const app = express();
+const server = http.createServer(app);
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/kadryhr';
@@ -81,6 +84,68 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// === SOCKET.IO SETUP ===
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST']
+  }
+});
+
+// Socket.IO authentication middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication error'));
+  }
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super-secret-dev');
+    socket.userId = decoded.id;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  logger.info(`Socket connected: ${socket.id} (User: ${socket.userId})`);
+
+  // Join user's personal room
+  socket.join(`user:${socket.userId}`);
+
+  // Handle joining conversation rooms
+  socket.on('join_conversation', (conversationId) => {
+    socket.join(`conversation:${conversationId}`);
+    logger.info(`User ${socket.userId} joined conversation ${conversationId}`);
+  });
+
+  // Handle leaving conversation rooms
+  socket.on('leave_conversation', (conversationId) => {
+    socket.leave(`conversation:${conversationId}`);
+    logger.info(`User ${socket.userId} left conversation ${conversationId}`);
+  });
+
+  // Handle typing indicator
+  socket.on('typing', ({ conversationId, isTyping }) => {
+    socket.to(`conversation:${conversationId}`).emit('user_typing', {
+      userId: socket.userId,
+      isTyping
+    });
+  });
+
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    logger.info(`Socket disconnected: ${socket.id} (User: ${socket.userId})`);
+  });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 // === RATE LIMIT (bez custom keyGenerator, domyślny jest OK i bezpieczny) ===
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuta
@@ -126,6 +191,9 @@ const swapRoutes = require('./routes/swapRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const shiftTemplateRoutes = require('./routes/shiftTemplateRoutes');
 const timeTrackingRoutes = require('./routes/timeTrackingRoutes');
+const qrRoutes = require('./routes/qrRoutes');
+const avatarRoutes = require('./routes/avatarRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 // === ROUTES MOUNT ===
 
@@ -184,6 +252,12 @@ app.use('/api/swap-requests', swapRoutes);
 app.use('/api/availability', cacheMiddleware(5 * 60 * 1000), availabilityRoutes); // 5 min cache
 app.use('/api/shift-templates', cacheMiddleware(10 * 60 * 1000), shiftTemplateRoutes); // 10 min cache
 app.use('/api/time-tracking', timeTrackingRoutes); // No cache - real-time data
+app.use('/api/qr', qrRoutes); // QR token routes
+app.use('/api/avatar', avatarRoutes); // Avatar upload routes
+app.use('/api/chat', chatRoutes); // Chat routes
+
+// Serve static files (avatars)
+app.use('/uploads', express.static('uploads'));
 
 // 404 dla nieistniejących endpointów API
 app.all('/api/*', (req, res) => {
@@ -266,7 +340,11 @@ mongoose
     logger.startup('KadryHR Backend Started Successfully! 🎉');
     logger.separator();
     
-    app.listen(PORT, () => {
+    // Start session worker for auto-closing expired sessions
+    const { startSessionWorker } = require('./utils/sessionWorker');
+    startSessionWorker(5); // Check every 5 minutes
+    
+    server.listen(PORT, () => {
       logger.info(`Server listening on port ${PORT}`);
       logger.info(`Frontend URL: ${FRONTEND_URL}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);

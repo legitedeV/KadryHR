@@ -14,6 +14,23 @@ const Navbar = () => {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getAvatarUrl = () => {
+    if (user?.avatarUrl) {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      return user.avatarUrl.startsWith('http') ? user.avatarUrl : `${baseUrl}${user.avatarUrl}`;
+    }
+    return null;
+  };
+
   // Check scroll position to show/hide gradients
   const checkScroll = () => {
     const container = scrollContainerRef.current;
@@ -159,9 +176,17 @@ const Navbar = () => {
                   color: `var(--theme-primary)`
                 }}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                {getAvatarUrl() ? (
+                  <img
+                    src={getAvatarUrl()}
+                    alt={user.name}
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                )}
                 <span className="max-w-[120px] truncate">{user.name}</span>
                 <svg className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -174,15 +199,23 @@ const Navbar = () => {
                   {/* Profile Section */}
                   <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold shadow-lg transition-all duration-300"
-                        style={{
-                          background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-                          boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
-                        }}
-                      >
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
+                      {getAvatarUrl() ? (
+                        <img
+                          src={getAvatarUrl()}
+                          alt={user.name}
+                          className="h-10 w-10 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700"
+                        />
+                      ) : (
+                        <div 
+                          className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold shadow-lg transition-all duration-300"
+                          style={{
+                            background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
+                            boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+                          }}
+                        >
+                          {getInitials(user.name)}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user.name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
