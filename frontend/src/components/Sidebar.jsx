@@ -62,7 +62,7 @@ const Sidebar = () => {
       'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative sidebar-link backdrop-blur-sm',
       isActive
         ? 'active font-medium'
-        : 'text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/80'
+        : 'text-text-muted hover:bg-surface-hover'
     ].join(' ');
 
   const renderLink = (link) => (
@@ -74,7 +74,7 @@ const Sidebar = () => {
       onClick={closeMobile}
       title={collapsed ? link.label : ''}
     >
-      <link.icon className="w-5 h-5 flex-shrink-0 text-slate-500 dark:text-slate-300" />
+      <link.icon className="w-5 h-5 flex-shrink-0 text-icon-muted" />
       {!collapsed && <span className="text-sm">{link.label}</span>}
       {collapsed && (
         <div className="sidebar-tooltip">
