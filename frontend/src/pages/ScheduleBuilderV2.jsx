@@ -221,9 +221,9 @@ const ScheduleBuilderV2 = () => {
   }, [schedulesData, selectedSchedule]);
 
   return (
-    <div className="space-y-4 animate-fade-in -m-6 sm:-m-8">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="app-card p-6 mx-6 sm:mx-8 mt-6 sm:mt-8">
+      <div className="app-card p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div 
@@ -265,12 +265,12 @@ const ScheduleBuilderV2 = () => {
       </div>
 
       {/* Alerts */}
-      {success && <div className="mx-6 sm:mx-8"><Alert type="success" message={success} onClose={() => setSuccess(null)} /></div>}
-      {error && <div className="mx-6 sm:mx-8"><Alert type="error" message={error} onClose={() => setError(null)} /></div>}
+      {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
+      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Schedule Selection / Creation */}
       {!selectedSchedule && schedulesData && schedulesData.length === 0 && (
-        <div className="app-card p-6 text-center mx-6 sm:mx-8">
+        <div className="app-card p-6 text-center">
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             Brak grafiku dla wybranego miesiąca
           </p>
@@ -282,7 +282,7 @@ const ScheduleBuilderV2 = () => {
 
       {/* Schedule Grid */}
       {selectedSchedule && (
-        <div className="app-card p-4 sm:p-6 mb-6 sm:mb-8">
+        <div className="app-card p-4 sm:p-6">
           <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {selectedSchedule.name}
