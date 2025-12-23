@@ -41,6 +41,11 @@ const timeEntrySchema = new mongoose.Schema({
   sessionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TimeEntry'
+  },
+  // Track if this entry was automatically closed due to max work time
+  autoClocked: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

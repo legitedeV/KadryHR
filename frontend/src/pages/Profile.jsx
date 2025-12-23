@@ -100,7 +100,13 @@ const Profile = () => {
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-pink-500/30">
+          <div 
+            className="h-12 w-12 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-all duration-300"
+            style={{
+              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
+              boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+            }}
+          >
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -131,7 +137,13 @@ const Profile = () => {
       {user?.supervisor && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
           <div className="flex items-center gap-3">
-            <svg className="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg 
+              className="w-6 h-6 transition-colors duration-300" 
+              style={{ color: 'var(--theme-primary)' }}
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <div>
@@ -146,7 +158,13 @@ const Profile = () => {
       {/* Profile Form */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-pink-600 dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg 
+            className="w-5 h-5 transition-colors duration-300" 
+            style={{ color: 'var(--theme-primary)' }}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           Dane osobowe
@@ -223,7 +241,13 @@ const Profile = () => {
       {/* Password Change Form */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-pink-600 dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg 
+            className="w-5 h-5 transition-colors duration-300" 
+            style={{ color: 'var(--theme-primary)' }}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           Zmiana hasła

@@ -4,6 +4,10 @@ const TimeEntry = require('../models/TimeEntry');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 
+// Maximum work time in hours
+const MAX_WORK_HOURS = 10;
+const MAX_WORK_MINUTES = MAX_WORK_HOURS * 60;
+
 // @desc    Clock in/out with QR code
 // @route   POST /api/time-tracking/scan
 // @access  Private
@@ -40,27 +44,69 @@ const scanQRCode = asyncHandler(async (req, res) => {
     employee: employee._id 
   }).sort({ timestamp: -1 });
 
+  // Auto-close any open sessions that exceed MAX_WORK_HOURS
+  if (lastEntry && (lastEntry.type === 'clock-in' || lastEntry.type === 'break-end')) {
+    const minutesWorked = Math.round((Date.now() - lastEntry.timestamp.getTime()) / 60000);
+    
+    if (minutesWorked >= MAX_WORK_MINUTES) {
+      // Automatically clock out the user
+      const autoClockOut = await TimeEntry.create({
+        employee: employee._id,
+        user: userId,
+        type: 'clock-out',
+        timestamp: new Date(lastEntry.timestamp.getTime() + (MAX_WORK_MINUTES * 60000)),
+        qrCode: qrCode,
+        notes: 'Automatyczne wylogowanie po 10 godzinach pracy',
+        duration: MAX_WORK_MINUTES,
+        sessionId: lastEntry._id,
+        autoClocked: true
+      });
+
+      // If trying to clock in again, allow it after auto-logout
+      if (type === 'clock-in') {
+        // Continue with the new clock-in below
+      } else {
+        return res.status(200).json({
+          message: 'Twoja sesja została automatycznie zakończona po 10 godzinach pracy',
+          timeEntry: autoClockOut,
+          duration: MAX_WORK_MINUTES,
+          autoClocked: true
+        });
+      }
+    }
+  }
+
+  // Refresh lastEntry after potential auto-close
+  const currentLastEntry = await TimeEntry.findOne({ 
+    employee: employee._id 
+  }).sort({ timestamp: -1 });
+
   // Validation logic
   if (type === 'clock-in') {
-    if (lastEntry && lastEntry.type === 'clock-in') {
+    if (currentLastEntry && currentLastEntry.type === 'clock-in') {
       return res.status(400).json({ 
         message: 'Jesteś już zalogowany. Musisz się najpierw wylogować.' 
       });
     }
-    if (lastEntry && lastEntry.type === 'break-start') {
+    if (currentLastEntry && currentLastEntry.type === 'break-start') {
       return res.status(400).json({ 
         message: 'Jesteś na przerwie. Musisz najpierw zakończyć przerwę.' 
+      });
+    }
+    if (currentLastEntry && currentLastEntry.type === 'break-end') {
+      return res.status(400).json({ 
+        message: 'Jesteś już zalogowany. Musisz się najpierw wylogować.' 
       });
     }
   }
 
   if (type === 'clock-out') {
-    if (!lastEntry || lastEntry.type === 'clock-out') {
+    if (!currentLastEntry || currentLastEntry.type === 'clock-out') {
       return res.status(400).json({ 
         message: 'Nie jesteś zalogowany. Musisz się najpierw zalogować.' 
       });
     }
-    if (lastEntry.type === 'break-start') {
+    if (currentLastEntry.type === 'break-start') {
       return res.status(400).json({ 
         message: 'Jesteś na przerwie. Musisz najpierw zakończyć przerwę.' 
       });
@@ -68,7 +114,7 @@ const scanQRCode = asyncHandler(async (req, res) => {
   }
 
   if (type === 'break-start') {
-    if (!lastEntry || lastEntry.type !== 'clock-in') {
+    if (!currentLastEntry || (currentLastEntry.type !== 'clock-in' && currentLastEntry.type !== 'break-end')) {
       return res.status(400).json({ 
         message: 'Musisz być zalogowany, aby rozpocząć przerwę.' 
       });
@@ -76,11 +122,21 @@ const scanQRCode = asyncHandler(async (req, res) => {
   }
 
   if (type === 'break-end') {
-    if (!lastEntry || lastEntry.type !== 'break-start') {
+    if (!currentLastEntry || currentLastEntry.type !== 'break-start') {
       return res.status(400).json({ 
         message: 'Nie jesteś na przerwie.' 
       });
     }
+  }
+
+  // Find the clock-in entry for this session
+  let clockInEntry = null;
+  if (type === 'clock-out') {
+    clockInEntry = await TimeEntry.findOne({
+      employee: employee._id,
+      type: 'clock-in',
+      _id: { $lte: currentLastEntry._id }
+    }).sort({ timestamp: -1 });
   }
 
   // Create new time entry
@@ -92,12 +148,21 @@ const scanQRCode = asyncHandler(async (req, res) => {
     location: latitude && longitude ? { latitude, longitude } : undefined,
     qrCode,
     notes: notes || '',
-    sessionId: type === 'clock-in' ? null : lastEntry?._id
+    sessionId: type === 'clock-in' ? null : (clockInEntry?._id || currentLastEntry?._id)
   });
 
   // Calculate duration if clocking out
-  if (type === 'clock-out' && lastEntry && lastEntry.type === 'clock-in') {
-    const duration = Math.round((timeEntry.timestamp - lastEntry.timestamp) / 60000); // minutes
+  if (type === 'clock-out' && clockInEntry) {
+    let duration = Math.round((timeEntry.timestamp - clockInEntry.timestamp) / 60000); // minutes
+    
+    // Cap duration at MAX_WORK_MINUTES
+    if (duration > MAX_WORK_MINUTES) {
+      duration = MAX_WORK_MINUTES;
+      timeEntry.timestamp = new Date(clockInEntry.timestamp.getTime() + (MAX_WORK_MINUTES * 60000));
+      timeEntry.autoClocked = true;
+      timeEntry.notes = (notes || '') + ' (Czas pracy ograniczony do 10 godzin)';
+    }
+    
     timeEntry.duration = duration;
     await timeEntry.save();
   }
@@ -186,18 +251,63 @@ const getCurrentStatus = asyncHandler(async (req, res) => {
   let statusLabel = 'Wylogowany';
   let currentSessionStart = null;
   let currentSessionDuration = 0;
+  let timeRemaining = 0;
+  let warningLevel = 'none'; // none, warning, critical
+  let willAutoClockOut = false;
 
   if (lastEntry) {
-    if (lastEntry.type === 'clock-in') {
-      status = 'clocked-in';
-      statusLabel = 'Zalogowany';
-      currentSessionStart = lastEntry.timestamp;
-      currentSessionDuration = Math.round((Date.now() - lastEntry.timestamp.getTime()) / 60000);
+    if (lastEntry.type === 'clock-in' || lastEntry.type === 'break-end') {
+      // Find the original clock-in for this session
+      const clockInEntry = lastEntry.type === 'clock-in' ? lastEntry : await TimeEntry.findOne({
+        employee: employee._id,
+        type: 'clock-in',
+        timestamp: { $lte: lastEntry.timestamp }
+      }).sort({ timestamp: -1 });
+
+      if (clockInEntry) {
+        status = lastEntry.type === 'clock-in' ? 'clocked-in' : 'clocked-in';
+        statusLabel = 'Zalogowany';
+        currentSessionStart = clockInEntry.timestamp;
+        currentSessionDuration = Math.round((Date.now() - clockInEntry.timestamp.getTime()) / 60000);
+        timeRemaining = MAX_WORK_MINUTES - currentSessionDuration;
+
+        if (currentSessionDuration >= MAX_WORK_MINUTES) {
+          willAutoClockOut = true;
+          timeRemaining = 0;
+          warningLevel = 'critical';
+        } else if (currentSessionDuration >= MAX_WORK_MINUTES - 30) { // 30 minutes before limit
+          warningLevel = 'critical';
+        } else if (currentSessionDuration >= MAX_WORK_MINUTES - 60) { // 1 hour before limit
+          warningLevel = 'warning';
+        }
+      }
     } else if (lastEntry.type === 'break-start') {
       status = 'on-break';
       statusLabel = 'Na przerwie';
       currentSessionStart = lastEntry.timestamp;
       currentSessionDuration = Math.round((Date.now() - lastEntry.timestamp.getTime()) / 60000);
+      
+      // Find the original clock-in to calculate total work time
+      const clockInEntry = await TimeEntry.findOne({
+        employee: employee._id,
+        type: 'clock-in',
+        timestamp: { $lte: lastEntry.timestamp }
+      }).sort({ timestamp: -1 });
+
+      if (clockInEntry) {
+        const totalSessionDuration = Math.round((Date.now() - clockInEntry.timestamp.getTime()) / 60000);
+        timeRemaining = MAX_WORK_MINUTES - totalSessionDuration;
+
+        if (totalSessionDuration >= MAX_WORK_MINUTES) {
+          willAutoClockOut = true;
+          timeRemaining = 0;
+          warningLevel = 'critical';
+        } else if (totalSessionDuration >= MAX_WORK_MINUTES - 30) {
+          warningLevel = 'critical';
+        } else if (totalSessionDuration >= MAX_WORK_MINUTES - 60) {
+          warningLevel = 'warning';
+        }
+      }
     }
   }
 
@@ -207,6 +317,10 @@ const getCurrentStatus = asyncHandler(async (req, res) => {
     lastEntry,
     currentSessionStart,
     currentSessionDuration,
+    timeRemaining,
+    maxWorkMinutes: MAX_WORK_MINUTES,
+    warningLevel,
+    willAutoClockOut,
     employee: {
       id: employee._id,
       firstName: employee.firstName,
@@ -285,11 +399,74 @@ const deleteTimeEntry = asyncHandler(async (req, res) => {
   return res.status(200).json({ message: 'Wpis usunięty pomyślnie' });
 });
 
+// @desc    Auto-close sessions exceeding max work time
+// @route   POST /api/time-tracking/auto-close-sessions
+// @access  Private/Admin
+const autoCloseSessions = asyncHandler(async (req, res) => {
+  // Find all employees with open clock-in sessions
+  const openSessions = await TimeEntry.aggregate([
+    {
+      $match: {
+        type: { $in: ['clock-in', 'break-end'] }
+      }
+    },
+    {
+      $sort: { timestamp: -1 }
+    },
+    {
+      $group: {
+        _id: '$employee',
+        lastEntry: { $first: '$ROOT' }
+      }
+    }
+  ]);
+
+  let closedCount = 0;
+  const now = Date.now();
+
+  for (const session of openSessions) {
+    const lastEntry = session.lastEntry;
+    const minutesWorked = Math.round((now - new Date(lastEntry.timestamp).getTime()) / 60000);
+
+    if (minutesWorked >= MAX_WORK_MINUTES) {
+      // Find the original clock-in
+      const clockInEntry = await TimeEntry.findOne({
+        employee: lastEntry.employee,
+        type: 'clock-in',
+        timestamp: { $lte: lastEntry.timestamp }
+      }).sort({ timestamp: -1 });
+
+      if (clockInEntry) {
+        // Create auto clock-out
+        await TimeEntry.create({
+          employee: lastEntry.employee,
+          user: lastEntry.user,
+          type: 'clock-out',
+          timestamp: new Date(clockInEntry.timestamp.getTime() + (MAX_WORK_MINUTES * 60000)),
+          qrCode: 'AUTO-CLOSE',
+          notes: 'Automatyczne wylogowanie po 10 godzinach pracy',
+          duration: MAX_WORK_MINUTES,
+          sessionId: clockInEntry._id,
+          autoClocked: true
+        });
+
+        closedCount++;
+      }
+    }
+  }
+
+  return res.status(200).json({
+    message: `Automatycznie zamknięto ${closedCount} sesji`,
+    closedCount
+  });
+});
+
 module.exports = {
   scanQRCode,
   getMyTimeEntries,
   getCurrentStatus,
   getAllTimeEntries,
   generateQRCode,
-  deleteTimeEntry
+  deleteTimeEntry,
+  autoCloseSessions
 };

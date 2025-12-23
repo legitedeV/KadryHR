@@ -7,7 +7,8 @@ const {
   getCurrentStatus,
   getAllTimeEntries,
   generateQRCode,
-  deleteTimeEntry
+  deleteTimeEntry,
+  autoCloseSessions
 } = require('../controllers/timeTrackingController');
 
 // User routes
@@ -19,5 +20,6 @@ router.get('/status', protect, getCurrentStatus);
 router.get('/entries', protect, adminOnly, getAllTimeEntries);
 router.post('/generate-qr', protect, adminOnly, generateQRCode);
 router.delete('/entries/:id', protect, adminOnly, deleteTimeEntry);
+router.post('/auto-close-sessions', protect, adminOnly, autoCloseSessions);
 
 module.exports = router;
