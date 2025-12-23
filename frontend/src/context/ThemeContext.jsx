@@ -32,6 +32,10 @@ export const ThemeProvider = ({ children }) => {
       effectiveTheme = getSystemTheme();
     }
 
+    // Set data-theme attribute for CSS variables
+    root.setAttribute('data-theme', effectiveTheme);
+    
+    // Keep .dark class for backward compatibility
     if (effectiveTheme === 'dark') {
       root.classList.add('dark');
     } else {
@@ -48,6 +52,12 @@ export const ThemeProvider = ({ children }) => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
       const root = document.documentElement;
+      const effectiveTheme = mediaQuery.matches ? 'dark' : 'light';
+      
+      // Set data-theme attribute
+      root.setAttribute('data-theme', effectiveTheme);
+      
+      // Keep .dark class for backward compatibility
       if (mediaQuery.matches) {
         root.classList.add('dark');
       } else {

@@ -6,7 +6,7 @@ import FloatingParticles from './FloatingParticles';
 
 const Layout = ({ children, title }) => {
   return (
-    <div className="min-h-screen flex bg-gradient-layout text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex bg-gradient-layout" style={{ color: 'var(--text-primary)' }}>
       {/* Floating Particles Background */}
       <FloatingParticles count={8} minSize={80} maxSize={160} speed={0.5} />
       
@@ -18,7 +18,15 @@ const Layout = ({ children, title }) => {
         <DemoBanner />
         <TopBar title={title} />
         <main className="flex-1 max-w-7xl w-full mx-auto pt-6 pb-10 px-4 sm:px-6 lg:px-8 animate-fade-in">
-          <div className="bg-white/90 dark:bg-slate-900/70 rounded-3xl shadow-lg shadow-theme/20 dark:shadow-black/30 border border-white/40 dark:border-slate-700/60 p-6 sm:p-8">
+          <div 
+            className="rounded-3xl p-6 sm:p-8"
+            style={{
+              backgroundColor: 'var(--surface-primary)',
+              border: '1px solid var(--border-primary)',
+              boxShadow: 'var(--shadow-lg)',
+              color: 'var(--text-primary)'
+            }}
+          >
             {children}
           </div>
         </main>
