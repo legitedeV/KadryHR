@@ -109,6 +109,26 @@ const loginUser = asyncHandler(async (req, res) => {
     role: rawUser.role,
   });
 
+  // Sprawdź czy użytkownik musi zmienić hasło
+  if (rawUser.requirePasswordReset) {
+    const safeUser = buildSafeUser(rawUser);
+    const token = signToken(safeUser);
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: SECURE_COOKIE,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      message: 'Musisz zmienić hasło przy pierwszym logowaniu',
+      token,
+      user: safeUser,
+      requirePasswordReset: true,
+    });
+  }
+
   return sendAuthResponse(res, rawUser);
 });
 
@@ -350,6 +370,7 @@ const changePassword = asyncHandler(async (req, res) => {
     {
       $set: {
         passwordHash: newHash,
+        requirePasswordReset: false, // Usuń flagę wymagania zmiany hasła
         updatedAt: new Date(),
       },
     }

@@ -98,7 +98,7 @@ router.post(
   protect,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const { email, firstName, lastName, ...employeeData } = req.body;
+    const { email, firstName, lastName, password, ...employeeData } = req.body;
 
     // Walidacja email
     if (!email) {
@@ -113,7 +113,7 @@ router.post(
       });
     }
 
-    // Generuj losowe hasło (8 znaków)
+    // Generuj losowe hasło jeśli nie podano (8 znaków)
     const generatePassword = () => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
       let password = '';
@@ -123,14 +123,22 @@ router.post(
       return password;
     };
 
-    const temporaryPassword = generatePassword();
+    const userPassword = password || generatePassword();
+
+    // Walidacja hasła
+    if (userPassword.length < 6) {
+      return res.status(400).json({ 
+        message: 'Hasło musi mieć co najmniej 6 znaków' 
+      });
+    }
 
     // Utwórz konto użytkownika
     const user = await User.create({
       name: `${firstName} ${lastName}`,
       email: email.toLowerCase(),
-      password: temporaryPassword,
+      password: userPassword,
       role: 'user',
+      requirePasswordReset: true, // Wymagaj zmiany hasła przy pierwszym logowaniu
     });
 
     // Utwórz pracownika z powiązaniem do użytkownika
@@ -143,12 +151,12 @@ router.post(
     });
 
     // TODO: Wyślij email z hasłem tymczasowym
-    console.log(`[EMPLOYEE] Utworzono konto dla ${email} z hasłem: ${temporaryPassword}`);
+    console.log(`[EMPLOYEE] Utworzono konto dla ${email} z hasłem: ${userPassword}`);
 
     res.status(201).json({ 
       employee,
       message: `Pracownik dodany. Konto utworzone z emailem: ${email}`,
-      temporaryPassword, // W produkcji usuń to i wyślij emailem
+      temporaryPassword: userPassword, // Zwróć hasło do wyświetlenia adminowi
     });
   })
 );

@@ -7,6 +7,7 @@ const defaultForm = {
   firstName: '',
   lastName: '',
   email: '',
+  password: '',
   position: '',
   hourlyRate: '',
   monthlySalary: '',
@@ -19,6 +20,10 @@ const Employees = () => {
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState(defaultForm);
+  const [showPassword, setShowPassword] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState(null);
 
   // Pobieranie listy pracowników
   const { data: employeesData, isLoading, error: listError } = useQuery({
@@ -38,9 +43,15 @@ const Employees = () => {
       const { data } = await api.post('/employees', payload);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(['employees']);
+      setCreatedCredentials({
+        email: form.email,
+        password: data.temporaryPassword,
+      });
+      setShowSuccessModal(true);
       setForm(defaultForm);
+      setGeneratedPassword('');
     },
   });
 
@@ -63,6 +74,21 @@ const Employees = () => {
     }));
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setForm((prev) => ({ ...prev, password }));
+    setGeneratedPassword(password);
+    setShowPassword(true);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAdmin) return;
@@ -71,6 +97,7 @@ const Employees = () => {
       firstName: form.firstName,
       lastName: form.lastName,
       email: form.email,
+      password: form.password || undefined, // Jeśli puste, backend wygeneruje
       position: form.position,
       hourlyRate: Number(form.hourlyRate) || 0,
       monthlySalary: Number(form.monthlySalary) || 0,
@@ -162,6 +189,54 @@ const Employees = () => {
               />
               <p className="mt-1 text-xs text-slate-500">
                 Zostanie utworzone konto pracownika z tym adresem email
+              </p>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Hasło (opcjonalne)
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="Zostaw puste aby wygenerować automatycznie"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={generatePassword}
+                  className="inline-flex items-center gap-1 rounded-xl border border-pink-200 bg-white px-3 py-2 text-xs font-medium text-pink-600 hover:bg-pink-50 transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Generuj
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Hasło musi mieć min. 6 znaków. Pracownik będzie musiał zmienić hasło przy pierwszym logowaniu.
               </p>
             </div>
 
@@ -357,6 +432,89 @@ const Employees = () => {
           </>
         )}
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && createdCredentials && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 mx-auto mb-4">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            
+            <h3 className="text-lg font-semibold text-slate-900 text-center mb-2">
+              Pracownik dodany pomyślnie!
+            </h3>
+            
+            <p className="text-sm text-slate-600 text-center mb-4">
+              Konto użytkownika zostało utworzone. Przekaż poniższe dane pracownikowi:
+            </p>
+
+            <div className="bg-slate-50 rounded-xl p-4 space-y-3 mb-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-sm font-mono bg-white px-3 py-2 rounded-lg border border-slate-200">
+                    {createdCredentials.email}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(createdCredentials.email)}
+                    className="p-2 text-slate-400 hover:text-pink-600 transition-colors"
+                    title="Kopiuj email"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Hasło tymczasowe</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-sm font-mono bg-white px-3 py-2 rounded-lg border border-slate-200 text-pink-600 font-semibold">
+                    {createdCredentials.password}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(createdCredentials.password)}
+                    className="p-2 text-slate-400 hover:text-pink-600 transition-colors"
+                    title="Kopiuj hasło"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              <div className="flex gap-2">
+                <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-xs font-medium text-amber-800 mb-1">Ważne!</p>
+                  <p className="text-xs text-amber-700">
+                    Pracownik będzie musiał zmienić hasło przy pierwszym logowaniu. Zapisz te dane w bezpiecznym miejscu.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                setCreatedCredentials(null);
+              }}
+              className="w-full inline-flex justify-center items-center rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
+            >
+              Zamknij
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
