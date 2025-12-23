@@ -38,7 +38,7 @@ const Navbar = () => {
 
   const linkClasses = ({ isActive }) =>
     [
-      'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap',
+      'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap block',
       isActive
         ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 shadow-sm'
         : 'text-slate-600 hover:bg-pink-50 hover:text-pink-700',
@@ -193,7 +193,7 @@ const Navbar = () => {
 
       {user && open && (
         <div className="md:hidden border-t border-slate-100 bg-white">
-          <div className="app-shell py-2 space-y-1">
+          <div className="app-shell py-2 flex flex-col space-y-1">
             <NavLink
               to="/app"
               end
