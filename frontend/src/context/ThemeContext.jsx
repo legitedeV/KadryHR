@@ -78,6 +78,14 @@ export const ThemeProvider = ({ children }) => {
     const veryLight = adjustColor(themeColor, 60);
     root.style.setProperty('--theme-very-light', veryLight);
     
+    // Generate darker variant for hover states
+    const dark = adjustColor(themeColor, -15);
+    root.style.setProperty('--theme-dark', dark);
+    
+    // Generate RGB values for opacity usage
+    const rgb = hexToRgb(themeColor);
+    root.style.setProperty('--theme-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    
     // Save to localStorage
     localStorage.setItem('kadryhr_theme_color', themeColor);
   }, [themeColor]);
@@ -128,4 +136,14 @@ function adjustColor(color, percent) {
     (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
     (B < 255 ? (B < 1 ? 0 : B) : 255)
   ).toString(16).slice(1);
+}
+
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 236, g: 72, b: 153 }; // fallback to default pink
 }

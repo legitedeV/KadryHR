@@ -125,6 +125,7 @@ const suggestionRoutes = require('./routes/suggestionRoutes');
 const swapRoutes = require('./routes/swapRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const shiftTemplateRoutes = require('./routes/shiftTemplateRoutes');
+const timeTrackingRoutes = require('./routes/timeTrackingRoutes');
 
 // === ROUTES MOUNT ===
 
@@ -182,6 +183,7 @@ app.use('/api/suggestions', cacheMiddleware(5 * 60 * 1000), suggestionRoutes); /
 app.use('/api/swap-requests', swapRoutes);
 app.use('/api/availability', cacheMiddleware(5 * 60 * 1000), availabilityRoutes); // 5 min cache
 app.use('/api/shift-templates', cacheMiddleware(10 * 60 * 1000), shiftTemplateRoutes); // 10 min cache
+app.use('/api/time-tracking', timeTrackingRoutes); // No cache - real-time data
 
 // 404 dla nieistniejących endpointów API
 app.all('/api/*', (req, res) => {

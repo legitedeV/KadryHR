@@ -52,10 +52,10 @@ const Navbar = () => {
 
   const linkClasses = ({ isActive }) =>
     [
-      'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap block',
+      'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap block nav-link',
       isActive
-        ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 shadow-sm dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-400'
-        : 'text-slate-600 hover:bg-pink-50 hover:text-pink-700 dark:text-slate-300 dark:hover:bg-pink-900/20 dark:hover:text-pink-400',
+        ? 'nav-link-active'
+        : 'text-slate-600 dark:text-slate-300',
     ].join(' ');
 
   const handleLogout = () => {
@@ -69,10 +69,23 @@ const Navbar = () => {
     <header className="border-b border-slate-100 bg-white/80 backdrop-blur dark:bg-slate-800/80 dark:border-slate-700 sticky top-0 z-50">
       <nav className="app-shell flex items-center justify-between h-14 gap-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-pink-500/30">
+          <div 
+            className="h-8 w-8 rounded-2xl flex items-center justify-center text-xs font-bold text-white shadow-lg transition-all duration-300"
+            style={{
+              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
+              boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+            }}
+          >
             KH
           </div>
-          <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent dark:from-pink-400 dark:to-rose-400">KadryHR</span>
+          <span 
+            className="text-sm font-semibold bg-clip-text text-transparent transition-all duration-300"
+            style={{
+              backgroundImage: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+            }}
+          >
+            KadryHR
+          </span>
         </div>
 
         <div className="hidden md:block flex-1 relative max-w-2xl mx-4">
@@ -99,6 +112,9 @@ const Navbar = () => {
                 <NavLink to="/self-service" className={linkClasses}>
                   Panel pracownika
                 </NavLink>
+                <NavLink to="/time-tracking" className={linkClasses}>
+                  Rejestracja czasu
+                </NavLink>
                 {isAdmin && (
                   <>
                     <NavLink to="/employees" className={linkClasses}>
@@ -115,6 +131,9 @@ const Navbar = () => {
                     </NavLink>
                     <NavLink to="/invites" className={linkClasses}>
                       Zaproszenia
+                    </NavLink>
+                    <NavLink to="/qr-generator" className={linkClasses}>
+                      Generator QR
                     </NavLink>
                   </>
                 )}
@@ -134,7 +153,11 @@ const Navbar = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 rounded-full border-2 border-pink-200 dark:border-pink-700 px-3 py-1.5 text-xs font-semibold text-pink-700 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-slate-700 transition-all duration-200"
+                className="flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-200 user-menu-btn"
+                style={{
+                  borderColor: `rgba(var(--theme-primary-rgb), 0.3)`,
+                  color: `var(--theme-primary)`
+                }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -151,7 +174,13 @@ const Navbar = () => {
                   {/* Profile Section */}
                   <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-pink-500/30">
+                      <div 
+                        className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold shadow-lg transition-all duration-300"
+                        style={{
+                          background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
+                          boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+                        }}
+                      >
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -215,7 +244,11 @@ const Navbar = () => {
           ) : (
             <NavLink
               to="/login"
-              className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl transition-all duration-200"
+              className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              style={{
+                background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`,
+                boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+              }}
             >
               Zaloguj
             </NavLink>
@@ -229,7 +262,10 @@ const Navbar = () => {
               <div className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[110px]">
                 {user.name}
               </div>
-              <div className="text-[10px] uppercase tracking-wide text-pink-600 dark:text-pink-400">
+              <div 
+                className="text-[10px] uppercase tracking-wide transition-colors duration-300"
+                style={{ color: `var(--theme-primary)` }}
+              >
                 {user.role === 'admin' || user.role === 'super_admin' ? 'ADMIN' : 'UŻYTKOWNIK'}
               </div>
             </div>
@@ -291,6 +327,13 @@ const Navbar = () => {
             >
               Panel pracownika
             </NavLink>
+            <NavLink
+              to="/time-tracking"
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Rejestracja czasu
+            </NavLink>
             {isAdmin && (
               <>
                 <NavLink
@@ -327,6 +370,13 @@ const Navbar = () => {
                   className={linkClasses}
                 >
                   Zaproszenia
+                </NavLink>
+                <NavLink
+                  to="/qr-generator"
+                  onClick={() => setOpen(false)}
+                  className={linkClasses}
+                >
+                  Generator QR
                 </NavLink>
               </>
             )}
