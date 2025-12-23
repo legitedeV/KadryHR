@@ -2,20 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 
-const categoryLabels = {
-  pomysl: 'Pomysł / ulepszenie',
-  problem: 'Zgłoszenie problemu',
-  proces: 'Usprawnienie procesu',
-  inne: 'Inne',
-};
-
 const SelfService = () => {
   const queryClient = useQueryClient();
-  const [suggestionPayload, setSuggestionPayload] = useState({
-    title: '',
-    content: '',
-    category: 'pomysl',
-  });
   const [leavePayload, setLeavePayload] = useState({
     employeeId: '',
     type: 'annual',
@@ -44,20 +32,6 @@ const SelfService = () => {
     },
   });
 
-  const { data: suggestions, error: suggestionsError, isLoading: suggestionsLoading } = useQuery({
-    queryKey: ['suggestions'],
-    queryFn: async () => {
-      console.log('[SelfService] Pobieranie sugestii...');
-      const { data } = await api.get('/suggestions');
-      console.log('[SelfService] Pobrano sugestie:', data?.length || 0);
-      return data;
-    },
-    retry: 1,
-    onError: (err) => {
-      console.error('[SelfService] Błąd pobierania sugestii:', err.response?.data?.message || err.message);
-    },
-  });
-
   const { data: swapRequests, error: swapRequestsError, isLoading: swapRequestsLoading } = useQuery({
     queryKey: ['swap-requests'],
     queryFn: async () => {
@@ -69,14 +43,6 @@ const SelfService = () => {
     retry: 1,
     onError: (err) => {
       console.error('[SelfService] Błąd pobierania próśb o zamianę:', err.response?.data?.message || err.message);
-    },
-  });
-
-  const suggestionMutation = useMutation({
-    mutationFn: (payload) => api.post('/suggestions', payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suggestions'] });
-      setSuggestionPayload({ title: '', content: '', category: 'pomysl' });
     },
   });
 
@@ -102,10 +68,9 @@ const SelfService = () => {
   const compactEmployees = useMemo(() => employeesData || [], [employeesData]);
 
   // Sprawdź czy są błędy autoryzacji
-  const hasAuthError = employeesError || suggestionsError || swapRequestsError;
+  const hasAuthError = employeesError || swapRequestsError;
   const authErrorMessage = 
     employeesError?.response?.data?.message || 
-    suggestionsError?.response?.data?.message || 
     swapRequestsError?.response?.data?.message;
 
   return (
@@ -143,7 +108,7 @@ const SelfService = () => {
         </div>
       )}
 
-      {(employeesLoading || suggestionsLoading || swapRequestsLoading) && (
+      {(employeesLoading || swapRequestsLoading) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
@@ -152,69 +117,7 @@ const SelfService = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="app-card p-4 space-y-3 lg:col-span-2">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Sugestie / pomysły</div>
-            <p className="text-xs text-slate-600">Wyślij pomysł lub zgłoś problem do zespołu HR.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={suggestionPayload.title}
-              onChange={(e) => setSuggestionPayload((p) => ({ ...p, title: e.target.value }))}
-              placeholder="Tytuł"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-            />
-            <select
-              value={suggestionPayload.category}
-              onChange={(e) => setSuggestionPayload((p) => ({ ...p, category: e.target.value }))}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-            >
-              {Object.entries(categoryLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <textarea
-            value={suggestionPayload.content}
-            onChange={(e) => setSuggestionPayload((p) => ({ ...p, content: e.target.value }))}
-            placeholder="Opisz swoją sugestię"
-            rows={3}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => suggestionMutation.mutate(suggestionPayload)}
-              disabled={suggestionMutation.isLoading}
-              className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
-            >
-              {suggestionMutation.isLoading ? 'Wysyłanie...' : 'Dodaj sugestię'}
-            </button>
-          </div>
-
-          <div className="pt-2 space-y-2">
-            {(suggestions || []).map((item) => (
-              <div key={item._id} className="rounded-xl border border-slate-100 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900">{item.title}</div>
-                    <div className="text-[11px] text-slate-500">{categoryLabels[item.category] || item.category}</div>
-                  </div>
-                  <span className="text-[11px] font-semibold text-pink-700">{item.status}</span>
-                </div>
-                <p className="text-xs text-slate-600 mt-1">{item.content}</p>
-              </div>
-            ))}
-            {(suggestions || []).length === 0 && (
-              <div className="text-xs text-slate-500">Brak sugestii. Dodaj pierwszą powyżej.</div>
-            )}
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="app-card p-4 space-y-4">
           <div>
             <div className="text-sm font-semibold text-slate-900">Wniosek urlopowy</div>
