@@ -83,14 +83,14 @@ const Navbar = () => {
   };
 
   return (
-    <header className="border-b border-slate-100 bg-white/80 backdrop-blur dark:bg-slate-800/80 dark:border-slate-700 sticky top-0 z-50">
-      <nav className="app-shell flex items-center justify-between h-14 gap-2">
+    <header className="sticky top-0 z-50 border-b border-white/60 dark:border-slate-700/70 bg-white/75 dark:bg-slate-950/70 backdrop-blur-xl shadow-sm">
+      <nav className="app-shell flex items-center justify-between h-14 gap-2 text-slate-700 dark:text-slate-200">
         <div className="flex items-center gap-2">
           <div 
             className="h-8 w-8 rounded-2xl flex items-center justify-center text-xs font-bold text-white shadow-lg transition-all duration-300"
             style={{
               background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-              boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+              boxShadow: `0 10px 18px -6px rgba(var(--theme-primary-rgb), 0.35)`
             }}
           >
             KH
@@ -110,7 +110,7 @@ const Navbar = () => {
             <>
               {/* Left gradient indicator */}
               {showLeftGradient && (
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent dark:from-slate-800 pointer-events-none z-10" />
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white/90 via-white/50 to-transparent dark:from-slate-900/90 dark:via-slate-900/30 pointer-events-none z-10" />
               )}
               
               {/* Scrollable navigation */}
@@ -164,7 +164,7 @@ const Navbar = () => {
 
               {/* Right gradient indicator */}
               {showRightGradient && (
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent dark:from-slate-800 pointer-events-none z-10" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/90 via-white/50 to-transparent dark:from-slate-900/90 dark:via-slate-900/30 pointer-events-none z-10" />
               )}
             </>
           )}
@@ -176,10 +176,9 @@ const Navbar = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-200 user-menu-btn"
+                className="flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-all duration-200 user-menu-btn text-theme-primary"
                 style={{
-                  borderColor: `rgba(var(--theme-primary-rgb), 0.3)`,
-                  color: `var(--theme-primary)`
+                  borderColor: `rgba(var(--theme-primary-rgb), 0.35)`
                 }}
               >
                 {getAvatarUrl() ? (
@@ -201,7 +200,7 @@ const Navbar = () => {
 
               {/* Dropdown Menu */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 animate-scale-in">
+                <div className="absolute right-0 mt-2 w-64 bg-white/95 dark:bg-slate-900/90 rounded-2xl shadow-2xl shadow-theme/20 dark:shadow-black/40 border border-white/60 dark:border-slate-700/70 py-2 z-50 backdrop-blur-xl animate-scale-in">
                   {/* Profile Section */}
                   <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-3">
@@ -298,7 +297,7 @@ const Navbar = () => {
         <div className="md:hidden flex items-center gap-2">
           {user && (
             <div className="text-right">
-              <div className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[110px]">
+              <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[110px]">
                 {user.name}
               </div>
               <div 

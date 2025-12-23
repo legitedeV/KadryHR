@@ -59,10 +59,10 @@ const Sidebar = () => {
 
   const linkClasses = ({ isActive }) =>
     [
-      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative sidebar-link',
+      'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative sidebar-link backdrop-blur-sm',
       isActive
         ? 'active font-medium'
-        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+        : 'text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/80'
     ].join(' ');
 
   const renderLink = (link) => (
@@ -74,7 +74,7 @@ const Sidebar = () => {
       onClick={closeMobile}
       title={collapsed ? link.label : ''}
     >
-      <link.icon className="w-5 h-5 flex-shrink-0" />
+      <link.icon className="w-5 h-5 flex-shrink-0 text-slate-500 dark:text-slate-300" />
       {!collapsed && <span className="text-sm">{link.label}</span>}
       {collapsed && (
         <div className="sidebar-tooltip">
@@ -87,14 +87,14 @@ const Sidebar = () => {
   const sidebarContent = (
     <>
       {/* Header */}
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-4 border-b border-slate-200 dark:border-slate-700`}>
+      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-4 border-b border-white/60 dark:border-slate-700/70 bg-white/60 dark:bg-slate-900/70 backdrop-blur-xl`}> 
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div 
               className="h-8 w-8 rounded-2xl flex items-center justify-center text-xs font-bold text-white shadow-lg transition-all duration-300"
               style={{
                 background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-                boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
+                boxShadow: `0 12px 20px -6px rgba(var(--theme-primary-rgb), 0.4)`
               }}
             >
               KH
@@ -111,13 +111,13 @@ const Sidebar = () => {
         )}
         <button
           onClick={toggleCollapse}
-          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors border border-transparent hover:border-white/40 dark:hover:border-slate-600"
           title={collapsed ? 'Rozwiń menu' : 'Zwiń menu'}
         >
           {collapsed ? (
-            <ChevronRightIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <ChevronRightIcon className="w-5 h-5 text-slate-500 dark:text-slate-300" />
           ) : (
-            <ChevronLeftIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <ChevronLeftIcon className="w-5 h-5 text-slate-500 dark:text-slate-300" />
           )}
         </button>
       </div>
@@ -165,12 +165,12 @@ const Sidebar = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={toggleMobile}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg"
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-xl bg-white/90 dark:bg-slate-950/80 border border-white/60 dark:border-slate-800/70 shadow-lg shadow-theme/30 backdrop-blur-xl"
       >
         {mobileOpen ? (
-          <XMarkIcon className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+          <XMarkIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
         ) : (
-          <Bars3Icon className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+          <Bars3Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
         )}
       </button>
 
@@ -184,7 +184,7 @@ const Sidebar = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-40 md:hidden transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white/85 dark:bg-slate-950/80 border-r border-white/60 dark:border-slate-800/70 z-40 md:hidden transition-transform duration-300 backdrop-blur-xl ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ width: '280px' }}
@@ -196,7 +196,7 @@ const Sidebar = () => {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col h-screen bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 sidebar-transition ${
+        className={`hidden md:flex flex-col h-screen bg-white/80 dark:bg-slate-950/80 border-r border-white/60 dark:border-slate-800/70 sticky top-0 sidebar-transition backdrop-blur-xl ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >

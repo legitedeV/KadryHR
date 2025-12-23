@@ -67,20 +67,27 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--theme-primary', themeColor);
     
     // Generate secondary color (slightly lighter/darker variant)
-    const secondary = adjustColor(themeColor, 10);
+    const secondary = adjustColor(themeColor, 8);
     root.style.setProperty('--theme-secondary', secondary);
     
     // Generate lighter variants for backgrounds
-    const light = adjustColor(themeColor, 40);
+    const light = mixColor(themeColor, '#ffffff', 0.85);
     root.style.setProperty('--theme-light', light);
     
     // Generate very light variant for subtle backgrounds
-    const veryLight = adjustColor(themeColor, 60);
+    const veryLight = mixColor(themeColor, '#ffffff', 0.92);
     root.style.setProperty('--theme-very-light', veryLight);
     
     // Generate darker variant for hover states
-    const dark = adjustColor(themeColor, -15);
+    const dark = adjustColor(themeColor, -18);
     root.style.setProperty('--theme-dark', dark);
+    
+    // Update surface colors for themes
+    const surfaceLight = mixColor(themeColor, '#f8fafc', 0.95);
+    root.style.setProperty('--surface-light', surfaceLight);
+
+    const surfaceDark = mixColor(themeColor, '#0f172a', 0.15);
+    root.style.setProperty('--surface-dark', surfaceDark);
     
     // Generate RGB values for opacity usage
     const rgb = hexToRgb(themeColor);
@@ -127,15 +134,25 @@ export const useTheme = () => {
 function adjustColor(color, percent) {
   const num = parseInt(color.replace('#', ''), 16);
   const amt = Math.round(2.55 * percent);
-  const R = (num >> 16) + amt;
-  const G = (num >> 8 & 0x00FF) + amt;
-  const B = (num & 0x0000FF) + amt;
-  return '#' + (
-    0x1000000 +
-    (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
-    (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
-    (B < 255 ? (B < 1 ? 0 : B) : 255)
-  ).toString(16).slice(1);
+  const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+  const G = Math.min(255, Math.max(0, (num >> 8 & 0x00ff) + amt));
+  const B = Math.min(255, Math.max(0, (num & 0x0000ff) + amt));
+  return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
+}
+
+function mixColor(color1, color2, ratio) {
+  const rgb1 = hexToRgb(color1);
+  const rgb2 = hexToRgb(color2);
+
+  const mix = (c1, c2) => Math.round(c1 * ratio + c2 * (1 - ratio));
+
+  const r = mix(rgb1.r, rgb2.r);
+  const g = mix(rgb1.g, rgb2.g);
+  const b = mix(rgb1.b, rgb2.b);
+
+  return `#${[r, g, b]
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('')}`;
 }
 
 // Helper function to convert hex to RGB

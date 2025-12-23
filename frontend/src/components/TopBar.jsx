@@ -71,12 +71,12 @@ const TopBar = ({ title }) => {
   );
 
   return (
-    <div className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
+    <div className="sticky top-0 z-30 border-b border-white/60 dark:border-slate-800/70 bg-white/75 dark:bg-slate-950/70 backdrop-blur-xl shadow-sm">
+      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16 text-slate-700 dark:text-slate-200">
         {/* Left: Title */}
         <div className="flex-1">
           {title && (
-            <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
               {title}
             </h1>
           )}
@@ -87,7 +87,7 @@ const TopBar = ({ title }) => {
           {/* Notifications */}
           <button
             onClick={() => navigate('/notifications')}
-            className="relative p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="relative p-2 rounded-lg text-slate-500 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
             title="Powiadomienia"
           >
             <BellIcon className="w-5 h-5" />
@@ -96,7 +96,7 @@ const TopBar = ({ title }) => {
           {/* Messages */}
           <button
             onClick={() => navigate('/chat')}
-            className="relative p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="relative p-2 rounded-lg text-slate-500 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
             title="Wiadomości"
           >
             <ChatBubbleLeftRightIcon className="w-5 h-5" />
@@ -104,7 +104,7 @@ const TopBar = ({ title }) => {
 
           {/* User Menu */}
           <Menu as="div" className="relative">
-            <Menu.Button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <Menu.Button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors border border-transparent hover:border-white/50 dark:hover:border-slate-700/60">
               {getAvatarUrl() ? (
                 <img
                   src={getAvatarUrl()}
@@ -138,7 +138,7 @@ const TopBar = ({ title }) => {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 focus:outline-none overflow-hidden">
+              <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right bg-white/95 dark:bg-slate-900/90 rounded-2xl shadow-2xl shadow-theme/20 dark:shadow-black/40 border border-white/60 dark:border-slate-800/70 focus:outline-none overflow-hidden backdrop-blur-xl">
                 <div className="py-1">
                   {/* Profile */}
                   <Menu.Item>
@@ -146,8 +146,8 @@ const TopBar = ({ title }) => {
                       <button
                         onClick={() => navigate('/profile')}
                         className={`${
-                          active ? 'bg-slate-100 dark:bg-slate-700' : ''
-                        } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300`}
+                          active ? 'bg-white/70 dark:bg-slate-800/70' : ''
+                        } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 transition-colors`}
                       >
                         <UserCircleIcon className="w-5 h-5" />
                         Mój profil
@@ -161,8 +161,8 @@ const TopBar = ({ title }) => {
                       <button
                         onClick={() => navigate('/settings')}
                         className={`${
-                          active ? 'bg-slate-100 dark:bg-slate-700' : ''
-                        } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300`}
+                          active ? 'bg-white/70 dark:bg-slate-800/70' : ''
+                        } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 transition-colors`}
                       >
                         <Cog6ToothIcon className="w-5 h-5" />
                         Ustawienia
@@ -171,11 +171,11 @@ const TopBar = ({ title }) => {
                   </Menu.Item>
 
                   {/* Theme Separator */}
-                  <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                  <div className="my-1 border-t border-white/60 dark:border-slate-800/70" />
                   
                   {/* Theme Section Header */}
                   <div className="px-4 py-2">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                       Motyw
                     </p>
                   </div>
@@ -201,7 +201,7 @@ const TopBar = ({ title }) => {
                   />
 
                   {/* Logout Separator */}
-                  <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                  <div className="my-1 border-t border-white/60 dark:border-slate-800/70" />
                   
                   {/* Logout */}
                   <Menu.Item>
@@ -209,8 +209,8 @@ const TopBar = ({ title }) => {
                       <button
                         onClick={handleLogout}
                         className={`${
-                          active ? 'bg-red-50 dark:bg-red-900/20' : ''
-                        } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400`}
+                          active ? 'bg-red-50/80 dark:bg-red-900/30' : ''
+                        } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 transition-colors`}
                       >
                         <ArrowRightOnRectangleIcon className="w-5 h-5" />
                         Wyloguj
