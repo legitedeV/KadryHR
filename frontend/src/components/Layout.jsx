@@ -17,9 +17,9 @@ const Layout = ({ children, title }) => {
       <div className="flex-1 flex flex-col relative z-10 min-h-screen backdrop-blur-sm">
         <DemoBanner />
         <TopBar title={title} />
-        <main className="flex-1 max-w-7xl w-full mx-auto pt-6 pb-10 px-4 sm:px-6 lg:px-8 animate-fade-in">
+        <main className="flex-1 w-full pt-6 pb-10 px-6 sm:px-8 lg:px-10 xl:px-12 animate-fade-in">
           <div 
-            className="rounded-3xl p-6 sm:p-8"
+            className="max-w-[1440px] mx-auto rounded-3xl p-6 sm:p-8"
             style={{
               backgroundColor: 'var(--surface-primary)',
               border: '1px solid var(--border-primary)',
