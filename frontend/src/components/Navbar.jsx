@@ -40,8 +40,8 @@ const Navbar = () => {
     [
       'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap block',
       isActive
-        ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 shadow-sm'
-        : 'text-slate-600 hover:bg-pink-50 hover:text-pink-700',
+        ? 'active-theme shadow-sm'
+        : 'text-slate-600 hover-bg-theme-light hover-text-theme',
     ].join(' ');
 
   const handleLogout = () => {
@@ -54,10 +54,10 @@ const Navbar = () => {
     <header className="border-b border-slate-100 bg-white/80 backdrop-blur">
       <nav className="app-shell flex items-center justify-between h-14 gap-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-pink-500/30">
+          <div className="h-8 w-8 rounded-2xl bg-theme-gradient-br flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-theme">
             KH
           </div>
-          <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">KadryHR</span>
+          <span className="text-sm font-semibold text-theme-gradient">KadryHR</span>
         </div>
 
         <div className="hidden md:block flex-1 relative max-w-2xl mx-4">
@@ -122,7 +122,7 @@ const Navbar = () => {
               <div className="text-xs font-semibold text-slate-900 truncate max-w-[140px]">
                 {user.name}
               </div>
-              <div className="text-[11px] uppercase tracking-wide text-pink-600 font-semibold">
+              <div className="text-[11px] uppercase tracking-wide text-theme-primary font-semibold">
                 {user.role === 'admin' || user.role === 'super_admin' ? 'ADMIN' : 'UŻYTKOWNIK'}
               </div>
             </div>
@@ -131,14 +131,14 @@ const Navbar = () => {
           {user ? (
             <button
               onClick={handleLogout}
-              className="inline-flex items-center rounded-full border-2 border-pink-200 px-3 py-1.5 text-xs font-semibold text-pink-700 hover:bg-pink-50 transition-all duration-200"
+              className="inline-flex items-center rounded-full border-2 border-theme-light px-3 py-1.5 text-xs font-semibold text-theme-primary hover-bg-theme-light transition-all duration-200"
             >
               Wyloguj
             </button>
           ) : (
             <NavLink
               to="/login"
-              className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl transition-all duration-200"
+              className="inline-flex items-center rounded-full bg-theme-gradient px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-theme hover:shadow-xl transition-all duration-200"
             >
               Zaloguj
             </NavLink>
@@ -151,7 +151,7 @@ const Navbar = () => {
               <div className="text-[11px] font-semibold text-slate-900 truncate max-w-[110px]">
                 {user.name}
               </div>
-              <div className="text-[10px] uppercase tracking-wide text-pink-600">
+              <div className="text-[10px] uppercase tracking-wide text-theme-primary">
                 {user.role === 'admin' || user.role === 'super_admin' ? 'ADMIN' : 'UŻYTKOWNIK'}
               </div>
             </div>
@@ -262,7 +262,7 @@ const Navbar = () => {
             <div className="pt-1">
               <button
                 onClick={handleLogout}
-                className="mt-1 inline-flex w-full items-center justify-center rounded-full border border-pink-200 px-3 py-1.5 text-xs font-semibold text-pink-700 hover:bg-pink-50"
+                className="mt-1 inline-flex w-full items-center justify-center rounded-full border border-theme-light px-3 py-1.5 text-xs font-semibold text-theme-primary hover-bg-theme-light"
               >
                 Wyloguj
               </button>

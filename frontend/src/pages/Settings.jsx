@@ -1,20 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const Settings = () => {
   const { themeColor, updateThemeColor, resetThemeColor } = useTheme();
   const [selectedColor, setSelectedColor] = useState(themeColor);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+  // Track if there are unsaved changes
+  useEffect(() => {
+    setHasChanges(selectedColor !== themeColor);
+  }, [selectedColor, themeColor]);
 
   const handleColorChange = (e) => {
     const newColor = e.target.value;
     setSelectedColor(newColor);
-    updateThemeColor(newColor);
+  };
+
+  const handleSave = () => {
+    updateThemeColor(selectedColor);
+    setHasChanges(false);
+    setShowSaveSuccess(true);
+    setTimeout(() => setShowSaveSuccess(false), 3000);
   };
 
   const handleReset = () => {
     const defaultColor = '#ec4899';
     setSelectedColor(defaultColor);
     resetThemeColor();
+    setHasChanges(false);
+    setShowSaveSuccess(true);
+    setTimeout(() => setShowSaveSuccess(false), 3000);
   };
 
   const presetColors = [
@@ -33,7 +49,7 @@ const Settings = () => {
       {/* Header */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30">
+          <div className="h-10 w-10 rounded-xl bg-theme-gradient-br flex items-center justify-center shadow-lg shadow-theme">
             <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -81,9 +97,6 @@ const Settings = () => {
                     value={selectedColor}
                     onChange={(e) => {
                       setSelectedColor(e.target.value);
-                      if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                        updateThemeColor(e.target.value);
-                      }
                     }}
                     className="input-primary font-mono uppercase"
                     placeholder="#ec4899"
@@ -111,7 +124,6 @@ const Settings = () => {
                   key={preset.color}
                   onClick={() => {
                     setSelectedColor(preset.color);
-                    updateThemeColor(preset.color);
                   }}
                   className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:scale-105 ${
                     selectedColor.toLowerCase() === preset.color.toLowerCase()
@@ -184,6 +196,29 @@ const Settings = () => {
                   To jest przykładowy tekst pokazujący, jak wybrany kolor będzie wyglądał w różnych elementach interfejsu.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="pt-6 border-t border-slate-200">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                {showSaveSuccess && (
+                  <div className="flex items-center gap-2 text-sm text-emerald-600 animate-fade-in">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="font-medium">Ustawienia zostały zapisane!</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={!hasChanges}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {hasChanges ? 'Zapisz zmiany' : 'Zapisano'}
+              </button>
             </div>
           </div>
         </div>
