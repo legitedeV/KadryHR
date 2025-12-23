@@ -8,6 +8,7 @@ import Payroll from './pages/Payroll';
 import Reports from './pages/Reports';
 import Invites from './pages/Invites';
 import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
@@ -92,6 +93,18 @@ const App = () => {
           <PrivateRoute>
             <Layout>
               <ScheduleBuilder />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Profile - accessible to all logged-in users */}
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Profile />
             </Layout>
           </PrivateRoute>
         }

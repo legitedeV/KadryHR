@@ -34,7 +34,7 @@ const FloatingParticles = ({ count = 12, minSize = 60, maxSize = 180, speed = 0.
       el.style.borderRadius = '50%';
       el.style.pointerEvents = 'none';
       el.style.opacity = '0.3';
-      el.style.filter = 'blur(40px)';
+      el.style.filter = 'blur(20px)';
       el.style.transition = 'background 0.5s ease';
       
       container.appendChild(el);
