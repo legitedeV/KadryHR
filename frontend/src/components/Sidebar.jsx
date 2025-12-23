@@ -1,36 +1,23 @@
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import {
   HomeIcon,
   UserGroupIcon,
   CurrencyDollarIcon,
-  DocumentChartBarIcon,
   CalendarDaysIcon,
-  EnvelopeIcon,
-  QrCodeIcon,
-  ClipboardDocumentListIcon,
   ClockIcon,
   ChatBubbleLeftRightIcon,
-  CalendarIcon,
-  BellIcon,
   UserCircleIcon,
-  Cog6ToothIcon,
-  ArrowRightOnRectangleIcon,
+  ClipboardDocumentListIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   Bars3Icon,
   XMarkIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
-  const { user, logout } = useAuth();
-  const { themeMode, updateThemeMode } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
@@ -44,12 +31,6 @@ const Sidebar = () => {
     localStorage.setItem('sidebar_collapsed', JSON.stringify(collapsed));
   }, [collapsed]);
 
-  const handleLogout = () => {
-    logout();
-    setMobileOpen(false);
-    navigate('/login');
-  };
-
   const toggleCollapse = () => {
     setCollapsed(!collapsed);
   };
@@ -60,23 +41,6 @@ const Sidebar = () => {
 
   const closeMobile = () => {
     setMobileOpen(false);
-  };
-
-  const getInitials = (name) => {
-    if (!name) return '?';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.charAt(0).toUpperCase();
-  };
-
-  const getAvatarUrl = () => {
-    if (user?.avatarUrl) {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      return user.avatarUrl.startsWith('http') ? user.avatarUrl : `${baseUrl}${user.avatarUrl}`;
-    }
-    return null;
   };
 
   const employeeLinks = [
@@ -120,32 +84,6 @@ const Sidebar = () => {
     </NavLink>
   );
 
-  const ThemeToggle = ({ mode, icon: Icon, label, isActive }) => (
-    <button
-      onClick={() => updateThemeMode(mode)}
-      className="w-full flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5" />
-        <span>{label}</span>
-      </div>
-      {/* iOS-style toggle */}
-      <div
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          isActive
-            ? 'bg-gradient-to-r from-[var(--theme-primary)] to-[var(--theme-secondary)]'
-            : 'bg-slate-300 dark:bg-slate-600'
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
-            isActive ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </div>
-    </button>
-  );
-
   const sidebarContent = (
     <>
       {/* Header */}
@@ -184,131 +122,13 @@ const Sidebar = () => {
         </button>
       </div>
 
-      {/* User Info with Dropdown Menu */}
-      <div className={`px-4 py-4 border-b border-slate-200 dark:border-slate-700 ${collapsed ? 'flex justify-center' : ''}`}>
-        <Menu as="div" className="relative">
-          <Menu.Button className={`flex items-center gap-3 w-full rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${collapsed ? 'p-0' : 'p-2'}`}>
-            {getAvatarUrl() ? (
-              <img
-                src={getAvatarUrl()}
-                alt={user?.name}
-                className="w-10 h-10 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700"
-              />
-            ) : (
-              <div 
-                className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold shadow-lg transition-all duration-300"
-                style={{
-                  background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-                  boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
-                }}
-              >
-                {getInitials(user?.name)}
-              </div>
-            )}
-            {!collapsed && (
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
-              </div>
-            )}
-          </Menu.Button>
-
-          <Transition
-            as={Fragment}
-            enter="transition ease-out duration-100"
-            enterFrom="transform opacity-0 scale-95"
-            enterTo="transform opacity-100 scale-100"
-            leave="transition ease-in duration-75"
-            leaveFrom="transform opacity-100 scale-100"
-            leaveTo="transform opacity-0 scale-95"
-          >
-            <Menu.Items className={`absolute ${collapsed ? 'left-full ml-2' : 'left-0'} bottom-0 w-64 origin-bottom-left bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 focus:outline-none z-50`}>
-              <div className="py-1">
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={() => { navigate('/profile'); closeMobile(); }}
-                      className={`${
-                        active ? 'bg-slate-100 dark:bg-slate-700' : ''
-                      } flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300`}
-                    >
-                      <UserCircleIcon className="w-5 h-5" />
-                      Mój profil
-                    </button>
-                  )}
-                </Menu.Item>
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={() => { navigate('/settings'); closeMobile(); }}
-                      className={`${
-                        active ? 'bg-slate-100 dark:bg-slate-700' : ''
-                      } flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300`}
-                    >
-                      <Cog6ToothIcon className="w-5 h-5" />
-                      Ustawienia
-                    </button>
-                  )}
-                </Menu.Item>
-
-                {/* Theme Separator */}
-                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                
-                {/* Theme Options */}
-                <div className="px-4 py-2">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Motyw
-                  </p>
-                </div>
-                
-                <ThemeToggle
-                  mode="light"
-                  icon={SunIcon}
-                  label="Jasny"
-                  isActive={themeMode === 'light'}
-                />
-                <ThemeToggle
-                  mode="dark"
-                  icon={MoonIcon}
-                  label="Ciemny"
-                  isActive={themeMode === 'dark'}
-                />
-                <ThemeToggle
-                  mode="system"
-                  icon={ComputerDesktopIcon}
-                  label="Systemowy"
-                  isActive={themeMode === 'system'}
-                />
-
-                {/* Logout Separator */}
-                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={handleLogout}
-                      className={`${
-                        active ? 'bg-red-50 dark:bg-red-900/20' : ''
-                      } flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400`}
-                    >
-                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                      Wyloguj
-                    </button>
-                  )}
-                </Menu.Item>
-              </div>
-            </Menu.Items>
-          </Transition>
-        </Menu>
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {/* Employee Section */}
         <div>
           {!collapsed && (
             <div className="px-3 mb-2">
-              <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <h3 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider opacity-60">
                 Menu główne
               </h3>
             </div>
@@ -323,7 +143,7 @@ const Sidebar = () => {
           <div>
             {!collapsed && (
               <div className="px-3 mb-2">
-                <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <h3 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider opacity-60">
                   Administrator
                 </h3>
               </div>

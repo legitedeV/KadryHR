@@ -1,9 +1,10 @@
 import React from 'react';
 import Sidebar from './Sidebar';
+import TopBar from './TopBar';
 import DemoBanner from './DemoBanner';
 import FloatingParticles from './FloatingParticles';
 
-const Layout = ({ children }) => {
+const Layout = ({ children, title }) => {
   return (
     <div className="min-h-screen flex bg-gradient-layout">
       {/* Floating Particles Background */}
@@ -15,6 +16,7 @@ const Layout = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative z-10 min-h-screen">
         <DemoBanner />
+        <TopBar title={title} />
         <main className="flex-1 max-w-7xl w-full mx-auto pt-6 pb-10 px-4 sm:px-6 lg:px-8 animate-fade-in">
           {children}
         </main>

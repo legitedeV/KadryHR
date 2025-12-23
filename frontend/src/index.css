@@ -995,13 +995,14 @@ body:not(.dark) textarea:focus {
 }
 
 .sidebar-link.active {
-  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.15), rgba(var(--theme-primary-rgb), 0.1));
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.12), rgba(var(--theme-primary-rgb), 0.08));
   color: var(--theme-primary);
-  box-shadow: 0 1px 3px rgba(var(--theme-primary-rgb), 0.2);
+  box-shadow: inset 3px 0 0 var(--theme-primary);
 }
 
 .dark .sidebar-link.active {
-  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.25), rgba(var(--theme-primary-rgb), 0.2));
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0.15));
+  box-shadow: inset 3px 0 0 var(--theme-primary);
 }
 
 /* Tooltip for collapsed sidebar */
