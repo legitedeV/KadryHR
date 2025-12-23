@@ -132,6 +132,9 @@ const Navbar = () => {
                 <NavLink to="/time-tracking" className={linkClasses}>
                   Rejestracja czasu
                 </NavLink>
+                <NavLink to="/chat" className={linkClasses}>
+                  Wiadomości
+                </NavLink>
                 {isAdmin && (
                   <>
                     <NavLink to="/employees" className={linkClasses}>
@@ -151,6 +154,9 @@ const Navbar = () => {
                     </NavLink>
                     <NavLink to="/qr-generator" className={linkClasses}>
                       Generator QR
+                    </NavLink>
+                    <NavLink to="/admin/requests" className={linkClasses}>
+                      Wnioski
                     </NavLink>
                   </>
                 )}

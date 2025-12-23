@@ -3,7 +3,7 @@ const Suggestion = require('../models/Suggestion');
 exports.createSuggestion = async (req, res, next) => {
   try {
     const { id: userId } = req.user || {};
-    const { title, content, category } = req.body || {};
+    const { title, content, category, type, payload } = req.body || {};
 
     if (!title || !content) {
       return res
@@ -15,7 +15,10 @@ exports.createSuggestion = async (req, res, next) => {
       title: title.trim(),
       content: content.trim(),
       category: category || 'pomysl',
+      type: type || 'other',
+      payload: payload || null,
       createdBy: userId,
+      status: 'pending'
     });
 
     res.status(201).json(suggestion);
@@ -51,13 +54,13 @@ exports.getSuggestions = async (req, res, next) => {
 
 exports.updateSuggestionStatus = async (req, res, next) => {
   try {
-    const { role } = req.user || {};
-    if (role !== 'admin') {
+    const { role, id: userId } = req.user || {};
+    if (role !== 'admin' && role !== 'super_admin') {
       return res.status(403).json({ message: 'Brak uprawnień.' });
     }
 
     const { id } = req.params;
-    const { status, resolvedNote } = req.body || {};
+    const { status, resolvedNote, adminResponse } = req.body || {};
 
     const suggestion = await Suggestion.findById(id);
     if (!suggestion) {
@@ -72,9 +75,76 @@ exports.updateSuggestionStatus = async (req, res, next) => {
       suggestion.resolvedNote = resolvedNote;
     }
 
+    if (adminResponse) {
+      suggestion.adminResponse = adminResponse;
+    }
+
+    suggestion.reviewedBy = userId;
+    suggestion.reviewedAt = new Date();
+
     await suggestion.save();
 
     res.json(suggestion);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.approveSuggestion = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user || {};
+    if (role !== 'admin' && role !== 'super_admin') {
+      return res.status(403).json({ message: 'Brak uprawnień.' });
+    }
+
+    const { id } = req.params;
+    const { adminResponse } = req.body || {};
+
+    const suggestion = await Suggestion.findById(id);
+    if (!suggestion) {
+      return res.status(404).json({ message: 'Sugestia nie istnieje.' });
+    }
+
+    suggestion.status = 'approved';
+    suggestion.adminResponse = adminResponse || 'Zatwierdzono';
+    suggestion.reviewedBy = userId;
+    suggestion.reviewedAt = new Date();
+
+    await suggestion.save();
+    await suggestion.populate('createdBy', 'name email');
+    await suggestion.populate('reviewedBy', 'name email');
+
+    res.json({ message: 'Sugestia zatwierdzona', suggestion });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.rejectSuggestion = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user || {};
+    if (role !== 'admin' && role !== 'super_admin') {
+      return res.status(403).json({ message: 'Brak uprawnień.' });
+    }
+
+    const { id } = req.params;
+    const { adminResponse } = req.body || {};
+
+    const suggestion = await Suggestion.findById(id);
+    if (!suggestion) {
+      return res.status(404).json({ message: 'Sugestia nie istnieje.' });
+    }
+
+    suggestion.status = 'rejected';
+    suggestion.adminResponse = adminResponse || 'Odrzucono';
+    suggestion.reviewedBy = userId;
+    suggestion.reviewedAt = new Date();
+
+    await suggestion.save();
+    await suggestion.populate('createdBy', 'name email');
+    await suggestion.populate('reviewedBy', 'name email');
+
+    res.json({ message: 'Sugestia odrzucona', suggestion });
   } catch (err) {
     next(err);
   }

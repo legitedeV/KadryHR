@@ -14,9 +14,12 @@ import Layout from './components/Layout';
 import Landing from './pages/Landing';
 import SelfService from './pages/SelfService';
 import ScheduleBuilder from './pages/ScheduleBuilder';
+import ScheduleBuilderV2 from './pages/ScheduleBuilderV2';
 import TimeTracking from './pages/TimeTracking';
 import QRCodeGenerator from './pages/QRCodeGenerator';
 import QRStart from './pages/QRStart';
+import Chat from './pages/Chat';
+import AdminRequests from './pages/AdminRequests';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -96,9 +99,21 @@ const App = () => {
         element={
           <PrivateRoute>
             <Layout>
-              <ScheduleBuilder />
+              <ScheduleBuilderV2 />
             </Layout>
           </PrivateRoute>
+        }
+      />
+      
+      {/* Old schedule builder (deprecated) */}
+      <Route
+        path="/schedule-builder-old"
+        element={
+          <AdminRoute>
+            <Layout>
+              <ScheduleBuilder />
+            </Layout>
+          </AdminRoute>
         }
       />
       
@@ -109,6 +124,18 @@ const App = () => {
           <PrivateRoute>
             <Layout>
               <TimeTracking />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Chat - accessible to all */}
+      <Route
+        path="/chat"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Chat />
             </Layout>
           </PrivateRoute>
         }
@@ -185,6 +212,16 @@ const App = () => {
           <AdminRoute>
             <Layout>
               <QRCodeGenerator />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/requests"
+        element={
+          <AdminRoute>
+            <Layout>
+              <AdminRequests />
             </Layout>
           </AdminRoute>
         }

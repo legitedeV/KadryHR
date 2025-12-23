@@ -102,7 +102,7 @@ const QRStart = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !authLoading) {
     // Redirect to login with return URL
     const returnUrl = `/qr/start?token=${token}`;
     navigate(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
