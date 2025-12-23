@@ -402,7 +402,7 @@ body {
   box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--theme-primary) 30%, transparent);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   box-shadow: 0 20px 40px -5px color-mix(in srgb, var(--theme-primary) 40%, transparent);
 }
 
@@ -412,8 +412,76 @@ body {
   color: var(--theme-primary);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--theme-primary) 5%, white);
+}
+
+/* Theme-aware gradient backgrounds */
+.bg-theme-gradient {
+  background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary));
+}
+
+.bg-theme-gradient-br {
+  background: linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary));
+}
+
+/* Theme-aware text colors */
+.text-theme-primary {
+  color: var(--theme-primary);
+}
+
+.text-theme-gradient {
+  background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Theme-aware borders */
+.border-theme-primary {
+  border-color: var(--theme-primary);
+}
+
+.border-theme-light {
+  border-color: color-mix(in srgb, var(--theme-primary) 20%, transparent);
+}
+
+/* Theme-aware backgrounds */
+.bg-theme-light {
+  background-color: color-mix(in srgb, var(--theme-primary) 10%, white);
+}
+
+.bg-theme-very-light {
+  background-color: color-mix(in srgb, var(--theme-primary) 5%, white);
+}
+
+/* Theme-aware shadows */
+.shadow-theme {
+  box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--theme-primary) 30%, transparent);
+}
+
+.shadow-theme-lg {
+  box-shadow: 0 20px 40px -5px color-mix(in srgb, var(--theme-primary) 40%, transparent);
+}
+
+/* Theme-aware hover states */
+.hover-bg-theme-light:hover {
+  background-color: color-mix(in srgb, var(--theme-primary) 5%, white);
+}
+
+.hover-text-theme:hover {
+  color: var(--theme-primary);
+}
+
+.hover-border-theme:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 30%, transparent);
+}
+
+/* Theme-aware focus states */
+.focus-theme:focus {
+  outline: none;
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent);
 }
 
 .btn-danger {
@@ -425,30 +493,30 @@ body {
    ============================================ */
 
 .input-primary {
-  @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed;
+  @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-slate-50 focus:outline-none transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed;
 }
 
 .input-primary:focus {
-  ring-color: var(--theme-primary);
   border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent);
 }
 
 .select-primary {
-  @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed;
+  @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-slate-50 focus:outline-none transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed;
 }
 
 .select-primary:focus {
-  ring-color: var(--theme-primary);
   border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent);
 }
 
 .textarea-primary {
-  @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed resize-none;
+  @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-slate-50 focus:outline-none transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed resize-none;
 }
 
 .textarea-primary:focus {
-  ring-color: var(--theme-primary);
   border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent);
 }
 
 /* ============================================
@@ -460,7 +528,11 @@ body {
 }
 
 .card-interactive {
-  @apply bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-pink-200 transition-all duration-300 cursor-pointer;
+  @apply bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 cursor-pointer;
+}
+
+.card-interactive:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 20%, transparent);
 }
 
 /* ============================================
@@ -485,7 +557,13 @@ body {
 
 .badge-primary {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
-  background-color: color-mix(in srgb, var(--theme-primary) 15%, white);
+  background-color: color-mix(in srgb, var(--theme-primary) 10%, white);
+  color: var(--theme-primary);
+}
+
+/* Theme-aware active/selected states */
+.active-theme {
+  background: linear-gradient(to right, color-mix(in srgb, var(--theme-primary) 15%, white), color-mix(in srgb, var(--theme-secondary) 15%, white));
   color: var(--theme-primary);
 }
 

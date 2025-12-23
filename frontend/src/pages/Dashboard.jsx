@@ -31,7 +31,7 @@ const statusBadge = (statusKey) => {
     case 'Odrzucony':
       return 'bg-red-100 text-red-700';
     case 'Zaplanowany':
-      return 'bg-pink-100 text-pink-700';
+      return 'badge-primary';
     default:
       return 'bg-slate-100 text-slate-700';
   }
@@ -433,7 +433,7 @@ const Dashboard = () => {
 
       {/* Next Shift Countdown - For all users */}
       {nextShift && (
-        <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl border border-pink-200 shadow-lg shadow-pink-500/30 p-6 text-white">
+        <div className="bg-theme-gradient-br rounded-2xl border border-theme-light shadow-lg shadow-theme p-6 text-white">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide opacity-90">
@@ -519,7 +519,7 @@ const Dashboard = () => {
               </h2>
               <p className="text-[11px] text-slate-500">Grafik pracy na kolejne dni.</p>
             </div>
-            <span className="text-[11px] font-medium text-pink-600">Grafik</span>
+            <span className="text-[11px] font-medium text-theme-primary">Grafik</span>
           </div>
 
           {(scheduleLoading || upcomingShifts.length === 0) && (
@@ -532,9 +532,9 @@ const Dashboard = () => {
             {upcomingShifts.map((shift) => (
               <div
                 key={shift.id}
-                className="rounded-xl border border-pink-100 bg-pink-50/70 px-3 py-3"
+                className="rounded-xl border border-theme-light bg-theme-very-light px-3 py-3"
               >
-                <div className="text-[11px] font-semibold text-pink-700">{shift.label}</div>
+                <div className="text-[11px] font-semibold text-theme-primary">{shift.label}</div>
                 <div className="text-sm font-semibold text-slate-900">{shift.time}</div>
                 <div className="text-[11px] text-slate-600">{shift.person}</div>
                 <div className="text-[11px] text-slate-500 mt-1">{shift.location}</div>
@@ -650,8 +650,8 @@ const Dashboard = () => {
                       className={[
                         'px-2.5 py-1 rounded-full text-xs border transition-all',
                         active
-                          ? 'bg-gradient-to-r from-pink-100 to-rose-100 border-pink-200 text-pink-700'
-                          : 'bg-white border-slate-200 text-slate-600 hover:border-pink-300',
+                          ? 'active-theme border-theme-light'
+                          : 'bg-white border-slate-200 text-slate-600 hover-border-theme',
                       ].join(' ')}
                     >
                       {day.label}
@@ -740,7 +740,7 @@ const Dashboard = () => {
                 !availabilityForm.startDate ||
                 !availabilityForm.endDate
               }
-              className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
+              className="inline-flex items-center rounded-full bg-theme-gradient px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
             >
               {submitAvailabilityMutation.isLoading ? 'Wysyłanie...' : 'Zgłoś dostępność'}
             </button>
@@ -802,7 +802,7 @@ const Dashboard = () => {
         <div className="app-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-800">Powiadomienia wewnętrzne</h2>
-            <span className="text-[11px] font-medium text-pink-600">
+            <span className="text-[11px] font-medium text-theme-primary">
               {notificationsLoading ? 'Ładowanie...' : `${unreadCount} do przeczytania`}
             </span>
           </div>
@@ -814,13 +814,13 @@ const Dashboard = () => {
                 value={newNotification}
                 onChange={(e) => setNewNotification(e.target.value)}
                 placeholder="Dodaj krótką notatkę / komunikat"
-                className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs input-primary"
               />
               <button
                 type="button"
                 onClick={addNotification}
                 disabled={createNotificationMutation.isLoading}
-                className="inline-flex justify-center rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
+                className="inline-flex justify-center rounded-lg bg-theme-gradient px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
               >
                 {createNotificationMutation.isLoading ? 'Zapisywanie...' : 'Dodaj'}
               </button>
@@ -840,7 +840,7 @@ const Dashboard = () => {
                 <div>
                   <div className="text-sm font-semibold text-slate-900">{alert.title}</div>
                   <div className="text-[11px] text-slate-600">{alert.message}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-pink-600 mt-1">
+                  <div className="text-[10px] uppercase tracking-wide text-theme-primary mt-1">
                     {alert.type}
                   </div>
                 </div>
@@ -851,7 +851,7 @@ const Dashboard = () => {
                   className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border ${
                     alert.read
                       ? 'border-slate-200 text-slate-500 bg-slate-50'
-                      : 'border-pink-200 text-pink-700 bg-pink-50'
+                      : 'badge-primary'
                   }`}
                 >
                   {alert.read ? 'Przeczytane' : 'Oznacz jako przeczytane'}
@@ -877,7 +877,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={() => handleQuickAction('schedule')}
-                className="w-full rounded-lg border border-pink-100 bg-pink-50 px-3 py-2 text-xs font-semibold text-pink-700 hover:bg-pink-100"
+                className="w-full rounded-lg border border-theme-light bg-theme-very-light px-3 py-2 text-xs font-semibold text-theme-primary hover-bg-theme-light"
               >
                 Dodaj zmianę w grafiku
               </button>
