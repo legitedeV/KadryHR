@@ -14,6 +14,8 @@ import Layout from './components/Layout';
 import Landing from './pages/Landing';
 import SelfService from './pages/SelfService';
 import ScheduleBuilder from './pages/ScheduleBuilder';
+import TimeTracking from './pages/TimeTracking';
+import QRCodeGenerator from './pages/QRCodeGenerator';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -98,6 +100,18 @@ const App = () => {
         }
       />
       
+      {/* Time tracking - accessible to all */}
+      <Route
+        path="/time-tracking"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <TimeTracking />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
       {/* Profile - accessible to all logged-in users */}
       <Route
         path="/profile"
@@ -159,6 +173,16 @@ const App = () => {
           <AdminRoute>
             <Layout>
               <Invites />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/qr-generator"
+        element={
+          <AdminRoute>
+            <Layout>
+              <QRCodeGenerator />
             </Layout>
           </AdminRoute>
         }
