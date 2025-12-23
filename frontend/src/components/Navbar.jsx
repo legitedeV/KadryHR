@@ -103,6 +103,9 @@ const Navbar = () => {
                     </NavLink>
                   </>
                 )}
+                <NavLink to="/settings" className={linkClasses}>
+                  Ustawienia
+                </NavLink>
               </div>
 
               {/* Right gradient indicator */}
@@ -248,6 +251,13 @@ const Navbar = () => {
                 </NavLink>
               </>
             )}
+            <NavLink
+              to="/settings"
+              onClick={() => setOpen(false)}
+              className={linkClasses}
+            >
+              Ustawienia
+            </NavLink>
 
             <div className="pt-1">
               <button

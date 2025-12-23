@@ -7,6 +7,7 @@ import Employees from './pages/Employees';
 import Payroll from './pages/Payroll';
 import Reports from './pages/Reports';
 import Invites from './pages/Invites';
+import Settings from './pages/Settings';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
@@ -91,6 +92,18 @@ const App = () => {
           <PrivateRoute>
             <Layout>
               <ScheduleBuilder />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Settings - accessible to all logged-in users */}
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Settings />
             </Layout>
           </PrivateRoute>
         }

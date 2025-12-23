@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import FloatingParticles from '../components/FloatingParticles';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -144,13 +145,8 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 relative overflow-hidden">
-      {/* Animated Background Particles */}
-      <div className="particles pointer-events-none">
-        <div className="particle" style={{ width: '100px', height: '100px', top: '10%', left: '10%', animationDelay: '0s' }}></div>
-        <div className="particle" style={{ width: '150px', height: '150px', top: '60%', right: '10%', animationDelay: '2s' }}></div>
-        <div className="particle" style={{ width: '80px', height: '80px', bottom: '20%', left: '20%', animationDelay: '4s' }}></div>
-        <div className="particle" style={{ width: '120px', height: '120px', top: '40%', right: '30%', animationDelay: '1s' }}></div>
-      </div>
+      {/* Enhanced Floating Particles with Collision Physics */}
+      <FloatingParticles count={15} minSize={60} maxSize={200} speed={0.8} />
 
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-pink-100 transition-smooth">
