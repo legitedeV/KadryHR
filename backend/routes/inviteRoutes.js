@@ -54,21 +54,37 @@ router.post(
     const inviteUrl = `${frontendUrl}/register?token=${token}&email=${encodeURIComponent(email)}`;
 
     // Wyślij email z zaproszeniem
+    let emailSent = false;
+    let emailError = null;
+    
     try {
-      await sendInviteEmail({
+      const emailResult = await sendInviteEmail({
         to: email,
         inviteUrl,
         invitedBy: req.user ? req.user.name : 'Administrator',
       });
-      console.log(`✅ Wysłano zaproszenie email do: ${email}`);
-    } catch (emailError) {
-      console.error('❌ Błąd wysyłki email zaproszenia:', emailError);
+      
+      if (emailResult && emailResult.success) {
+        emailSent = true;
+        console.log(`✅ Wysłano zaproszenie email do: ${email}`);
+      } else {
+        emailError = emailResult?.error || 'SMTP nie skonfigurowane';
+        console.warn(`⚠️  Email nie został wysłany: ${emailError}`);
+      }
+    } catch (err) {
+      emailError = err.message || 'Błąd wysyłki email';
+      console.error('❌ Błąd wysyłki email zaproszenia:', err);
       // Nie przerywamy procesu - zaproszenie zostało utworzone
     }
 
     res.status(201).json({ 
       invite,
       link: inviteUrl,
+      emailSent,
+      emailError: emailSent ? null : emailError,
+      message: emailSent 
+        ? 'Zaproszenie utworzone i wysłane na email' 
+        : 'Zaproszenie utworzone. Email nie został wysłany - skopiuj link ręcznie.',
     });
   })
 );
