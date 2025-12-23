@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema(
       enum: ['light', 'dark', 'system'],
       default: 'system',
     },
+    avatarUrl: {
+      type: String,
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -46,6 +46,21 @@ const timeEntrySchema = new mongoose.Schema({
   autoClocked: {
     type: Boolean,
     default: false
+  },
+  // Track the reason for session end (for clock-out entries)
+  endReason: {
+    type: String,
+    enum: ['manual', 'auto_10h', 'admin'],
+    default: 'manual'
+  },
+  // Track session state for active sessions
+  startedAt: {
+    type: Date,
+    default: null
+  },
+  endedAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 
