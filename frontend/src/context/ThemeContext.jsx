@@ -4,14 +4,19 @@ const ThemeContext = createContext(null);
 
 const DEFAULT_COLOR = '#ec4899'; // Pink-500
 
+const STORAGE_KEYS = {
+  color: 'kadryhr_theme_color',
+  mode: 'kadryhr_theme_mode',
+};
+
 export const ThemeProvider = ({ children }) => {
   const [themeColor, setThemeColor] = useState(() => {
-    const stored = localStorage.getItem('kadryhr_theme_color');
+    const stored = localStorage.getItem(STORAGE_KEYS.color);
     return stored || DEFAULT_COLOR;
   });
 
   const [themeMode, setThemeMode] = useState(() => {
-    const stored = localStorage.getItem('kadryhr_theme_mode');
+    const stored = localStorage.getItem(STORAGE_KEYS.mode);
     return stored || 'dark';
   });
 
@@ -23,22 +28,23 @@ export const ThemeProvider = ({ children }) => {
     return 'light';
   };
 
-  // Apply theme mode to document
-  useEffect(() => {
+  const applyModeToRoot = (mode) => {
     const root = document.documentElement;
-    
-    let effectiveTheme = themeMode;
-    if (themeMode === 'system') {
-      effectiveTheme = getSystemTheme();
-    }
+    const effectiveTheme = mode === 'system' ? getSystemTheme() : mode;
+
+    root.dataset.theme = effectiveTheme;
 
     if (effectiveTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
+  };
 
-    localStorage.setItem('kadryhr_theme_mode', themeMode);
+  // Apply theme mode to document
+  useEffect(() => {
+    applyModeToRoot(themeMode);
+    localStorage.setItem(STORAGE_KEYS.mode, themeMode);
   }, [themeMode]);
 
   // Listen for system theme changes when in system mode
@@ -47,12 +53,7 @@ export const ThemeProvider = ({ children }) => {
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      const root = document.documentElement;
-      if (mediaQuery.matches) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+      applyModeToRoot('system');
     };
 
     mediaQuery.addEventListener('change', handleChange);
@@ -94,8 +95,14 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--theme-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
     
     // Save to localStorage
-    localStorage.setItem('kadryhr_theme_color', themeColor);
+    localStorage.setItem(STORAGE_KEYS.color, themeColor);
   }, [themeColor]);
+
+  // Ensure correct theme applied on initial render
+  useEffect(() => {
+    applyModeToRoot(themeMode);
+  }, []);
+
 
   const updateThemeColor = (color) => {
     setThemeColor(color);
