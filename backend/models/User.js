@@ -21,10 +21,25 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
       select: false, // bardzo ważne: domyślnie NIE zwracamy hasła
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     role: {
       type: String,
-      enum: ['admin', 'user'],
+      enum: ['admin', 'user', 'super_admin'],
       default: 'user',
+    },
+    supervisor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    themePreference: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'system',
     },
     isActive: {
       type: Boolean,

@@ -165,7 +165,27 @@ const getMe = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Użytkownik nie istnieje' });
   }
 
-  const safeUser = buildSafeUser(rawUser);
+  // Pobierz dane przełożonego jeśli istnieje
+  let supervisor = null;
+  if (rawUser.supervisor) {
+    const supervisorDoc = await User.collection.findOne({
+      _id: new mongoose.Types.ObjectId(String(rawUser.supervisor)),
+    });
+    if (supervisorDoc) {
+      supervisor = {
+        id: supervisorDoc._id.toString(),
+        name: supervisorDoc.name,
+        email: supervisorDoc.email,
+      };
+    }
+  }
+
+  const safeUser = {
+    ...buildSafeUser(rawUser),
+    phone: rawUser.phone || '',
+    themePreference: rawUser.themePreference || 'system',
+    supervisor,
+  };
 
   return res.status(200).json(safeUser);
 });
@@ -219,10 +239,162 @@ const demoLogin = asyncHandler(async (req, res) => {
   return sendAuthResponse(res, demoUser);
 });
 
+// PUT /api/auth/profile – aktualizacja profilu użytkownika
+const updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.userId || (req.user && req.user.id);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Nieautoryzowany' });
+  }
+
+  const { name, email, phone } = req.body;
+
+  const updateData = {};
+  if (name) updateData.name = name.trim();
+  if (email) updateData.email = email.toLowerCase().trim();
+  if (phone !== undefined) updateData.phone = phone.trim();
+  updateData.updatedAt = new Date();
+
+  // Sprawdź czy email nie jest już zajęty przez innego użytkownika
+  if (email) {
+    const existing = await User.collection.findOne({
+      email: email.toLowerCase().trim(),
+      _id: { $ne: new mongoose.Types.ObjectId(String(userId)) },
+    });
+    if (existing) {
+      return res.status(400).json({ message: 'Ten email jest już zajęty' });
+    }
+  }
+
+  await User.collection.updateOne(
+    { _id: new mongoose.Types.ObjectId(String(userId)) },
+    { $set: updateData }
+  );
+
+  const updatedUser = await User.collection.findOne({
+    _id: new mongoose.Types.ObjectId(String(userId)),
+  });
+
+  // Pobierz dane przełożonego jeśli istnieje
+  let supervisor = null;
+  if (updatedUser.supervisor) {
+    const supervisorDoc = await User.collection.findOne({
+      _id: new mongoose.Types.ObjectId(String(updatedUser.supervisor)),
+    });
+    if (supervisorDoc) {
+      supervisor = {
+        id: supervisorDoc._id.toString(),
+        name: supervisorDoc.name,
+        email: supervisorDoc.email,
+      };
+    }
+  }
+
+  const safeUser = {
+    ...buildSafeUser(updatedUser),
+    phone: updatedUser.phone || '',
+    themePreference: updatedUser.themePreference || 'system',
+    supervisor,
+  };
+
+  return res.status(200).json({
+    message: 'Profil zaktualizowany pomyślnie',
+    user: safeUser,
+  });
+});
+
+// PUT /api/auth/change-password – zmiana hasła
+const changePassword = asyncHandler(async (req, res) => {
+  const userId = req.userId || (req.user && req.user.id);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Nieautoryzowany' });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Obecne i nowe hasło są wymagane' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: 'Nowe hasło musi mieć minimum 6 znaków' });
+  }
+
+  const rawUser = await User.collection.findOne({
+    _id: new mongoose.Types.ObjectId(String(userId)),
+  });
+
+  if (!rawUser) {
+    return res.status(404).json({ message: 'Użytkownik nie istnieje' });
+  }
+
+  const storedHash = rawUser.passwordHash || rawUser.password;
+
+  if (!storedHash) {
+    return res.status(400).json({ message: 'Nie można zmienić hasła' });
+  }
+
+  // Sprawdź obecne hasło
+  const isMatch = await bcrypt.compare(currentPassword, storedHash);
+
+  if (!isMatch) {
+    return res.status(401).json({ message: 'Obecne hasło jest nieprawidłowe' });
+  }
+
+  // Hashuj nowe hasło
+  const newHash = await bcrypt.hash(newPassword, 10);
+
+  await User.collection.updateOne(
+    { _id: new mongoose.Types.ObjectId(String(userId)) },
+    {
+      $set: {
+        passwordHash: newHash,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  return res.status(200).json({ message: 'Hasło zmienione pomyślnie' });
+});
+
+// PUT /api/auth/theme-preference – aktualizacja preferencji motywu
+const updateThemePreference = asyncHandler(async (req, res) => {
+  const userId = req.userId || (req.user && req.user.id);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Nieautoryzowany' });
+  }
+
+  const { themePreference } = req.body;
+
+  if (!['light', 'dark', 'system'].includes(themePreference)) {
+    return res.status(400).json({ message: 'Nieprawidłowa preferencja motywu' });
+  }
+
+  await User.collection.updateOne(
+    { _id: new mongoose.Types.ObjectId(String(userId)) },
+    {
+      $set: {
+        themePreference,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  return res.status(200).json({
+    message: 'Preferencja motywu zaktualizowana',
+    themePreference,
+  });
+});
+
 module.exports = {
   loginUser,
   registerUser,
   getMe,
   logoutUser,
   demoLogin,
+  updateProfile,
+  changePassword,
+  updateThemePreference,
 };

@@ -10,6 +10,55 @@ export const ThemeProvider = ({ children }) => {
     return stored || DEFAULT_COLOR;
   });
 
+  const [themeMode, setThemeMode] = useState(() => {
+    const stored = localStorage.getItem('kadryhr_theme_mode');
+    return stored || 'system';
+  });
+
+  // Detect system theme preference
+  const getSystemTheme = () => {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  };
+
+  // Apply theme mode to document
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    let effectiveTheme = themeMode;
+    if (themeMode === 'system') {
+      effectiveTheme = getSystemTheme();
+    }
+
+    if (effectiveTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+
+    localStorage.setItem('kadryhr_theme_mode', themeMode);
+  }, [themeMode]);
+
+  // Listen for system theme changes when in system mode
+  useEffect(() => {
+    if (themeMode !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const root = document.documentElement;
+      if (mediaQuery.matches) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [themeMode]);
+
   // Update CSS custom properties when theme color changes
   useEffect(() => {
     const root = document.documentElement;
@@ -41,8 +90,18 @@ export const ThemeProvider = ({ children }) => {
     setThemeColor(DEFAULT_COLOR);
   };
 
+  const updateThemeMode = (mode) => {
+    setThemeMode(mode);
+  };
+
   return (
-    <ThemeContext.Provider value={{ themeColor, updateThemeColor, resetThemeColor }}>
+    <ThemeContext.Provider value={{ 
+      themeColor, 
+      updateThemeColor, 
+      resetThemeColor,
+      themeMode,
+      updateThemeMode,
+    }}>
       {children}
     </ThemeContext.Provider>
   );

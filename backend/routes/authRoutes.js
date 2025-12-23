@@ -4,7 +4,15 @@ const router = express.Router();
 
 const authController = require('../controllers/authController');
 
-const { loginUser, getMe, logoutUser, demoLogin } = authController;
+const { 
+  loginUser, 
+  getMe, 
+  logoutUser, 
+  demoLogin,
+  updateProfile,
+  changePassword,
+  updateThemePreference,
+} = authController;
 
 // Zabezpieczenie przed sytuacją, w której import nie zwróci funkcji (np. błąd require)
 const safeRegisterUser = (() => {
@@ -33,5 +41,14 @@ router.get('/me', protect, getMe);
 
 // Wylogowanie (czyści cookie)
 router.post('/logout', protect, logoutUser);
+
+// Aktualizacja profilu
+router.put('/profile', protect, updateProfile);
+
+// Zmiana hasła
+router.put('/change-password', protect, changePassword);
+
+// Aktualizacja preferencji motywu
+router.put('/theme-preference', protect, updateThemePreference);
 
 module.exports = router;

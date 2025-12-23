@@ -1,0 +1,5 @@
+[33m⚠️  WARNING[0m [2025-12-23T06:56:01.942Z] MongoDB disconnected 
+[31m❌ ERROR[0m [2025-12-23T06:56:01.945Z] Failed to connect to MongoDB 
+[31mMongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017
+    at _handleConnectionErrors (/vercel/sandbox/backend/node_modules/mongoose/lib/connection.js:816:11)
+    at NativeConnection.openUri (/vercel/sandbox/backend/node_modules/mongoose/lib/connection.js:791:11)[0m
