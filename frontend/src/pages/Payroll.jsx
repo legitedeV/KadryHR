@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api/axios';
+import { calculatePayroll, validatePayrollInput } from '../utils/payrollCalculator';
 
 const Payroll = () => {
   const [form, setForm] = useState({
@@ -8,38 +8,62 @@ const Payroll = () => {
     overtimeHours: '0',
     overtimeMultiplier: '1.5',
     bonus: '0',
+    contractType: 'employment',
+    isStudent: false,
+    hasDisability: false,
+    customCosts: '0',
+    taxDeduction: '0',
   });
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setForm({ 
+      ...form, 
+      [name]: type === 'checkbox' ? checked : value 
+    });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
     setResult(null);
+    
+    const params = {
+      hourlyRate: Number(form.hourlyRate || 0),
+      baseHours: Number(form.baseHours || 0),
+      overtimeHours: Number(form.overtimeHours || 0),
+      overtimeMultiplier: Number(form.overtimeMultiplier || 1),
+      bonus: Number(form.bonus || 0),
+      contractType: form.contractType,
+      isStudent: form.isStudent,
+      hasDisability: form.hasDisability,
+      customCosts: Number(form.customCosts || 0),
+      taxDeduction: Number(form.taxDeduction || 0),
+    };
+    
+    // Validate input
+    const validation = validatePayrollInput(params);
+    if (!validation.isValid) {
+      setError(validation.errors.join(', '));
+      return;
+    }
+    
     try {
-      const { data } = await api.post('/payroll/calculate', {
-        hourlyRate: Number(form.hourlyRate || 0),
-        baseHours: Number(form.baseHours || 0),
-        overtimeHours: Number(form.overtimeHours || 0),
-        overtimeMultiplier: Number(form.overtimeMultiplier || 1),
-        bonus: Number(form.bonus || 0),
-      });
-      setResult(data);
+      const calculatedResult = calculatePayroll(params);
+      setResult(calculatedResult);
       
       // Add to history (keep last 3)
       const newEntry = {
         timestamp: new Date().toLocaleString('pl-PL'),
         params: { ...form },
-        result: data,
+        result: calculatedResult,
       };
       setHistory(prev => [newEntry, ...prev].slice(0, 3));
     } catch (err) {
-      setError('Błąd obliczania wynagrodzenia');
+      setError('Błąd obliczania wynagrodzenia: ' + err.message);
     }
   };
 
@@ -155,6 +179,87 @@ const Payroll = () => {
               </div>
             </div>
 
+            {/* Typ umowy */}
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Rodzaj umowy
+              </label>
+              <select
+                name="contractType"
+                value={form.contractType}
+                onChange={handleChange}
+                className="input-primary"
+              >
+                <option value="employment">Umowa o pracę</option>
+                <option value="mandate">Umowa zlecenie</option>
+                <option value="contract">Umowa o dzieło</option>
+              </select>
+            </div>
+
+            {/* Checkboxy dla statusu */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isStudent"
+                  checked={form.isStudent}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-600"
+                  style={{ accentColor: 'var(--theme-primary)' }}
+                />
+                <span className="text-xs text-slate-700 dark:text-slate-300">
+                  Jestem studentem / uczniem poniżej 26 roku życia
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="hasDisability"
+                  checked={form.hasDisability}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-600"
+                  style={{ accentColor: 'var(--theme-primary)' }}
+                />
+                <span className="text-xs text-slate-700 dark:text-slate-300">
+                  Posiadam orzeczenie o niepełnosprawności
+                </span>
+              </label>
+            </div>
+
+            {/* Dodatkowe koszty i ulgi */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Dodatkowe koszty (PLN)
+                </label>
+                <input
+                  name="customCosts"
+                  placeholder="0"
+                  type="number"
+                  step="0.01"
+                  value={form.customCosts}
+                  onChange={handleChange}
+                  className="input-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Ulga podatkowa (PLN)
+                </label>
+                <input
+                  name="taxDeduction"
+                  placeholder="0"
+                  type="number"
+                  step="0.01"
+                  value={form.taxDeduction}
+                  onChange={handleChange}
+                  className="input-primary"
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
               className="btn-primary w-full"
@@ -230,10 +335,25 @@ const Payroll = () => {
                   <span className="text-slate-600 dark:text-slate-400">Składki</span>
                   <span className="font-semibold text-red-600 dark:text-red-400">-{result.contributions} PLN</span>
                 </div>
+                {result.breakdown?.costs && (
+                  <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-600 dark:text-slate-400">Koszty uzyskania</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">-{result.breakdown.costs} PLN</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
+                  <span className="text-slate-600 dark:text-slate-400">Podstawa opodatkowania</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{result.taxBase} PLN</span>
+                </div>
                 <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
                   <span className="text-slate-600 dark:text-slate-400">Podatek</span>
                   <span className="font-semibold text-red-600 dark:text-red-400">-{result.tax} PLN</span>
                 </div>
+                {result.breakdown?.note && (
+                  <div className="mt-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-blue-700 dark:text-blue-400">{result.breakdown.note}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
