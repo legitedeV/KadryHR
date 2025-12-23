@@ -221,10 +221,10 @@ const ScheduleBuilderV2 = () => {
   }, [schedulesData, selectedSchedule]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 animate-fade-in -m-6 sm:-m-8">
       {/* Header */}
-      <div className="app-card p-6">
-        <div className="flex items-center justify-between">
+      <div className="app-card p-6 mx-6 sm:mx-8 mt-6 sm:mt-8">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div 
               className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
@@ -265,12 +265,12 @@ const ScheduleBuilderV2 = () => {
       </div>
 
       {/* Alerts */}
-      {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
-      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
+      {success && <div className="mx-6 sm:mx-8"><Alert type="success" message={success} onClose={() => setSuccess(null)} /></div>}
+      {error && <div className="mx-6 sm:mx-8"><Alert type="error" message={error} onClose={() => setError(null)} /></div>}
 
       {/* Schedule Selection / Creation */}
       {!selectedSchedule && schedulesData && schedulesData.length === 0 && (
-        <div className="app-card p-6 text-center">
+        <div className="app-card p-6 text-center mx-6 sm:mx-8">
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             Brak grafiku dla wybranego miesiąca
           </p>
@@ -282,8 +282,8 @@ const ScheduleBuilderV2 = () => {
 
       {/* Schedule Grid */}
       {selectedSchedule && (
-        <div className="app-card p-6">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="app-card p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {selectedSchedule.name}
             </h2>
@@ -305,20 +305,21 @@ const ScheduleBuilderV2 = () => {
               <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-6 px-6">
-              <div className="inline-block min-w-full align-middle">
-                <table className="min-w-full border-collapse">
+            <div className="overflow-x-auto -mx-4 sm:-mx-6">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-6">
+                <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 min-w-[100px] sm:min-w-[120px]">
+                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 w-32 sm:w-40">
                         Pracownik
                       </th>
                       {daysInMonth.map((date, index) => (
                         <th 
                           key={index}
-                          className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 min-w-[50px] sm:min-w-[80px]"
+                          className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
+                          style={{ minWidth: '60px', width: `${100 / (daysInMonth.length + 1)}%` }}
                         >
-                          <div className="hidden sm:block">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                          <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
                           <div className="font-bold">{date.getDate()}</div>
                         </th>
                       ))}
@@ -328,7 +329,7 @@ const ScheduleBuilderV2 = () => {
                     {employeesData?.map((employee) => (
                       <tr key={employee._id}>
                         <td className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-1 sm:p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600">
-                          <div className="truncate max-w-[90px] sm:max-w-none">
+                          <div className="truncate">
                             {employee.firstName} {employee.lastName}
                           </div>
                         </td>
