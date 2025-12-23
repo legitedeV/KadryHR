@@ -12,6 +12,12 @@ router.get('/', notificationController.getMyNotifications);
 // Oznaczenie jako przeczytane
 router.patch('/:id/read', notificationController.markAsRead);
 
+// Oznaczenie wszystkich jako przeczytane
+router.post('/mark-all-read', notificationController.markAllAsRead);
+
+// Usunięcie powiadomienia
+router.delete('/:id', notificationController.deleteNotification);
+
 // Proste tworzenie powiadomienia (np. z dashboardu)
 router.post('/', notificationController.createNotificationManual);
 
