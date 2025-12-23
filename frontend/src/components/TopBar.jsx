@@ -1,8 +1,10 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import api from '../api/axios';
 import {
   UserCircleIcon,
   Cog6ToothIcon,
@@ -12,17 +14,55 @@ import {
   ComputerDesktopIcon,
   BellIcon,
   ChatBubbleLeftRightIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 const TopBar = ({ title }) => {
   const { user, logout } = useAuth();
   const { themeMode, updateThemeMode } = useTheme();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Fetch notifications
+  const { data: notificationsData } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const { data } = await api.get('/notifications');
+      return data;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Fetch conversations for chat
+  const { data: conversationsData } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: async () => {
+      const { data } = await api.get('/chat/conversations');
+      return data.conversations || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  // Mark notification as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.patch(`/notifications/${id}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notifications']);
+    },
+  });
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  const unreadNotifications = notificationsData?.filter(n => !n.read).length || 0;
+  const unreadMessages = conversationsData?.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0) || 0;
 
   const getInitials = (name) => {
     if (!name) return '?';
@@ -86,20 +126,36 @@ const TopBar = ({ title }) => {
         <div className="flex items-center gap-3">
           {/* Notifications */}
           <button
-            onClick={() => navigate('/notifications')}
+            onClick={() => setIsNotificationsOpen(true)}
             className="relative p-2 rounded-lg text-slate-500 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
             title="Powiadomienia"
           >
             <BellIcon className="w-5 h-5" />
+            {unreadNotifications > 0 && (
+              <span 
+                className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white rounded-full"
+                style={{ background: 'var(--theme-primary)' }}
+              >
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
           </button>
 
           {/* Messages */}
           <button
-            onClick={() => navigate('/chat')}
+            onClick={() => setIsChatOpen(true)}
             className="relative p-2 rounded-lg text-slate-500 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
             title="Wiadomości"
           >
             <ChatBubbleLeftRightIcon className="w-5 h-5" />
+            {unreadMessages > 0 && (
+              <span 
+                className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white rounded-full"
+                style={{ background: 'var(--theme-primary)' }}
+              >
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
           </button>
 
           {/* User Menu */}
@@ -223,6 +279,182 @@ const TopBar = ({ title }) => {
           </Menu>
         </div>
       </div>
+
+      {/* Notifications Drawer */}
+      {isNotificationsOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsNotificationsOpen(false)}
+          />
+          
+          {/* Drawer */}
+          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Powiadomienia</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {unreadNotifications} nieprzeczytanych
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/notifications')}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  style={{ color: 'var(--theme-primary)' }}
+                >
+                  Zobacz wszystkie
+                </button>
+                <button
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-3">
+              {!notificationsData || notificationsData.length === 0 ? (
+                <div className="text-center py-12">
+                  <BellIcon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Brak powiadomień</p>
+                </div>
+              ) : (
+                notificationsData.slice(0, 20).map((notification) => (
+                  <div
+                    key={notification._id}
+                    className={`rounded-lg border p-3 transition-colors ${
+                      notification.read
+                        ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'
+                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {notification.title}
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-2">
+                          {new Date(notification.createdAt).toLocaleString('pl-PL')}
+                        </p>
+                      </div>
+                      {!notification.read && (
+                        <button
+                          onClick={() => markAsReadMutation.mutate(notification._id)}
+                          className="text-xs font-medium px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                          style={{ color: 'var(--theme-primary)' }}
+                        >
+                          Oznacz
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Chat Drawer */}
+      {isChatOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsChatOpen(false)}
+          />
+          
+          {/* Drawer */}
+          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Wiadomości</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {unreadMessages} nieprzeczytanych
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsChatOpen(false);
+                    navigate('/chat');
+                  }}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  style={{ color: 'var(--theme-primary)' }}
+                >
+                  Otwórz czat
+                </button>
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-2">
+              {!conversationsData || conversationsData.length === 0 ? (
+                <div className="text-center py-12">
+                  <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Brak konwersacji</p>
+                </div>
+              ) : (
+                conversationsData.map((conversation) => {
+                  const otherParticipant = conversation.participants?.find(p => p._id !== user?.id);
+                  return (
+                    <button
+                      key={conversation._id}
+                      onClick={() => {
+                        setIsChatOpen(false);
+                        navigate('/chat');
+                      }}
+                      className={`w-full text-left rounded-lg border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70 ${
+                        conversation.unreadCount > 0
+                          ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
+                          style={{ background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))` }}
+                        >
+                          {otherParticipant?.name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                              {otherParticipant?.name || 'Użytkownik'}
+                            </h3>
+                            {conversation.unreadCount > 0 && (
+                              <span 
+                                className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded-full flex-shrink-0"
+                                style={{ background: 'var(--theme-primary)' }}
+                              >
+                                {conversation.unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
+                            {conversation.lastMessage?.content || 'Brak wiadomości'}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
