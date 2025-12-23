@@ -435,7 +435,14 @@ const Dashboard = () => {
 
       {/* Next Shift Countdown - For all users */}
       {nextShift && (
-        <div className="relative overflow-hidden rounded-2xl border shadow-lg p-6 bg-gradient-to-br from-pink-500 to-rose-500 dark:from-pink-600 dark:to-rose-600 border-pink-400 dark:border-pink-700 shadow-pink-500/30 dark:shadow-pink-900/40 text-white">
+        <div 
+          className="relative overflow-hidden rounded-2xl border shadow-lg p-6 text-white"
+          style={{
+            background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
+            borderColor: 'rgba(var(--theme-primary-rgb), 0.4)',
+            boxShadow: `0 10px 25px -5px rgba(var(--theme-primary-rgb), 0.3)`
+          }}
+        >
           <div className="flex items-center justify-between flex-wrap gap-4 relative z-10">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide opacity-95">
