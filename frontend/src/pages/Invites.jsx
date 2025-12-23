@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import Alert from '../components/Alert';
 
 const Invites = () => {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ const Invites = () => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
   const [lastLink, setLastLink] = useState('');
+  const [lastEmailStatus, setLastEmailStatus] = useState(null);
 
   const { data: invites, isLoading } = useQuery({
     queryKey: ['invites'],
@@ -30,14 +32,35 @@ const Invites = () => {
       if (response.data.link) {
         setLastLink(response.data.link);
       }
+      
+      // Zapisz status wysyłki email
+      setLastEmailStatus({
+        sent: response.data.emailSent,
+        error: response.data.emailError,
+        message: response.data.message,
+      });
+      
+      // Pokaż informację o statusie wysyłki email
+      if (response.data.emailSent) {
+        console.log('✅ Email z zaproszeniem został wysłany');
+      } else if (response.data.emailError) {
+        console.warn('⚠️ Email nie został wysłany:', response.data.emailError);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ Błąd tworzenia zaproszenia:', error);
+      alert(error.response?.data?.message || 'Nie udało się utworzyć zaproszenia');
+      setLastEmailStatus(null);
     },
   });
 
   if (!isAdmin) {
     return (
-      <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-        Tylko administrator ma dostęp do zarządzania zaproszeniami.
-      </p>
+      <Alert 
+        type="error" 
+        title="Brak dostępu"
+        message="Tylko administrator ma dostęp do zarządzania zaproszeniami."
+      />
     );
   }
 
@@ -49,6 +72,15 @@ const Invites = () => {
           Generuj linki zaproszeń do rejestracji nowych użytkowników.
         </p>
       </div>
+
+      {createMutation.isError && (
+        <Alert 
+          type="error"
+          title="Błąd tworzenia zaproszenia"
+          message={createMutation.error?.response?.data?.message || 'Nie udało się utworzyć zaproszenia. Spróbuj ponownie.'}
+          onClose={() => createMutation.reset()}
+        />
+      )}
 
       <form
         onSubmit={(e) => {
@@ -62,7 +94,7 @@ const Invites = () => {
             <label className="text-xs font-medium text-slate-700">Email</label>
             <input
               type="email"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -71,7 +103,7 @@ const Invites = () => {
           <div>
             <label className="text-xs font-medium text-slate-700">Rola</label>
             <select
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -83,20 +115,38 @@ const Invites = () => {
             <button
               type="submit"
               disabled={createMutation.isLoading}
-              className="w-full rounded-lg bg-indigo-600 text-white text-xs font-semibold py-2 hover:bg-indigo-700 disabled:opacity-60"
+              className="w-full rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-semibold py-2 shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200 disabled:opacity-60 disabled:hover:scale-100"
             >
-              Utwórz zaproszenie
+              {createMutation.isLoading ? 'Tworzenie...' : 'Utwórz zaproszenie'}
             </button>
           </div>
         </div>
 
         {lastLink && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-            <p className="text-xs font-semibold text-green-800">
-              ✅ Zaproszenie utworzone i wysłane!
-            </p>
+          <div className={`border rounded-lg p-3 space-y-2 ${
+            lastEmailStatus?.sent 
+              ? 'bg-green-50 border-green-200' 
+              : 'bg-amber-50 border-amber-200'
+          }`}>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">
+                {lastEmailStatus?.sent ? '✅' : '⚠️'}
+              </span>
+              <div className="flex-1">
+                <p className={`text-xs font-semibold ${
+                  lastEmailStatus?.sent ? 'text-green-800' : 'text-amber-800'
+                }`}>
+                  {lastEmailStatus?.message || 'Zaproszenie utworzone'}
+                </p>
+                {!lastEmailStatus?.sent && lastEmailStatus?.error && (
+                  <p className="text-[11px] text-amber-700 mt-1">
+                    Powód: {lastEmailStatus.error}
+                  </p>
+                )}
+              </div>
+            </div>
             <p className="text-[11px] text-slate-600">
-              Link zaproszenia:{' '}
+              Link zaproszenia (skopiuj i wyślij ręcznie):
             </p>
             <div className="flex items-center gap-2">
               <input
@@ -111,7 +161,7 @@ const Invites = () => {
                   navigator.clipboard.writeText(lastLink);
                   alert('Link skopiowany do schowka!');
                 }}
-                className="px-3 py-1.5 bg-indigo-600 text-white text-[11px] font-semibold rounded hover:bg-indigo-700"
+                className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[11px] font-semibold rounded shadow-md shadow-pink-500/30 hover:shadow-lg hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
               >
                 Kopiuj
               </button>

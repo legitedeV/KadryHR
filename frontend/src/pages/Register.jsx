@@ -94,7 +94,7 @@ const Register = () => {
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-slate-50 transition-all duration-200"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!inviteMode || submitting}
@@ -108,7 +108,7 @@ const Register = () => {
             </label>
             <input
               type="email"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-slate-50 transition-all duration-200"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={!!inviteEmail || !inviteMode || submitting}
@@ -122,7 +122,7 @@ const Register = () => {
             </label>
             <input
               type="password"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-slate-50 transition-all duration-200"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={!inviteMode || submitting}
@@ -133,7 +133,7 @@ const Register = () => {
           <button
             type="submit"
             disabled={!inviteMode || submitting}
-            className="mt-2 w-full inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="mt-2 w-full inline-flex justify-center rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {submitting ? 'Rejestruję...' : 'Zarejestruj'}
           </button>
@@ -143,7 +143,7 @@ const Register = () => {
           Masz już konto?{' '}
           <Link
             to="/login"
-            className="text-indigo-600 font-medium hover:underline"
+            className="text-pink-600 font-medium hover:text-pink-700 hover:underline transition-colors duration-200"
           >
             Zaloguj się
           </Link>

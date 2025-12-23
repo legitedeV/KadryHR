@@ -60,7 +60,7 @@ const Reports = () => {
             <button
               type="button"
               onClick={() => handleDownload('csv')}
-              className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+              className="inline-flex items-center rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
             >
               Pobierz CSV
             </button>
@@ -76,7 +76,7 @@ const Reports = () => {
             <button
               type="button"
               onClick={() => handleDownload('pdf')}
-              className="inline-flex items-center rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900"
+              className="inline-flex items-center rounded-lg bg-gradient-to-r from-pink-600 to-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-pink-600/30 hover:shadow-xl hover:shadow-pink-600/40 hover:scale-105 transition-all duration-200"
             >
               Pobierz PDF
             </button>
