@@ -305,26 +305,24 @@ const ScheduleBuilderV2 = () => {
               <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-4 sm:-mx-6">
-              <div className="inline-block min-w-full align-middle px-4 sm:px-6">
-                <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
-                  <thead>
-                    <tr>
-                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 w-32 sm:w-40">
-                        Pracownik
+            <div className="w-full overflow-x-auto lg:overflow-visible">
+              <table className="w-full table-fixed border-collapse">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 w-40">
+                      Pracownik
+                    </th>
+                    {daysInMonth.map((date, index) => (
+                      <th 
+                        key={index}
+                        className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
+                      >
+                        <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                        <div className="font-bold">{date.getDate()}</div>
                       </th>
-                      {daysInMonth.map((date, index) => (
-                        <th 
-                          key={index}
-                          className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
-                          style={{ minWidth: '60px', width: `${100 / (daysInMonth.length + 1)}%` }}
-                        >
-                          <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
-                          <div className="font-bold">{date.getDate()}</div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
+                    ))}
+                  </tr>
+                </thead>
                   <tbody>
                     {employeesData?.map((employee) => (
                       <tr key={employee._id}>
@@ -360,7 +358,6 @@ const ScheduleBuilderV2 = () => {
                     ))}
                   </tbody>
                 </table>
-              </div>
             </div>
           )}
         </div>
