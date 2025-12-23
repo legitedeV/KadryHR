@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import FloatingParticles from '../components/FloatingParticles';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -145,6 +146,9 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-700 dark:text-slate-200 transition-colors duration-500">
+      {/* Theme Switcher */}
+      <ThemeSwitcher />
+      
       {/* Enhanced Floating Particles with Collision Physics */}
       <FloatingParticles count={15} minSize={60} maxSize={200} speed={0.8} />
 

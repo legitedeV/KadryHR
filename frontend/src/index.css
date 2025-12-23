@@ -9,9 +9,9 @@
   --theme-very-light: #fef7fb;
   --theme-dark: #db2777;
   --theme-primary-rgb: 236, 72, 153;
-  --surface-light: #f8fafc;
+  --surface-light: #f5f7fa;
   --surface-dark: #111827;
-  --text-primary-light: #0f172a;
+  --text-primary-light: #111827;
   --text-secondary-light: #475569;
   --text-primary-dark: #f9fafb;
   --text-secondary-dark: #cbd5f5;
@@ -46,14 +46,15 @@ body {
 
 /* Light Mode Enhancements */
 html:not(.dark) body {
-  background-color: rgb(248 250 252);
-  color: rgb(15 23 42);
+  background-color: #f5f7fa;
+  color: #111827;
 }
 
 html:not(.dark) .app-card {
   background-color: white;
   border-color: rgb(226 232 240);
-  color: var(--text-primary-light);
+  color: #111827;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 html:not(.dark) input,
@@ -61,7 +62,7 @@ html:not(.dark) select,
 html:not(.dark) textarea {
   background-color: white;
   border-color: rgb(226 232 240);
-  color: var(--text-primary-light);
+  color: #111827;
 }
 
 html:not(.dark) input:focus,
@@ -70,13 +71,67 @@ html:not(.dark) textarea:focus {
   background-color: white;
 }
 
+/* Ensure text contrast in light mode */
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) h4,
+html:not(.dark) h5,
+html:not(.dark) h6 {
+  color: #111827;
+}
+
+html:not(.dark) p,
+html:not(.dark) span,
+html:not(.dark) div {
+  color: inherit;
+}
+
+html:not(.dark) .text-slate-900 {
+  color: #111827 !important;
+}
+
+html:not(.dark) .text-slate-800 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-slate-700 {
+  color: #334155 !important;
+}
+
+html:not(.dark) .text-slate-600 {
+  color: #475569 !important;
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #64748b !important;
+}
+
 /* Layout Background Gradients */
 .bg-gradient-layout {
-  background: linear-gradient(to bottom right,
-    color-mix(in srgb, var(--theme-primary) 5%, white),
-    white,
-    color-mix(in srgb, var(--theme-secondary) 4%, white)
+  background: #f5f7fa;
+  position: relative;
+}
+
+.bg-gradient-layout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at 20% 30%,
+    color-mix(in srgb, var(--theme-primary) 3%, transparent) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    circle at 80% 70%,
+    color-mix(in srgb, var(--theme-secondary) 2%, transparent) 0%,
+    transparent 50%
   );
+  pointer-events: none;
+  z-index: 0;
 }
 
 .dark .bg-gradient-layout {
@@ -87,8 +142,12 @@ html:not(.dark) textarea:focus {
   );
 }
 
+.dark .bg-gradient-layout::before {
+  display: none;
+}
+
 .bg-gradient-loading {
-  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 5%, white), white, color-mix(in srgb, var(--theme-secondary) 5%, white));
+  background: #f5f7fa;
 }
 
 .dark .bg-gradient-loading {
@@ -128,6 +187,15 @@ html:not(.dark) textarea:focus {
   background-color: rgba(148, 163, 184, 0.12);
 }
 
+/* Light mode background adjustments */
+html:not(.dark) .bg-theme-light {
+  background-color: color-mix(in srgb, var(--theme-primary) 8%, white);
+}
+
+html:not(.dark) .bg-theme-very-light {
+  background-color: color-mix(in srgb, var(--theme-primary) 4%, white);
+}
+
 .dark .input-primary {
   @apply bg-slate-700 border-slate-600 text-slate-100;
 }
@@ -149,7 +217,13 @@ html:not(.dark) textarea:focus {
 }
 
 .app-card {
-  @apply bg-white rounded-2xl shadow-sm border border-slate-100 transition-all duration-300;
+  @apply bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-300;
+}
+
+html:not(.dark) .app-card {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .app-card:hover {

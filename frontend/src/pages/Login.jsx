@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -27,14 +28,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-pink-100 p-8 space-y-6 animate-scale-in">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4">
+      <ThemeSwitcher />
+      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-pink-100 dark:border-slate-700 p-8 space-y-6 animate-scale-in">
         <div className="text-center space-y-3">
           <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br bg-theme-gradient items-center justify-center shadow-lg shadow-theme mx-auto">
             <span className="text-xl font-bold text-white">KH</span>
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Logowanie</h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             Zaloguj się do panelu kadrowo-płacowego.
           </p>
         </div>
@@ -47,10 +49,10 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Email</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
             <input
               type="email"
-              className="w-full rounded-lg border-2 border-slate-200 dark:border-slate-700 px-4 py-3 text-sm focus:outline-none focus-theme focus:border-theme-primary bg-white transition-all duration-200"
+              className="w-full rounded-lg border-2 border-slate-200 dark:border-slate-600 px-4 py-3 text-sm focus:outline-none focus-theme focus:border-theme-primary bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
               placeholder="twoj@email.pl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -58,10 +60,10 @@ const Login = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Hasło</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Hasło</label>
             <input
               type="password"
-              className="w-full rounded-lg border-2 border-slate-200 dark:border-slate-700 px-4 py-3 text-sm focus:outline-none focus-theme focus:border-theme-primary bg-white transition-all duration-200"
+              className="w-full rounded-lg border-2 border-slate-200 dark:border-slate-600 px-4 py-3 text-sm focus:outline-none focus-theme focus:border-theme-primary bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +80,7 @@ const Login = () => {
         </form>
 
         <div className="text-center space-y-2">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Rejestracja nowych kont odbywa się poprzez zaproszenie od administratora.
           </p>
           <Link to="/" className="text-sm font-medium text-theme-primary hover:text-theme-primary inline-block">

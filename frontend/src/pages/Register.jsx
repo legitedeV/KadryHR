@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -59,13 +60,14 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-100 px-6 py-6">
-        <h1 className="text-lg font-semibold text-slate-900 mb-1">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+      <ThemeSwitcher />
+      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 px-6 py-6">
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">
           Rejestracja
         </h1>
 
-        <p className="text-xs text-slate-500 mb-4">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           {inviteMode ? (
             <>
               Uzupełnij dane, aby dokończyć rejestrację z zaproszenia.
@@ -89,12 +91,12 @@ const Register = () => {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
               Imię i nazwisko
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 transition-all duration-200"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!inviteMode || submitting}
@@ -103,12 +105,12 @@ const Register = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
               Email
             </label>
             <input
               type="email"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 transition-all duration-200"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={!!inviteEmail || !inviteMode || submitting}
@@ -117,12 +119,12 @@ const Register = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
               Hasło
             </label>
             <input
               type="password"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 transition-all duration-200"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={!inviteMode || submitting}
@@ -139,7 +141,7 @@ const Register = () => {
           </button>
         </form>
 
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
           Masz już konto?{' '}
           <Link
             to="/login"

@@ -435,16 +435,16 @@ const Dashboard = () => {
 
       {/* Next Shift Countdown - For all users */}
       {nextShift && (
-        <div className="bg-theme-gradient-br rounded-2xl border border-theme-light shadow-lg shadow-theme p-6 text-white">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="relative overflow-hidden rounded-2xl border shadow-lg p-6 bg-gradient-to-br from-pink-500 to-rose-500 dark:from-pink-600 dark:to-rose-600 border-pink-400 dark:border-pink-700 shadow-pink-500/30 dark:shadow-pink-900/40 text-white">
+          <div className="flex items-center justify-between flex-wrap gap-4 relative z-10">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide opacity-90">
+              <div className="text-xs font-semibold uppercase tracking-wide opacity-95">
                 Następna zmiana
               </div>
               <div className="text-2xl font-bold mt-1">
                 {fullDateFormatter.format(new Date(nextShift.date))}
               </div>
-              <div className="text-sm opacity-90 mt-1">
+              <div className="text-sm opacity-95 mt-1">
                 {nextShift.startTime} - {nextShift.endTime}
                 {nextShift.employee && (
                   <span className="ml-2">
@@ -456,24 +456,29 @@ const Dashboard = () => {
             <div className="flex gap-3">
               <div className="text-center">
                 <div className="text-3xl font-bold">{countdown.days}</div>
-                <div className="text-xs uppercase tracking-wide opacity-80">Dni</div>
+                <div className="text-xs uppercase tracking-wide opacity-90">Dni</div>
               </div>
-              <div className="text-3xl font-bold opacity-60">:</div>
+              <div className="text-3xl font-bold opacity-70">:</div>
               <div className="text-center">
                 <div className="text-3xl font-bold">{countdown.hours}</div>
-                <div className="text-xs uppercase tracking-wide opacity-80">Godz</div>
+                <div className="text-xs uppercase tracking-wide opacity-90">Godz</div>
               </div>
-              <div className="text-3xl font-bold opacity-60">:</div>
+              <div className="text-3xl font-bold opacity-70">:</div>
               <div className="text-center">
                 <div className="text-3xl font-bold">{countdown.minutes}</div>
-                <div className="text-xs uppercase tracking-wide opacity-80">Min</div>
+                <div className="text-xs uppercase tracking-wide opacity-90">Min</div>
               </div>
-              <div className="text-3xl font-bold opacity-60">:</div>
+              <div className="text-3xl font-bold opacity-70">:</div>
               <div className="text-center">
                 <div className="text-3xl font-bold">{countdown.seconds}</div>
-                <div className="text-xs uppercase tracking-wide opacity-80">Sek</div>
+                <div className="text-xs uppercase tracking-wide opacity-90">Sek</div>
               </div>
             </div>
+          </div>
+          {/* Subtle background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
           </div>
         </div>
       )}
