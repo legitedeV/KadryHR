@@ -282,51 +282,53 @@ const ScheduleBuilderV2 = () => {
 
       {/* Schedule Grid */}
       {selectedSchedule && (
-        <div className="app-card p-4 sm:p-6">
-          <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              {selectedSchedule.name}
-            </h2>
-            <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                selectedSchedule.status === 'published' 
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-              }`}>
-                {selectedSchedule.status === 'published' ? 'Opublikowany' : 'Wersja robocza'}
-              </span>
+        <div className="w-full max-w-[1600px] mx-auto">
+          <div className="app-card p-4 sm:p-6">
+            <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                {selectedSchedule.name}
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedSchedule.status === 'published' 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                }`}>
+                  {selectedSchedule.status === 'published' ? 'Opublikowany' : 'Wersja robocza'}
+                </span>
+              </div>
             </div>
-          </div>
 
-          {scheduleLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2"
-                   style={{ borderColor: 'var(--theme-primary)' }}></div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto lg:overflow-visible">
-              <table className="w-full table-fixed border-collapse">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 w-40">
-                      Pracownik
-                    </th>
-                    {daysInMonth.map((date, index) => (
-                      <th 
-                        key={index}
-                        className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
-                      >
-                        <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
-                        <div className="font-bold">{date.getDate()}</div>
+            {scheduleLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2"
+                     style={{ borderColor: 'var(--theme-primary)' }}></div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <table className="w-full border-collapse" style={{ minWidth: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" style={{ width: '200px', minWidth: '200px' }}>
+                        Pracownik
                       </th>
-                    ))}
-                  </tr>
-                </thead>
+                      {daysInMonth.map((date, index) => (
+                        <th 
+                          key={index}
+                          className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
+                          style={{ minWidth: '60px' }}
+                        >
+                          <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                          <div className="font-bold">{date.getDate()}</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
                   <tbody>
                     {employeesData?.map((employee) => (
                       <tr key={employee._id}>
-                        <td className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-1 sm:p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600">
+                        <td className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" style={{ width: '200px', minWidth: '200px' }}>
                           <div className="truncate">
                             {employee.firstName} {employee.lastName}
                           </div>
@@ -340,11 +342,12 @@ const ScheduleBuilderV2 = () => {
                             <td 
                               key={index}
                               onClick={() => handleCellClick(employee, date)}
-                              className="p-0.5 sm:p-1 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                              className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                              style={{ minWidth: '60px' }}
                             >
                               {assignment && (
                                 <div 
-                                  className="px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[9px] sm:text-xs text-white text-center font-medium truncate"
+                                  className="px-2 py-1 rounded text-[10px] sm:text-xs text-white text-center font-medium truncate"
                                   style={{ backgroundColor: getAssignmentColor(assignment) }}
                                   title={getAssignmentDisplay(assignment)}
                                 >
@@ -358,8 +361,9 @@ const ScheduleBuilderV2 = () => {
                     ))}
                   </tbody>
                 </table>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
