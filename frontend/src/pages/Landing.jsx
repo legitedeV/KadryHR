@@ -145,7 +145,7 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-700 dark:text-slate-200 transition-colors duration-500">
+    <div className="min-h-screen relative overflow-hidden bg-page-light text-slate-700 dark:text-slate-200 transition-colors duration-500">
       {/* Theme Switcher */}
       <ThemeSwitcher />
       

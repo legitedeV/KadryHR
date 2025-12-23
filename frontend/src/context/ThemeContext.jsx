@@ -12,7 +12,7 @@ export const ThemeProvider = ({ children }) => {
 
   const [themeMode, setThemeMode] = useState(() => {
     const stored = localStorage.getItem('kadryhr_theme_mode');
-    return stored || 'system';
+    return stored || 'dark';
   });
 
   // Detect system theme preference

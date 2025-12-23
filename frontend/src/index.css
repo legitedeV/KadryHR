@@ -154,6 +154,23 @@ html:not(.dark) .text-slate-500 {
   background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 10%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 10%, #0f172a));
 }
 
+/* Page Background Utilities - Theme Aware */
+.bg-page-light {
+  background: linear-gradient(to bottom right, #fef1f7, #ffffff, #fef3f8);
+}
+
+.dark .bg-page-light {
+  background: linear-gradient(to bottom right, #0f172a, #111827, #1e293b);
+}
+
+.bg-page-neutral {
+  background: #f5f7fa;
+}
+
+.dark .bg-page-neutral {
+  background: #0f172a;
+}
+
 .dark .bg-white,
 .dark .app-card {
   background-color: #1f2937;

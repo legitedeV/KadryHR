@@ -60,7 +60,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-page-neutral px-4">
       <ThemeSwitcher />
       <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 px-6 py-6">
         <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">

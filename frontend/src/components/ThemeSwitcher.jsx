@@ -19,7 +19,7 @@ const ThemeSwitcher = () => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-4 py-2.5 rounded-full shadow-lg border border-slate-200/60 dark:border-slate-700/60">
+    <div className="fixed top-4 right-4 z-[60] flex items-center gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl px-4 py-2.5 rounded-full shadow-lg border border-slate-200/60 dark:border-slate-700/60">
       {/* Moon Icon (Dark Mode) */}
       <MoonIcon 
         className={`w-4 h-4 transition-colors ${
