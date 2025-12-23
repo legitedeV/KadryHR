@@ -54,8 +54,8 @@ const Navbar = () => {
     [
       'px-3 py-1.5 text-sm rounded-full transition-all duration-200 whitespace-nowrap block',
       isActive
-        ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 shadow-sm'
-        : 'text-slate-600 hover:bg-pink-50 hover:text-pink-700',
+        ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 shadow-sm dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-400'
+        : 'text-slate-600 hover:bg-pink-50 hover:text-pink-700 dark:text-slate-300 dark:hover:bg-pink-900/20 dark:hover:text-pink-400',
     ].join(' ');
 
   const handleLogout = () => {
@@ -66,13 +66,13 @@ const Navbar = () => {
   };
 
   return (
-    <header className="border-b border-slate-100 bg-white/80 backdrop-blur dark:bg-slate-800/80 dark:border-slate-700">
+    <header className="border-b border-slate-100 bg-white/80 backdrop-blur dark:bg-slate-800/80 dark:border-slate-700 sticky top-0 z-50">
       <nav className="app-shell flex items-center justify-between h-14 gap-2">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-pink-500/30">
             KH
           </div>
-          <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">KadryHR</span>
+          <span className="text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent dark:from-pink-400 dark:to-rose-400">KadryHR</span>
         </div>
 
         <div className="hidden md:block flex-1 relative max-w-2xl mx-4">
@@ -80,7 +80,7 @@ const Navbar = () => {
             <>
               {/* Left gradient indicator */}
               {showLeftGradient && (
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white/80 to-transparent dark:from-slate-800/80 pointer-events-none z-10" />
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent dark:from-slate-800 pointer-events-none z-10" />
               )}
               
               {/* Scrollable navigation */}
@@ -122,7 +122,7 @@ const Navbar = () => {
 
               {/* Right gradient indicator */}
               {showRightGradient && (
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/80 to-transparent dark:from-slate-800/80 pointer-events-none z-10" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent dark:from-slate-800 pointer-events-none z-10" />
               )}
             </>
           )}
