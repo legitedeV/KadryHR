@@ -58,4 +58,10 @@ const employeeSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// Indexes for performance
+employeeSchema.index({ companyId: 1, isActive: 1 });
+employeeSchema.index({ companyId: 1, firstName: 1, lastName: 1 });
+employeeSchema.index({ user: 1 });
+employeeSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Employee', employeeSchema);

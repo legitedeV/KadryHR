@@ -1,43 +1,52 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Employees from './pages/Employees';
-import Payroll from './pages/Payroll';
-import Reports from './pages/Reports';
-import Invites from './pages/Invites';
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import Landing from './pages/Landing';
-import SelfService from './pages/SelfService';
-import ScheduleBuilder from './pages/ScheduleBuilder';
-import ScheduleBuilderV2 from './pages/ScheduleBuilderV2';
-import TimeTracking from './pages/TimeTracking';
-import QRCodeGenerator from './pages/QRCodeGenerator';
-import QRStart from './pages/QRStart';
-import Chat from './pages/Chat';
-import AdminRequests from './pages/AdminRequests';
-import AllLeaves from './pages/AllLeaves';
-import AllNotifications from './pages/AllNotifications';
-import Permissions from './pages/Permissions';
 import ProtectedRoute from './components/ProtectedRoute';
 import { PERMISSIONS } from './utils/permissions';
+import { PageSkeleton } from './components/Skeleton';
+
+// Eager load critical pages (login, landing)
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Landing from './pages/Landing';
+import QRStart from './pages/QRStart';
+
+// Lazy load heavy pages for code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Employees = lazy(() => import('./pages/Employees'));
+const Payroll = lazy(() => import('./pages/Payroll'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Invites = lazy(() => import('./pages/Invites'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
+const SelfService = lazy(() => import('./pages/SelfService'));
+const ScheduleBuilder = lazy(() => import('./pages/ScheduleBuilder'));
+const ScheduleBuilderV2 = lazy(() => import('./pages/ScheduleBuilderV2'));
+const TimeTracking = lazy(() => import('./pages/TimeTracking'));
+const QRCodeGenerator = lazy(() => import('./pages/QRCodeGenerator'));
+const Chat = lazy(() => import('./pages/Chat'));
+const AdminRequests = lazy(() => import('./pages/AdminRequests'));
+const AllLeaves = lazy(() => import('./pages/AllLeaves'));
+const AllNotifications = lazy(() => import('./pages/AllNotifications'));
+const Permissions = lazy(() => import('./pages/Permissions'));
+const Webhooks = lazy(() => import('./pages/Webhooks'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-loading">
+    <div className="text-center">
+      <div className="spinner h-12 w-12 mx-auto"></div>
+      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Ładowanie...</p>
+    </div>
+  </div>
+);
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-loading">
-        <div className="text-center">
-          <div className="spinner h-12 w-12 mx-auto"></div>
-          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Ładowanie...</p>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
   
   if (!user) return <Navigate to="/login" replace />;
@@ -48,14 +57,7 @@ const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-loading">
-        <div className="text-center">
-          <div className="spinner h-12 w-12 mx-auto"></div>
-          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Ładowanie...</p>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
 
   if (!user) return <Navigate to="/login" replace />;
@@ -68,7 +70,8 @@ const AdminRoute = ({ children }) => {
 
 const App = () => {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -246,6 +249,16 @@ const App = () => {
         }
       />
       <Route
+        path="/webhooks"
+        element={
+          <AdminRoute>
+            <Layout>
+              <Webhooks />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
         path="/qr-generator"
         element={
           <AdminRoute>
@@ -267,7 +280,8 @@ const App = () => {
       />
       
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 };
 
