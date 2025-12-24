@@ -70,26 +70,28 @@ const logger = {
     const method = req.method;
     const path = req.path;
     const ip = req.ip;
+    const requestId = req.requestId ? `[#${req.requestId}] ` : '';
     
     let methodColor = colors.cyan;
     if (method === 'POST') methodColor = colors.green;
     if (method === 'PUT' || method === 'PATCH') methodColor = colors.yellow;
     if (method === 'DELETE') methodColor = colors.red;
-    
+
     console.log(
-      `${methodColor}${method}${colors.reset} ${path} ${colors.dim}from ${ip}${colors.reset}`
+      `${requestId}${methodColor}${method}${colors.reset} ${path} ${colors.dim}from ${ip}${colors.reset}`
     );
   },
 
   response: (req, res, duration) => {
     const status = res.statusCode;
     let statusColor = colors.green;
+    const requestId = req.requestId ? `[#${req.requestId}] ` : '';
     
     if (status >= 400 && status < 500) statusColor = colors.yellow;
     if (status >= 500) statusColor = colors.red;
-    
+
     console.log(
-      `${statusColor}${status}${colors.reset} ${req.method} ${req.path} ${colors.dim}${duration}ms${colors.reset}`
+      `${requestId}${statusColor}${status}${colors.reset} ${req.method} ${req.path} ${colors.dim}${duration.toFixed(1)}ms${colors.reset}`
     );
   },
 
