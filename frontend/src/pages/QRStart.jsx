@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import Alert from '../components/Alert';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const QRStart = () => {
   const [searchParams] = useSearchParams();
@@ -93,10 +94,10 @@ const QRStart = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-loading">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Ładowanie...</p>
+          <div className="spinner h-12 w-12 mx-auto"></div>
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Ładowanie...</p>
         </div>
       </div>
     );
@@ -110,54 +111,82 @@ const QRStart = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Rozpocznij pracę
-          </h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-layout relative overflow-hidden px-4 py-10">
+      <div
+        className="absolute inset-0 opacity-40 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 12% 18%, rgba(var(--theme-primary-rgb),0.18), transparent 32%),
+          radial-gradient(circle at 84% 8%, rgba(14,165,233,0.16), transparent 36%),
+          radial-gradient(circle at 50% 88%, rgba(37,99,235,0.14), transparent 40%)`
+        }}
+      />
+      <ThemeSwitcher />
+
+      <div className="w-full max-w-xl relative z-10">
+        <div className="mb-6 inline-flex items-center gap-3 rounded-full px-4 py-2 border border-white/60 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl shadow-[0_18px_60px_-36px_rgba(15,23,42,0.55)]">
+          <div className="h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-bold text-white shadow-lg" style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}>
+            KH
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">KadryHR • Rejestrowanie czasu</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-white">Start sesji pracy</p>
+          </div>
+        </div>
+
+        <div className="bg-white/90 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl shadow-[0_24px_70px_-36px_rgba(15,23,42,0.7)] backdrop-blur-2xl p-8 space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Sesja QR</p>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rozpocznij pracę</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Potwierdź token z QR, a my automatycznie rozpoczniemy sesję oraz zapiszemy kontekst.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-theme-very-light text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800/70">
+              Błyskawicznie
+            </span>
+          </div>
 
           {error && (
-            <Alert type="error" message={error} className="mb-4" />
+            <Alert type="error" message={error} />
           )}
 
           {success && (
-            <Alert type="success" message={success} className="mb-4" />
+            <Alert type="success" message={success} />
           )}
 
           {loading && (
-            <div className="py-8">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">
-                Rozpoczynanie pracy...
-              </p>
+            <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-theme-very-light/60 dark:bg-slate-800/50 p-6 text-center space-y-3">
+              <div className="spinner h-10 w-10 mx-auto" />
+              <p className="text-sm text-slate-600 dark:text-slate-300">Rozpoczynanie pracy...</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Łączymy dane geolokalizacji oraz zapisujemy start.</p>
             </div>
           )}
 
           {!loading && !success && tokenInfo && (
-            <div className="py-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Pracownik:
-                </p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {tokenInfo.employee?.firstName} {tokenInfo.employee?.lastName}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {tokenInfo.employee?.position}
-                </p>
+            <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-theme-very-light/60 dark:bg-slate-800/50 p-5 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Pracownik</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                    {tokenInfo.employee?.firstName} {tokenInfo.employee?.lastName}
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{tokenInfo.employee?.position || 'Stanowisko nieznane'}</p>
+                </div>
+                <div className="px-3 py-1 rounded-full text-xs font-semibold bg-white/80 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 text-slate-700 dark:text-slate-200">
+                  Token zweryfikowany
+                </div>
               </div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Trwa rozpoczynanie sesji pracy...
-              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Trwa rozpoczynanie sesji pracy...</p>
             </div>
           )}
 
           {!loading && !success && !tokenInfo && error && (
-            <div className="py-4">
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-slate-600 dark:text-slate-300">Nie udało się potwierdzić tokenu. Wróć do głównego panelu rejestracji czasu, aby spróbować ponownie.</p>
               <button
                 onClick={() => navigate('/time-tracking')}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full rounded-xl bg-gradient-to-r from-slate-900 via-sky-900 to-slate-900 text-white text-sm font-semibold py-3 shadow-lg shadow-slate-900/30 hover:translate-y-[-1px] transition-all duration-200"
               >
                 Powrót do śledzenia czasu
               </button>

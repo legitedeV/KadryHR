@@ -416,31 +416,33 @@ textarea::placeholder {
 
 .app-card {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.9));
-  border: 1px solid color-mix(in srgb, var(--border-primary) 85%, rgba(var(--theme-primary-rgb), 0.25));
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.86));
+  border: 1px solid color-mix(in srgb, var(--border-primary) 82%, rgba(var(--theme-primary-rgb), 0.28));
   color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 20px 70px -40px rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
   @apply rounded-2xl transition-all duration-300;
   overflow: hidden;
 }
 
 [data-theme="dark"] .app-card {
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.85), rgba(11, 18, 32, 0.95));
-  border-color: color-mix(in srgb, var(--border-primary) 65%, rgba(var(--theme-primary-rgb), 0.25));
+  background: linear-gradient(150deg, rgba(15, 23, 42, 0.88), rgba(11, 18, 32, 0.96));
+  border-color: color-mix(in srgb, var(--border-primary) 62%, rgba(var(--theme-primary-rgb), 0.32));
 }
 
 .app-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  box-shadow: 0 30px 80px -50px rgba(15, 23, 42, 0.7);
+  transform: translateY(-3px);
 }
 
 .app-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 15% 20%, rgba(var(--theme-primary-rgb), 0.08), transparent 35%),
-    radial-gradient(circle at 85% 30%, rgba(37, 99, 235, 0.08), transparent 38%);
-  opacity: 0.85;
+  background: radial-gradient(circle at 18% 20%, rgba(var(--theme-primary-rgb), 0.12), transparent 34%),
+    radial-gradient(circle at 82% 28%, rgba(37, 99, 235, 0.12), transparent 38%),
+    linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.04), transparent 50%);
+  opacity: 0.9;
   pointer-events: none;
 }
 
@@ -1336,8 +1338,11 @@ textarea::placeholder {
 
 .sidebar-link {
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   color: var(--text-secondary);
+  border-color: color-mix(in srgb, var(--border-primary) 70%, rgba(var(--theme-primary-rgb), 0.2));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.55));
+  box-shadow: 0 10px 26px -20px rgba(15, 23, 42, 0.55);
 }
 
 .sidebar-link svg {
@@ -1346,9 +1351,10 @@ textarea::placeholder {
 }
 
 .sidebar-link:hover {
-  transform: translateX(2px);
+  transform: translateX(3px);
   color: var(--theme-primary);
-  background-color: var(--surface-hover);
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.08), rgba(255, 255, 255, 0.4));
+  box-shadow: 0 16px 36px -26px rgba(var(--theme-primary-rgb), 0.8);
 }
 
 .sidebar-link:hover svg {
@@ -1356,18 +1362,24 @@ textarea::placeholder {
 }
 
 .sidebar-link.active {
-  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.12), rgba(var(--theme-primary-rgb), 0.08));
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.16), rgba(var(--theme-primary-rgb), 0.08));
   color: var(--theme-primary);
-  box-shadow: inset 3px 0 0 var(--theme-primary);
+  box-shadow: inset 3px 0 0 var(--theme-primary), 0 14px 40px -28px rgba(var(--theme-primary-rgb), 0.75);
+  border-color: color-mix(in srgb, var(--border-primary) 55%, rgba(var(--theme-primary-rgb), 0.5));
 }
 
 .sidebar-link.active svg {
   color: var(--theme-primary);
 }
 
+[data-theme="dark"] .sidebar-link {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.55));
+  box-shadow: 0 10px 26px -24px rgba(0, 0, 0, 0.45);
+}
+
 [data-theme="dark"] .sidebar-link.active {
-  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0.15));
-  box-shadow: inset 3px 0 0 var(--theme-primary);
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.24), rgba(var(--theme-primary-rgb), 0.12));
+  box-shadow: inset 3px 0 0 var(--theme-primary), 0 14px 40px -24px rgba(0, 0, 0, 0.55);
 }
 
 /* Tooltip for collapsed sidebar */
