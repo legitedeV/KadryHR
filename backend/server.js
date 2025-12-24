@@ -11,6 +11,7 @@ const hpp = require('hpp');
 const { rateLimit } = require('express-rate-limit');
 const compression = require('compression');
 const { Server } = require('socket.io');
+const requestContext = require('./middleware/requestContext');
 
 // Custom middleware i utilities
 const performanceMonitor = require('./middleware/performanceMonitor');
@@ -38,6 +39,7 @@ app.use(compression({
 }));
 
 // === PERFORMANCE MONITORING ===
+app.use(requestContext);
 app.use(performanceMonitor);
 
 // Kolorowe logowanie requestów
@@ -57,7 +59,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // === CORS ===
-const allowedOrigins = [
+const parseOrigins = (value = '') => value
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([
+  ...parseOrigins(process.env.CORS_ORIGINS),
   FRONTEND_URL,            // np. http://kadryhr.pl lub https://kadryhr.pl
   'http://kadryhr.pl',
   'https://kadryhr.pl',
@@ -65,7 +73,7 @@ const allowedOrigins = [
   'https://www.kadryhr.pl',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-];
+]));
 
 const corsOptions = {
   origin(origin, callback) {
@@ -296,6 +304,7 @@ app.use((err, req, res, next) => {
     path: req.path,
     method: req.method,
     statusCode,
+    requestId: req.requestId,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 
@@ -304,7 +313,8 @@ app.use((err, req, res, next) => {
     error: true,
     type: errorType,
     message,
-    ...(process.env.NODE_ENV === 'development' && { 
+    requestId: req.requestId,
+    ...(process.env.NODE_ENV === 'development' && {
       stack: err.stack,
       details: err.errors,
     }),
