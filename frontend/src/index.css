@@ -97,73 +97,89 @@
   --page-gradient-end: #0f172a;
 }
 
-/* Dark Mode Styles - Restored original appearance */
+/* Dark Mode Styles - Using CSS Variables */
 .dark body {
-  @apply bg-slate-900 text-slate-100;
+  background-color: var(--page-bg);
+  color: var(--text-primary);
 }
 
 .dark .app-card {
-  @apply bg-slate-800 border-slate-700;
+  background-color: var(--surface-primary);
+  border-color: var(--border-primary);
 }
 
 .dark .bg-gradient-layout {
-  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 8%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 8%, #0f172a));
+  background: linear-gradient(to bottom right, 
+    color-mix(in srgb, var(--theme-primary) 8%, var(--page-bg)), 
+    var(--page-bg), 
+    color-mix(in srgb, var(--theme-secondary) 8%, var(--page-bg))
+  );
 }
 
 .dark .bg-gradient-loading {
-  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 10%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 10%, #0f172a));
+  background: linear-gradient(to bottom right, 
+    color-mix(in srgb, var(--theme-primary) 10%, var(--page-bg)), 
+    var(--page-bg), 
+    color-mix(in srgb, var(--theme-secondary) 10%, var(--page-bg))
+  );
 }
 
 .dark .bg-white {
-  @apply bg-slate-800;
+  background-color: var(--surface-primary);
 }
 
 .dark .text-slate-900 {
-  @apply text-slate-100;
+  color: var(--text-primary);
 }
 
 .dark .text-slate-800 {
-  @apply text-slate-200;
+  color: var(--text-primary);
 }
 
 .dark .text-slate-700 {
-  @apply text-slate-300;
+  color: var(--text-secondary);
 }
 
 .dark .text-slate-600 {
-  @apply text-slate-400;
+  color: var(--text-secondary);
 }
 
 .dark .text-slate-500 {
-  color: rgb(100 116 139);
+  color: var(--text-tertiary);
 }
 
 .dark .border-slate-100 {
-  @apply border-slate-700;
+  border-color: var(--border-primary);
 }
 
 .dark .border-slate-200 {
-  @apply border-slate-600;
+  border-color: var(--border-secondary);
 }
 
 .dark .bg-slate-50 {
-  @apply bg-slate-800;
+  background-color: var(--surface-secondary);
 }
 
 .dark .bg-slate-100 {
-  @apply bg-slate-700;
+  background-color: var(--surface-tertiary);
 }
 
 .dark .input-primary {
-  @apply bg-slate-700 border-slate-600 text-slate-100;
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
 }
 
 .dark .select-primary {
-  @apply bg-slate-700 border-slate-600 text-slate-100;
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
 }
 
 .dark .textarea-primary {
-  @apply bg-slate-700 border-slate-600 text-slate-100;
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
 }
 
 /* ============================================
@@ -270,9 +286,9 @@ textarea::placeholder {
 
 [data-theme="dark"] .bg-gradient-layout {
   background: linear-gradient(to bottom right,
-    color-mix(in srgb, var(--theme-primary) 12%, #0f172a),
-    #111827,
-    color-mix(in srgb, var(--theme-secondary) 10%, #111827)
+    color-mix(in srgb, var(--theme-primary) 12%, var(--page-bg)),
+    color-mix(in srgb, var(--theme-primary) 5%, var(--surface-secondary)),
+    color-mix(in srgb, var(--theme-secondary) 10%, var(--surface-secondary))
   );
 }
 
@@ -282,9 +298,9 @@ textarea::placeholder {
 
 [data-theme="dark"] .bg-gradient-loading {
   background: linear-gradient(to bottom right, 
-    color-mix(in srgb, var(--theme-primary) 10%, #0f172a), 
-    #0f172a, 
-    color-mix(in srgb, var(--theme-secondary) 10%, #0f172a)
+    color-mix(in srgb, var(--theme-primary) 10%, var(--page-bg)), 
+    var(--page-bg), 
+    color-mix(in srgb, var(--theme-secondary) 10%, var(--page-bg))
   );
 }
 
@@ -1004,7 +1020,7 @@ textarea::placeholder {
 }
 
 .dark .btn-secondary {
-  @apply bg-slate-800;
+  background-color: var(--surface-primary);
 }
 
 .dark .btn-secondary:hover:not(:disabled) {
@@ -1043,11 +1059,11 @@ textarea::placeholder {
 
 /* Theme-aware backgrounds */
 .bg-theme-light {
-  background-color: color-mix(in srgb, var(--theme-primary) 10%, white);
+  background-color: color-mix(in srgb, var(--theme-primary) 10%, var(--surface-primary));
 }
 
 .bg-theme-very-light {
-  background-color: color-mix(in srgb, var(--theme-primary) 5%, white);
+  background-color: color-mix(in srgb, var(--theme-primary) 5%, var(--surface-primary));
 }
 
 /* Theme-aware shadows */
@@ -1061,7 +1077,7 @@ textarea::placeholder {
 
 /* Theme-aware hover states */
 .hover-bg-theme-light:hover {
-  background-color: color-mix(in srgb, var(--theme-primary) 5%, white);
+  background-color: color-mix(in srgb, var(--theme-primary) 5%, var(--surface-primary));
 }
 
 .hover-text-theme:hover {
@@ -1211,7 +1227,10 @@ textarea::placeholder {
 
 /* Theme-aware active/selected states */
 .active-theme {
-  background: linear-gradient(to right, color-mix(in srgb, var(--theme-primary) 15%, white), color-mix(in srgb, var(--theme-secondary) 15%, white));
+  background: linear-gradient(to right, 
+    color-mix(in srgb, var(--theme-primary) 15%, var(--surface-primary)), 
+    color-mix(in srgb, var(--theme-secondary) 15%, var(--surface-primary))
+  );
   color: var(--theme-primary);
 }
 
@@ -1244,14 +1263,6 @@ textarea::placeholder {
   color: var(--theme-primary);
 }
 
-[data-theme="dark"] .nav-link:hover {
-  background-color: rgba(var(--theme-primary-rgb), 0.15);
-}
-
-.dark .nav-link:hover {
-  background-color: rgba(var(--theme-primary-rgb), 0.15);
-}
-
 .nav-link-active {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.15), rgba(var(--theme-primary-rgb), 0.1));
   color: var(--theme-primary);
@@ -1262,19 +1273,11 @@ textarea::placeholder {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.25), rgba(var(--theme-primary-rgb), 0.2));
 }
 
-.dark .nav-link-active {
-  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.25), rgba(var(--theme-primary-rgb), 0.2));
-}
-
 .user-menu-btn:hover {
   background-color: rgba(var(--theme-primary-rgb), 0.05);
 }
 
 [data-theme="dark"] .user-menu-btn:hover {
-  background-color: rgba(var(--theme-primary-rgb), 0.1);
-}
-
-.dark .user-menu-btn:hover {
   background-color: rgba(var(--theme-primary-rgb), 0.1);
 }
 
@@ -1329,11 +1332,6 @@ textarea::placeholder {
 }
 
 [data-theme="dark"] .sidebar-link.active {
-  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0.15));
-  box-shadow: inset 3px 0 0 var(--theme-primary);
-}
-
-.dark .sidebar-link.active {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0.15));
   box-shadow: inset 3px 0 0 var(--theme-primary);
 }
