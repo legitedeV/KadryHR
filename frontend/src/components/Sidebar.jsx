@@ -215,10 +215,10 @@ const Sidebar = () => {
 
   const linkClasses = ({ isActive }) =>
     [
-      'flex items-center gap-3 px-3.5 py-2 rounded-2xl transition-all duration-200 group relative sidebar-link backdrop-blur-xl border',
+      'flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all duration-300 group relative sidebar-link backdrop-blur-xl overflow-hidden border',
       isActive
-        ? 'bg-white/80 dark:bg-slate-900/60 text-slate-900 dark:text-white border-slate-200/70 dark:border-slate-700 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.6)]'
-        : 'border-transparent hover:border-slate-200/60 dark:hover:border-slate-700 hover:bg-white/60 dark:hover:bg-slate-900/40'
+        ? 'active bg-white/85 dark:bg-slate-900/70 text-slate-900 dark:text-white border-slate-200/70 dark:border-slate-700 shadow-[0_14px_32px_-20px_rgba(15,23,42,0.65)]'
+        : 'bg-white/55 dark:bg-slate-900/35 border-white/50 dark:border-slate-800/60 hover:border-slate-200/70 dark:hover:border-slate-700 hover:bg-white/70 dark:hover:bg-slate-900/55'
     ].join(' ');
 
   const renderLink = (link) => (
