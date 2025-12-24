@@ -317,8 +317,8 @@ const ScheduleBuilder = () => {
   const intelligentResult = generateIntelligent.data;
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
+    <div className="space-y-4">
+      <header className="space-y-1">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-lg font-semibold text-slate-900">
