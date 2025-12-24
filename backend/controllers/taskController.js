@@ -141,10 +141,14 @@ exports.createTask = async (req, res, next) => {
       return res.status(400).json({ message: 'Tytuł, opis, pracownik i data wykonania są wymagane.' });
     }
 
-    // Verify employee exists
+    // Verify employee exists and is active
     const employee = await User.findById(employeeId);
     if (!employee) {
       return res.status(404).json({ message: 'Pracownik nie istnieje.' });
+    }
+
+    if (!employee.isActive) {
+      return res.status(400).json({ message: 'Nie można przypisać zadania do nieaktywnego pracownika.' });
     }
 
     // Determine company
@@ -402,6 +406,46 @@ exports.getTasksForSchedule = async (req, res, next) => {
       .sort({ dueDate: 1 });
 
     res.json({ tasks });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get employees list for task assignment
+ */
+exports.getTaskEmployees = async (req, res, next) => {
+  try {
+    const { id: userId, role, companyId } = req.user || {};
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Brak autoryzacji.' });
+    }
+
+    // Only admins can access this endpoint
+    const isAdmin = role === 'admin' || role === 'super_admin';
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Tylko administratorzy mogą pobierać listę pracowników.' });
+    }
+
+    // Build query for active employees
+    const query = { isActive: true };
+
+    // Multi-tenant: filter by company
+    // If user is admin, get employees from their company
+    // If user has companyId (employee of a company), use that
+    if (companyId) {
+      query.supervisor = companyId;
+    } else if (role === 'admin' || role === 'super_admin') {
+      query.supervisor = userId;
+    }
+
+    const employees = await User.find(query)
+      .select('_id name email role')
+      .sort({ name: 1 })
+      .limit(500);
+
+    res.json({ employees });
   } catch (err) {
     next(err);
   }

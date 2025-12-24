@@ -5,8 +5,8 @@ import FloatingParticles from './FloatingParticles';
 
 const Layout = ({ children }) => {
   return (
-    <div className="app-root-scale-wrapper bg-gradient-layout">
-      <div className="app-root-scale min-h-screen flex" style={{ color: 'var(--text-primary)' }}>
+    <div className="app-root-scale-wrapper bg-gradient-layout min-h-screen">
+      <div className="app-root-scale flex" style={{ color: 'var(--text-primary)' }}>
         {/* Floating Particles Background */}
         <FloatingParticles count={8} minSize={80} maxSize={160} speed={0.5} />
         
@@ -14,7 +14,7 @@ const Layout = ({ children }) => {
         <Sidebar />
         
         {/* Main Content */}
-        <div className="flex-1 flex flex-col relative z-10 min-h-screen backdrop-blur-sm">
+        <div className="flex-1 flex flex-col relative z-10 backdrop-blur-sm">
           <DemoBanner />
           <main className="flex-1 w-full pt-6 pb-8 px-4 sm:px-6 lg:px-8 xl:px-10 animate-fade-in">
             <div 

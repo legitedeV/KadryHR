@@ -61,6 +61,20 @@ const AllNotifications = () => {
     }
   });
 
+  const deleteAllNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete('/notifications');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notifications']);
+      setSuccess('Wszystkie powiadomienia zostały usunięte');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się usunąć powiadomień');
+    }
+  });
+
   const filteredNotifications = React.useMemo(() => {
     if (!notificationsData) return [];
     
@@ -111,15 +125,30 @@ const AllNotifications = () => {
               </p>
             </div>
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isLoading}
-              className="btn-secondary text-sm"
-            >
-              Oznacz wszystkie jako przeczytane
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={() => markAllAsReadMutation.mutate()}
+                disabled={markAllAsReadMutation.isLoading}
+                className="btn-secondary text-sm"
+              >
+                Oznacz wszystkie jako przeczytane
+              </button>
+            )}
+            {notificationsData && notificationsData.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Czy na pewno chcesz usunąć wszystkie powiadomienia? Ta operacja jest nieodwracalna.')) {
+                    deleteAllNotificationsMutation.mutate();
+                  }
+                }}
+                disabled={deleteAllNotificationsMutation.isLoading}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
+              >
+                Usuń wszystkie
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

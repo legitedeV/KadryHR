@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import Alert from '../components/Alert';
 
 const ScheduleBuilderV2 = () => {
   const queryClient = useQueryClient();
+  const scrollContainerRef = useRef(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -14,6 +15,9 @@ const ScheduleBuilderV2 = () => {
   const [modalData, setModalData] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -182,7 +186,7 @@ const ScheduleBuilderV2 = () => {
   };
 
   const handleCellClick = (employee, date) => {
-    if (!selectedSchedule) return;
+    if (!selectedSchedule || isDragging) return;
     
     const dateStr = date.toISOString().split('T')[0];
     const key = `${employee._id}-${dateStr}`;
@@ -194,6 +198,38 @@ const ScheduleBuilderV2 = () => {
       existing
     });
     setShowModal(true);
+  };
+
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+    scrollContainerRef.current.style.cursor = 'grabbing';
+    scrollContainerRef.current.style.userSelect = 'none';
+  };
+
+  const handleMouseLeave = () => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(false);
+    scrollContainerRef.current.style.cursor = 'grab';
+    scrollContainerRef.current.style.userSelect = 'auto';
+  };
+
+  const handleMouseUp = () => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(false);
+    scrollContainerRef.current.style.cursor = 'grab';
+    scrollContainerRef.current.style.userSelect = 'auto';
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Scroll speed multiplier
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
   };
 
   const handleSaveAssignment = (formData) => {
@@ -343,11 +379,26 @@ const ScheduleBuilderV2 = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
               </div>
             ) : (
-              <div className="w-full overflow-x-auto">
+              <div 
+                ref={scrollContainerRef}
+                className="w-full overflow-x-auto"
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+              >
                 <table className="w-full border-collapse" style={{ minWidth: '100%' }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" style={{ width: '200px', minWidth: '200px' }}>
+                      <th 
+                        className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
+                        style={{ 
+                          width: '200px', 
+                          minWidth: '200px',
+                          boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
                         Pracownik
                       </th>
                       {daysInMonth.map((date, index) => (
@@ -365,7 +416,14 @@ const ScheduleBuilderV2 = () => {
                   <tbody>
                     {employeesData?.map((employee) => (
                       <tr key={employee._id}>
-                        <td className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" style={{ width: '200px', minWidth: '200px' }}>
+                        <td 
+                          className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
+                          style={{ 
+                            width: '200px', 
+                            minWidth: '200px',
+                            boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
                           <div className="truncate">
                             {employee.firstName} {employee.lastName}
                           </div>

@@ -12,6 +12,9 @@ router.get('/', taskController.getTasks);
 // Get my tasks (employee)
 router.get('/my', taskController.getMyTasks);
 
+// Get employees for task assignment
+router.get('/employees', taskController.getTaskEmployees);
+
 // Get tasks for schedule builder
 router.get('/schedule', taskController.getTasksForSchedule);
 

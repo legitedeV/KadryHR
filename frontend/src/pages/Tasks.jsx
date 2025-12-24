@@ -30,10 +30,10 @@ const Tasks = () => {
   });
 
   // Fetch employees for dropdown
-  const { data: employeesData } = useQuery({
-    queryKey: ['employees', 'compact'],
+  const { data: employeesData, isLoading: employeesLoading } = useQuery({
+    queryKey: ['tasks', 'employees'],
     queryFn: async () => {
-      const { data } = await api.get('/employees/compact');
+      const { data } = await api.get('/tasks/employees');
       return data.employees || [];
     },
   });
@@ -382,14 +382,30 @@ const Tasks = () => {
                     defaultValue={selectedTask?.employee?._id}
                     className="input-primary"
                     required
+                    disabled={employeesLoading}
                   >
-                    <option value="">Wybierz pracownika</option>
-                    {employeesData?.map((emp) => (
-                      <option key={emp._id} value={emp._id}>
-                        {emp.name}
-                      </option>
-                    ))}
+                    <option value="">
+                      {employeesLoading ? 'Ładowanie pracowników...' : 'Wybierz pracownika'}
+                    </option>
+                    {employeesData && employeesData.length > 0 ? (
+                      employeesData.map((emp) => (
+                        <option key={emp._id} value={emp._id}>
+                          {emp.name} {emp.email ? `(${emp.email})` : ''}
+                        </option>
+                      ))
+                    ) : (
+                      !employeesLoading && (
+                        <option value="" disabled>
+                          Brak dostępnych pracowników
+                        </option>
+                      )
+                    )}
                   </select>
+                  {!employeesLoading && (!employeesData || employeesData.length === 0) && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      Brak aktywnych pracowników w systemie
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
