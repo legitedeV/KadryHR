@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import Alert from '../components/Alert';
 
 const Invites = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
   const [lastLink, setLastLink] = useState('');
   const [lastEmailStatus, setLastEmailStatus] = useState(null);
+
+  // Check if user has permission to manage invites (admin-level permission)
+  const canManageInvites = hasPermission('employees.create') || user?.role === 'admin' || user?.role === 'super_admin';
 
   const { data: invites, isLoading } = useQuery({
     queryKey: ['invites'],
@@ -19,7 +23,7 @@ const Invites = () => {
       const { data } = await api.get('/invites');
       return data;
     },
-    enabled: isAdmin,
+    enabled: canManageInvites && !permissionsLoading,
   });
 
   const createMutation = useMutation({
@@ -54,13 +58,34 @@ const Invites = () => {
     },
   });
 
-  if (!isAdmin) {
+  if (permissionsLoading) {
     return (
-      <Alert 
-        type="error" 
-        title="Brak dostępu"
-        message="Tylko administrator ma dostęp do zarządzania zaproszeniami."
-      />
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-center">
+          <div className="spinner h-8 w-8 mx-auto mb-2"></div>
+          <p className="text-sm text-slate-600">Sprawdzanie uprawnień...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canManageInvites) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <svg className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <h3 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">
+              Brak dostępu
+            </h3>
+            <p className="text-sm text-red-700 dark:text-red-400">
+              Nie masz uprawnień do zarządzania zaproszeniami. Skontaktuj się z administratorem, aby uzyskać dostęp.
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 

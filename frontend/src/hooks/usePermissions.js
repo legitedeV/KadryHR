@@ -28,14 +28,19 @@ export const usePermissions = () => {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || isSuperAdmin;
 
   /**
    * Sprawdź czy użytkownik ma dane uprawnienie
-   * Admin i super_admin mają zawsze dostęp
+   * Super admin ma zawsze dostęp
+   * Admin i zwykli użytkownicy muszą mieć przypisane uprawnienia
    */
   const hasPermission = (permissionName) => {
-    if (isAdmin) return true;
+    // Super admin ma zawsze dostęp
+    if (isSuperAdmin) return true;
+    
+    // Admin i zwykli użytkownicy muszą mieć uprawnienia w bazie
     if (!userPermissions?.permissions) return false;
     return userPermissions.permissions.includes(permissionName);
   };
@@ -44,7 +49,10 @@ export const usePermissions = () => {
    * Sprawdź czy użytkownik ma przynajmniej jedno z uprawnień
    */
   const hasAnyPermission = (permissionNames) => {
-    if (isAdmin) return true;
+    // Super admin ma zawsze dostęp
+    if (isSuperAdmin) return true;
+    
+    // Admin i zwykli użytkownicy muszą mieć uprawnienia w bazie
     if (!userPermissions?.permissions) return false;
     return permissionNames.some((perm) => userPermissions.permissions.includes(perm));
   };
@@ -53,7 +61,10 @@ export const usePermissions = () => {
    * Sprawdź czy użytkownik ma wszystkie uprawnienia
    */
   const hasAllPermissions = (permissionNames) => {
-    if (isAdmin) return true;
+    // Super admin ma zawsze dostęp
+    if (isSuperAdmin) return true;
+    
+    // Admin i zwykli użytkownicy muszą mieć uprawnienia w bazie
     if (!userPermissions?.permissions) return false;
     return permissionNames.every((perm) => userPermissions.permissions.includes(perm));
   };
@@ -66,5 +77,6 @@ export const usePermissions = () => {
     hasAllPermissions,
     isLoading,
     isAdmin,
+    isSuperAdmin,
   };
 };

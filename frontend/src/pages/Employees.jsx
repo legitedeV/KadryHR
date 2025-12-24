@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 const defaultForm = {
   firstName: '',
@@ -16,7 +17,7 @@ const defaultForm = {
 
 const Employees = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { hasPermission, hasAnyPermission, isLoading: permissionsLoading } = usePermissions();
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState(defaultForm);
@@ -25,6 +26,11 @@ const Employees = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState(null);
 
+  // Check if user has permission to view employees
+  const canViewEmployees = hasAnyPermission(['employees.view', 'employees.create', 'employees.edit', 'employees.delete']);
+  const canCreateEmployees = hasPermission('employees.create');
+  const canDeleteEmployees = hasPermission('employees.delete');
+
   // Pobieranie listy pracowników
   const { data: employeesData, isLoading, error: listError } = useQuery({
     queryKey: ['employees'],
@@ -32,7 +38,7 @@ const Employees = () => {
       const { data } = await api.get('/employees');
       return data;
     },
-    enabled: isAdmin,
+    enabled: canViewEmployees && !permissionsLoading,
   });
 
   const employees = employeesData?.employees || [];
@@ -91,7 +97,7 @@ const Employees = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (!canCreateEmployees) return;
 
     const body = {
       firstName: form.firstName,
@@ -108,17 +114,42 @@ const Employees = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!isAdmin) return;
+    if (!canDeleteEmployees) return;
     if (!window.confirm('Na pewno chcesz usunąć tego pracownika?')) return;
 
     deleteMutation.mutate(id);
   };
 
-  if (!isAdmin) {
+  if (permissionsLoading) {
     return (
-      <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-        Tylko administrator ma dostęp do zarządzania pracownikami.
-      </p>
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-center">
+          <div className="spinner h-8 w-8 mx-auto mb-2"></div>
+          <p className="text-sm text-slate-600">Sprawdzanie uprawnień...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canViewEmployees) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">
+                Brak dostępu
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-400">
+                Nie masz uprawnień do zarządzania pracownikami. Skontaktuj się z administratorem, aby uzyskać dostęp.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -126,17 +157,18 @@ const Employees = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">Pracownicy</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Pracownicy</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Zarządzaj listą pracowników, stawkami i godzinami pracy.
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-slate-800 mb-3">
-          Dodaj pracownika
-        </h2>
+      {canCreateEmployees && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 sm:p-5">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">
+            Dodaj pracownika
+          </h2>
 
         {createMutation.isError && (
           <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -309,9 +341,10 @@ const Employees = () => {
           </div>
         </form>
       </div>
+      )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">
           Lista pracowników
         </h2>
 
@@ -365,14 +398,16 @@ const Employees = () => {
                           : '-'}
                       </td>
                       <td className="py-2 pl-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(emp._id)}
-                          disabled={deleteMutation.isPending}
-                          className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
-                        </button>
+                        {canDeleteEmployees && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(emp._id)}
+                            disabled={deleteMutation.isPending}
+                            className="inline-flex items-center rounded-lg border border-red-200 dark:border-red-800 px-2 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -416,16 +451,18 @@ const Employees = () => {
                     </div>
                   </div>
 
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(emp._id)}
-                      disabled={deleteMutation.isPending}
-                      className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
-                    </button>
-                  </div>
+                  {canDeleteEmployees && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(emp._id)}
+                        disabled={deleteMutation.isPending}
+                        className="inline-flex items-center rounded-lg border border-red-200 dark:border-red-800 px-2 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
