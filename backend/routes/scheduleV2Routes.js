@@ -12,6 +12,7 @@ router.use(protect);
 router.get('/', scheduleV2Controller.getSchedules);
 router.post('/', requirePermission('schedule.create', { allowAdmin: true }), scheduleV2Controller.createSchedule);
 router.get('/:id', scheduleV2Controller.getScheduleById);
+router.get('/:id/validation', scheduleV2Controller.getScheduleValidation);
 router.put('/:id', requirePermission('schedule.edit', { allowAdmin: true }), scheduleV2Controller.updateSchedule);
 router.delete('/:id', requirePermission('schedule.delete', { allowAdmin: true }), scheduleV2Controller.deleteSchedule);
 
