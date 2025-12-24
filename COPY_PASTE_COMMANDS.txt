@@ -1,0 +1,90 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║  KOMENDY DO SKOPIOWANIA I WKLEJENIA W SSH                        ║
+║  Promocja admin@kadryhr.local na super_admin                      ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────┐
+│ METODA 1: Uniwersalny Skrypt Node.js (NAJLEPSZA) ⭐              │
+└───────────────────────────────────────────────────────────────────┘
+
+cd /home/deploy/apps/kadryhr-app/backend && node scripts/manageRoles.js promote admin@kadryhr.local
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ METODA 2: Prosty Skrypt Node.js                                  │
+└───────────────────────────────────────────────────────────────────┘
+
+cd /home/deploy/apps/kadryhr-app/backend && node scripts/promoteToSuperAdmin.js admin@kadryhr.local
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ METODA 3: Bash Script                                            │
+└───────────────────────────────────────────────────────────────────┘
+
+cd /home/deploy/apps/kadryhr-app/backend && ./scripts/promote-admin.sh admin@kadryhr.local
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ METODA 4: Bezpośrednie MongoDB (One-liner)                       │
+└───────────────────────────────────────────────────────────────────┘
+
+mongosh mongodb://localhost:27017/kadryhr --quiet --eval "db.users.updateOne({email:'admin@kadryhr.local'},{\$set:{role:'super_admin'}});print('✅ Done! User promoted to super_admin')"
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ WERYFIKACJA - Sprawdź czy zmiana się powiodła                    │
+└───────────────────────────────────────────────────────────────────┘
+
+cd /home/deploy/apps/kadryhr-app/backend && node scripts/manageRoles.js check admin@kadryhr.local
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ LISTA ADMINÓW - Zobacz wszystkich adminów w systemie             │
+└───────────────────────────────────────────────────────────────────┘
+
+cd /home/deploy/apps/kadryhr-app/backend && node scripts/manageRoles.js list
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ INTERAKTYWNE MENU - Łatwe zarządzanie przez menu                 │
+└───────────────────────────────────────────────────────────────────┘
+
+cd /home/deploy/apps/kadryhr-app && ./SSH_QUICK_COMMANDS.sh
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ WERYFIKACJA MONGODB - Sprawdź czy MongoDB działa                 │
+└───────────────────────────────────────────────────────────────────┘
+
+sudo systemctl status mongod
+
+
+┌───────────────────────────────────────────────────────────────────┐
+│ RESTART BACKEND - Po zmianie roli (opcjonalnie)                  │
+└───────────────────────────────────────────────────────────────────┘
+
+pm2 restart kadryhr-backend
+
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  NAJSZYBSZA METODA - SKOPIUJ I WKLEJ TO:                         ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+cd /home/deploy/apps/kadryhr-app/backend && node scripts/manageRoles.js promote admin@kadryhr.local && node scripts/manageRoles.js check admin@kadryhr.local
+
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  UWAGA PO ZMIANIE ROLI:                                          ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+1. Użytkownik MUSI się wylogować i zalogować ponownie
+2. Po zalogowaniu będzie miał dostęp do przycisku "Inicjalizuj uprawnienia"
+3. Super admin może zarządzać uprawnieniami wszystkich użytkowników
+4. Super admin może edytować uprawnienia innych super adminów
+
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  POMOC:                                                           ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+cd /home/deploy/apps/kadryhr-app/backend && node scripts/manageRoles.js help
