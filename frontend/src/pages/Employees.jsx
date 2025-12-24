@@ -154,19 +154,32 @@ const Employees = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Pracownicy</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Zarządzaj listą pracowników, stawkami i godzinami pracy.
-          </p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="app-card p-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
+            style={{
+              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
+            }}
+          >
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pracownicy</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Zarządzaj listą pracowników, stawkami i godzinami pracy
+            </p>
+          </div>
         </div>
       </div>
 
       {canCreateEmployees && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 sm:p-5">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">
+        <div className="app-card p-6">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Dodaj pracownika
           </h2>
 
@@ -343,8 +356,8 @@ const Employees = () => {
       </div>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">
+      <div className="app-card p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
           Lista pracowników
         </h2>
 

@@ -34,22 +34,39 @@ const Reports = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold text-slate-800">Raporty</h1>
-        <p className="text-xs text-slate-500">
-          Eksportuj dane pracowników do pliku CSV lub PDF.
-        </p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="app-card p-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
+            style={{
+              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
+            }}
+          >
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Raporty</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Eksportuj dane pracowników do pliku CSV lub PDF
+            </p>
+          </div>
+        </div>
       </div>
 
       {!isAdmin && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-          Tylko administrator może generować raporty.
-        </p>
+        <div className="app-card p-6">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Tylko administrator może generować raporty.
+          </p>
+        </div>
       )}
 
       {isAdmin && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-4">
+        <div className="app-card p-6 space-y-6">
           <div>
             <h2 className="text-sm font-semibold text-slate-800 mb-1">
               Raport pracowników (CSV)
