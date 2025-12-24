@@ -215,10 +215,10 @@ const Sidebar = () => {
 
   const linkClasses = ({ isActive }) =>
     [
-      'flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative sidebar-link backdrop-blur-sm',
+      'flex items-center gap-3 px-3.5 py-2 rounded-2xl transition-all duration-200 group relative sidebar-link backdrop-blur-xl border',
       isActive
-        ? 'active font-medium'
-        : ''
+        ? 'bg-white/80 dark:bg-slate-900/60 text-slate-900 dark:text-white border-slate-200/70 dark:border-slate-700 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.6)]'
+        : 'border-transparent hover:border-slate-200/60 dark:hover:border-slate-700 hover:bg-white/60 dark:hover:bg-slate-900/40'
     ].join(' ');
 
   const renderLink = (link) => (
@@ -243,17 +243,17 @@ const Sidebar = () => {
   const sidebarContent = (
     <>
       {/* Header */}
-      <div 
-        className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-2 border-b backdrop-blur-xl`}
+      <div
+        className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-3 border-b backdrop-blur-xl`}
         style={{
           borderColor: 'var(--border-primary)',
-          backgroundColor: 'var(--surface-secondary)'
+          background: 'linear-gradient(135deg, rgba(var(--theme-primary-rgb),0.08), rgba(14,165,233,0.08))'
         }}
-      > 
+      >
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div 
-              className="h-8 w-8 rounded-2xl flex items-center justify-center text-xs font-bold text-white shadow-lg transition-all duration-300"
+            <div
+              className="h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-bold text-white shadow-lg transition-all duration-300"
               style={{
                 background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
                 boxShadow: `0 12px 20px -6px rgba(var(--theme-primary-rgb), 0.4)`
@@ -261,8 +261,8 @@ const Sidebar = () => {
             >
               KH
             </div>
-            <span 
-              className="text-sm font-semibold bg-clip-text text-transparent transition-all duration-300"
+            <span
+              className="text-base font-semibold bg-clip-text text-transparent transition-all duration-300"
               style={{
                 backgroundImage: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
               }}

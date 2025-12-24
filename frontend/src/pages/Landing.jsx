@@ -44,21 +44,6 @@ const features = [
   },
 ];
 
-const steps = [
-  {
-    title: 'Centralny kokpit',
-    description: 'Jednolity layout dla wszystkich modułów – dashboard, grafiki, urlopy, wiadomości i zadania.',
-  },
-  {
-    title: 'Płynne wdrożenie',
-    description: 'Node 20 + React, gotowe do uruchomienia z PM2 i Nginx. Logowanie JWT działa od razu.',
-  },
-  {
-    title: 'Stała kontrola',
-    description: 'Uprawnienia, role i powiadomienia utrzymują porządek w rosnącym zespole.',
-  },
-];
-
 const modules = [
   {
     title: 'Grafik',
@@ -107,11 +92,11 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-layout text-slate-800 dark:text-slate-100">
-      <div className="absolute inset-0 opacity-50 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,rgba(124,58,237,0.12),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(37,99,235,0.12),transparent_38%)]" />
+      <div className="absolute inset-0 opacity-50 pointer-events-none bg-[radial-gradient(circle_at_30%_20%,rgba(37,99,235,0.14),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.12),transparent_40%)]" />
       <FloatingParticles count={14} minSize={50} maxSize={160} speed={0.7} />
       <ThemeSwitcher />
 
-      <header className="sticky top-0 z-40 border-b border-white/40 dark:border-slate-800/70 backdrop-blur-xl bg-white/75 dark:bg-slate-950/70">
+      <header className="sticky top-0 z-40 border-b border-white/30 dark:border-slate-800/70 backdrop-blur-2xl bg-white/80 dark:bg-slate-950/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
@@ -198,134 +183,110 @@ const Landing = () => {
                 )}
               </button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4">
-              {['Szybkie wdrożenie', 'Bezpieczne logowanie', 'Responsywne UI'].map((item) => (
-                <div key={item} className="app-card p-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  {item}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+              {['Grafik', 'Urlopy i L4', 'Czas pracy'].map((item) => (
+                <div key={item} className="rounded-2xl border border-white/60 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 backdrop-blur p-4 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.55)]">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Moduł</p>
+                  <p className="text-base font-semibold text-slate-900 dark:text-white">{item}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="app-card p-6 sm:p-8 shadow-2xl">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Status systemu</p>
-                <p className="text-xl font-semibold">Stabilny i spójny</p>
-              </div>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}>
-                Nowy wygląd
-              </span>
-            </div>
-            <div className="mt-6 space-y-4">
-              <div className="rounded-2xl p-4 border" style={{ borderColor: 'color-mix(in srgb, var(--border-primary) 90%, rgba(var(--theme-primary-rgb),0.25))' }}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">Panel główny</span>
-                  <span className="text-emerald-500 font-semibold">online</span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Dashboard, grafik, urlopy, powiadomienia</p>
+          <div className="grid gap-4">
+            <div className="rounded-3xl border border-white/60 dark:border-slate-800/70 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Zespół</p>
+                <span className="text-xs px-3 py-1 rounded-full" style={{ background: 'rgba(var(--theme-primary-rgb),0.1)', color: 'var(--theme-primary)' }}>Na bieżąco</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl p-4 border" style={{ borderColor: 'var(--border-primary)' }}>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Backend</p>
-                  <p className="text-lg font-semibold">Node 20</p>
-                  <p className="text-xs text-emerald-500 mt-1">PM2 + Nginx</p>
-                </div>
-                <div className="rounded-2xl p-4 border" style={{ borderColor: 'var(--border-primary)' }}>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Frontend</p>
-                  <p className="text-lg font-semibold">React + Vite</p>
-                  <p className="text-xs text-blue-500 mt-1">Tailwind + Context</p>
-                </div>
+                {[
+                  { label: 'Aktywni pracownicy', value: '48' },
+                  { label: 'Oczekujące wnioski', value: '6' },
+                  { label: 'Zaplanowane zmiany', value: '124' },
+                  { label: 'Spóźnienia', value: '0' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-slate-200/70 dark:border-slate-800/80 p-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{item.value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="rounded-2xl p-4 border flex items-center gap-3" style={{ borderColor: 'var(--border-primary)' }}>
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}>
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Rozliczenia i czas pracy</p>
-                  <p className="text-base font-semibold">Przygotowane raporty i eksporty</p>
-                </div>
-              </div>
+            </div>
+            <div className="rounded-3xl border border-white/60 dark:border-slate-800/70 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white p-6 shadow-xl">
+              <p className="text-sm uppercase tracking-[0.14em] text-blue-200">Nowy wygląd</p>
+              <p className="text-2xl font-semibold mt-2">Ujednolicone zakładki, kompaktowe karty i jeden język designu</p>
+              <p className="text-sm text-blue-100 mt-3">Dashboard, grafik, wnioski, powiadomienia i chat korzystają z tych samych komponentów UI.</p>
             </div>
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pb-16 grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature) => (
-            <div key={feature.title} className="app-card p-5 flex flex-col gap-4 h-full">
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}>
-                {feature.icon}
+        <section className="bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl border-y border-white/50 dark:border-slate-800/70">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-14 space-y-8">
+            <div className="flex flex-col gap-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Funkcje</p>
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Kompaktowy zestaw narzędzi HR</h2>
+                <Link to="/login" className="hidden sm:inline-flex text-sm font-semibold text-sky-600 dark:text-sky-300">Przejdź do panelu →</Link>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">{feature.description}</p>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pb-16 grid gap-6 lg:grid-cols-3">
-          <div className="app-card p-6 lg:col-span-2 space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Spójny frontend w każdej sekcji</h2>
-              <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(var(--theme-primary-rgb),0.08)', color: 'var(--theme-primary)' }}>
-                Kompaktowy layout
-              </span>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-3xl">Każdy moduł korzysta z tych samych kart, tabel i stanów. Łatwiej szkolić zespół, bo interfejs jest przewidywalny niezależnie od miejsca w aplikacji.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {modules.map((module) => (
-                <div key={module.title} className="rounded-2xl border p-4" style={{ borderColor: 'var(--border-primary)' }}>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{module.title}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{module.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="app-card p-6 space-y-4">
-            <h3 className="text-lg font-semibold">Jak działamy</h3>
-            <div className="space-y-3">
-              {steps.map((step, index) => (
-                <div key={step.title} className="flex gap-3">
-                  <div className="h-8 w-8 rounded-xl flex items-center justify-center text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}>
-                    {index + 1}
+              {features.map((feature) => (
+                <div key={feature.title} className="rounded-3xl border border-slate-200/70 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-[0_18px_38px_-26px_rgba(15,23,42,0.5)]">
+                  <div className="flex items-center gap-3 text-sky-600 dark:text-sky-300">
+                    <div className="h-11 w-11 rounded-2xl bg-sky-50 dark:bg-slate-800 flex items-center justify-center">
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{step.title}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">{step.description}</p>
-                  </div>
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{feature.description}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pb-20">
-          <div className="app-card p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-14 space-y-8">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Zespół HR i liderzy</p>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-2">Przejrzysty wygląd, szybkie wdrożenie</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 max-w-2xl">
-                KadryHR łączy moduły grafiku, urlopów, L4, czasu pracy i powiadomień w spójnym, kompaktowym interfejsie. Dzięki temu każdy widzi to samo – niezależnie od zakładki.
-              </p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Moduły</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Jednolity język UI dla całej aplikacji</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-2xl">Każda zakładka wykorzystuje te same wzorce: nagłówki z opisem, bloki danych w kartach i akcje w prawym górnym rogu.</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-xl text-white shadow-lg"
-                style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))', boxShadow: 'var(--shadow-md)' }}
-              >
-                Załóż konto
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-xl border"
-                style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 40%, var(--border-primary))', color: 'var(--theme-primary)' }}
-              >
-                Mam już konto
-              </Link>
+            <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-sky-600 dark:text-sky-300">Zaloguj się →</Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {modules.map((module) => (
+              <div key={module.title} className="rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 backdrop-blur p-4 flex flex-col gap-2 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{module.title}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-200">{module.description}</p>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-600 dark:text-sky-300 mt-auto">Spójny layout</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="pb-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
+            <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 shadow-2xl">
+              <div className="space-y-3 max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.2em] text-blue-200">Start</p>
+                <h3 className="text-2xl sm:text-3xl font-bold">Nowy wygląd KadryHR jest gotowy do wdrożenia</h3>
+                <p className="text-sm text-blue-100">Login → dashboard → grafik → urlopy → powiadomienia. Wszystko wygląda i działa tak samo, niezależnie od zakładki.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link to="/register" className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white text-slate-900 font-semibold shadow-lg">
+                  Utwórz konto
+                </Link>
+                <button
+                  onClick={handleDemoLogin}
+                  disabled={isDemoLoading}
+                  className="inline-flex items-center justify-center px-5 py-3 rounded-xl border border-white/40 text-white font-semibold"
+                >
+                  {isDemoLoading ? 'Wczytywanie demo...' : 'Sprawdź demo'}
+                </button>
+              </div>
             </div>
           </div>
         </section>
