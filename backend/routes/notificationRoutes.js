@@ -15,6 +15,9 @@ router.patch('/:id/read', notificationController.markAsRead);
 // Oznaczenie wszystkich jako przeczytane
 router.post('/mark-all-read', notificationController.markAllAsRead);
 
+// Usunięcie wszystkich powiadomień
+router.delete('/', notificationController.deleteAllNotifications);
+
 // Usunięcie powiadomienia
 router.delete('/:id', notificationController.deleteNotification);
 

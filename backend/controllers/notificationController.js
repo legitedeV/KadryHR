@@ -107,6 +107,28 @@ exports.deleteNotification = async (req, res, next) => {
 };
 
 /**
+ * Usuń wszystkie powiadomienia użytkownika.
+ */
+exports.deleteAllNotifications = async (req, res, next) => {
+  try {
+    const { id: userId } = req.user || {};
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Brak autoryzacji.' });
+    }
+
+    const result = await Notification.deleteMany({ user: userId });
+
+    res.json({ 
+      message: 'Wszystkie powiadomienia zostały usunięte.',
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Ręczne utworzenie powiadomienia (np. szybka notatka z dashboardu).
  * Jeśli nie podamy userId – powiadomienie trafia do aktualnego użytkownika.
  */

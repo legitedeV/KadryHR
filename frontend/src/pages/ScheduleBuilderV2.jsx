@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import Alert from '../components/Alert';
 
 const ScheduleBuilderV2 = () => {
   const queryClient = useQueryClient();
+  const scrollContainerRef = useRef(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -14,6 +15,9 @@ const ScheduleBuilderV2 = () => {
   const [modalData, setModalData] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -63,6 +67,27 @@ const ScheduleBuilderV2 = () => {
       return data.tasks || [];
     },
     enabled: !!selectedSchedule,
+  });
+
+  // Fetch shift templates
+  const { data: templatesData } = useQuery({
+    queryKey: ['shift-templates'],
+    queryFn: async () => {
+      const { data } = await api.get('/shift-templates');
+      return data.templates || [];
+    }
+  });
+
+  // Fetch schedule validation
+  const { data: validationData } = useQuery({
+    queryKey: ['schedule-validation', selectedSchedule?._id],
+    queryFn: async () => {
+      if (!selectedSchedule) return null;
+      const { data } = await api.get(`/schedules/v2/${selectedSchedule._id}/validation`);
+      return data;
+    },
+    enabled: !!selectedSchedule,
+    refetchInterval: false
   });
 
   // Create schedule mutation
@@ -182,7 +207,7 @@ const ScheduleBuilderV2 = () => {
   };
 
   const handleCellClick = (employee, date) => {
-    if (!selectedSchedule) return;
+    if (!selectedSchedule || isDragging) return;
     
     const dateStr = date.toISOString().split('T')[0];
     const key = `${employee._id}-${dateStr}`;
@@ -194,6 +219,38 @@ const ScheduleBuilderV2 = () => {
       existing
     });
     setShowModal(true);
+  };
+
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+    scrollContainerRef.current.style.cursor = 'grabbing';
+    scrollContainerRef.current.style.userSelect = 'none';
+  };
+
+  const handleMouseLeave = () => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(false);
+    scrollContainerRef.current.style.cursor = 'grab';
+    scrollContainerRef.current.style.userSelect = 'auto';
+  };
+
+  const handleMouseUp = () => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(false);
+    scrollContainerRef.current.style.cursor = 'grab';
+    scrollContainerRef.current.style.userSelect = 'auto';
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Scroll speed multiplier
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
   };
 
   const handleSaveAssignment = (formData) => {
@@ -305,6 +362,51 @@ const ScheduleBuilderV2 = () => {
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
+      {/* Validation Summary */}
+      {selectedSchedule && validationData && (
+        <div className="app-card p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {validationData.summary.totalEmployees}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Pracowników</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {validationData.summary.totalAssignments}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Zmian</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {validationData.summary.totalHours}h
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Łącznie godzin</div>
+              </div>
+            </div>
+            {validationData.summary.totalViolations > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <div className="text-sm font-semibold text-red-600 dark:text-red-400">
+                    {validationData.summary.totalViolations} naruszeń
+                  </div>
+                  {validationData.summary.highSeverityViolations > 0 && (
+                    <div className="text-xs text-red-500 dark:text-red-400">
+                      {validationData.summary.highSeverityViolations} wysokiej wagi
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Schedule Selection / Creation */}
       {!selectedSchedule && schedulesData && schedulesData.length === 0 && (
         <div className="app-card p-4 sm:p-5 text-center">
@@ -343,11 +445,26 @@ const ScheduleBuilderV2 = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
               </div>
             ) : (
-              <div className="w-full overflow-x-auto">
+              <div 
+                ref={scrollContainerRef}
+                className="w-full overflow-x-auto"
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+              >
                 <table className="w-full border-collapse" style={{ minWidth: '100%' }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" style={{ width: '200px', minWidth: '200px' }}>
+                      <th 
+                        className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
+                        style={{ 
+                          width: '200px', 
+                          minWidth: '200px',
+                          boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
                         Pracownik
                       </th>
                       {daysInMonth.map((date, index) => (
@@ -365,7 +482,14 @@ const ScheduleBuilderV2 = () => {
                   <tbody>
                     {employeesData?.map((employee) => (
                       <tr key={employee._id}>
-                        <td className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" style={{ width: '200px', minWidth: '200px' }}>
+                        <td 
+                          className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
+                          style={{ 
+                            width: '200px', 
+                            minWidth: '200px',
+                            boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
                           <div className="truncate">
                             {employee.firstName} {employee.lastName}
                           </div>
@@ -416,6 +540,7 @@ const ScheduleBuilderV2 = () => {
       {showModal && modalData && (
         <AssignmentModal
           data={modalData}
+          templates={templatesData}
           onSave={handleSaveAssignment}
           onDelete={handleDeleteAssignment}
           onClose={() => setShowModal(false)}
@@ -426,7 +551,7 @@ const ScheduleBuilderV2 = () => {
 };
 
 // Assignment Modal Component
-const AssignmentModal = ({ data, onSave, onDelete, onClose }) => {
+const AssignmentModal = ({ data, templates, onSave, onDelete, onClose }) => {
   const [formData, setFormData] = useState({
     type: data.existing?.type || 'shift',
     startTime: data.existing?.startTime || '08:00',
@@ -434,6 +559,15 @@ const AssignmentModal = ({ data, onSave, onDelete, onClose }) => {
     notes: data.existing?.notes || '',
     color: data.existing?.color || '#3b82f6'
   });
+
+  const handleTemplateSelect = (template) => {
+    setFormData({
+      ...formData,
+      startTime: template.startTime,
+      endTime: template.endTime,
+      color: template.color
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -496,6 +630,28 @@ const AssignmentModal = ({ data, onSave, onDelete, onClose }) => {
 
           {formData.type === 'shift' && (
             <>
+              {templates && templates.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Szablony zmian
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {templates.map((template) => (
+                      <button
+                        key={template._id}
+                        type="button"
+                        onClick={() => handleTemplateSelect(template)}
+                        className="px-3 py-1 rounded-lg text-xs font-medium text-white transition-all hover:scale-105"
+                        style={{ backgroundColor: template.color }}
+                        title={template.description}
+                      >
+                        {template.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">

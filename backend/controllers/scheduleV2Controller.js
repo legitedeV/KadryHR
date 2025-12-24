@@ -346,6 +346,77 @@ const generateSchedule = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get schedule validation and summary
+// @route   GET /api/schedules/v2/:id/validation
+// @access  Private
+const getScheduleValidation = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { calculateHours, calculateEmployeeHours, validateSchedule, checkLeaveConflicts } = require('../utils/scheduleUtils');
+  
+  const schedule = await Schedule.findById(id);
+  if (!schedule) {
+    return res.status(404).json({ message: 'Grafik nie znaleziony' });
+  }
+  
+  const assignments = await ShiftAssignment.find({ schedule: id })
+    .populate('employee', 'firstName lastName')
+    .sort({ date: 1 });
+  
+  // Group assignments by employee
+  const employeeAssignments = {};
+  assignments.forEach(assignment => {
+    const empId = assignment.employee._id.toString();
+    if (!employeeAssignments[empId]) {
+      employeeAssignments[empId] = {
+        employee: assignment.employee,
+        assignments: []
+      };
+    }
+    employeeAssignments[empId].assignments.push(assignment);
+  });
+  
+  // Calculate summaries and validations for each employee
+  const employeeSummaries = [];
+  const allViolations = [];
+  
+  for (const [empId, data] of Object.entries(employeeAssignments)) {
+    const summary = calculateEmployeeHours(data.assignments);
+    const validation = validateSchedule(data.assignments);
+    
+    employeeSummaries.push({
+      employee: data.employee,
+      ...summary,
+      violations: validation.violations
+    });
+    
+    allViolations.push(...validation.violations);
+  }
+  
+  // Overall schedule summary
+  const totalHours = employeeSummaries.reduce((sum, emp) => sum + emp.totalHours, 0);
+  const totalViolations = allViolations.length;
+  const highSeverityViolations = allViolations.filter(v => v.severity === 'high').length;
+  
+  return res.status(200).json({
+    schedule: {
+      _id: schedule._id,
+      name: schedule.name,
+      month: schedule.month,
+      year: schedule.year,
+      status: schedule.status
+    },
+    summary: {
+      totalEmployees: Object.keys(employeeAssignments).length,
+      totalAssignments: assignments.length,
+      totalHours: Math.round(totalHours * 100) / 100,
+      totalViolations,
+      highSeverityViolations
+    },
+    employeeSummaries,
+    violations: allViolations
+  });
+});
+
 module.exports = {
   getSchedules,
   getScheduleById,
@@ -356,5 +427,6 @@ module.exports = {
   createAssignment,
   updateAssignment,
   deleteAssignment,
-  generateSchedule
+  generateSchedule,
+  getScheduleValidation
 };

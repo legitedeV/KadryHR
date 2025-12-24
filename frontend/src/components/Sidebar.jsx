@@ -632,7 +632,7 @@ const Sidebar = () => {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col h-screen border-r sticky top-0 sidebar-transition backdrop-blur-xl ${
+        className={`hidden md:flex flex-col min-h-screen border-r sidebar-transition backdrop-blur-xl ${
           collapsed ? 'w-20' : 'w-64'
         }`}
         style={{
