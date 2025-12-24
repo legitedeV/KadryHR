@@ -14,9 +14,9 @@
   --theme-very-light: #fef7fb;
   --theme-dark: #db2777;
   --theme-primary-rgb: 236, 72, 153;
-  
-  /* UI Scale for desktop - reduces overall scale to minimize vertical scroll */
-  --app-scale: 0.9;
+
+  /* Responsive UI scale (updated dynamically in Layout) */
+  --app-scale: 1;
 }
 
 /* Light Theme Variables */
@@ -1385,6 +1385,7 @@ textarea::placeholder {
   min-height: 100vh;
   overflow: hidden;
   position: relative;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* Scale transformation applied only on larger screens */
@@ -1392,34 +1393,21 @@ textarea::placeholder {
   width: 100%;
   min-height: 100vh;
   transform-origin: top center;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease, width 0.25s ease;
+  transform: scale(var(--app-scale));
+  width: calc(100% / var(--app-scale));
 }
 
-/* Apply scaling only on desktop screens (1280px+ width and 800px+ height) */
-@media (min-width: 1280px) and (min-height: 800px) {
-  .app-root-scale {
-    transform: scale(var(--app-scale));
-    /* Adjust width to compensate for scale to prevent horizontal scroll */
-    width: calc(100% / var(--app-scale));
-  }
-  
-  /* Ensure wrapper can contain scaled content */
+/* Slightly tighter padding on narrow screens to avoid horizontal overflow */
+@media (max-width: 1024px) {
   .app-root-scale-wrapper {
-    overflow-x: hidden;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 }
 
-/* For very large screens, use less aggressive scaling */
-@media (min-width: 1920px) and (min-height: 1080px) {
-  :root {
-    --app-scale: 0.95;
-  }
-}
-
-/* Disable scaling on smaller screens to maintain mobile responsiveness */
-@media (max-width: 1279px), (max-height: 799px) {
+@media (max-width: 640px) {
   .app-root-scale {
-    transform: none;
-    width: 100%;
+    padding-top: 0.5rem;
   }
 }
