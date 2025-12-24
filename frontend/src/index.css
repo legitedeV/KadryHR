@@ -27,6 +27,7 @@
   --surface-tertiary: #f1f5f9;
   --surface-elevated: #ffffff;
   --surface-overlay: rgba(0, 0, 0, 0.5);
+  --surface-hover: rgba(0, 0, 0, 0.04);
   
   /* Text */
   --text-primary: #0f172a;
@@ -66,6 +67,7 @@
   --surface-tertiary: #0f172a;
   --surface-elevated: #1e293b;
   --surface-overlay: rgba(0, 0, 0, 0.75);
+  --surface-hover: rgba(255, 255, 255, 0.08);
   
   /* Text */
   --text-primary: #f1f5f9;
@@ -1320,8 +1322,18 @@ textarea::placeholder {
   color: var(--text-secondary);
 }
 
+.sidebar-link svg {
+  color: var(--text-tertiary);
+  transition: color 0.2s ease;
+}
+
 .sidebar-link:hover {
   transform: translateX(2px);
+  color: var(--theme-primary);
+  background-color: var(--surface-hover);
+}
+
+.sidebar-link:hover svg {
   color: var(--theme-primary);
 }
 
@@ -1329,6 +1341,10 @@ textarea::placeholder {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.12), rgba(var(--theme-primary-rgb), 0.08));
   color: var(--theme-primary);
   box-shadow: inset 3px 0 0 var(--theme-primary);
+}
+
+.sidebar-link.active svg {
+  color: var(--theme-primary);
 }
 
 [data-theme="dark"] .sidebar-link.active {

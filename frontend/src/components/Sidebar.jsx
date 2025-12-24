@@ -165,21 +165,26 @@ const Sidebar = () => {
   const ThemeToggle = ({ mode, icon: Icon, label, isActive }) => (
     <button
       onClick={() => updateThemeMode(mode)}
-      className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+      className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
+      style={{ color: 'var(--text-secondary)' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
     >
       <div className="flex items-center gap-3">
         <Icon className="w-5 h-5" />
         <span>{label}</span>
       </div>
       <div
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          isActive
-            ? 'shadow-sm'
-            : 'bg-slate-300 dark:bg-slate-600'
-        }`}
+        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm"
         style={isActive ? {
           background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
-        } : {}}
+        } : {
+          backgroundColor: 'var(--border-secondary)'
+        }}
       >
         <span
           className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
@@ -192,10 +197,10 @@ const Sidebar = () => {
 
   const linkClasses = ({ isActive }) =>
     [
-      'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative sidebar-link backdrop-blur-sm',
+      'flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative sidebar-link backdrop-blur-sm',
       isActive
         ? 'active font-medium'
-        : 'text-text-muted hover:bg-surface-hover'
+        : ''
     ].join(' ');
 
   const renderLink = (link) => (
@@ -207,7 +212,7 @@ const Sidebar = () => {
       onClick={closeMobile}
       title={collapsed ? link.label : ''}
     >
-      <link.icon className="w-5 h-5 flex-shrink-0 text-icon-muted" />
+      <link.icon className="w-5 h-5 flex-shrink-0" />
       {!collapsed && <span className="text-sm">{link.label}</span>}
       {collapsed && (
         <div className="sidebar-tooltip">
@@ -220,7 +225,13 @@ const Sidebar = () => {
   const sidebarContent = (
     <>
       {/* Header */}
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-4 border-b border-white/60 dark:border-slate-700/70 bg-white/60 dark:bg-slate-900/70 backdrop-blur-xl`}> 
+      <div 
+        className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-3 border-b backdrop-blur-xl`}
+        style={{
+          borderColor: 'var(--border-primary)',
+          backgroundColor: 'var(--surface-secondary)'
+        }}
+      > 
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div 
@@ -244,29 +255,43 @@ const Sidebar = () => {
         )}
         <button
           onClick={toggleCollapse}
-          className="p-1.5 rounded-lg hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors border border-transparent hover:border-white/40 dark:hover:border-slate-600"
+          className="p-1.5 rounded-lg transition-colors border border-transparent"
+          style={{
+            color: 'var(--text-secondary)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+            e.currentTarget.style.borderColor = 'var(--border-secondary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
           title={collapsed ? 'Rozwiń menu' : 'Zwiń menu'}
         >
           {collapsed ? (
-            <ChevronRightIcon className="w-5 h-5 text-slate-500 dark:text-slate-300" />
+            <ChevronRightIcon className="w-5 h-5" />
           ) : (
-            <ChevronLeftIcon className="w-5 h-5 text-slate-500 dark:text-slate-300" />
+            <ChevronLeftIcon className="w-5 h-5" />
           )}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
         {/* Employee Section */}
         <div>
           {!collapsed && (
-            <div className="px-3 mb-2">
-              <h3 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider opacity-60">
+            <div className="px-3 mb-1.5">
+              <h3 
+                className="text-[10px] font-semibold uppercase tracking-wider opacity-60"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
                 Menu główne
               </h3>
             </div>
           )}
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {employeeLinks.map(renderLink)}
           </div>
         </div>
@@ -280,16 +305,22 @@ const Sidebar = () => {
         })) && (
           <div>
             {!collapsed && (
-              <div className="px-3 mb-2">
-                <h3 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider opacity-60">
+              <div className="px-3 mb-1.5">
+                <h3 
+                  className="text-[10px] font-semibold uppercase tracking-wider opacity-60"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
                   Administrator
                 </h3>
               </div>
             )}
             {collapsed && (
-              <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
+              <div 
+                className="border-t my-1.5"
+                style={{ borderColor: 'var(--border-primary)' }}
+              ></div>
             )}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {adminLinks.filter(link => {
                 // Admin-only links require admin role
                 if (link.adminOnly) return isAdmin;
@@ -304,11 +335,26 @@ const Sidebar = () => {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="border-t border-white/60 dark:border-slate-700/70 px-3 py-3 space-y-2 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl">
+      <div 
+        className="border-t px-3 py-2 space-y-1 backdrop-blur-xl"
+        style={{
+          borderColor: 'var(--border-primary)',
+          backgroundColor: 'var(--surface-secondary)'
+        }}
+      >
         {/* Notifications Button */}
         <button
           onClick={() => setIsNotificationsOpen(true)}
-          className="relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+          className="relative w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+            e.currentTarget.style.color = 'var(--theme-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }}
           title={collapsed ? 'Powiadomienia' : ''}
         >
           <BellIcon className="w-5 h-5 flex-shrink-0" />
@@ -331,7 +377,16 @@ const Sidebar = () => {
         {/* Chat Button */}
         <button
           onClick={() => setIsChatOpen(true)}
-          className="relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+          className="relative w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+            e.currentTarget.style.color = 'var(--theme-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }}
           title={collapsed ? 'Wiadomości' : ''}
         >
           <ChatBubbleLeftRightIcon className="w-5 h-5 flex-shrink-0" />
@@ -353,7 +408,16 @@ const Sidebar = () => {
 
         {/* User Profile Menu */}
         <Menu as="div" className="relative">
-          <Menu.Button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors">
+          <Menu.Button 
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
             {getAvatarUrl() ? (
               <img
                 src={getAvatarUrl()}
@@ -387,7 +451,15 @@ const Sidebar = () => {
             leaveFrom="transform opacity-100 scale-100"
             leaveTo="transform opacity-0 scale-95"
           >
-            <Menu.Items className="absolute bottom-full left-0 mb-2 w-64 origin-bottom-left bg-white/95 dark:bg-slate-900/90 rounded-2xl shadow-2xl shadow-theme/20 dark:shadow-black/40 border border-white/60 dark:border-slate-800/70 focus:outline-none overflow-hidden backdrop-blur-xl">
+            <Menu.Items 
+              className="absolute bottom-full left-0 mb-2 w-64 origin-bottom-left rounded-2xl shadow-2xl focus:outline-none overflow-hidden backdrop-blur-xl"
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
+                borderColor: 'var(--border-primary)',
+                border: '1px solid',
+                boxShadow: 'var(--shadow-xl)'
+              }}
+            >
               <div className="py-1">
                 {/* Profile */}
                 <Menu.Item>
@@ -397,9 +469,11 @@ const Sidebar = () => {
                         navigate('/profile');
                         closeMobile();
                       }}
-                      className={`${
-                        active ? 'bg-white/70 dark:bg-slate-800/70' : ''
-                      } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 transition-colors`}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors"
+                      style={{
+                        backgroundColor: active ? 'var(--surface-hover)' : 'transparent',
+                        color: 'var(--text-secondary)'
+                      }}
                     >
                       <UserCircleIcon className="w-5 h-5" />
                       Mój profil
@@ -415,9 +489,11 @@ const Sidebar = () => {
                         navigate('/settings');
                         closeMobile();
                       }}
-                      className={`${
-                        active ? 'bg-white/70 dark:bg-slate-800/70' : ''
-                      } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 transition-colors`}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors"
+                      style={{
+                        backgroundColor: active ? 'var(--surface-hover)' : 'transparent',
+                        color: 'var(--text-secondary)'
+                      }}
                     >
                       <Cog6ToothIcon className="w-5 h-5" />
                       Ustawienia
@@ -426,11 +502,17 @@ const Sidebar = () => {
                 </Menu.Item>
 
                 {/* Theme Separator */}
-                <div className="my-1 border-t border-white/60 dark:border-slate-800/70" />
+                <div 
+                  className="my-1 border-t"
+                  style={{ borderColor: 'var(--border-primary)' }}
+                />
                 
                 {/* Theme Section Header */}
                 <div className="px-4 py-2">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                  <p 
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
                     Motyw
                   </p>
                 </div>
@@ -456,16 +538,20 @@ const Sidebar = () => {
                 />
 
                 {/* Logout Separator */}
-                <div className="my-1 border-t border-white/60 dark:border-slate-800/70" />
+                <div 
+                  className="my-1 border-t"
+                  style={{ borderColor: 'var(--border-primary)' }}
+                />
                 
                 {/* Logout */}
                 <Menu.Item>
                   {({ active }) => (
                     <button
                       onClick={handleLogout}
-                      className={`${
-                        active ? 'bg-red-50/80 dark:bg-red-900/30' : ''
-                      } flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 transition-colors`}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 transition-colors"
+                      style={{
+                        backgroundColor: active ? 'rgba(239, 68, 68, 0.1)' : 'transparent'
+                      }}
                     >
                       <ArrowRightOnRectangleIcon className="w-5 h-5" />
                       Wyloguj
@@ -485,29 +571,41 @@ const Sidebar = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={toggleMobile}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-xl bg-white/90 dark:bg-slate-950/80 border border-white/60 dark:border-slate-800/70 shadow-lg shadow-theme/30 backdrop-blur-xl"
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-xl shadow-lg backdrop-blur-xl"
+        style={{
+          backgroundColor: 'var(--surface-elevated)',
+          borderColor: 'var(--border-primary)',
+          border: '1px solid',
+          color: 'var(--text-secondary)',
+          boxShadow: 'var(--shadow-lg)'
+        }}
       >
         {mobileOpen ? (
-          <XMarkIcon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+          <XMarkIcon className="w-6 h-6" />
         ) : (
-          <Bars3Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+          <Bars3Icon className="w-6 h-6" />
         )}
       </button>
 
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ backgroundColor: 'var(--surface-overlay)' }}
           onClick={closeMobile}
         />
       )}
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white/85 dark:bg-slate-950/80 border-r border-white/60 dark:border-slate-800/70 z-40 md:hidden transition-transform duration-300 backdrop-blur-xl ${
+        className={`fixed top-0 left-0 h-full border-r z-40 md:hidden transition-transform duration-300 backdrop-blur-xl ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ width: '280px' }}
+        style={{ 
+          width: '280px',
+          backgroundColor: 'var(--surface-primary)',
+          borderColor: 'var(--border-primary)'
+        }}
       >
         <div className="flex flex-col h-full">
           {sidebarContent}
@@ -516,9 +614,13 @@ const Sidebar = () => {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col h-screen bg-white/80 dark:bg-slate-950/80 border-r border-white/60 dark:border-slate-800/70 sticky top-0 sidebar-transition backdrop-blur-xl ${
+        className={`hidden md:flex flex-col h-screen border-r sticky top-0 sidebar-transition backdrop-blur-xl ${
           collapsed ? 'w-20' : 'w-64'
         }`}
+        style={{
+          backgroundColor: 'var(--surface-primary)',
+          borderColor: 'var(--border-primary)'
+        }}
       >
         {sidebarContent}
       </aside>
@@ -528,16 +630,37 @@ const Sidebar = () => {
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: 'var(--surface-overlay)' }}
             onClick={() => setIsNotificationsOpen(false)}
           />
           
           {/* Drawer */}
-          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+          <div 
+            className="fixed right-0 top-0 h-full w-full max-w-md shadow-2xl z-50 overflow-y-auto"
+            style={{ 
+              backgroundColor: 'var(--surface-primary)',
+              boxShadow: 'var(--shadow-xl)'
+            }}
+          >
+            <div 
+              className="sticky top-0 border-b p-4 flex items-center justify-between"
+              style={{
+                backgroundColor: 'var(--surface-primary)',
+                borderColor: 'var(--border-primary)'
+              }}
+            >
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Powiadomienia</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <h2 
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Powiadomienia
+                </h2>
+                <p 
+                  className="text-xs"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
                   {unreadNotifications} nieprzeczytanych
                 </p>
               </div>
@@ -548,16 +671,29 @@ const Sidebar = () => {
                     setIsNotificationsOpen(false);
                     closeMobile();
                   }}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
                   style={{ color: 'var(--theme-primary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   Zobacz wszystkie
                 </button>
                 <button
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <XMarkIcon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -565,36 +701,59 @@ const Sidebar = () => {
             <div className="p-4 space-y-3">
               {!notificationsData || notificationsData.length === 0 ? (
                 <div className="text-center py-12">
-                  <BellIcon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Brak powiadomień</p>
+                  <BellIcon 
+                    className="w-12 h-12 mx-auto mb-3"
+                    style={{ color: 'var(--border-secondary)' }}
+                  />
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    Brak powiadomień
+                  </p>
                 </div>
               ) : (
                 notificationsData.slice(0, 20).map((notification) => (
                   <div
                     key={notification._id}
-                    className={`rounded-lg border p-3 transition-colors ${
-                      notification.read
-                        ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'
-                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                    }`}
+                    className="rounded-lg border p-3 transition-colors"
+                    style={{
+                      borderColor: notification.read ? 'var(--border-primary)' : 'var(--border-secondary)',
+                      backgroundColor: notification.read ? 'var(--surface-secondary)' : 'var(--surface-primary)'
+                    }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <h3 
+                          className="text-sm font-semibold"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
                           {notification.title}
                         </h3>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        <p 
+                          className="text-xs mt-1"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
                           {notification.message}
                         </p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-2">
+                        <p 
+                          className="text-[10px] mt-2"
+                          style={{ color: 'var(--text-tertiary)' }}
+                        >
                           {new Date(notification.createdAt).toLocaleString('pl-PL')}
                         </p>
                       </div>
                       {!notification.read && (
                         <button
                           onClick={() => markAsReadMutation.mutate(notification._id)}
-                          className="text-xs font-medium px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                          className="text-xs font-medium px-2 py-1 rounded transition-colors"
                           style={{ color: 'var(--theme-primary)' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                         >
                           Oznacz
                         </button>
@@ -613,16 +772,37 @@ const Sidebar = () => {
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: 'var(--surface-overlay)' }}
             onClick={() => setIsChatOpen(false)}
           />
           
           {/* Drawer */}
-          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+          <div 
+            className="fixed right-0 top-0 h-full w-full max-w-md shadow-2xl z-50 overflow-y-auto"
+            style={{ 
+              backgroundColor: 'var(--surface-primary)',
+              boxShadow: 'var(--shadow-xl)'
+            }}
+          >
+            <div 
+              className="sticky top-0 border-b p-4 flex items-center justify-between"
+              style={{
+                backgroundColor: 'var(--surface-primary)',
+                borderColor: 'var(--border-primary)'
+              }}
+            >
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Wiadomości</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <h2 
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Wiadomości
+                </h2>
+                <p 
+                  className="text-xs"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
                   {unreadMessages} nieprzeczytanych
                 </p>
               </div>
@@ -633,16 +813,29 @@ const Sidebar = () => {
                     navigate('/chat');
                     closeMobile();
                   }}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
                   style={{ color: 'var(--theme-primary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   Otwórz czat
                 </button>
                 <button
                   onClick={() => setIsChatOpen(false)}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <XMarkIcon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -650,8 +843,16 @@ const Sidebar = () => {
             <div className="p-4 space-y-2">
               {!conversationsData || conversationsData.length === 0 ? (
                 <div className="text-center py-12">
-                  <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Brak konwersacji</p>
+                  <ChatBubbleLeftRightIcon 
+                    className="w-12 h-12 mx-auto mb-3"
+                    style={{ color: 'var(--border-secondary)' }}
+                  />
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    Brak konwersacji
+                  </p>
                 </div>
               ) : (
                 conversationsData.map((conversation) => {
@@ -664,11 +865,17 @@ const Sidebar = () => {
                         navigate('/chat');
                         closeMobile();
                       }}
-                      className={`w-full text-left rounded-lg border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70 ${
-                        conversation.unreadCount > 0
-                          ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                          : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'
-                      }`}
+                      className="w-full text-left rounded-lg border p-3 transition-colors"
+                      style={{
+                        borderColor: conversation.unreadCount > 0 ? 'var(--border-secondary)' : 'var(--border-primary)',
+                        backgroundColor: conversation.unreadCount > 0 ? 'var(--surface-primary)' : 'var(--surface-secondary)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = conversation.unreadCount > 0 ? 'var(--surface-primary)' : 'var(--surface-secondary)';
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         <div 
@@ -679,7 +886,10 @@ const Sidebar = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                            <h3 
+                              className="text-sm font-semibold truncate"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
                               {otherParticipant?.name || 'Użytkownik'}
                             </h3>
                             {conversation.unreadCount > 0 && (
@@ -691,7 +901,10 @@ const Sidebar = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
+                          <p 
+                            className="text-xs truncate mt-1"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
                             {conversation.lastMessage?.content || 'Brak wiadomości'}
                           </p>
                         </div>
