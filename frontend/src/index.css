@@ -8,12 +8,12 @@
 
 :root {
   /* Brand colors - dynamically set by ThemeContext */
-  --theme-primary: #ec4899;
-  --theme-secondary: #f43f5e;
-  --theme-light: #fdf3f8;
-  --theme-very-light: #fef7fb;
-  --theme-dark: #db2777;
-  --theme-primary-rgb: 236, 72, 153;
+  --theme-primary: #7c3aed;
+  --theme-secondary: #2563eb;
+  --theme-light: #f5f3ff;
+  --theme-very-light: #eef2ff;
+  --theme-dark: #5b21b6;
+  --theme-primary-rgb: 124, 58, 237;
 
   /* Responsive UI scale (updated dynamically in Layout) */
   --app-scale: 1;
@@ -23,80 +23,80 @@
 [data-theme="light"] {
   /* Surfaces */
   --surface-primary: #ffffff;
-  --surface-secondary: #f8fafc;
-  --surface-tertiary: #f1f5f9;
+  --surface-secondary: #f6f7fb;
+  --surface-tertiary: #eef1f8;
   --surface-elevated: #ffffff;
-  --surface-overlay: rgba(0, 0, 0, 0.5);
-  --surface-hover: rgba(0, 0, 0, 0.04);
-  
+  --surface-overlay: rgba(16, 24, 40, 0.6);
+  --surface-hover: rgba(124, 58, 237, 0.08);
+
   /* Text */
   --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --text-secondary: #334155;
   --text-tertiary: #64748b;
   --text-inverse: #ffffff;
-  
+
   /* Borders */
   --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
   --border-focus: var(--theme-primary);
-  
+
   /* Inputs */
   --input-bg: #ffffff;
   --input-border: #e2e8f0;
-  --input-focus-bg: #ffffff;
+  --input-focus-bg: #f8faff;
   --input-placeholder: #94a3b8;
-  
+
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  
+  --shadow-sm: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
+  --shadow-md: 0 18px 38px -16px rgba(15, 23, 42, 0.15);
+  --shadow-lg: 0 24px 48px -20px rgba(15, 23, 42, 0.18);
+  --shadow-xl: 0 32px 60px -24px rgba(15, 23, 42, 0.22);
+
   /* Page backgrounds */
-  --page-bg: #f5f7fa;
-  --page-gradient-start: #fef1f7;
-  --page-gradient-mid: #ffffff;
-  --page-gradient-end: #fef3f8;
+  --page-bg: #f5f6fb;
+  --page-gradient-start: #f3e8ff;
+  --page-gradient-mid: #f8fafc;
+  --page-gradient-end: #e0f2fe;
 }
 
 /* Dark Theme Variables - Restored original dark theme */
 [data-theme="dark"] {
   /* Surfaces */
-  --surface-primary: #1e293b;
-  --surface-secondary: #0f172a;
-  --surface-tertiary: #0f172a;
-  --surface-elevated: #1e293b;
-  --surface-overlay: rgba(0, 0, 0, 0.75);
-  --surface-hover: rgba(255, 255, 255, 0.08);
-  
+  --surface-primary: #0f172a;
+  --surface-secondary: #0b1220;
+  --surface-tertiary: #111827;
+  --surface-elevated: #111827;
+  --surface-overlay: rgba(0, 0, 0, 0.7);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+
   /* Text */
-  --text-primary: #f1f5f9;
+  --text-primary: #e2e8f0;
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
-  --text-inverse: #0f172a;
-  
+  --text-inverse: #0b1220;
+
   /* Borders */
-  --border-primary: #334155;
-  --border-secondary: #475569;
+  --border-primary: #1f2937;
+  --border-secondary: #273449;
   --border-focus: var(--theme-primary);
-  
+
   /* Inputs */
-  --input-bg: #334155;
-  --input-border: #475569;
-  --input-focus-bg: #334155;
+  --input-bg: #111827;
+  --input-border: #1f2937;
+  --input-focus-bg: #111827;
   --input-placeholder: #94a3b8;
-  
+
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
-  
+  --shadow-sm: 0 12px 30px -18px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 20px 42px -20px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 26px 60px -24px rgba(0, 0, 0, 0.75);
+  --shadow-xl: 0 36px 80px -30px rgba(0, 0, 0, 0.85);
+
   /* Page backgrounds */
-  --page-bg: #0f172a;
-  --page-gradient-start: #0f172a;
-  --page-gradient-mid: #0f172a;
-  --page-gradient-end: #0f172a;
+  --page-bg: #050914;
+  --page-gradient-start: #0b1220;
+  --page-gradient-mid: #0b1220;
+  --page-gradient-end: #0b1220;
 }
 
 /* Dark Mode Styles - Using CSS Variables */
@@ -261,7 +261,9 @@ textarea::placeholder {
 
 /* Layout Background Gradients - Theme aware */
 .bg-gradient-layout {
-  background: var(--page-bg);
+  background: radial-gradient(circle at 20% 20%, rgba(var(--theme-primary-rgb), 0.12), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.08), transparent 38%),
+    linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 12%, var(--page-bg)), var(--page-bg));
   position: relative;
 }
 
@@ -272,30 +274,25 @@ textarea::placeholder {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(
-    circle at 20% 30%,
-    color-mix(in srgb, var(--theme-primary) 3%, transparent) 0%,
-    transparent 50%
-  ),
-  radial-gradient(
-    circle at 80% 70%,
-    color-mix(in srgb, var(--theme-secondary) 2%, transparent) 0%,
-    transparent 50%
-  );
+  background: radial-gradient(circle at 20% 30%, rgba(var(--theme-primary-rgb), 0.12), transparent 45%),
+    radial-gradient(circle at 80% 60%, rgba(37, 99, 235, 0.14), transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent 32%);
   pointer-events: none;
   z-index: 0;
 }
 
 [data-theme="dark"] .bg-gradient-layout {
-  background: linear-gradient(to bottom right,
-    color-mix(in srgb, var(--theme-primary) 12%, var(--page-bg)),
-    color-mix(in srgb, var(--theme-primary) 5%, var(--surface-secondary)),
-    color-mix(in srgb, var(--theme-secondary) 10%, var(--surface-secondary))
-  );
+  background: radial-gradient(circle at 20% 20%, rgba(var(--theme-primary-rgb), 0.14), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.12), transparent 42%),
+    linear-gradient(145deg, #050914, #0b1220 55%, #0f172a);
 }
 
 .bg-gradient-loading {
-  background: var(--page-bg);
+  background: linear-gradient(120deg,
+    color-mix(in srgb, var(--theme-primary) 14%, var(--page-bg)),
+    var(--page-bg),
+    color-mix(in srgb, var(--theme-secondary) 12%, var(--page-bg))
+  );
 }
 
 [data-theme="dark"] .bg-gradient-loading {
@@ -414,16 +411,33 @@ textarea::placeholder {
 }
 
 .app-card {
-  background-color: var(--surface-primary);
-  border: 1px solid var(--border-primary);
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.75));
+  border: 1px solid color-mix(in srgb, var(--border-primary) 80%, rgba(var(--theme-primary-rgb), 0.3));
   color: var(--text-primary);
   box-shadow: var(--shadow-sm);
-  @apply rounded-xl transition-all duration-300;
+  @apply rounded-2xl transition-all duration-300;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .app-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.75), rgba(11, 18, 32, 0.92));
+  border-color: color-mix(in srgb, var(--border-primary) 65%, rgba(var(--theme-primary-rgb), 0.25));
 }
 
 .app-card:hover {
   box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
+}
+
+.app-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 15% 20%, rgba(var(--theme-primary-rgb), 0.08), transparent 35%),
+    radial-gradient(circle at 85% 30%, rgba(37, 99, 235, 0.06), transparent 38%);
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 /* Compact spacing utilities */

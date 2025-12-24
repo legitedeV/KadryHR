@@ -619,10 +619,11 @@ const Sidebar = () => {
         className={`fixed top-0 left-0 h-full border-r z-40 md:hidden transition-transform duration-300 backdrop-blur-xl ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ 
+        style={{
           width: '280px',
-          backgroundColor: 'var(--surface-primary)',
-          borderColor: 'var(--border-primary)'
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-primary) 92%, transparent), color-mix(in srgb, var(--surface-tertiary) 95%, transparent))',
+          borderColor: 'color-mix(in srgb, var(--border-primary) 85%, rgba(var(--theme-primary-rgb),0.25))',
+          boxShadow: 'var(--shadow-lg)'
         }}
       >
         <div className="flex flex-col h-full">
@@ -636,8 +637,9 @@ const Sidebar = () => {
           collapsed ? 'w-20' : 'w-64'
         }`}
         style={{
-          backgroundColor: 'var(--surface-primary)',
-          borderColor: 'var(--border-primary)'
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-primary) 92%, transparent), color-mix(in srgb, var(--surface-tertiary) 95%, transparent))',
+          borderColor: 'color-mix(in srgb, var(--border-primary) 85%, rgba(var(--theme-primary-rgb),0.25))',
+          boxShadow: 'var(--shadow-lg)'
         }}
       >
         {sidebarContent}
