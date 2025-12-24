@@ -122,16 +122,15 @@ const MyTasks = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+      <div className="app-card p-6">
         <div className="flex items-center gap-3">
           <div
-            className="h-12 w-12 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg"
+            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
             style={{
-              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-              boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`,
+              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
             }}
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
           </div>
@@ -148,12 +147,12 @@ const MyTasks = () => {
 
       {/* Tasks Grid */}
       {tasksLoading ? (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-12 text-center">
+        <div className="app-card p-12 text-center">
           <div className="spinner h-8 w-8 mx-auto"></div>
           <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Ładowanie zadań...</p>
         </div>
       ) : !tasksData || tasksData.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-12 text-center">
+        <div className="app-card p-12 text-center">
           <svg
             className="w-16 h-16 mx-auto mb-4"
             style={{ color: 'var(--border-secondary)' }}
@@ -170,7 +169,7 @@ const MyTasks = () => {
           {tasksData.map((task) => (
             <div
               key={task._id}
-              className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
+              className="app-card p-6"
             >
               <div className="flex items-start justify-between mb-4">
                 {getPriorityBadge(task.priority)}
@@ -226,10 +225,7 @@ const MyTasks = () => {
             style={{ backgroundColor: 'var(--surface-overlay)' }}
             onClick={() => setShowModal(false)}
           />
-          <div
-            className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            style={{ borderColor: 'var(--border-primary)', border: '1px solid' }}
-          >
+          <div className="relative app-card max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                 {selectedTask.title}

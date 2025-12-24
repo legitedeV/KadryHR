@@ -106,24 +106,38 @@ const Webhooks = () => {
   const webhooks = webhooksData?.webhooks || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Webhooks
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Konfiguruj webhooks do integracji z zewnętrznymi systemami
-          </p>
+      <div className="app-card p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
+              style={{
+                background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
+              }}
+            >
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                Webhooks
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Konfiguruj webhooks do integracji z zewnętrznymi systemami
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Dodaj webhook
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Dodaj webhook
-        </button>
       </div>
 
       {/* Webhooks list */}
@@ -133,7 +147,7 @@ const Webhooks = () => {
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Ładowanie...</p>
         </div>
       ) : webhooks.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+        <div className="app-card p-12 text-center">
           <p className="text-slate-600 dark:text-slate-400">Brak skonfigurowanych webhooks</p>
         </div>
       ) : (
@@ -141,7 +155,7 @@ const Webhooks = () => {
           {webhooks.map((webhook) => (
             <div
               key={webhook._id}
-              className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6"
+              className="app-card p-6"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

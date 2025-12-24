@@ -240,11 +240,26 @@ const createAssignment = asyncHandler(async (req, res) => {
 const updateAssignment = asyncHandler(async (req, res) => {
   const userId = req.userId || (req.user && req.user.id);
   const { id } = req.params;
-  const { type, startTime, endTime, shiftTemplateId, notes, color } = req.body;
+  const { type, startTime, endTime, shiftTemplateId, notes, color, employeeId, date } = req.body;
   
   const assignment = await ShiftAssignment.findById(id);
   if (!assignment) {
     return res.status(404).json({ message: 'Przypisanie nie znalezione' });
+  }
+  
+  // Check if moving to a different employee/date (drag & drop)
+  if (employeeId && employeeId !== assignment.employee.toString()) {
+    // Verify employee exists
+    const Employee = require('../models/Employee');
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Pracownik nie znaleziony' });
+    }
+    assignment.employee = employeeId;
+  }
+  
+  if (date) {
+    assignment.date = new Date(date);
   }
   
   if (type) assignment.type = type;

@@ -15,9 +15,7 @@ const ScheduleBuilderV2 = () => {
   const [modalData, setModalData] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const [draggedAssignment, setDraggedAssignment] = useState(null);
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -207,7 +205,7 @@ const ScheduleBuilderV2 = () => {
   };
 
   const handleCellClick = (employee, date) => {
-    if (!selectedSchedule || isDragging) return;
+    if (!selectedSchedule) return;
     
     const dateStr = date.toISOString().split('T')[0];
     const key = `${employee._id}-${dateStr}`;
@@ -221,36 +219,70 @@ const ScheduleBuilderV2 = () => {
     setShowModal(true);
   };
 
-  // Drag-to-scroll handlers
-  const handleMouseDown = (e) => {
-    if (!scrollContainerRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-    setScrollLeft(scrollContainerRef.current.scrollLeft);
-    scrollContainerRef.current.style.cursor = 'grabbing';
-    scrollContainerRef.current.style.userSelect = 'none';
+  // Drag & Drop handlers for assignments
+  const handleDragStart = (e, assignment) => {
+    setDraggedAssignment(assignment);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.innerHTML);
+    e.target.style.opacity = '0.5';
   };
 
-  const handleMouseLeave = () => {
-    if (!scrollContainerRef.current) return;
-    setIsDragging(false);
-    scrollContainerRef.current.style.cursor = 'grab';
-    scrollContainerRef.current.style.userSelect = 'auto';
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1';
+    setDraggedAssignment(null);
   };
 
-  const handleMouseUp = () => {
-    if (!scrollContainerRef.current) return;
-    setIsDragging(false);
-    scrollContainerRef.current.style.cursor = 'grab';
-    scrollContainerRef.current.style.userSelect = 'auto';
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || !scrollContainerRef.current) return;
+  const handleDragOver = (e) => {
     e.preventDefault();
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // Scroll speed multiplier
-    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, targetEmployee, targetDate) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedAssignment || !selectedSchedule) return;
+    
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const sourceDateStr = new Date(draggedAssignment.date).toISOString().split('T')[0];
+    const sourceEmployeeId = draggedAssignment.employee._id;
+    const targetEmployeeId = targetEmployee._id;
+    
+    // Check if dropping on the same cell
+    if (sourceEmployeeId === targetEmployeeId && sourceDateStr === targetDateStr) {
+      setDraggedAssignment(null);
+      return;
+    }
+    
+    // Check if target cell already has an assignment
+    const targetKey = `${targetEmployeeId}-${targetDateStr}`;
+    const existingTarget = assignmentsByEmployeeAndDate[targetKey];
+    
+    if (existingTarget) {
+      setError('Komórka docelowa już ma przypisanie. Usuń je najpierw.');
+      setDraggedAssignment(null);
+      return;
+    }
+    
+    try {
+      // Update the assignment with new employee and date
+      await updateAssignmentMutation.mutateAsync({
+        id: draggedAssignment._id,
+        employeeId: targetEmployeeId,
+        date: targetDateStr,
+        type: draggedAssignment.type,
+        startTime: draggedAssignment.startTime,
+        endTime: draggedAssignment.endTime,
+        notes: draggedAssignment.notes,
+        color: draggedAssignment.color
+      });
+      
+      setSuccess('Zmiana przeniesiona pomyślnie');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Nie udało się przenieść zmiany');
+    }
+    
+    setDraggedAssignment(null);
   };
 
   const handleSaveAssignment = (formData) => {
@@ -448,11 +480,6 @@ const ScheduleBuilderV2 = () => {
               <div 
                 ref={scrollContainerRef}
                 className="w-full overflow-x-auto"
-                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-                onMouseDown={handleMouseDown}
-                onMouseLeave={handleMouseLeave}
-                onMouseUp={handleMouseUp}
-                onMouseMove={handleMouseMove}
               >
                 <table className="w-full border-collapse" style={{ minWidth: '100%' }}>
                   <thead>
@@ -503,15 +530,24 @@ const ScheduleBuilderV2 = () => {
                           return (
                             <td 
                               key={index}
-                              onClick={() => handleCellClick(employee, date)}
+                              onClick={(e) => {
+                                // Don't open modal if clicking on draggable assignment
+                                if (e.target.closest('[draggable="true"]')) return;
+                                handleCellClick(employee, date);
+                              }}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, employee, date)}
                               className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative"
                               style={{ minWidth: '60px' }}
                             >
                               {assignment && (
                                 <div 
-                                  className="px-2 py-1 rounded text-[10px] sm:text-xs text-white text-center font-medium truncate"
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, assignment)}
+                                  onDragEnd={handleDragEnd}
+                                  className="px-2 py-1 rounded text-[10px] sm:text-xs text-white text-center font-medium truncate cursor-move"
                                   style={{ backgroundColor: getAssignmentColor(assignment) }}
-                                  title={getAssignmentDisplay(assignment)}
+                                  title={`${getAssignmentDisplay(assignment)} (przeciągnij aby przenieść)`}
                                 >
                                   {getAssignmentDisplay(assignment)}
                                 </div>
