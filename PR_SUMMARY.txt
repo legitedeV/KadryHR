@@ -1,0 +1,139 @@
+================================================================================
+PULL REQUEST SUMMARY
+================================================================================
+
+Branch: feat/profile-settings-tasks-schedule-notifications
+Target: main
+Status: Branch pushed to GitHub, PR needs to be created manually
+
+PR Title:
+feat: Add Tasks Module, Profile/Settings Endpoints, and UI Improvements
+
+================================================================================
+SUMMARY
+================================================================================
+
+This PR implements a comprehensive Tasks module, adds profile/settings 
+endpoints, improves the sidebar UI, and integrates tasks into the schedule 
+builder.
+
+================================================================================
+BACKEND CHANGES
+================================================================================
+
+Task Module:
+✅ Created Task model with fields: title, description, employee, company, 
+   dueDate, status, priority, employeeComment, attachmentUrl, completedAt, 
+   scheduledDate
+✅ Implemented full CRUD endpoints for tasks (/api/tasks)
+✅ Added employee-specific endpoints:
+   - GET /api/tasks/my - Get tasks assigned to current user
+   - POST /api/tasks/:id/complete - Employee confirms task completion
+   - POST /api/tasks/:id/reject - Employee rejects task
+✅ Added GET /api/tasks/schedule for schedule builder integration
+✅ Task notifications sent on assignment and completion
+
+User & Settings:
+✅ Added GET /api/users/me endpoint for current user profile
+✅ Added settings endpoints:
+   - GET /api/auth/settings - Get user settings
+   - PATCH /api/auth/settings - Update user settings
+✅ Extended User model with settings field (notifications preferences, language)
+
+Notifications:
+✅ Implemented POST /api/notifications/mark-all-read endpoint
+
+================================================================================
+FRONTEND CHANGES
+================================================================================
+
+Tasks Module:
+✅ Created Tasks admin page (/tasks):
+   - Full task management UI with create/edit/delete
+   - Filters by employee, status, priority
+   - Table view with all task details
+✅ Created My Tasks employee page (/my-tasks):
+   - Card-based view of assigned tasks
+   - Complete/reject actions with comments and attachments
+   - Status badges and priority indicators
+✅ Added task routes and sidebar links
+✅ Integrated tasks into schedule builder:
+   - Visual indicators (dots) in cells when tasks are assigned
+   - Hover shows task count
+
+Profile & Settings:
+✅ Profile page now uses /api/users/me endpoint
+✅ Settings page loads and saves user preferences via backend
+✅ Theme preference saved to backend
+
+Sidebar Improvements:
+✅ Fixed dark theme styles using CSS variables consistently
+✅ Optimized spacing to reduce vertical scroll on desktop (768px+ height)
+   - Reduced padding in header, navigation, and bottom actions
+   - Tighter spacing between menu items
+✅ Added "Odczytaj wszystkie" button to notifications drawer
+   - Only shown when there are unread notifications
+   - Marks all notifications as read with one click
+
+UI/UX:
+✅ All new pages follow existing design system
+✅ Proper light/dark theme support
+✅ Responsive layouts
+✅ Loading states and error handling
+✅ Polish language throughout
+
+================================================================================
+TESTING
+================================================================================
+
+✅ Backend: All endpoints tested manually
+✅ Frontend: Build successful without errors
+✅ Theme system: Dark/light modes work correctly
+✅ Sidebar: Compact layout fits on 768px+ screens
+✅ Tasks: CRUD operations functional
+✅ Notifications: Mark all as read works
+
+================================================================================
+DEPLOYMENT NOTES
+================================================================================
+
+1. Run `npm install` in backend to install dependencies
+2. MongoDB will auto-create Task collection on first use
+3. Run `npm install && npm run build` in frontend
+4. Restart backend with PM2: `pm2 restart kadryhr-backend`
+5. Reload nginx: `sudo nginx -s reload`
+
+================================================================================
+FOLLOW-UP TASKS
+================================================================================
+
+- [ ] Add notification settings UI (removed due to syntax error, will re-add)
+- [ ] Add file upload for task attachments
+- [ ] Add task filtering by date range in admin view
+- [ ] Add task statistics dashboard
+
+================================================================================
+CHECKLIST
+================================================================================
+
+- [x] Code follows project conventions
+- [x] All user-facing text in Polish
+- [x] Theme system respected (no hard-coded colors)
+- [x] Backend changes integrated in frontend
+- [x] Build successful
+- [x] No console errors
+- [x] Responsive design
+- [x] Dark theme tested
+
+================================================================================
+MANUAL PR CREATION REQUIRED
+================================================================================
+
+Since GitHub API authentication is not available in this environment, please
+create the Pull Request manually by visiting:
+
+https://github.com/legitedeV/KadryHR/pull/new/feat/profile-settings-tasks-schedule-notifications
+
+Use the content above as the PR description.
+
+================================================================================
