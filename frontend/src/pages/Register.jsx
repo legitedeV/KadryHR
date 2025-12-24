@@ -60,12 +60,22 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-page-neutral px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-layout relative overflow-hidden px-4">
+      <div className="absolute inset-0 opacity-40 pointer-events-none" style={{
+        background: `radial-gradient(circle at 22% 18%, rgba(var(--theme-primary-rgb),0.18), transparent 36%),
+        radial-gradient(circle at 82% 0%, rgba(14,165,233,0.15), transparent 40%)`
+      }} />
       <ThemeSwitcher />
-      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 px-6 py-6">
-        <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">
-          Rejestracja
-        </h1>
+      <div className="w-full max-w-md bg-white/90 dark:bg-slate-900/85 rounded-3xl shadow-[0_22px_60px_-32px_rgba(15,23,42,0.7)] border border-slate-200/70 dark:border-slate-800/80 px-7 py-7 backdrop-blur-xl">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Rejestracja</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Link aktywacyjny od administratora jest wymagany.</p>
+          </div>
+          <span className="px-3 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(var(--theme-primary-rgb),0.12)', color: 'var(--theme-primary)' }}>
+            Zaproszenie
+          </span>
+        </div>
 
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           {inviteMode ? (
@@ -91,12 +101,12 @@ const Register = () => {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
               Imię i nazwisko
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all duration-200"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!inviteMode || submitting}
@@ -105,12 +115,12 @@ const Register = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
               Email
             </label>
             <input
               type="email"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all duration-200"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={!!inviteEmail || !inviteMode || submitting}
@@ -119,12 +129,12 @@ const Register = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
               Hasło
             </label>
             <input
               type="password"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus-theme bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-all duration-200"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all duration-200"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={!inviteMode || submitting}
@@ -135,7 +145,7 @@ const Register = () => {
           <button
             type="submit"
             disabled={!inviteMode || submitting}
-            className="mt-2 w-full inline-flex justify-center rounded-lg bg-theme-gradient px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-theme hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="mt-2 w-full inline-flex justify-center rounded-xl bg-gradient-to-r from-slate-900 via-sky-900 to-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/30 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? 'Rejestruję...' : 'Zarejestruj'}
           </button>
@@ -145,7 +155,7 @@ const Register = () => {
           Masz już konto?{' '}
           <Link
             to="/login"
-            className="text-theme-primary font-medium hover:text-theme-primary hover:underline transition-colors duration-200"
+            className="text-sky-600 dark:text-sky-300 font-semibold hover:underline transition-colors duration-200"
           >
             Zaloguj się
           </Link>
