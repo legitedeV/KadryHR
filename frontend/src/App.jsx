@@ -22,6 +22,7 @@ import Chat from './pages/Chat';
 import AdminRequests from './pages/AdminRequests';
 import AllLeaves from './pages/AllLeaves';
 import AllNotifications from './pages/AllNotifications';
+import Permissions from './pages/Permissions';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -228,6 +229,16 @@ const App = () => {
           <AdminRoute>
             <Layout>
               <Invites />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/permissions"
+        element={
+          <AdminRoute>
+            <Layout>
+              <Permissions />
             </Layout>
           </AdminRoute>
         }

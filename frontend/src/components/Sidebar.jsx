@@ -14,6 +14,7 @@ import {
   ChevronRightIcon,
   Bars3Icon,
   XMarkIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -55,6 +56,7 @@ const Sidebar = () => {
     { to: '/payroll', label: 'Narzędzia', icon: CurrencyDollarIcon },
     { to: '/schedule-builder', label: 'Grafik', icon: CalendarDaysIcon },
     { to: '/admin/requests', label: 'Wnioski', icon: ClipboardDocumentListIcon },
+    { to: '/permissions', label: 'Uprawnienia', icon: ShieldCheckIcon },
   ];
 
   const linkClasses = ({ isActive }) =>
