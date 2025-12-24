@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { usePermissions } from '../hooks/usePermissions';
 import api from '../api/axios';
@@ -13,6 +13,28 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
+  const [notificationSettings, setNotificationSettings] = useState({
+    email: true,
+    push: true,
+    taskAssigned: true,
+    taskCompleted: true,
+    scheduleChanged: true,
+  });
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data } = await api.get('/auth/settings');
+        if (data.settings?.notifications) {
+          setNotificationSettings(data.settings.notifications);
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleColorChange = (e) => {
     const newColor = e.target.value;
@@ -37,8 +59,16 @@ const Settings = () => {
     setSuccess(null);
 
     try {
+      // Save theme preference
       await api.put('/auth/theme-preference', {
         themePreference: selectedMode,
+      });
+
+      // Save notification settings
+      await api.patch('/auth/settings', {
+        settings: {
+          notifications: notificationSettings,
+        },
       });
       
       setSuccess('Ustawienia zapisane pomyślnie');
@@ -47,6 +77,13 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNotificationChange = (key) => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
   const presetColors = [
@@ -325,6 +362,130 @@ const Settings = () => {
                   To jest przykładowy tekst pokazujący, jak wybrany kolor będzie wyglądał w różnych elementach interfejsu.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Settings */}
+      <div className=\"bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6\">
+        <div className=\"space-y-6\">
+          <div>
+            <h2 className=\"text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2\">Powiadomienia</h2>
+            <p className=\"text-sm text-slate-600 dark:text-slate-400 mb-6\">
+              Zarządzaj preferencjami powiadomień dla różnych typów zdarzeń w aplikacji.
+            </p>
+          </div>
+
+          <div className=\"space-y-4\">
+            <div className=\"flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700\">
+              <div>
+                <p className=\"text-sm font-medium text-slate-900 dark:text-slate-100\">Powiadomienia email</p>
+                <p className=\"text-xs text-slate-500 dark:text-slate-400 mt-1\">Otrzymuj powiadomienia na adres email</p>
+              </div>
+              <button
+                onClick={() => handleNotificationChange('email')}
+                className=\"relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm\"
+                style={notificationSettings.email ? {
+                  background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+                } : {
+                  backgroundColor: 'var(--border-secondary)'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+                    notificationSettings.email ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className=\"flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700\">
+              <div>
+                <p className=\"text-sm font-medium text-slate-900 dark:text-slate-100\">Powiadomienia push</p>
+                <p className=\"text-xs text-slate-500 dark:text-slate-400 mt-1\">Otrzymuj powiadomienia w przeglądarce</p>
+              </div>
+              <button
+                onClick={() => handleNotificationChange('push')}
+                className=\"relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm\"
+                style={notificationSettings.push ? {
+                  background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+                } : {
+                  backgroundColor: 'var(--border-secondary)'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+                    notificationSettings.push ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className=\"flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700\">
+              <div>
+                <p className=\"text-sm font-medium text-slate-900 dark:text-slate-100\">Przypisanie zadania</p>
+                <p className=\"text-xs text-slate-500 dark:text-slate-400 mt-1\">Powiadom gdy zostanie przypisane nowe zadanie</p>
+              </div>
+              <button
+                onClick={() => handleNotificationChange('taskAssigned')}
+                className=\"relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm\"
+                style={notificationSettings.taskAssigned ? {
+                  background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+                } : {
+                  backgroundColor: 'var(--border-secondary)'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+                    notificationSettings.taskAssigned ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className=\"flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700\">
+              <div>
+                <p className=\"text-sm font-medium text-slate-900 dark:text-slate-100\">Wykonanie zadania</p>
+                <p className=\"text-xs text-slate-500 dark:text-slate-400 mt-1\">Powiadom gdy pracownik wykona zadanie</p>
+              </div>
+              <button
+                onClick={() => handleNotificationChange('taskCompleted')}
+                className=\"relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm\"
+                style={notificationSettings.taskCompleted ? {
+                  background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+                } : {
+                  backgroundColor: 'var(--border-secondary)'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+                    notificationSettings.taskCompleted ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className=\"flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700\">
+              <div>
+                <p className=\"text-sm font-medium text-slate-900 dark:text-slate-100\">Zmiany w grafiku</p>
+                <p className=\"text-xs text-slate-500 dark:text-slate-400 mt-1\">Powiadom o zmianach w grafiku pracy</p>
+              </div>
+              <button
+                onClick={() => handleNotificationChange('scheduleChanged')}
+                className=\"relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm\"
+                style={notificationSettings.scheduleChanged ? {
+                  background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+                } : {
+                  backgroundColor: 'var(--border-secondary)'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+                    notificationSettings.scheduleChanged ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>
