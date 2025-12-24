@@ -1,6 +1,7 @@
 const express = require('express');
 const scheduleV2Controller = require('../controllers/scheduleV2Controller');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 
 const router = express.Router();
 
@@ -9,18 +10,18 @@ router.use(protect);
 
 // Schedule routes
 router.get('/', scheduleV2Controller.getSchedules);
-router.post('/', adminOnly, scheduleV2Controller.createSchedule);
+router.post('/', requirePermission('schedule.create', { allowAdmin: true }), scheduleV2Controller.createSchedule);
 router.get('/:id', scheduleV2Controller.getScheduleById);
-router.put('/:id', adminOnly, scheduleV2Controller.updateSchedule);
-router.delete('/:id', adminOnly, scheduleV2Controller.deleteSchedule);
+router.put('/:id', requirePermission('schedule.edit', { allowAdmin: true }), scheduleV2Controller.updateSchedule);
+router.delete('/:id', requirePermission('schedule.delete', { allowAdmin: true }), scheduleV2Controller.deleteSchedule);
 
 // Assignment routes
 router.get('/:id/assignments', scheduleV2Controller.getAssignments);
-router.post('/:id/assignments', adminOnly, scheduleV2Controller.createAssignment);
-router.post('/:id/generate', adminOnly, scheduleV2Controller.generateSchedule);
+router.post('/:id/assignments', requirePermission('schedule.create', { allowAdmin: true }), scheduleV2Controller.createAssignment);
+router.post('/:id/generate', requirePermission('schedule.create', { allowAdmin: true }), scheduleV2Controller.generateSchedule);
 
 // Individual assignment operations
-router.put('/assignments/:id', adminOnly, scheduleV2Controller.updateAssignment);
-router.delete('/assignments/:id', adminOnly, scheduleV2Controller.deleteAssignment);
+router.put('/assignments/:id', requirePermission('schedule.edit', { allowAdmin: true }), scheduleV2Controller.updateAssignment);
+router.delete('/assignments/:id', requirePermission('schedule.delete', { allowAdmin: true }), scheduleV2Controller.deleteAssignment);
 
 module.exports = router;

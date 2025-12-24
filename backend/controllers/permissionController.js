@@ -128,9 +128,10 @@ exports.getUserPermissions = async (req, res, next) => {
  */
 exports.assignPermissions = async (req, res, next) => {
   try {
-    const { role } = req.user;
+    const { role: currentUserRole } = req.user;
     
-    if (role !== 'admin' && role !== 'super_admin') {
+    // Tylko admin i super_admin mogą zarządzać uprawnieniami
+    if (currentUserRole !== 'admin' && currentUserRole !== 'super_admin') {
       return res.status(403).json({ message: 'Brak uprawnień do zarządzania uprawnieniami' });
     }
     
@@ -140,10 +141,17 @@ exports.assignPermissions = async (req, res, next) => {
       return res.status(400).json({ message: 'Nieprawidłowe dane wejściowe' });
     }
     
-    // Sprawdź czy użytkownik istnieje
-    const user = await User.findById(userId);
-    if (!user) {
+    // Sprawdź czy użytkownik docelowy istnieje
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
       return res.status(404).json({ message: 'Użytkownik nie istnieje' });
+    }
+    
+    // KLUCZOWA ZASADA: Admin nie może edytować uprawnień super admina
+    if (targetUser.role === 'super_admin' && currentUserRole !== 'super_admin') {
+      return res.status(403).json({ 
+        message: 'Tylko super admin może edytować uprawnienia super admina' 
+      });
     }
     
     // Sprawdź czy wszystkie uprawnienia istnieją
@@ -176,7 +184,7 @@ exports.assignPermissions = async (req, res, next) => {
     await userPermission.save();
     
     res.json({
-      message: 'Uprawnienia zostały przypisane',
+      message: 'Uprawnienia zostały zaktualizowane',
       userPermission,
     });
   } catch (err) {
@@ -189,13 +197,26 @@ exports.assignPermissions = async (req, res, next) => {
  */
 exports.revokePermissions = async (req, res, next) => {
   try {
-    const { role } = req.user;
+    const { role: currentUserRole } = req.user;
     
-    if (role !== 'admin' && role !== 'super_admin') {
+    if (currentUserRole !== 'admin' && currentUserRole !== 'super_admin') {
       return res.status(403).json({ message: 'Brak uprawnień do zarządzania uprawnieniami' });
     }
     
     const { userId } = req.params;
+    
+    // Sprawdź czy użytkownik docelowy istnieje
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Użytkownik nie istnieje' });
+    }
+    
+    // Admin nie może odbierać uprawnień super adminowi
+    if (targetUser.role === 'super_admin' && currentUserRole !== 'super_admin') {
+      return res.status(403).json({ 
+        message: 'Tylko super admin może zarządzać uprawnieniami super admina' 
+      });
+    }
     
     const userPermission = await UserPermission.findOne({ user: userId });
     

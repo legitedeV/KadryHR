@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
+import { PERMISSIONS } from '../utils/permissions';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -19,14 +21,13 @@ import {
 
 const Sidebar = () => {
   const { user } = useAuth();
+  const { hasPermission, hasAnyPermission, isAdmin } = usePermissions();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
     return saved ? JSON.parse(saved) : false;
   });
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   useEffect(() => {
     localStorage.setItem('sidebar_collapsed', JSON.stringify(collapsed));
@@ -52,11 +53,36 @@ const Sidebar = () => {
   ];
 
   const adminLinks = [
-    { to: '/employees', label: 'Pracownicy', icon: UserGroupIcon },
-    { to: '/payroll', label: 'Narzędzia', icon: CurrencyDollarIcon },
-    { to: '/schedule-builder', label: 'Grafik', icon: CalendarDaysIcon },
-    { to: '/admin/requests', label: 'Wnioski', icon: ClipboardDocumentListIcon },
-    { to: '/permissions', label: 'Uprawnienia', icon: ShieldCheckIcon },
+    { 
+      to: '/employees', 
+      label: 'Pracownicy', 
+      icon: UserGroupIcon,
+      permission: PERMISSIONS.EMPLOYEES_VIEW
+    },
+    { 
+      to: '/payroll', 
+      label: 'Narzędzia', 
+      icon: CurrencyDollarIcon,
+      permissions: [PERMISSIONS.PAYROLL_VIEW, PERMISSIONS.PAYROLL_CALCULATE]
+    },
+    { 
+      to: '/schedule-builder', 
+      label: 'Grafik', 
+      icon: CalendarDaysIcon,
+      permission: PERMISSIONS.SCHEDULE_VIEW
+    },
+    { 
+      to: '/admin/requests', 
+      label: 'Wnioski', 
+      icon: ClipboardDocumentListIcon,
+      permission: PERMISSIONS.REQUESTS_MANAGE
+    },
+    { 
+      to: '/permissions', 
+      label: 'Uprawnienia', 
+      icon: ShieldCheckIcon,
+      adminOnly: true
+    },
   ];
 
   const linkClasses = ({ isActive }) =>
@@ -141,7 +167,12 @@ const Sidebar = () => {
         </div>
 
         {/* Admin Section */}
-        {isAdmin && (
+        {(isAdmin || adminLinks.some(link => {
+          if (link.adminOnly) return false;
+          if (link.permission) return hasPermission(link.permission);
+          if (link.permissions) return hasAnyPermission(link.permissions);
+          return false;
+        })) && (
           <div>
             {!collapsed && (
               <div className="px-3 mb-2">
@@ -154,7 +185,14 @@ const Sidebar = () => {
               <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
             )}
             <div className="space-y-1">
-              {adminLinks.map(renderLink)}
+              {adminLinks.filter(link => {
+                // Admin-only links require admin role
+                if (link.adminOnly) return isAdmin;
+                // Permission-based links
+                if (link.permission) return isAdmin || hasPermission(link.permission);
+                if (link.permissions) return isAdmin || hasAnyPermission(link.permissions);
+                return true;
+              }).map(renderLink)}
             </div>
           </div>
         )}

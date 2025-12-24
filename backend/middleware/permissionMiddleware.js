@@ -4,19 +4,28 @@ const UserPermission = require('../models/UserPermission');
  * Middleware do sprawdzania uprawnień użytkownika
  * 
  * @param {string|string[]} requiredPermissions - Wymagane uprawnienie(a)
+ * @param {Object} options - Opcje: { allowAdmin: boolean } - czy admin ma automatyczny dostęp (domyślnie: false)
  * @returns {Function} Express middleware
  * 
  * Przykład użycia:
- * router.get('/employees', checkPermission('employees.view'), getEmployees);
- * router.post('/employees', checkPermission(['employees.create']), createEmployee);
+ * router.get('/employees', requirePermission('employees.view'), getEmployees);
+ * router.post('/employees', requirePermission(['employees.create']), createEmployee);
+ * router.get('/admin-only', requirePermission('some.permission', { allowAdmin: true }), handler);
  */
-const checkPermission = (requiredPermissions) => {
+const requirePermission = (requiredPermissions, options = {}) => {
+  const { allowAdmin = false } = options;
+  
   return async (req, res, next) => {
     try {
       const { id: userId, role } = req.user;
 
-      // Super admin i admin mają dostęp do wszystkiego
-      if (role === 'super_admin' || role === 'admin') {
+      // Super admin zawsze ma dostęp
+      if (role === 'super_admin') {
+        return next();
+      }
+
+      // Admin ma dostęp tylko jeśli allowAdmin = true
+      if (role === 'admin' && allowAdmin) {
         return next();
       }
 
@@ -69,19 +78,30 @@ const checkPermission = (requiredPermissions) => {
   };
 };
 
+// Alias dla kompatybilności wstecznej
+const checkPermission = requirePermission;
+
 /**
  * Middleware do sprawdzania czy użytkownik ma przynajmniej jedno z uprawnień
  * 
  * @param {string[]} permissions - Lista uprawnień (wystarczy jedno)
+ * @param {Object} options - Opcje: { allowAdmin: boolean }
  * @returns {Function} Express middleware
  */
-const checkAnyPermission = (permissions) => {
+const requireAnyPermission = (permissions, options = {}) => {
+  const { allowAdmin = false } = options;
+  
   return async (req, res, next) => {
     try {
       const { id: userId, role } = req.user;
 
-      // Super admin i admin mają dostęp do wszystkiego
-      if (role === 'super_admin' || role === 'admin') {
+      // Super admin zawsze ma dostęp
+      if (role === 'super_admin') {
+        return next();
+      }
+
+      // Admin ma dostęp tylko jeśli allowAdmin = true
+      if (role === 'admin' && allowAdmin) {
         return next();
       }
 
@@ -121,6 +141,9 @@ const checkAnyPermission = (permissions) => {
   };
 };
 
+// Alias dla kompatybilności wstecznej
+const checkAnyPermission = requireAnyPermission;
+
 /**
  * Helper do sprawdzania uprawnień w kontrolerach
  */
@@ -137,7 +160,9 @@ const hasPermission = async (userId, permissionName) => {
 };
 
 module.exports = {
-  checkPermission,
-  checkAnyPermission,
+  requirePermission,
+  requireAnyPermission,
+  checkPermission, // Alias for backward compatibility
+  checkAnyPermission, // Alias for backward compatibility
   hasPermission,
 };

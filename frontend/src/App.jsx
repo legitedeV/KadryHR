@@ -23,6 +23,8 @@ import AdminRequests from './pages/AdminRequests';
 import AllLeaves from './pages/AllLeaves';
 import AllNotifications from './pages/AllNotifications';
 import Permissions from './pages/Permissions';
+import ProtectedRoute from './components/ProtectedRoute';
+import { PERMISSIONS } from './utils/permissions';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -192,35 +194,35 @@ const App = () => {
         }
       />
       
-      {/* Admin-only routes */}
+      {/* Admin-only routes with permission support */}
       <Route
         path="/employees"
         element={
-          <AdminRoute>
+          <ProtectedRoute requiredPermissions={[PERMISSIONS.EMPLOYEES_VIEW]}>
             <Layout>
               <Employees />
             </Layout>
-          </AdminRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/payroll"
         element={
-          <AdminRoute>
+          <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_VIEW, PERMISSIONS.PAYROLL_CALCULATE]}>
             <Layout>
               <Payroll />
             </Layout>
-          </AdminRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/reports"
         element={
-          <AdminRoute>
+          <ProtectedRoute requiredPermissions={[PERMISSIONS.REPORTS_VIEW]}>
             <Layout>
               <Reports />
             </Layout>
-          </AdminRoute>
+          </ProtectedRoute>
         }
       />
       <Route
@@ -256,11 +258,11 @@ const App = () => {
       <Route
         path="/admin/requests"
         element={
-          <AdminRoute>
+          <ProtectedRoute requiredPermissions={[PERMISSIONS.REQUESTS_MANAGE]}>
             <Layout>
               <AdminRequests />
             </Layout>
-          </AdminRoute>
+          </ProtectedRoute>
         }
       />
       

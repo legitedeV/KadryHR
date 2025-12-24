@@ -1,11 +1,12 @@
 const express = require('express');
 const { protect } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 
 const router = express.Router();
 
 router.use(protect);
 
-router.post('/calculate', (req, res, next) => {
+router.post('/calculate', requirePermission('payroll.calculate', { allowAdmin: true }), (req, res, next) => {
   try {
     const { hourlyRate = 0, baseHours = 160, overtimeHours = 0, overtimeMultiplier = 1.5, bonus = 0 } = req.body;
 
