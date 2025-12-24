@@ -3,11 +3,12 @@ const asyncHandler = require('express-async-handler');
 const WorktimeEntry = require('../models/WorktimeEntry');
 const Employee = require('../models/Employee');
 const { protect, requireRole } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 
 const router = express.Router();
 
-// Tylko administrator ma dostęp do raportów
-const adminOnly = [protect, requireRole('admin')];
+// Tylko administrator lub użytkownik z uprawnieniami ma dostęp do raportów
+const adminOnly = [protect, requirePermission('reports.view', { allowAdmin: true })];
 
 /**
  * GET /api/reports/worktime

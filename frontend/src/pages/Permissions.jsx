@@ -2,22 +2,28 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import Alert from '../components/Alert';
+import { useAuth } from '../context/AuthContext';
 import {
   ShieldCheckIcon,
   UserGroupIcon,
   MagnifyingGlassIcon,
   CheckIcon,
   XMarkIcon,
+  LockClosedIcon,
 } from '@heroicons/react/24/outline';
 
 const Permissions = () => {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isAdmin = currentUser?.role === 'admin' || isSuperAdmin;
 
   // Fetch all permissions
   const { data: permissionsData, isLoading: permissionsLoading } = useQuery({
@@ -86,12 +92,23 @@ const Permissions = () => {
   }, [usersData, searchTerm]);
 
   const handleEditPermissions = (user) => {
+    // Check if current user can manage this user's permissions
+    if (user.role === 'super_admin' && !isSuperAdmin) {
+      setError('Tylko super admin może edytować uprawnienia super admina');
+      return;
+    }
+    
     setSelectedUser(user);
     setSelectedPermissions(user.permissions || []);
     setShowModal(true);
   };
 
   const togglePermission = (permissionName) => {
+    // Don't allow toggling if editing super admin as non-super admin
+    if (selectedUser?.role === 'super_admin' && !isSuperAdmin) {
+      return;
+    }
+    
     setSelectedPermissions((prev) =>
       prev.includes(permissionName)
         ? prev.filter((p) => p !== permissionName)
@@ -190,13 +207,15 @@ const Permissions = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => initPermissionsMutation.mutate()}
-            disabled={initPermissionsMutation.isLoading}
-            className="btn-secondary text-xs"
-          >
-            {initPermissionsMutation.isLoading ? 'Inicjalizacja...' : 'Inicjalizuj uprawnienia'}
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => initPermissionsMutation.mutate()}
+              disabled={initPermissionsMutation.isLoading}
+              className="btn-secondary text-xs"
+            >
+              {initPermissionsMutation.isLoading ? 'Inicjalizacja...' : 'Inicjalizuj uprawnienia'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -326,6 +345,22 @@ const Permissions = () => {
 
                 {/* Modal Body */}
                 <div className="flex-1 overflow-y-auto p-6">
+                  {selectedUser.role === 'super_admin' && !isSuperAdmin && (
+                    <div className="mb-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-start gap-3">
+                        <LockClosedIcon className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Tylko super admin może edytować uprawnienia super admina
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Uprawnienia tego użytkownika są zablokowane dla Twojego poziomu dostępu.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {permissionsLoading ? (
                     <div className="text-center py-8">
                       <div
@@ -352,11 +387,12 @@ const Permissions = () => {
                                   <button
                                     key={perm._id}
                                     onClick={() => togglePermission(perm.name)}
+                                    disabled={selectedUser.role === 'super_admin' && !isSuperAdmin}
                                     className={`text-left rounded-lg border p-3 transition-all ${
                                       isSelected
                                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                                    }`}
+                                    } ${selectedUser.role === 'super_admin' && !isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   >
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="flex-1">
@@ -413,7 +449,7 @@ const Permissions = () => {
                       </button>
                       <button
                         onClick={handleSavePermissions}
-                        disabled={assignPermissionsMutation.isLoading}
+                        disabled={assignPermissionsMutation.isLoading || (selectedUser.role === 'super_admin' && !isSuperAdmin)}
                         className="btn-primary"
                       >
                         {assignPermissionsMutation.isLoading ? 'Zapisywanie...' : 'Zapisz uprawnienia'}

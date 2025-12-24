@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 const { protect, requireRole } = require('../middleware/authMiddleware');
+const { requirePermission, requireAnyPermission } = require('../middleware/permissionMiddleware');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const router = express.Router();
 router.get(
   '/summary',
   protect,
-  requireRole('admin'),
+  requireAnyPermission(['employees.view', 'dashboard.view'], { allowAdmin: true }),
   asyncHandler(async (req, res) => {
     const employees = await Employee.find({}, 'monthlySalary hourlyRate hoursPerMonth isActive');
 
@@ -80,7 +81,7 @@ router.get(
 router.get(
   '/',
   protect,
-  requireRole('admin'),
+  requirePermission('employees.view', { allowAdmin: true }),
   asyncHandler(async (req, res) => {
     const employees = await Employee.find()
       .populate('user', 'email name')
@@ -96,7 +97,7 @@ router.get(
 router.post(
   '/',
   protect,
-  requireRole('admin'),
+  requirePermission('employees.create', { allowAdmin: true }),
   asyncHandler(async (req, res) => {
     const { email, firstName, lastName, password, ...employeeData } = req.body;
 
@@ -168,7 +169,7 @@ router.post(
 router.get(
   '/:id',
   protect,
-  requireRole('admin'),
+  requirePermission('employees.view', { allowAdmin: true }),
   asyncHandler(async (req, res) => {
     const employee = await Employee.findById(req.params.id);
 
@@ -189,7 +190,7 @@ router.get(
 router.patch(
   '/:id',
   protect,
-  requireRole('admin'),
+  requirePermission('employees.edit', { allowAdmin: true }),
   asyncHandler(async (req, res) => {
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
@@ -214,7 +215,7 @@ router.patch(
 router.delete(
   '/:id',
   protect,
-  requireRole('admin'),
+  requirePermission('employees.delete', { allowAdmin: true }),
   asyncHandler(async (req, res) => {
     const employee = await Employee.findByIdAndDelete(req.params.id);
 
