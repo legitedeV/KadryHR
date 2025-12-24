@@ -221,10 +221,10 @@ const ScheduleBuilderV2 = () => {
   }, [schedulesData, selectedSchedule]);
 
   return (
-    <div className="w-full space-y-6 animate-fade-in">
+    <div className="w-full space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="app-card p-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="app-card p-4 sm:p-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div 
               className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
@@ -270,7 +270,7 @@ const ScheduleBuilderV2 = () => {
 
       {/* Schedule Selection / Creation */}
       {!selectedSchedule && schedulesData && schedulesData.length === 0 && (
-        <div className="app-card p-6 text-center">
+        <div className="app-card p-4 sm:p-5 text-center">
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             Brak grafiku dla wybranego miesiąca
           </p>
