@@ -410,6 +410,64 @@ const updateThemePreference = asyncHandler(async (req, res) => {
   });
 });
 
+// GET /api/auth/settings - Get user settings
+const getSettings = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Brak autoryzacji' });
+  }
+
+  const user = await User.findById(userId).select('settings themePreference');
+
+  if (!user) {
+    return res.status(404).json({ message: 'Użytkownik nie istnieje' });
+  }
+
+  return res.status(200).json({
+    settings: user.settings || {},
+    themePreference: user.themePreference || 'system',
+  });
+});
+
+// PATCH /api/auth/settings - Update user settings
+const updateSettings = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Brak autoryzacji' });
+  }
+
+  const { settings } = req.body;
+
+  if (!settings) {
+    return res.status(400).json({ message: 'Ustawienia są wymagane' });
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return res.status(404).json({ message: 'Użytkownik nie istnieje' });
+  }
+
+  // Merge settings
+  user.settings = {
+    ...user.settings,
+    ...settings,
+    notifications: {
+      ...user.settings?.notifications,
+      ...settings.notifications,
+    },
+  };
+
+  await user.save();
+
+  return res.status(200).json({
+    message: 'Ustawienia zaktualizowane pomyślnie',
+    settings: user.settings,
+  });
+});
+
 module.exports = {
   loginUser,
   registerUser,
@@ -419,4 +477,6 @@ module.exports = {
   updateProfile,
   changePassword,
   updateThemePreference,
+  getSettings,
+  updateSettings,
 };

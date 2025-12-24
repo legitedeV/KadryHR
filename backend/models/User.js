@@ -45,6 +45,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    settings: {
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        taskAssigned: { type: Boolean, default: true },
+        taskCompleted: { type: Boolean, default: true },
+        scheduleChanged: { type: Boolean, default: true },
+      },
+      language: {
+        type: String,
+        default: 'pl',
+      },
+    },
     isActive: {
       type: Boolean,
       default: true,

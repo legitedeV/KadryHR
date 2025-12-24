@@ -50,6 +50,21 @@ const ScheduleBuilderV2 = () => {
     }
   });
 
+  // Fetch tasks for the month
+  const { data: tasksData } = useQuery({
+    queryKey: ['tasks-schedule', year, month],
+    queryFn: async () => {
+      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+      
+      const { data } = await api.get('/tasks', {
+        params: { startDate, endDate }
+      });
+      return data.tasks || [];
+    },
+    enabled: !!selectedSchedule,
+  });
+
   // Create schedule mutation
   const createScheduleMutation = useMutation({
     mutationFn: async (payload) => {
@@ -137,6 +152,28 @@ const ScheduleBuilderV2 = () => {
     });
     return map;
   }, [scheduleData]);
+
+  // Get tasks by employee and date
+  const tasksByEmployeeAndDate = useMemo(() => {
+    if (!tasksData) return {};
+    
+    const map = {};
+    tasksData.forEach(task => {
+      const employeeId = task.employee?._id;
+      if (!employeeId) return;
+      
+      // Use scheduledDate if available, otherwise dueDate
+      const taskDate = task.scheduledDate || task.dueDate;
+      const dateStr = new Date(taskDate).toISOString().split('T')[0];
+      const key = `${employeeId}-${dateStr}`;
+      
+      if (!map[key]) {
+        map[key] = [];
+      }
+      map[key].push(task);
+    });
+    return map;
+  }, [tasksData]);
 
   const handleCreateSchedule = () => {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
@@ -337,12 +374,13 @@ const ScheduleBuilderV2 = () => {
                           const dateStr = date.toISOString().split('T')[0];
                           const key = `${employee._id}-${dateStr}`;
                           const assignment = assignmentsByEmployeeAndDate[key];
+                          const tasks = tasksByEmployeeAndDate[key] || [];
                           
                           return (
                             <td 
                               key={index}
                               onClick={() => handleCellClick(employee, date)}
-                              className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                              className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative"
                               style={{ minWidth: '60px' }}
                             >
                               {assignment && (
@@ -353,6 +391,13 @@ const ScheduleBuilderV2 = () => {
                                 >
                                   {getAssignmentDisplay(assignment)}
                                 </div>
+                              )}
+                              {tasks.length > 0 && (
+                                <div 
+                                  className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: 'var(--theme-primary)' }}
+                                  title={`${tasks.length} zadań`}
+                                />
                               )}
                             </td>
                           );

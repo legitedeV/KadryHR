@@ -31,6 +31,8 @@ const AllLeaves = lazy(() => import('./pages/AllLeaves'));
 const AllNotifications = lazy(() => import('./pages/AllNotifications'));
 const Permissions = lazy(() => import('./pages/Permissions'));
 const Webhooks = lazy(() => import('./pages/Webhooks'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const MyTasks = lazy(() => import('./pages/MyTasks'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -96,6 +98,18 @@ const App = () => {
           <PrivateRoute>
             <Layout>
               <SelfService />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* My Tasks - accessible to all logged-in users */}
+      <Route
+        path="/my-tasks"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <MyTasks />
             </Layout>
           </PrivateRoute>
         }
@@ -254,6 +268,16 @@ const App = () => {
           <AdminRoute>
             <Layout>
               <Webhooks />
+            </Layout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <AdminRoute>
+            <Layout>
+              <Tasks />
             </Layout>
           </AdminRoute>
         }

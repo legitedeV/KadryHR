@@ -199,6 +199,8 @@ const chatRoutes = require('./routes/chatRoutes');
 const permissionRoutes = require('./routes/permissionRoutes');
 const realtimeRoutes = require('./routes/realtimeRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // === ROUTES MOUNT ===
 
@@ -244,6 +246,7 @@ app.get('/health', (req, res) => {
 
 // API - z cache dla GET requestów (5 minut)
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/employees', cacheMiddleware(3 * 60 * 1000), employeeRoutes); // 3 min cache
 app.use('/api/invites', inviteRoutes);
 app.use('/api/leaves', cacheMiddleware(2 * 60 * 1000), leaveRoutes); // 2 min cache
@@ -264,6 +267,7 @@ app.use('/api/chat', chatRoutes); // Chat routes
 app.use('/api/permissions', permissionRoutes); // Permissions management routes
 app.use('/api/realtime', realtimeRoutes); // Realtime SSE events
 app.use('/api/webhooks', webhookRoutes); // Webhook management
+app.use('/api/tasks', taskRoutes); // Task management routes
 
 // Serve static files (avatars)
 app.use('/uploads', express.static('uploads'));

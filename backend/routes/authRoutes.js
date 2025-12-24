@@ -12,6 +12,8 @@ const {
   updateProfile,
   changePassword,
   updateThemePreference,
+  getSettings,
+  updateSettings,
 } = authController;
 
 // Zabezpieczenie przed sytuacją, w której import nie zwróci funkcji (np. błąd require)
@@ -50,5 +52,9 @@ router.put('/change-password', protect, changePassword);
 
 // Aktualizacja preferencji motywu
 router.put('/theme-preference', protect, updateThemePreference);
+
+// Ustawienia użytkownika
+router.get('/settings', protect, getSettings);
+router.patch('/settings', protect, updateSettings);
 
 module.exports = router;

@@ -16,6 +16,7 @@ import {
   ChatBubbleLeftRightIcon,
   UserCircleIcon,
   ClipboardDocumentListIcon,
+  ClipboardDocumentCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   Bars3Icon,
@@ -79,6 +80,16 @@ const Sidebar = () => {
     },
   });
 
+  // Mark all notifications as read
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/notifications/mark-all-read');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notifications']);
+    },
+  });
+
   const toggleCollapse = () => {
     setCollapsed(!collapsed);
   };
@@ -119,6 +130,7 @@ const Sidebar = () => {
   const employeeLinks = [
     { to: '/app', label: 'Dashboard', icon: HomeIcon, end: true },
     { to: '/self-service', label: 'Panel pracownika', icon: UserCircleIcon },
+    { to: '/my-tasks', label: 'Moje zadania', icon: ClipboardDocumentCheckIcon },
     { to: '/time-tracking', label: 'Czas pracy', icon: ClockIcon },
     { to: '/chat', label: 'Wiadomości', icon: ChatBubbleLeftRightIcon },
   ];
@@ -129,6 +141,12 @@ const Sidebar = () => {
       label: 'Pracownicy', 
       icon: UserGroupIcon,
       permission: PERMISSIONS.EMPLOYEES_VIEW
+    },
+    { 
+      to: '/tasks', 
+      label: 'Zadania', 
+      icon: ClipboardDocumentListIcon,
+      adminOnly: true
     },
     { 
       to: '/payroll', 
@@ -226,7 +244,7 @@ const Sidebar = () => {
     <>
       {/* Header */}
       <div 
-        className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-3 border-b backdrop-blur-xl`}
+        className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-4 py-2 border-b backdrop-blur-xl`}
         style={{
           borderColor: 'var(--border-primary)',
           backgroundColor: 'var(--surface-secondary)'
@@ -278,11 +296,11 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
         {/* Employee Section */}
         <div>
           {!collapsed && (
-            <div className="px-3 mb-1.5">
+            <div className="px-3 mb-1">
               <h3 
                 className="text-[10px] font-semibold uppercase tracking-wider opacity-60"
                 style={{ color: 'var(--text-tertiary)' }}
@@ -305,7 +323,7 @@ const Sidebar = () => {
         })) && (
           <div>
             {!collapsed && (
-              <div className="px-3 mb-1.5">
+              <div className="px-3 mb-1">
                 <h3 
                   className="text-[10px] font-semibold uppercase tracking-wider opacity-60"
                   style={{ color: 'var(--text-tertiary)' }}
@@ -316,7 +334,7 @@ const Sidebar = () => {
             )}
             {collapsed && (
               <div 
-                className="border-t my-1.5"
+                className="border-t my-1"
                 style={{ borderColor: 'var(--border-primary)' }}
               ></div>
             )}
@@ -336,7 +354,7 @@ const Sidebar = () => {
 
       {/* Bottom Actions */}
       <div 
-        className="border-t px-3 py-2 space-y-1 backdrop-blur-xl"
+        className="border-t px-3 py-1.5 space-y-0.5 backdrop-blur-xl"
         style={{
           borderColor: 'var(--border-primary)',
           backgroundColor: 'var(--surface-secondary)'
@@ -345,7 +363,7 @@ const Sidebar = () => {
         {/* Notifications Button */}
         <button
           onClick={() => setIsNotificationsOpen(true)}
-          className="relative w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
+          className="relative w-full flex items-center gap-3 px-3 py-1.5 rounded-xl transition-colors"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
@@ -377,7 +395,7 @@ const Sidebar = () => {
         {/* Chat Button */}
         <button
           onClick={() => setIsChatOpen(true)}
-          className="relative w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
+          className="relative w-full flex items-center gap-3 px-3 py-1.5 rounded-xl transition-colors"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
@@ -409,7 +427,7 @@ const Sidebar = () => {
         {/* User Profile Menu */}
         <Menu as="div" className="relative">
           <Menu.Button 
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-1.5 rounded-xl transition-colors"
             style={{ color: 'var(--text-secondary)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
@@ -665,6 +683,22 @@ const Sidebar = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {unreadNotifications > 0 && (
+                  <button
+                    onClick={() => markAllAsReadMutation.mutate()}
+                    disabled={markAllAsReadMutation.isPending}
+                    className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--theme-primary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {markAllAsReadMutation.isPending ? 'Oznaczanie...' : 'Odczytaj wszystkie'}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     navigate('/notifications');
