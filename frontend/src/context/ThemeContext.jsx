@@ -2,19 +2,16 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
-const DEFAULT_COLOR = '#ec4899'; // Pink-500
+const BRAND_THEME = {
+  primary: '#2563eb',
+  secondary: '#0ea5e9',
+};
 
 const STORAGE_KEYS = {
-  color: 'kadryhr_theme_color',
   mode: 'kadryhr_theme_mode',
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [themeColor, setThemeColor] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.color);
-    return stored || DEFAULT_COLOR;
-  });
-
   const [themeMode, setThemeMode] = useState(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.mode);
     return stored || 'dark';
@@ -53,82 +50,60 @@ export const ThemeProvider = ({ children }) => {
 
   // Listen for system theme changes when in system mode
   useEffect(() => {
-  if (themeMode !== 'system') return;
+    if (themeMode !== 'system') return;
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-  const handleChange = () => {
+    const handleChange = () => {
+      applyModeToRoot('system');
+    };
+
+    // initial sync
     applyModeToRoot('system');
-  };
 
-  // initial sync
-  applyModeToRoot('system');
-    
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [themeMode]);
 
-  // Update CSS custom properties when theme color changes
+  // Apply fixed brand colors across the entire application
   useEffect(() => {
     const root = document.documentElement;
-    
-    // Set primary color
+    const themeColor = BRAND_THEME.primary;
+
     root.style.setProperty('--theme-primary', themeColor);
-    
-    // Generate secondary color (slightly lighter/darker variant)
-    const secondary = adjustColor(themeColor, 8);
-    root.style.setProperty('--theme-secondary', secondary);
-    
-    // Generate lighter variants for backgrounds
+    root.style.setProperty('--theme-secondary', BRAND_THEME.secondary);
+
     const light = mixColor(themeColor, '#ffffff', 0.85);
     root.style.setProperty('--theme-light', light);
-    
-    // Generate very light variant for subtle backgrounds
+
     const veryLight = mixColor(themeColor, '#ffffff', 0.92);
     root.style.setProperty('--theme-very-light', veryLight);
-    
-    // Generate darker variant for hover states
+
     const dark = adjustColor(themeColor, -18);
     root.style.setProperty('--theme-dark', dark);
-    
-    // Update surface colors for themes
+
     const surfaceLight = mixColor(themeColor, '#f8fafc', 0.95);
     root.style.setProperty('--surface-light', surfaceLight);
 
     const surfaceDark = mixColor(themeColor, '#0f172a', 0.15);
     root.style.setProperty('--surface-dark', surfaceDark);
-    
-    // Generate RGB values for opacity usage
+
     const rgb = hexToRgb(themeColor);
     root.style.setProperty('--theme-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-    
-    // Save to localStorage
-    localStorage.setItem(STORAGE_KEYS.color, themeColor);
-  }, [themeColor]);
+  }, []);
 
   // Ensure correct theme applied on initial render
   useEffect(() => {
     applyModeToRoot(themeMode);
   }, []);
 
-
-  const updateThemeColor = (color) => {
-    setThemeColor(color);
-  };
-
-  const resetThemeColor = () => {
-    setThemeColor(DEFAULT_COLOR);
-  };
-
   const updateThemeMode = (mode) => {
     setThemeMode(mode);
   };
 
   return (
-    <ThemeContext.Provider value={{ 
-      themeColor, 
-      updateThemeColor, 
-      resetThemeColor,
+    <ThemeContext.Provider value={{
+      themeColor: BRAND_THEME.primary,
       themeMode,
       updateThemeMode,
     }}>
@@ -177,5 +152,5 @@ function hexToRgb(hex) {
     r: parseInt(result[1], 16),
     g: parseInt(result[2], 16),
     b: parseInt(result[3], 16)
-  } : { r: 236, g: 72, b: 153 }; // fallback to default pink
+  } : { r: 37, g: 99, b: 235 }; // fallback to brand blue
 }
