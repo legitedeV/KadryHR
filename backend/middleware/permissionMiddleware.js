@@ -24,9 +24,13 @@ const requirePermission = (requiredPermissions, options = {}) => {
         return next();
       }
 
-      // Admin ma dostęp tylko jeśli allowAdmin = true
-      if (role === 'admin' && allowAdmin) {
-        return next();
+      // Admin ma dostęp jeśli allowAdmin = true (domyślnie false)
+      // Jeśli allowAdmin nie jest ustawione, sprawdzamy uprawnienia
+      if (role === 'admin') {
+        if (allowAdmin) {
+          return next();
+        }
+        // Admin bez allowAdmin musi mieć uprawnienia jak zwykły użytkownik
       }
 
       // Normalizuj do tablicy
@@ -40,11 +44,12 @@ const requirePermission = (requiredPermissions, options = {}) => {
         isActive: true,
       });
 
-      // Jeśli brak uprawnień, odmów dostępu
+      // Jeśli brak uprawnień w bazie, odmów dostępu
       if (!userPermission) {
         return res.status(403).json({
           message: 'Brak wymaganych uprawnień',
           required: permissions,
+          code: 'NO_PERMISSIONS'
         });
       }
 
@@ -52,6 +57,7 @@ const requirePermission = (requiredPermissions, options = {}) => {
       if (userPermission.expiresAt && userPermission.expiresAt < new Date()) {
         return res.status(403).json({
           message: 'Uprawnienia wygasły',
+          code: 'PERMISSIONS_EXPIRED'
         });
       }
 
@@ -65,6 +71,7 @@ const requirePermission = (requiredPermissions, options = {}) => {
           message: 'Brak wymaganych uprawnień',
           required: permissions,
           current: userPermission.permissions,
+          code: 'INSUFFICIENT_PERMISSIONS'
         });
       }
 
@@ -100,9 +107,12 @@ const requireAnyPermission = (permissions, options = {}) => {
         return next();
       }
 
-      // Admin ma dostęp tylko jeśli allowAdmin = true
-      if (role === 'admin' && allowAdmin) {
-        return next();
+      // Admin ma dostęp jeśli allowAdmin = true
+      if (role === 'admin') {
+        if (allowAdmin) {
+          return next();
+        }
+        // Admin bez allowAdmin musi mieć uprawnienia jak zwykły użytkownik
       }
 
       const userPermission = await UserPermission.findOne({
@@ -113,12 +123,14 @@ const requireAnyPermission = (permissions, options = {}) => {
       if (!userPermission) {
         return res.status(403).json({
           message: 'Brak wymaganych uprawnień',
+          code: 'NO_PERMISSIONS'
         });
       }
 
       if (userPermission.expiresAt && userPermission.expiresAt < new Date()) {
         return res.status(403).json({
           message: 'Uprawnienia wygasły',
+          code: 'PERMISSIONS_EXPIRED'
         });
       }
 
@@ -130,6 +142,7 @@ const requireAnyPermission = (permissions, options = {}) => {
         return res.status(403).json({
           message: 'Brak wymaganych uprawnień',
           required: permissions,
+          code: 'INSUFFICIENT_PERMISSIONS'
         });
       }
 

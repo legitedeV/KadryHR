@@ -397,12 +397,37 @@ textarea::placeholder {
   border: 1px solid var(--border-primary);
   color: var(--text-primary);
   box-shadow: var(--shadow-sm);
-  @apply rounded-2xl transition-all duration-300;
+  @apply rounded-xl transition-all duration-300;
 }
 
 .app-card:hover {
   box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
+}
+
+/* Compact spacing utilities */
+.space-y-compact > * + * {
+  margin-top: 1rem;
+}
+
+.gap-compact {
+  gap: 1rem;
+}
+
+.p-card {
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .p-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .p-card {
+    padding: 1.5rem;
+  }
 }
 
 /* ============================================
