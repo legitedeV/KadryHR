@@ -197,6 +197,8 @@ const qrRoutes = require('./routes/qrRoutes');
 const avatarRoutes = require('./routes/avatarRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const permissionRoutes = require('./routes/permissionRoutes');
+const realtimeRoutes = require('./routes/realtimeRoutes');
+const webhookRoutes = require('./routes/webhookRoutes');
 
 // === ROUTES MOUNT ===
 
@@ -260,6 +262,8 @@ app.use('/api/qr', qrRoutes); // QR token routes
 app.use('/api/avatar', avatarRoutes); // Avatar upload routes
 app.use('/api/chat', chatRoutes); // Chat routes
 app.use('/api/permissions', permissionRoutes); // Permissions management routes
+app.use('/api/realtime', realtimeRoutes); // Realtime SSE events
+app.use('/api/webhooks', webhookRoutes); // Webhook management
 
 // Serve static files (avatars)
 app.use('/uploads', express.static('uploads'));
@@ -348,6 +352,10 @@ mongoose
     // Start session worker for auto-closing expired sessions
     const { startSessionWorker } = require('./utils/sessionWorker');
     startSessionWorker(5); // Check every 5 minutes
+    
+    // Initialize webhook dispatcher
+    require('./utils/webhookDispatcher');
+    logger.info('Webhook dispatcher initialized');
     
     server.listen(PORT, () => {
       logger.info(`Server listening on port ${PORT}`);

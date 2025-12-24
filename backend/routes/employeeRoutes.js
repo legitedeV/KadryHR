@@ -76,17 +76,56 @@ router.get(
 
 /**
  * GET /api/employees
- * Lista wszystkich pracowników
+ * Lista wszystkich pracowników z paginacją
  */
 router.get(
   '/',
   protect,
   requirePermission('employees.view', { allowAdmin: true }),
   asyncHandler(async (req, res) => {
-    const employees = await Employee.find()
-      .populate('user', 'email name')
-      .sort({ createdAt: -1 });
-    res.json({ employees });
+    const { page = 1, limit = 100, search, status } = req.query;
+    
+    // Build query
+    const query = {};
+    
+    // Filter by status
+    if (status === 'active') {
+      query.isActive = true;
+    } else if (status === 'inactive') {
+      query.isActive = false;
+    }
+    
+    // Search by name or position
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { position: { $regex: search, $options: 'i' } },
+      ];
+    }
+    
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Execute query with pagination
+    const [employees, total] = await Promise.all([
+      Employee.find(query)
+        .populate('user', 'email name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Employee.countDocuments(query),
+    ]);
+    
+    res.json({ 
+      employees,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    });
   })
 );
 

@@ -27,6 +27,7 @@ import {
   SunIcon,
   MoonIcon,
   ComputerDesktopIcon,
+  LinkIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -151,6 +152,12 @@ const Sidebar = () => {
       to: '/permissions', 
       label: 'Uprawnienia', 
       icon: ShieldCheckIcon,
+      adminOnly: true
+    },
+    { 
+      to: '/webhooks', 
+      label: 'Webhooks', 
+      icon: LinkIcon,
       adminOnly: true
     },
   ];

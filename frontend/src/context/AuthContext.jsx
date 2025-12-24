@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useRealtimeEvents } from '../hooks/useRealtimeEvents';
 
 const AuthContext = createContext(null);
 
@@ -9,6 +10,12 @@ export const AuthProvider = ({ children }) => {
     return stored ? JSON.parse(stored) : null;
   });
   const [loading, setLoading] = useState(true);
+  
+  // Get token for realtime events
+  const token = localStorage.getItem('kadryhr_token');
+  
+  // Connect to realtime events when user is logged in
+  const { isConnected: realtimeConnected } = useRealtimeEvents(user ? token : null);
 
   const login = (data) => {
     console.log('[AuthContext] Logowanie użytkownika:', data.user);
@@ -61,7 +68,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, realtimeConnected }}>
       {children}
     </AuthContext.Provider>
   );

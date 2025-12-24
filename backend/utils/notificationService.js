@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const eventBus = require('./eventBus');
 
 /**
  * Tworzy powiadomienie dla użytkownika.
@@ -13,6 +14,12 @@ async function createNotification(userId, type, title, message) {
       type,
       title,
       message,
+    });
+
+    // Emit realtime event for SSE
+    eventBus.emitEvent('notification.created', {
+      userId: userId.toString(),
+      notification: notification.toObject(),
     });
 
     // Tu w przyszłości można dohookować np. web push / email
