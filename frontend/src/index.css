@@ -55,31 +55,31 @@
   --page-gradient-end: #fef3f8;
 }
 
-/* Dark Theme Variables - Keep existing dark theme visuals */
+/* Dark Theme Variables - Restored original dark theme */
 [data-theme="dark"] {
   /* Surfaces */
-  --surface-primary: #1f2937;
-  --surface-secondary: #111827;
+  --surface-primary: #1e293b;
+  --surface-secondary: #0f172a;
   --surface-tertiary: #0f172a;
-  --surface-elevated: #1f2937;
+  --surface-elevated: #1e293b;
   --surface-overlay: rgba(0, 0, 0, 0.75);
   
   /* Text */
-  --text-primary: #f9fafb;
+  --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
   --text-inverse: #0f172a;
   
   /* Borders */
-  --border-primary: rgba(148, 163, 184, 0.25);
-  --border-secondary: rgba(148, 163, 184, 0.15);
+  --border-primary: #334155;
+  --border-secondary: #475569;
   --border-focus: var(--theme-primary);
   
   /* Inputs */
-  --input-bg: #374151;
-  --input-border: #4b5563;
-  --input-focus-bg: #374151;
-  --input-placeholder: #9ca3af;
+  --input-bg: #334155;
+  --input-border: #475569;
+  --input-focus-bg: #334155;
+  --input-placeholder: #94a3b8;
   
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -90,8 +90,77 @@
   /* Page backgrounds */
   --page-bg: #0f172a;
   --page-gradient-start: #0f172a;
-  --page-gradient-mid: #111827;
-  --page-gradient-end: #1e293b;
+  --page-gradient-mid: #0f172a;
+  --page-gradient-end: #0f172a;
+}
+
+/* Dark Mode Styles - Restored original appearance */
+.dark body {
+  @apply bg-slate-900 text-slate-100;
+}
+
+.dark .app-card {
+  @apply bg-slate-800 border-slate-700;
+}
+
+.dark .bg-gradient-layout {
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 8%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 8%, #0f172a));
+}
+
+.dark .bg-gradient-loading {
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--theme-primary) 10%, #0f172a), #0f172a, color-mix(in srgb, var(--theme-secondary) 10%, #0f172a));
+}
+
+.dark .bg-white {
+  @apply bg-slate-800;
+}
+
+.dark .text-slate-900 {
+  @apply text-slate-100;
+}
+
+.dark .text-slate-800 {
+  @apply text-slate-200;
+}
+
+.dark .text-slate-700 {
+  @apply text-slate-300;
+}
+
+.dark .text-slate-600 {
+  @apply text-slate-400;
+}
+
+.dark .text-slate-500 {
+  color: rgb(100 116 139);
+}
+
+.dark .border-slate-100 {
+  @apply border-slate-700;
+}
+
+.dark .border-slate-200 {
+  @apply border-slate-600;
+}
+
+.dark .bg-slate-50 {
+  @apply bg-slate-800;
+}
+
+.dark .bg-slate-100 {
+  @apply bg-slate-700;
+}
+
+.dark .input-primary {
+  @apply bg-slate-700 border-slate-600 text-slate-100;
+}
+
+.dark .select-primary {
+  @apply bg-slate-700 border-slate-600 text-slate-100;
+}
+
+.dark .textarea-primary {
+  @apply bg-slate-700 border-slate-600 text-slate-100;
 }
 
 /* ============================================
@@ -906,6 +975,14 @@ textarea::placeholder {
   background: rgba(var(--theme-primary-rgb), 0.15);
 }
 
+.dark .btn-secondary {
+  @apply bg-slate-800;
+}
+
+.dark .btn-secondary:hover:not(:disabled) {
+  background: rgba(var(--theme-primary-rgb), 0.15);
+}
+
 /* Theme-aware gradient backgrounds */
 .bg-theme-gradient {
   background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary));
@@ -1143,6 +1220,10 @@ textarea::placeholder {
   background-color: rgba(var(--theme-primary-rgb), 0.15);
 }
 
+.dark .nav-link:hover {
+  background-color: rgba(var(--theme-primary-rgb), 0.15);
+}
+
 .nav-link-active {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.15), rgba(var(--theme-primary-rgb), 0.1));
   color: var(--theme-primary);
@@ -1153,11 +1234,19 @@ textarea::placeholder {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.25), rgba(var(--theme-primary-rgb), 0.2));
 }
 
+.dark .nav-link-active {
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.25), rgba(var(--theme-primary-rgb), 0.2));
+}
+
 .user-menu-btn:hover {
   background-color: rgba(var(--theme-primary-rgb), 0.05);
 }
 
 [data-theme="dark"] .user-menu-btn:hover {
+  background-color: rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.dark .user-menu-btn:hover {
   background-color: rgba(var(--theme-primary-rgb), 0.1);
 }
 
@@ -1212,6 +1301,11 @@ textarea::placeholder {
 }
 
 [data-theme="dark"] .sidebar-link.active {
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0.15));
+  box-shadow: inset 3px 0 0 var(--theme-primary);
+}
+
+.dark .sidebar-link.active {
   background: linear-gradient(to right, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0.15));
   box-shadow: inset 3px 0 0 var(--theme-primary);
 }
