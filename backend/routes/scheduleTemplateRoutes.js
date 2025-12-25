@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
-const { requirePermission } = require('../middleware/permissionMiddleware');
+const requirePermission = require('../middleware/permissionMiddleware');
 const controller = require('../controllers/scheduleTemplateController');
 
 router.get('/', protect, controller.getTemplates);
