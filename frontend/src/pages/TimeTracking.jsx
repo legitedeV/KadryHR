@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Alert from '../components/Alert';
 import QRGenerator from '../components/QRGenerator';
+import PageHeader from '../components/PageHeader';
 
 const TimeTracking = () => {
   const { user } = useAuth();
@@ -14,6 +16,13 @@ const TimeTracking = () => {
   const [manualQR, setManualQR] = useState('');
   const [selectedAction, setSelectedAction] = useState('clock-in');
   const [noEmployeeLinked, setNoEmployeeLinked] = useState(false);
+
+  const latestEntry = entries[0];
+  const lastActionLabel = latestEntry ? (latestEntry.type === 'clock-in' ? 'Wejście' : 'Wyjście') : 'Brak wpisów';
+  const lastActionTime = latestEntry
+    ? new Date(latestEntry.timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+    : '—';
+  const todayEntries = entries.filter((entry) => new Date(entry.timestamp).toDateString() === new Date().toDateString()).length;
 
   useEffect(() => {
     fetchStatus();
@@ -256,26 +265,16 @@ const TimeTracking = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="app-card p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div 
-            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300"
-            style={{
-              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-              boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3)`
-            }}
-          >
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Rejestracja czasu pracy</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Skanuj kod QR aby zarejestrować czas</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={ClockIcon}
+        title="Rejestracja czasu pracy"
+        description="Skanuj kod QR aby zarejestrować czas."
+        meta={[
+          { label: 'Dzisiejsze rejestracje', value: todayEntries },
+          { label: 'Ostatni ruch', value: lastActionLabel },
+          { label: 'Godzina', value: lastActionTime },
+        ]}
+      />
 
       {/* Alerts */}
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import PageHeader from '../components/PageHeader';
 
 const defaultForm = {
   firstName: '',
@@ -120,6 +122,13 @@ const Employees = () => {
     deleteMutation.mutate(id);
   };
 
+  const scrollToForm = () => {
+    const formElement = document.getElementById('new-employee-form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -155,41 +164,41 @@ const Employees = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="app-card p-6">
-        <div className="flex items-center gap-3">
-          <div
-            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
-            style={{
-              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
-            }}
+      <PageHeader
+        icon={UserGroupIcon}
+        title="Pracownicy"
+        description="Zarządzaj listą pracowników, stawkami i godzinami pracy w jednym miejscu."
+        meta={[
+          { label: 'Łącznie w systemie', value: `${employees.length || 0} osób` },
+          { label: 'Domyślne godziny', value: `${form.hoursPerMonth} h/mies.` },
+          { label: 'Twoja rola', value: user?.role === 'admin' || user?.role === 'super_admin' ? 'Administrator' : 'Pracownik' },
+        ]}
+        actions={canCreateEmployees && (
+          <button
+            type="button"
+            onClick={scrollToForm}
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white shadow-md"
+            style={{ background: 'linear-gradient(120deg, var(--theme-primary), var(--theme-secondary))' }}
           >
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pracownicy</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Zarządzaj listą pracowników, stawkami i godzinami pracy
-            </p>
-          </div>
-        </div>
-      </div>
+            <PlusIcon className="w-4 h-4" />
+            Dodaj pracownika
+          </button>
+        )}
+      />
 
       {canCreateEmployees && (
-        <div className="app-card p-6">
+        <div className="app-card p-6" id="new-employee-form">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Dodaj pracownika
           </h2>
 
-        {createMutation.isError && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            {createMutation.error?.response?.data?.message || 'Nie udało się dodać pracownika. Spróbuj ponownie.'}
-          </div>
-        )}
+          {createMutation.isError && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {createMutation.error?.response?.data?.message || 'Nie udało się dodać pracownika. Spróbuj ponownie.'}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">

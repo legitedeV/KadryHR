@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import Alert from '../components/Alert';
+import PageHeader from '../components/PageHeader';
 
 const MyTasks = () => {
   const queryClient = useQueryClient();
@@ -18,6 +20,10 @@ const MyTasks = () => {
       return data.tasks || [];
     },
   });
+
+  const tasks = tasksData || [];
+  const activeCount = tasks.filter((task) => task.status === 'assigned' || task.status === 'in_progress').length;
+  const doneCount = tasks.filter((task) => task.status === 'completed' || task.status === 'completed_late').length;
 
   // Complete task mutation
   const completeTaskMutation = useMutation({
@@ -121,25 +127,16 @@ const MyTasks = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="app-card p-6">
-        <div className="flex items-center gap-3">
-          <div
-            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
-            style={{
-              background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
-            }}
-          >
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Moje zadania</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Zadania przypisane do Ciebie</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={ClipboardDocumentListIcon}
+        title="Moje zadania"
+        description="Kontroluj tempo realizacji i domykaj zadania bez wychodzenia z panelu."
+        meta={[
+          { label: 'Aktywne', value: activeCount },
+          { label: 'Zakończone', value: doneCount },
+          { label: 'Do obsłużenia', value: tasks.length },
+        ]}
+      />
 
       {/* Alerts */}
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
@@ -164,10 +161,10 @@ const MyTasks = () => {
           </svg>
           <p className="text-slate-600 dark:text-slate-400">Brak przypisanych zadań</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tasksData.map((task) => (
-            <div
+        ) : (
+          <div className="page-grid">
+            {tasksData.map((task) => (
+              <div
               key={task._id}
               className="app-card p-6"
             >
