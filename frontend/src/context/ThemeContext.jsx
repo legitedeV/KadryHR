@@ -7,13 +7,53 @@ const BRAND_THEME = {
   secondary: '#0ea5e9',
 };
 
+const STORAGE_KEYS = {
+  mode: 'kadryhr_theme_mode',
+};
+
 export const ThemeProvider = ({ children }) => {
-  const applyDarkMode = () => {
+  const [themeMode, setThemeMode] = useState(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.mode);
+    return stored || 'dark';
+  });
+
+  // Detect system theme preference
+  const getSystemTheme = () => {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  };
+
+  const applyModeToRoot = (mode) => {
     const root = document.documentElement;
     root.dataset.theme = 'dark';
     root.setAttribute('data-theme', 'dark');
     root.classList.add('dark');
   };
+
+  // Apply theme mode to document
+  useEffect(() => {
+    applyModeToRoot(themeMode);
+    localStorage.setItem(STORAGE_KEYS.mode, themeMode);
+  }, [themeMode]);
+
+  // Listen for system theme changes when in system mode
+  useEffect(() => {
+    if (themeMode !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleChange = () => {
+      applyModeToRoot('system');
+    };
+
+    // initial sync
+    applyModeToRoot('system');
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [themeMode]);
 
   // Apply fixed brand colors across the entire application
   useEffect(() => {
@@ -47,10 +87,15 @@ export const ThemeProvider = ({ children }) => {
     applyDarkMode();
   }, []);
 
+  const updateThemeMode = (mode) => {
+    setThemeMode(mode);
+  };
+
   return (
     <ThemeContext.Provider value={{
       themeColor: BRAND_THEME.primary,
-      themeMode: 'dark',
+      themeMode,
+      updateThemeMode,
     }}>
       {children}
     </ThemeContext.Provider>
