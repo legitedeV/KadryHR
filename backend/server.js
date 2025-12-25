@@ -193,6 +193,7 @@ const leaveRoutes = require('./routes/leaveRoutes');
 const sickLeaveRoutes = require('./routes/sickLeaveRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const scheduleV2Routes = require('./routes/scheduleV2Routes');
+const scheduleTemplateRoutes = require('./routes/scheduleTemplateRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const payrollRoutes = require('./routes/payrollRoutes');
 const reportRoutes = require('./routes/reportRoutes');
@@ -261,6 +262,7 @@ app.use('/api/leaves', cacheMiddleware(2 * 60 * 1000), leaveRoutes); // 2 min ca
 app.use('/api/sick-leaves', cacheMiddleware(2 * 60 * 1000), sickLeaveRoutes); // 2 min cache
 app.use('/api/schedule', cacheMiddleware(5 * 60 * 1000), scheduleRoutes); // 5 min cache (old system)
 app.use('/api/schedules/v2', scheduleV2Routes); // New schedule system (no cache for now)
+app.use('/api/schedule-templates', scheduleTemplateRoutes); // Template management for schedules
 app.use('/api/notifications', notificationRoutes); // Bez cache - dane real-time
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/reports', cacheMiddleware(10 * 60 * 1000), reportRoutes); // 10 min cache
