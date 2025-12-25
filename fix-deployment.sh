@@ -8,6 +8,8 @@ echo "================================"
 echo ""
 
 APP_DIR="/home/deploy/apps/kadryhr-app"
+BACKEND_DIR="$APP_DIR/apps/legacy-api"
+FRONTEND_DIR="$APP_DIR/apps/legacy-web"
 
 # Sprawdź czy jesteśmy w odpowiednim katalogu
 if [ ! -d "$APP_DIR" ]; then
@@ -72,25 +74,26 @@ if pm2 describe kadryhr-backend >/dev/null 2>&1; then
 else
     echo "   ⚠️  Backend nie jest uruchomiony w PM2"
     echo "   Uruchamiam..."
-    cd backend
+    cd "$BACKEND_DIR"
     pm2 start server.js --name kadryhr-backend
-    cd ..
+    cd "$APP_DIR"
     echo "   ✅ Backend uruchomiony"
 fi
 echo ""
 
 # 4. Sprawdź frontend build
 echo "🎨 Krok 4: Sprawdzanie Frontend..."
-if [ -d "frontend/dist" ]; then
+if [ -d "$FRONTEND_DIR/dist" ]; then
     echo "   ✅ Frontend zbudowany (dist/ istnieje)"
     echo "   Pliki:"
-    ls -lh frontend/dist/ | head -5
+    ls -lh "$FRONTEND_DIR"/dist/ | head -5
 else
     echo "   ⚠️  Brak katalogu dist/"
     echo "   Buduję frontend..."
-    cd frontend
+    cd "$FRONTEND_DIR"
+    npm install
     npm run build
-    cd ..
+    cd "$APP_DIR"
     echo "   ✅ Frontend zbudowany"
 fi
 echo ""

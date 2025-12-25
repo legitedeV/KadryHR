@@ -2,8 +2,8 @@
 set -e
 
 APP_DIR="/home/deploy/apps/kadryhr-app"
-BACKEND_DIR="$APP_DIR/backend"
-FRONTEND_DIR="$APP_DIR/frontend"
+BACKEND_DIR="$APP_DIR/apps/legacy-api"
+FRONTEND_DIR="$APP_DIR/apps/legacy-web"
 cd "$APP_DIR"
 git pull origin main
 

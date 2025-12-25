@@ -216,7 +216,7 @@ echo ""
 echo "Step 6: Checking Backend Configuration"
 echo "---------------------------------------"
 
-BACKEND_DIR="/home/deploy/apps/kadryhr-app/backend"
+BACKEND_DIR="/home/deploy/apps/kadryhr-app/apps/legacy-api"
 if [ -f "$BACKEND_DIR/.env" ]; then
     print_status "Backend .env file exists"
     
