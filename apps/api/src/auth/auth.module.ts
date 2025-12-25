@@ -6,10 +6,13 @@ import { OrgGuard } from '../common/guards/org.guard';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     PrismaModule,
+    NotificationsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'super-secret-jwt-key',
@@ -19,7 +22,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, OrgGuard],
+  providers: [AuthService, JwtStrategy, OrgGuard, RateLimitGuard],
   exports: [AuthService],
 })
 export class AuthModule {}

@@ -5,7 +5,10 @@ import {
 } from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
+import { isSentryEnabled } from './common/observability/sentry-lite';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -30,6 +33,13 @@ async function bootstrap() {
     credentials: true,
   });
 
+  await registerSecurityHeaders(app);
+
+  if (isSentryEnabled()) {
+    const httpAdapter = app.get(HttpAdapterHost);
+    app.useGlobalFilters(new SentryExceptionFilter(httpAdapter));
+  }
+
   // Swagger/OpenAPI - only in dev/staging
   const nodeEnv = process.env.NODE_ENV || 'development';
   if (nodeEnv === 'development' || nodeEnv === 'staging') {
@@ -49,13 +59,35 @@ async function bootstrap() {
       customCss: '.swagger-ui .topbar { display: none }',
     });
 
-    console.log(`📚 Swagger documentation available at: http://localhost:${process.env.PORT || 3001}/docs`);
+    console.log(
+      `📚 Swagger documentation available at: http://localhost:${process.env.PORT || 3001}/docs`,
+    );
   }
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
 
   console.log(`🚀 KadryHR API V2 is running on: http://localhost:${port}/${apiPrefix}`);
+}
+
+async function registerSecurityHeaders(app: NestFastifyApplication) {
+  const fastify = app.getHttpAdapter().getInstance();
+  const isProdLike = (process.env.NODE_ENV || 'development') !== 'development';
+
+  fastify.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'SAMEORIGIN');
+    reply.header('Referrer-Policy', 'no-referrer');
+    reply.header('X-XSS-Protection', '1; mode=block');
+    reply.header('Cross-Origin-Opener-Policy', 'same-origin');
+    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+
+    if (isProdLike) {
+      reply.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    }
+
+    return payload;
+  });
 }
 
 bootstrap();
