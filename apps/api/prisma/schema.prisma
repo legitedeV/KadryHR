@@ -20,6 +20,7 @@ model User {
   passwordHash  String
   fullName      String?
   memberships   Membership[]
+  employees     Employee[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -28,6 +29,8 @@ model Organization {
   id           String        @id @default(uuid())
   name         String
   memberships  Membership[]
+  employees    Employee[]
+  schedules    Schedule[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -43,4 +46,55 @@ model Membership {
   updatedAt      DateTime        @updatedAt
 
   @@unique([userId, orgId])
+}
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Employee {
+  id           String        @id @default(uuid())
+  orgId        String
+  name         String
+  active       Boolean       @default(true)
+  organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  assignments  ShiftAssignment[]
+  createdBy    User?         @relation(fields: [createdById], references: [id])
+  createdById  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([orgId])
+}
+
+model Schedule {
+  id          String            @id @default(uuid())
+  orgId       String
+  month       String
+  status      ScheduleStatus
+  organization Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  assignments ShiftAssignment[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([orgId, month])
+}
+
+model ShiftAssignment {
+  id          String    @id @default(uuid())
+  scheduleId  String
+  employeeId  String
+  date        DateTime
+  start       String
+  end         String
+  type        String
+  note        String?
+  schedule    Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([scheduleId])
+  @@index([employeeId])
 }
