@@ -43,6 +43,12 @@ const shiftAssignmentSchema = new Schema(
       type: String,
       trim: true
     },
+    breakMinutes: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 720
+    },
     color: {
       type: String,
       default: '#3b82f6'

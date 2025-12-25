@@ -21,7 +21,7 @@ const Invites = lazy(() => import('./pages/Invites'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const SelfService = lazy(() => import('./pages/SelfService'));
-const ScheduleBuilder = lazy(() => import('./pages/ScheduleBuilder'));
+const ScheduleBuilderLegacy = lazy(() => import('./pages/ScheduleBuilder'));
 const ScheduleBuilderV2 = lazy(() => import('./pages/ScheduleBuilderV2'));
 const TimeTracking = lazy(() => import('./pages/TimeTracking'));
 const QRCodeGenerator = lazy(() => import('./pages/QRCodeGenerator'));
@@ -126,14 +126,14 @@ const App = () => {
           </PrivateRoute>
         }
       />
-      
-      {/* Old schedule builder (deprecated) */}
+
+      {/* Legacy builder (kept for reference) */}
       <Route
-        path="/schedule-builder-old"
+        path="/schedule-builder/legacy"
         element={
           <AdminRoute>
             <Layout>
-              <ScheduleBuilder />
+              <ScheduleBuilderLegacy />
             </Layout>
           </AdminRoute>
         }
