@@ -162,3 +162,11 @@ h1, h2, h3, h4, h5, h6 {
 .input-primary::placeholder {
   color: var(--input-placeholder);
 }
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

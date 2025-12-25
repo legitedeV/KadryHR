@@ -27,6 +27,9 @@
       "@/*": [
         "./*"
       ],
+      "@tanstack/react-query": [
+        "./lib/query-lite"
+      ],
       "@kadryhr/shared": [
         "../../packages/shared/src/index.ts"
       ]

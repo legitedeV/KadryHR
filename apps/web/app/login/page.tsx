@@ -1,15 +1,20 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "../providers";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [orgId, setOrgId] = useState("kadryhr-demo");
+  const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, password });
-    alert("Funkcja logowania zostanie zintegrowana z API V2");
+    login(email || "demo@kadry.hr", orgId.trim() || "kadryhr-demo");
+    router.push("/schedule-builder");
   };
 
   return (
@@ -45,8 +50,8 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label 
-              htmlFor="password" 
+            <label
+              htmlFor="password"
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -59,6 +64,25 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="input-primary"
               placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="orgId"
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Organizacja / orgId
+            </label>
+            <input
+              id="orgId"
+              type="text"
+              value={orgId}
+              onChange={(e) => setOrgId(e.target.value)}
+              className="input-primary"
+              placeholder="np. kadryhr-demo"
               required
             />
           </div>
