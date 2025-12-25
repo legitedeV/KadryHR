@@ -7,9 +7,13 @@ const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const User = require('../models/User'); // tylko po to, żeby mieć dostęp do kolekcji
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const SECURE_COOKIE = process.env.NODE_ENV === 'production';
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not configured');
+}
 
 function buildSafeUser(userDoc) {
   return {

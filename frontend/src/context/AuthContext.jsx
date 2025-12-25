@@ -13,19 +13,17 @@ export const AuthProvider = ({ children }) => {
   
   // Get token for realtime events
   const token = localStorage.getItem('kadryhr_token');
-  
+
   // Connect to realtime events when user is logged in
   const { isConnected: realtimeConnected } = useRealtimeEvents(user ? token : null);
 
   const login = (data) => {
-    console.log('[AuthContext] Logowanie użytkownika:', data.user);
     localStorage.setItem('kadryhr_token', data.token);
     localStorage.setItem('kadryhr_user', JSON.stringify(data.user));
     setUser(data.user);
   };
 
   const logout = async () => {
-    console.log('[AuthContext] Wylogowywanie użytkownika');
     try {
       await api.post('/auth/logout');
     } catch (err) {
@@ -43,15 +41,12 @@ export const AuthProvider = ({ children }) => {
       const storedUser = localStorage.getItem('kadryhr_user');
 
       if (!token || !storedUser) {
-        console.log('[AuthContext] Brak tokenu lub użytkownika w localStorage');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('[AuthContext] Weryfikacja tokenu...');
         const { data } = await api.get('/auth/me');
-        console.log('[AuthContext] Token ważny, użytkownik:', data);
         setUser(data);
         localStorage.setItem('kadryhr_user', JSON.stringify(data));
       } catch (err) {

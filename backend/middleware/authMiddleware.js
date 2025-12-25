@@ -2,7 +2,11 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not configured');
+}
 
 async function protect(req, res, next) {
   try {
@@ -40,11 +44,7 @@ async function protect(req, res, next) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[AUTH] Token znaleziony:', {
-        source: tokenSource,
-        path: req.path,
-        tokenPreview: token.substring(0, 20) + '...',
-      });
+      console.log('[AUTH] Token znaleziony', { source: tokenSource, path: req.path });
     } else {
       console.log('[AUTH] Token znaleziony', { source: tokenSource, path: req.path });
     }
@@ -53,7 +53,7 @@ async function protect(req, res, next) {
     const userId = decoded.id || decoded.userId;
 
     if (!userId) {
-      console.warn('[AUTH] Brak userId w tokenie:', { decoded, ip: req.ip });
+      console.warn('[AUTH] Brak userId w tokenie', { ip: req.ip });
       return res.status(401).json({ 
         message: 'Nieautoryzowany - nieprawidłowy token.',
         code: 'INVALID_TOKEN'
@@ -84,7 +84,6 @@ async function protect(req, res, next) {
 
     console.log('[AUTH] Użytkownik zautoryzowany:', {
       userId: req.user.id,
-      email: req.user.email,
       role: req.user.role,
       path: req.path,
     });
