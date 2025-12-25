@@ -4,6 +4,11 @@ const { Schema } = mongoose;
 
 const scheduleSchema = new Schema(
   {
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
     name: {
       type: String,
       required: true,
@@ -51,5 +56,6 @@ const scheduleSchema = new Schema(
 // Index for querying by month and team
 scheduleSchema.index({ month: 1, teamId: 1 });
 scheduleSchema.index({ year: 1, month: 1 });
+scheduleSchema.index({ company: 1, month: 1 });
 
 module.exports = mongoose.model('Schedule', scheduleSchema);

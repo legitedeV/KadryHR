@@ -31,10 +31,10 @@ export default function ScheduleBuilderV2() {
   const schedule = useScheduleData(month);
 
   useEffect(() => {
-    const prev = document.body.style.overflowY;
+    const prevOverflow = document.body.style.overflowY;
     document.body.style.overflowY = 'hidden';
     return () => {
-      document.body.style.overflowY = prev;
+      document.body.style.overflowY = prevOverflow;
     };
   }, []);
 
@@ -130,11 +130,13 @@ export default function ScheduleBuilderV2() {
   const employees = schedule.employeesQuery.data || [];
 
   return (
-    <div className="space-y-4" ref={gridContainer} style={{ height: 'calc(100vh - 120px)' }}>
+    <div className="space-y-4 overflow-hidden" ref={gridContainer} style={{ height: 'calc(100vh - 120px)' }}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Grafik — edycja manualna</h1>
-          <p className="text-slate-500 text-sm">Zmiany zapisują się natychmiast z optymistycznymi aktualizacjami.</p>
+          <p className="text-slate-500 text-sm">
+            Priorytet: ręczna praca na siatce. Automatyzacje dostępne opcjonalnie w panelu bocznym.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -151,7 +153,10 @@ export default function ScheduleBuilderV2() {
 
       <SelectionToolbar selection={selection} onClear={clear} onSetShift={handleBulkSet} onClearCells={handleClearCells} />
 
-      <div className="grid grid-cols-12 gap-4" style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: `${100 / scale}%` }}>
+      <div
+        className="grid grid-cols-12 gap-4 h-full"
+        style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: `${100 / scale}%` }}
+      >
         <div className="col-span-9 space-y-3 overflow-hidden">
           <ScheduleGrid
             employees={employees}

@@ -39,11 +39,15 @@ async function protect(req, res, next) {
         });
     }
 
-    console.log('[AUTH] Token znaleziony:', {
-      source: tokenSource,
-      path: req.path,
-      tokenPreview: token.substring(0, 20) + '...',
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Token znaleziony:', {
+        source: tokenSource,
+        path: req.path,
+        tokenPreview: token.substring(0, 20) + '...',
+      });
+    } else {
+      console.log('[AUTH] Token znaleziony', { source: tokenSource, path: req.path });
+    }
 
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.id || decoded.userId;
@@ -73,6 +77,8 @@ async function protect(req, res, next) {
       email: rawUser.email,
       name: rawUser.name || 'Użytkownik',
       role: rawUser.role || 'user',
+      supervisor: rawUser.supervisor ? rawUser.supervisor.toString() : null,
+      companyId: rawUser.companyId ? rawUser.companyId.toString() : undefined,
     };
     req.userId = req.user.id;
 

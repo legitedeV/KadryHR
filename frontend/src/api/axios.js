@@ -12,11 +12,13 @@ api.interceptors.request.use(
     const token = localStorage.getItem('kadryhr_token');
     if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('[API] Dodano token do żądania:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        tokenPreview: token.substring(0, 20) + '...',
-      });
+      if (import.meta.env.MODE !== 'production') {
+        console.log('[API] Dodano token do żądania:', {
+          method: config.method?.toUpperCase(),
+          url: config.url,
+          tokenPreview: token.substring(0, 20) + '...',
+        });
+      }
     } else if (!token) {
       console.warn('[API] Brak tokenu w localStorage dla żądania:', {
         method: config.method?.toUpperCase(),

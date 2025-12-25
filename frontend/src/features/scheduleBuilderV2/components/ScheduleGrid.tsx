@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Employee, GridSelection, ShiftAssignment } from '../types';
 
 type Props = {
@@ -18,13 +18,13 @@ export function ScheduleGrid({ employees, days, shifts, onCellClick, onSelection
 
   const selectionSet = useMemo(() => new Set(selection.map((cell) => `${cell.employeeId}-${cell.date}`)), [selection]);
 
-  const handleMouseDown = (cell: GridSelection) => {
+  const handleMouseDown = useCallback((cell: GridSelection) => {
     setIsSelecting(true);
     setSelectionStart(cell);
     onSelectionChange([cell]);
-  };
+  }, [onSelectionChange]);
 
-  const handleMouseEnter = (cell: GridSelection) => {
+  const handleMouseEnter = useCallback((cell: GridSelection) => {
     if (!isSelecting || !selectionStart) return;
     const startRow = employees.findIndex((e) => e._id === selectionStart.employeeId);
     const endRow = employees.findIndex((e) => e._id === cell.employeeId);
@@ -41,22 +41,28 @@ export function ScheduleGrid({ employees, days, shifts, onCellClick, onSelection
       }
     }
     onSelectionChange(range);
-  };
+  }, [days, employees, isSelecting, onSelectionChange, selectionStart]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsSelecting(false);
     setSelectionStart(null);
-  };
+  }, []);
 
   const getCellShift = (employeeId: string, date: string) => shifts[employeeId]?.[date];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm" onMouseUp={handleMouseUp}>
-      <div className="overflow-x-auto scrollbar-hide">
-        <table className="w-full border-collapse text-sm">
-          <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
+    <div
+      className="overflow-hidden rounded-xl border border-slate-200 shadow-sm"
+      style={{ maxHeight: 'calc(100vh - 240px)' }}
+      onMouseUp={handleMouseUp}
+    >
+      <div className="overflow-auto scrollbar-hide">
+        <table className="w-full border-collapse text-sm table-fixed">
+          <thead className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800">
             <tr>
-              <th className="w-48 px-3 py-2 text-left text-xs font-semibold text-slate-600">Pracownik</th>
+              <th className="sticky left-0 z-30 w-48 px-3 py-2 text-left text-xs font-semibold text-slate-600 bg-slate-50">
+                Pracownik
+              </th>
               {days.map((day) => (
                 <th key={day} className="px-2 py-2 text-center text-xs font-semibold text-slate-600 min-w-[64px]">
                   {day.split('-')[2]}
@@ -67,8 +73,10 @@ export function ScheduleGrid({ employees, days, shifts, onCellClick, onSelection
           <tbody>
             {employees.map((emp) => (
               <tr key={emp._id} className="border-t border-slate-100">
-                <td className="px-3 py-2 text-left text-slate-800 dark:text-slate-100">
-                  <div className="font-semibold">{emp.firstName} {emp.lastName}</div>
+                <td className="sticky left-0 z-10 bg-white px-3 py-2 text-left text-slate-800 shadow-sm">
+                  <div className="font-semibold">
+                    {emp.firstName} {emp.lastName}
+                  </div>
                   <div className="text-xs text-slate-500">{emp.position || '—'}</div>
                 </td>
                 {days.map((day) => {

@@ -271,7 +271,7 @@ app.use('/api/reports', cacheMiddleware(10 * 60 * 1000), reportRoutes); // 10 mi
 app.use('/api/suggestions', cacheMiddleware(5 * 60 * 1000), suggestionRoutes); // 5 min cache
 app.use('/api/swap-requests', swapRoutes);
 app.use('/api/availability', cacheMiddleware(5 * 60 * 1000), availabilityRoutes); // 5 min cache
-app.use('/api/shift-templates', cacheMiddleware(10 * 60 * 1000), shiftTemplateRoutes); // 10 min cache
+app.use('/api/shift-templates', shiftTemplateRoutes); // Bez cache - natychmiastowa widoczność zmian
 app.use('/api/time-tracking', timeTrackingRoutes); // No cache - real-time data
 app.use('/api/qr', qrRoutes); // QR token routes
 app.use('/api/avatar', avatarRoutes); // Avatar upload routes

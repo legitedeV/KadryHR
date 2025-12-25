@@ -3,13 +3,20 @@ const Schedule = require('../models/Schedule');
 const ShiftAssignment = require('../models/ShiftAssignment');
 const Employee = require('../models/Employee');
 
+const resolveCompanyId = (req) => {
+  const user = req.user || {};
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+  return (isAdmin ? user.id : user.supervisor || user.companyId || user.id) || user.id;
+};
+
 // @desc    Get schedules with optional filters
 // @route   GET /api/schedules/v2
 // @access  Private
 const getSchedules = asyncHandler(async (req, res) => {
   const { month, year, teamId, status } = req.query;
-  
-  const query = {};
+  const companyId = resolveCompanyId(req);
+
+  const query = { company: companyId };
   if (month) query.month = month;
   if (year) query.year = parseInt(year);
   if (teamId) query.teamId = teamId;
@@ -30,8 +37,9 @@ const getSchedules = asyncHandler(async (req, res) => {
 // @access  Private
 const getScheduleById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
-  const schedule = await Schedule.findById(id)
+  const companyId = resolveCompanyId(req);
+
+  const schedule = await Schedule.findOne({ _id: id, company: companyId })
     .populate('createdBy', 'name email')
     .populate('publishedBy', 'name email');
   
@@ -39,7 +47,7 @@ const getScheduleById = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Grafik nie znaleziony' });
   }
   
-  const assignments = await ShiftAssignment.find({ schedule: id })
+  const assignments = await ShiftAssignment.find({ schedule: id, company: companyId })
     .populate('employee', 'firstName lastName position')
     .populate('shiftTemplate', 'name color')
     .sort({ date: 1, employee: 1 });
@@ -54,7 +62,8 @@ const getScheduleById = asyncHandler(async (req, res) => {
 // @route   POST /api/schedules/v2
 // @access  Private (Admin)
 const createSchedule = asyncHandler(async (req, res) => {
-  const userId = req.userId || (req.user && req.user.id);
+  const userId = req.user?.id;
+  const companyId = resolveCompanyId(req);
   const { name, month, year, teamId, notes } = req.body;
   
   if (!name || !month || !year) {
@@ -64,7 +73,7 @@ const createSchedule = asyncHandler(async (req, res) => {
   }
   
   // Check if schedule already exists for this month
-  const existing = await Schedule.findOne({ month, year, teamId });
+  const existing = await Schedule.findOne({ month, year, teamId, company: companyId });
   if (existing) {
     return res.status(400).json({ 
       message: 'Grafik dla tego miesiąca już istnieje' 
@@ -72,6 +81,7 @@ const createSchedule = asyncHandler(async (req, res) => {
   }
   
   const schedule = await Schedule.create({
+    company: companyId,
     name,
     month,
     year,
@@ -95,8 +105,9 @@ const createSchedule = asyncHandler(async (req, res) => {
 const updateSchedule = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, notes, status } = req.body;
-  
-  const schedule = await Schedule.findById(id);
+  const companyId = resolveCompanyId(req);
+
+  const schedule = await Schedule.findOne({ _id: id, company: companyId });
   if (!schedule) {
     return res.status(404).json({ message: 'Grafik nie znaleziony' });
   }
@@ -119,14 +130,15 @@ const updateSchedule = asyncHandler(async (req, res) => {
 // @access  Private (Admin)
 const deleteSchedule = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
-  const schedule = await Schedule.findById(id);
+
+  const companyId = resolveCompanyId(req);
+  const schedule = await Schedule.findOne({ _id: id, company: companyId });
   if (!schedule) {
     return res.status(404).json({ message: 'Grafik nie znaleziony' });
   }
   
   // Delete all assignments
-  await ShiftAssignment.deleteMany({ schedule: id });
+  await ShiftAssignment.deleteMany({ schedule: id, company: companyId });
   
   // Delete schedule
   await schedule.deleteOne();
@@ -142,8 +154,14 @@ const deleteSchedule = asyncHandler(async (req, res) => {
 const getAssignments = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { startDate, endDate, employeeId } = req.query;
-  
-  const query = { schedule: id };
+  const companyId = resolveCompanyId(req);
+
+  const schedule = await Schedule.findOne({ _id: id, company: companyId });
+  if (!schedule) {
+    return res.status(404).json({ message: 'Grafik nie znaleziony' });
+  }
+
+  const query = { schedule: id, company: companyId };
   
   if (startDate || endDate) {
     query.date = {};
@@ -171,7 +189,8 @@ const getAssignments = asyncHandler(async (req, res) => {
 // @route   POST /api/schedules/v2/:id/assignments
 // @access  Private (Admin)
 const createAssignment = asyncHandler(async (req, res) => {
-  const userId = req.userId || (req.user && req.user.id);
+  const userId = req.user?.id;
+  const companyId = resolveCompanyId(req);
   const { id: scheduleId } = req.params;
   const { employeeId, date, type, startTime, endTime, shiftTemplateId, notes, color } = req.body;
   
@@ -188,7 +207,7 @@ const createAssignment = asyncHandler(async (req, res) => {
   }
   
   // Check if schedule exists
-  const schedule = await Schedule.findById(scheduleId);
+  const schedule = await Schedule.findOne({ _id: scheduleId, company: companyId });
   if (!schedule) {
     return res.status(404).json({ message: 'Grafik nie znaleziony' });
   }
@@ -198,12 +217,17 @@ const createAssignment = asyncHandler(async (req, res) => {
   if (!employee) {
     return res.status(404).json({ message: 'Pracownik nie znaleziony' });
   }
+
+  if (employee.companyId && employee.companyId.toString() !== companyId) {
+    return res.status(403).json({ message: 'Pracownik nie należy do Twojej firmy' });
+  }
   
   // Check if assignment already exists
   const existing = await ShiftAssignment.findOne({
     schedule: scheduleId,
     employee: employeeId,
-    date: new Date(date)
+    date: new Date(date),
+    company: companyId
   });
   
   if (existing) {
@@ -213,6 +237,7 @@ const createAssignment = asyncHandler(async (req, res) => {
   }
   
   const assignment = await ShiftAssignment.create({
+    company: companyId,
     schedule: scheduleId,
     employee: employeeId,
     date: new Date(date),
@@ -238,11 +263,12 @@ const createAssignment = asyncHandler(async (req, res) => {
 // @route   PUT /api/schedules/v2/assignments/:id
 // @access  Private (Admin)
 const updateAssignment = asyncHandler(async (req, res) => {
-  const userId = req.userId || (req.user && req.user.id);
+  const userId = req.user?.id;
+  const companyId = resolveCompanyId(req);
   const { id } = req.params;
   const { type, startTime, endTime, shiftTemplateId, notes, color, employeeId, date } = req.body;
-  
-  const assignment = await ShiftAssignment.findById(id);
+
+  const assignment = await ShiftAssignment.findOne({ _id: id, company: companyId });
   if (!assignment) {
     return res.status(404).json({ message: 'Przypisanie nie znalezione' });
   }
@@ -254,6 +280,9 @@ const updateAssignment = asyncHandler(async (req, res) => {
     const employee = await Employee.findById(employeeId);
     if (!employee) {
       return res.status(404).json({ message: 'Pracownik nie znaleziony' });
+    }
+    if (employee.companyId && employee.companyId.toString() !== companyId) {
+      return res.status(403).json({ message: 'Pracownik nie należy do Twojej firmy' });
     }
     assignment.employee = employeeId;
   }
@@ -268,6 +297,7 @@ const updateAssignment = asyncHandler(async (req, res) => {
   if (shiftTemplateId !== undefined) assignment.shiftTemplate = shiftTemplateId;
   if (notes !== undefined) assignment.notes = notes;
   if (color) assignment.color = color;
+  if (!assignment.company) assignment.company = companyId;
   assignment.updatedBy = userId;
   
   await assignment.save();
@@ -285,8 +315,9 @@ const updateAssignment = asyncHandler(async (req, res) => {
 // @access  Private (Admin)
 const deleteAssignment = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
-  const assignment = await ShiftAssignment.findById(id);
+
+  const companyId = resolveCompanyId(req);
+  const assignment = await ShiftAssignment.findOne({ _id: id, company: companyId });
   if (!assignment) {
     return res.status(404).json({ message: 'Przypisanie nie znalezione' });
   }
@@ -302,7 +333,8 @@ const deleteAssignment = asyncHandler(async (req, res) => {
 // @route   POST /api/schedules/v2/:id/generate
 // @access  Private (Admin)
 const generateSchedule = asyncHandler(async (req, res) => {
-  const userId = req.userId || (req.user && req.user.id);
+  const userId = req.user?.id;
+  const companyId = resolveCompanyId(req);
   const { id: scheduleId } = req.params;
   const { employeeIds, startDate, endDate, shiftTemplateId, daysOfWeek } = req.body;
   
@@ -312,7 +344,7 @@ const generateSchedule = asyncHandler(async (req, res) => {
     });
   }
   
-  const schedule = await Schedule.findById(scheduleId);
+  const schedule = await Schedule.findOne({ _id: scheduleId, company: companyId });
   if (!schedule) {
     return res.status(404).json({ message: 'Grafik nie znaleziony' });
   }
@@ -336,11 +368,13 @@ const generateSchedule = asyncHandler(async (req, res) => {
       const existing = await ShiftAssignment.findOne({
         schedule: scheduleId,
         employee: employeeId,
-        date: new Date(date)
+        date: new Date(date),
+        company: companyId
       });
-      
+
       if (!existing) {
         const assignment = await ShiftAssignment.create({
+          company: companyId,
           schedule: scheduleId,
           employee: employeeId,
           date: new Date(date),
@@ -367,13 +401,14 @@ const generateSchedule = asyncHandler(async (req, res) => {
 const getScheduleValidation = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { calculateHours, calculateEmployeeHours, validateSchedule, checkLeaveConflicts } = require('../utils/scheduleUtils');
-  
-  const schedule = await Schedule.findById(id);
+
+  const companyId = resolveCompanyId(req);
+  const schedule = await Schedule.findOne({ _id: id, company: companyId });
   if (!schedule) {
     return res.status(404).json({ message: 'Grafik nie znaleziony' });
   }
-  
-  const assignments = await ShiftAssignment.find({ schedule: id })
+
+  const assignments = await ShiftAssignment.find({ schedule: id, company: companyId })
     .populate('employee', 'firstName lastName')
     .sort({ date: 1 });
   
