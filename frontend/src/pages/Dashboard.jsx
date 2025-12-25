@@ -1,92 +1,24 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 
-const dayFormatter = new Intl.DateTimeFormat('pl-PL', {
-  weekday: 'long',
-});
-
+const dayFormatter = new Intl.DateTimeFormat('pl-PL', { weekday: 'long' });
 const fullDateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
 });
 
-const timeFormatter = new Intl.DateTimeFormat('pl-PL', {
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
-const statusBadge = (statusKey) => {
-  switch (statusKey) {
-    case 'approved':
-    case 'Zatwierdzony':
-      return 'bg-emerald-100 text-emerald-700';
-    case 'pending':
-    case 'Oczekuje':
-      return 'bg-amber-100 text-amber-700';
-    case 'rejected':
-    case 'Odrzucony':
-      return 'bg-red-100 text-red-700';
-    case 'Zaplanowany':
-      return 'badge-primary';
-    default:
-      return 'bg-slate-100 text-slate-700';
-  }
-};
-
-const getStatusLabel = (status) => {
-  switch (status) {
-    case 'approved':
-      return 'Zatwierdzony';
-    case 'pending':
-      return 'Oczekuje';
-    case 'rejected':
-      return 'Odrzucony';
-    default:
-      return status || 'Brak statusu';
-  }
-};
-
-const leaveTypeLabel = (type) => {
-  switch (type) {
-    case 'annual':
-      return 'Urlop wypoczynkowy';
-    case 'on_demand':
-      return 'Urlop na żądanie';
-    case 'unpaid':
-      return 'Urlop bezpłatny';
-    case 'occasional':
-      return 'Urlop okolicznościowy';
-    default:
-      return 'Urlop';
-  }
-};
-
-const weekdays = [
-  { value: 1, label: 'Pon' },
-  { value: 2, label: 'Wt' },
-  { value: 3, label: 'Śr' },
-  { value: 4, label: 'Czw' },
-  { value: 5, label: 'Pt' },
-  { value: 6, label: 'Sob' },
-  { value: 0, label: 'Niedz' },
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const queryClient = useQueryClient();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
-  // State for admin features
   const [newNotification, setNewNotification] = useState('');
   const [notificationError, setNotificationError] = useState(null);
-
-  // State for user availability form
   const [availabilityForm, setAvailabilityForm] = useState({
     startDate: '',
     endDate: '',
@@ -98,16 +30,10 @@ const Dashboard = () => {
     type: 'available',
     notes: '',
   });
-
-  // Next shift countdown state
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // === QUERIES ===
-
-  // Admin summary
   const {
     data: summary,
-    isLoading: summaryLoading,
     error: summaryError,
   } = useQuery({
     queryKey: ['dashboard-summary'],
@@ -118,7 +44,6 @@ const Dashboard = () => {
     enabled: isAdmin,
   });
 
-  // Get current user's employee record
   const { data: currentEmployee } = useQuery({
     queryKey: ['current-employee'],
     queryFn: async () => {
@@ -128,11 +53,9 @@ const Dashboard = () => {
     enabled: !isAdmin,
   });
 
-  // Schedule data (filtered by user if not admin)
   const {
     data: scheduleData,
     isLoading: scheduleLoading,
-    error: scheduleError,
   } = useQuery({
     queryKey: ['schedule', isAdmin ? 'all' : 'user', currentEmployee?._id],
     queryFn: async () => {
@@ -140,12 +63,7 @@ const Dashboard = () => {
       const to = new Date();
       to.setDate(to.getDate() + 30);
 
-      const params = {
-        from: from.toISOString(),
-        to: to.toISOString(),
-      };
-
-      // If user (not admin), filter by their employee ID
+      const params = { from: from.toISOString(), to: to.toISOString() };
       if (!isAdmin && currentEmployee?._id) {
         params.employeeId = currentEmployee._id;
       }
@@ -156,27 +74,15 @@ const Dashboard = () => {
     enabled: isAdmin || !!currentEmployee,
   });
 
-  // Leaves data
-  const {
-    data: leavesData,
-    isLoading: leavesLoading,
-    error: leavesError,
-  } = useQuery({
+  const { data: leavesData } = useQuery({
     queryKey: ['leaves', 'dashboard'],
     queryFn: async () => {
-      const { data } = await api.get('/leaves', {
-        params: isAdmin ? { status: 'pending' } : {},
-      });
+      const { data } = await api.get('/leaves', { params: isAdmin ? { status: 'pending' } : {} });
       return data;
     },
   });
 
-  // Sick leaves
-  const {
-    data: sickLeavesData,
-    isLoading: sickLoading,
-    error: sickError,
-  } = useQuery({
+  const { data: sickLeavesData } = useQuery({
     queryKey: ['sick-leaves', 'dashboard'],
     queryFn: async () => {
       const { data } = await api.get('/sick-leaves');
@@ -185,12 +91,7 @@ const Dashboard = () => {
     enabled: isAdmin,
   });
 
-  // Notifications
-  const {
-    data: notificationsData,
-    isLoading: notificationsLoading,
-    error: notificationsError,
-  } = useQuery({
+  const { data: notificationsData } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const { data } = await api.get('/notifications');
@@ -198,23 +99,15 @@ const Dashboard = () => {
     },
   });
 
-  // User's availability submissions
-  const {
-    data: availabilityData,
-    isLoading: availabilityLoading,
-  } = useQuery({
+  const { data: availabilityData } = useQuery({
     queryKey: ['availability', 'user', currentEmployee?._id],
     queryFn: async () => {
       if (!currentEmployee?._id) return [];
-      const { data } = await api.get('/availability', {
-        params: { employeeId: currentEmployee._id },
-      });
+      const { data } = await api.get('/availability', { params: { employeeId: currentEmployee._id } });
       return data;
     },
     enabled: !isAdmin && !!currentEmployee,
   });
-
-  // === MUTATIONS ===
 
   const createNotificationMutation = useMutation({
     mutationFn: (payload) => api.post('/notifications', payload),
@@ -252,8 +145,6 @@ const Dashboard = () => {
     },
   });
 
-  // === HANDLERS ===
-
   const addNotification = () => {
     if (!newNotification.trim()) return;
     createNotificationMutation.mutate({
@@ -263,78 +154,37 @@ const Dashboard = () => {
     });
   };
 
-  const quickActionTemplates = {
-    schedule: {
-      title: 'Aktualizacja grafiku',
-      message: 'Dodano nową zmianę w grafiku na kolejny tydzień.',
-      type: 'schedule',
-    },
-    leave: {
-      title: 'Nowy wniosek urlopowy',
-      message: 'Utworzono szkic wniosku urlopowego dla zespołu.',
-      type: 'leave',
-    },
-    notify: {
-      title: 'Komunikat e-mail',
-      message: 'Wysłano komunikat do pracowników o nadchodzącym zebraniu.',
-      type: 'general',
-    },
-  };
-
-  const handleQuickAction = (key) => {
-    const template = quickActionTemplates[key];
-    if (!template) return;
-    createNotificationMutation.mutate(template);
-  };
-
   const toggleAvailabilityDay = (dayValue) => {
     setAvailabilityForm((prev) => {
       const exists = prev.daysOfWeek.includes(dayValue);
       return {
         ...prev,
-        daysOfWeek: exists
-          ? prev.daysOfWeek.filter((d) => d !== dayValue)
-          : [...prev.daysOfWeek, dayValue],
+        daysOfWeek: exists ? prev.daysOfWeek.filter((d) => d !== dayValue) : [...prev.daysOfWeek, dayValue],
       };
     });
   };
 
   const handleSubmitAvailability = () => {
     if (!availabilityForm.startDate || !availabilityForm.endDate || !currentEmployee?._id) return;
-    
-    submitAvailabilityMutation.mutate({
-      employeeId: currentEmployee._id,
-      ...availabilityForm,
-    });
+    submitAvailabilityMutation.mutate({ employeeId: currentEmployee._id, ...availabilityForm });
   };
 
-  // === COMPUTED DATA ===
-
-  // Next shift for countdown
   const nextShift = useMemo(() => {
     if (!scheduleData || !Array.isArray(scheduleData)) return null;
-
     const now = new Date();
     const upcoming = scheduleData
-      .filter((entry) => {
-        const shiftDate = new Date(entry.date);
-        return shiftDate >= now;
-      })
+      .filter((entry) => new Date(entry.date) >= now)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-
     return upcoming[0] || null;
   }, [scheduleData]);
 
-  // Update countdown every second
   useEffect(() => {
     if (!nextShift) return;
-
     const updateCountdown = () => {
       const now = new Date();
       const shiftDate = new Date(nextShift.date);
       const [hours, minutes] = nextShift.startTime.split(':').map(Number);
       shiftDate.setHours(hours, minutes, 0, 0);
-
       const diff = shiftDate - now;
 
       if (diff <= 0) {
@@ -346,19 +196,16 @@ const Dashboard = () => {
       const hrs = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
       setCountdown({ days, hours: hrs, minutes: mins, seconds: secs });
     };
 
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
-
     return () => clearInterval(interval);
   }, [nextShift]);
 
   const upcomingShifts = useMemo(() => {
     if (!scheduleData || !Array.isArray(scheduleData)) return [];
-
     return scheduleData
       .map((entry) => {
         const date = new Date(entry.date);
@@ -367,16 +214,14 @@ const Dashboard = () => {
           label: dayFormatter.format(date),
           date: fullDateFormatter.format(date),
           time: `${entry.startTime} - ${entry.endTime}`,
-          person: entry.employee
-            ? `${entry.employee.firstName} ${entry.employee.lastName}`
-            : 'Pracownik',
+          person: entry.employee ? `${entry.employee.firstName} ${entry.employee.lastName}` : 'Pracownik',
           location: entry.employee?.position || 'Zmiana',
           sortKey: date.getTime(),
         };
       })
       .sort((a, b) => a.sortKey - b.sortKey)
-      .slice(0, isAdmin ? 6 : 5);
-  }, [scheduleData, isAdmin]);
+      .slice(0, 5);
+  }, [scheduleData]);
 
   const timeOffItems = useMemo(() => {
     const leaveItems = (leavesData || []).map((leave) => {
@@ -384,12 +229,10 @@ const Dashboard = () => {
       const end = new Date(leave.endDate);
       return {
         id: leave._id,
-        employee: leave.employee
-          ? `${leave.employee.firstName} ${leave.employee.lastName}`
-          : 'Pracownik',
+        employee: leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'Pracownik',
         range: `${fullDateFormatter.format(start)} - ${fullDateFormatter.format(end)}`,
         status: leave.status,
-        type: leaveTypeLabel(leave.type),
+        type: leave.type || 'Urlop',
         sortKey: start.getTime(),
       };
     });
@@ -399,535 +242,383 @@ const Dashboard = () => {
       const end = new Date(item.endDate);
       return {
         id: item._id,
-        employee: item.employee
-          ? `${item.employee.firstName} ${item.employee.lastName}`
-          : 'Pracownik',
+        employee: item.employee ? `${item.employee.firstName} ${item.employee.lastName}` : 'Pracownik',
         range: `${fullDateFormatter.format(start)} - ${fullDateFormatter.format(end)}`,
-        status: 'approved',
+        status: item.status || 'approved',
         type: 'Zwolnienie lekarskie',
         sortKey: start.getTime(),
       };
     });
 
-    return [...leaveItems, ...sickItems]
-      .sort((a, b) => a.sortKey - b.sortKey)
-      .slice(0, 5);
+    return [...leaveItems, ...sickItems].sort((a, b) => a.sortKey - b.sortKey).slice(0, 6);
   }, [leavesData, sickLeavesData]);
 
   const alerts = useMemo(() => notificationsData || [], [notificationsData]);
   const unreadCount = alerts.filter((a) => !a.read).length;
 
-  // === RENDER ===
+  const metrics = useMemo(() => {
+    const pendingLeaves = (leavesData || []).filter((l) => l.status === 'pending').length;
+    const pendingSick = (sickLeavesData || []).filter((l) => l.status === 'pending').length;
+
+    return [
+      {
+        label: 'Aktywni pracownicy',
+        value: summary?.activeEmployees ?? '—',
+        route: '/employees',
+      },
+      {
+        label: 'Oczekujące wnioski',
+        value: pendingLeaves + pendingSick,
+        route: '/leaves',
+      },
+      {
+        label: 'Zaplanowane zmiany',
+        value: scheduleData?.length || 0,
+        route: '/schedule-builder',
+      },
+      {
+        label: 'Spóźnienia',
+        value: 0,
+        route: '/time-tracking',
+      },
+    ];
+  }, [leavesData, sickLeavesData, scheduleData, summary]);
+
+  const quickLinks = [
+    {
+      title: 'Grafiki i dyżury',
+      description: 'Plan miesięczny, blokady kolizji i widok zespołu.',
+      action: () => navigate('/schedule-builder'),
+    },
+    {
+      title: 'Urlopy i L4',
+      description: 'Wnioski online i szybkie decyzje.',
+      action: () => navigate('/leaves'),
+    },
+    {
+      title: 'Czas pracy',
+      description: 'Wejścia/wyjścia, raporty i eksport.',
+      action: () => navigate('/time-tracking'),
+    },
+    {
+      title: 'Powiadomienia',
+      description: 'Komunikaty e-mail i w aplikacji.',
+      action: () => navigate('/notifications'),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <header className="space-y-1">
-        <h1 className="text-lg font-semibold text-slate-900">
-          {isAdmin ? 'Dashboard Administratora' : 'Mój Dashboard'}
-        </h1>
-        <p className="text-sm text-slate-600">
-          {isAdmin
-            ? 'Przegląd kluczowych metryk i nadchodzących wydarzeń'
-            : 'Twoje zmiany, dostępność i powiadomienia'}
-        </p>
-      </header>
-
-      {/* Next Shift Countdown - For all users */}
-      {nextShift && (
-        <div 
-          className="relative overflow-hidden rounded-2xl border shadow-lg p-6 text-white"
-          style={{
-            background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`,
-            borderColor: 'rgba(var(--theme-primary-rgb), 0.4)',
-            boxShadow: `0 10px 25px -5px rgba(var(--theme-primary-rgb), 0.3)`
-          }}
-        >
-          <div className="flex items-center justify-between flex-wrap gap-4 relative z-10">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wide opacity-95">
-                Następna zmiana
-              </div>
-              <div className="text-2xl font-bold mt-1">
-                {fullDateFormatter.format(new Date(nextShift.date))}
-              </div>
-              <div className="text-sm opacity-95 mt-1">
-                {nextShift.startTime} - {nextShift.endTime}
-                {nextShift.employee && (
-                  <span className="ml-2">
-                    · {nextShift.employee.firstName} {nextShift.employee.lastName}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="text-center">
-                <div className="text-3xl font-bold">{countdown.days}</div>
-                <div className="text-xs uppercase tracking-wide opacity-90">Dni</div>
-              </div>
-              <div className="text-3xl font-bold opacity-70">:</div>
-              <div className="text-center">
-                <div className="text-3xl font-bold">{countdown.hours}</div>
-                <div className="text-xs uppercase tracking-wide opacity-90">Godz</div>
-              </div>
-              <div className="text-3xl font-bold opacity-70">:</div>
-              <div className="text-center">
-                <div className="text-3xl font-bold">{countdown.minutes}</div>
-                <div className="text-xs uppercase tracking-wide opacity-90">Min</div>
-              </div>
-              <div className="text-3xl font-bold opacity-70">:</div>
-              <div className="text-center">
-                <div className="text-3xl font-bold">{countdown.seconds}</div>
-                <div className="text-xs uppercase tracking-wide opacity-90">Sek</div>
-              </div>
-            </div>
-          </div>
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
-          </div>
-        </div>
-      )}
-
-      {/* Admin Metrics */}
-      {isAdmin && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {summaryLoading && (
-            <div className="col-span-3 text-sm text-slate-500">Ładowanie podsumowania...</div>
-          )}
-          {summaryError && (
-            <div className="col-span-3 text-sm text-red-600">Nie udało się pobrać podsumowania.</div>
-          )}
-
-          {summary && (
-            <>
-              <StatCard
-                label="Pracownicy (łącznie)"
-                value={summary.totalEmployees}
-                hint="Łączna liczba pracowników"
-              />
-              <StatCard
-                label="Aktywni pracownicy"
-                value={summary.activeEmployees}
-                hint="Obecnie zatrudnieni"
-              />
-              <StatCard
-                label="Miesięczne wynagrodzenia (PLN)"
-                value={(summary.totalPayrollAmount || 0).toLocaleString('pl-PL')}
-                hint="Szacowana suma brutto"
-              />
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Upcoming Shifts */}
-        <div className="app-card p-4 lg:col-span-2">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {isAdmin ? 'Najbliższe zmiany (wszyscy)' : 'Moje najbliższe zmiany'}
-              </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Grafik pracy na kolejne dni.</p>
-            </div>
-            <span className="text-[11px] font-medium text-theme-primary">Grafik</span>
-          </div>
-
-          {(scheduleLoading || upcomingShifts.length === 0) && (
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {scheduleLoading ? 'Ładowanie grafiku...' : 'Brak zaplanowanych zmian.'}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {upcomingShifts.map((shift) => (
-              <div
-                key={shift.id}
-                className="rounded-xl border border-theme-light dark:border-slate-600 bg-theme-very-light dark:bg-slate-700/50 px-3 py-3"
-              >
-                <div className="text-[11px] font-semibold text-theme-primary">{shift.label}</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{shift.time}</div>
-                <div className="text-[11px] text-slate-600 dark:text-slate-400">{shift.person}</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{shift.location}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Time Off / Availability */}
-        <div className="app-card p-4 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/leaves')}>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {isAdmin ? 'Urlopy i L4' : 'Moje wnioski'}
-              </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {isAdmin ? 'Ostatnie zgłoszenia i statusy.' : 'Status wniosków urlopowych.'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Czas wolny</span>
-              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-
+    <div className="space-y-6">
+      <div
+        className="relative overflow-hidden rounded-3xl border border-white/40 dark:border-slate-800 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white shadow-xl"
+      >
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.5),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.35),transparent_35%)]" />
+        <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-3">
-            {(leavesLoading || sickLoading) && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">Ładowanie wniosków...</div>
-            )}
-            {timeOffItems.length === 0 && !leavesLoading && !sickLoading && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">Brak wniosków urlopowych ani L4.</div>
-            )}
-            {timeOffItems.map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-100 dark:border-slate-600 bg-white dark:bg-slate-700/50 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.employee}</div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400">{item.type}</div>
-                  </div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${statusBadge(
-                      item.status
-                    )}`}
-                  >
-                    {getStatusLabel(item.status)}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">{item.range}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* User: Availability Suggestions */}
-      {!isAdmin && (
-        <div className="app-card p-4 space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sugestie dyspozycyjności</h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              Zgłoś swoją dostępność na nadchodzące okresy grafiku. Administrator zatwierdzi Twoje preferencje.
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 backdrop-blur">
+              {isAdmin ? 'Panel administratora' : 'Mój pulpit'}
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold leading-snug">Twoje centrum dowodzenia HR</h1>
+            <p className="text-sm text-blue-100 max-w-2xl">
+              Dopasowaliśmy dashboard do stylistyki landing page. Wszystkie kafelki prowadzą do kluczowych modułów, a dane są podane w przejrzystych kartach.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Od (data)</label>
-              <input
-                type="date"
-                value={availabilityForm.startDate}
-                onChange={(e) =>
-                  setAvailabilityForm((p) => ({ ...p, startDate: e.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Do (data)</label>
-              <input
-                type="date"
-                value={availabilityForm.endDate}
-                onChange={(e) =>
-                  setAvailabilityForm((p) => ({ ...p, endDate: e.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Typ dostępności</label>
-              <select
-                value={availabilityForm.type}
-                onChange={(e) =>
-                  setAvailabilityForm((p) => ({ ...p, type: e.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
-              >
-                <option value="available">Dostępny</option>
-                <option value="preferred">Preferowany</option>
-                <option value="unavailable">Niedostępny</option>
-                <option value="limited">Ograniczony</option>
-              </select>
+            <div className="flex flex-wrap gap-2">
+              {quickLinks.map((item) => (
+                <button
+                  key={item.title}
+                  onClick={item.action}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 transition text-sm"
+                >
+                  {item.title}
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Dni tygodnia</div>
-              <div className="flex flex-wrap gap-1.5">
-                {weekdays.map((day) => {
-                  const active = availabilityForm.daysOfWeek.includes(day.value);
-                  return (
-                    <button
-                      key={day.value}
-                      type="button"
-                      onClick={() => toggleAvailabilityDay(day.value)}
-                      className={[
-                        'px-2.5 py-1 rounded-full text-xs border transition-all',
-                        active
-                          ? 'active-theme border-theme-light'
-                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover-border-theme',
-                      ].join(' ')}
-                    >
-                      {day.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Preferowane godziny</div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Od</label>
-                  <input
-                    type="time"
-                    value={availabilityForm.preferredStartTime}
-                    onChange={(e) =>
-                      setAvailabilityForm((p) => ({ ...p, preferredStartTime: e.target.value }))
-                    }
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus-theme"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Do</label>
-                  <input
-                    type="time"
-                    value={availabilityForm.preferredEndTime}
-                    onChange={(e) =>
-                      setAvailabilityForm((p) => ({ ...p, preferredEndTime: e.target.value }))
-                    }
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-xs focus:outline-none focus-theme"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Max godz. dziennie</label>
-              <input
-                type="number"
-                min="1"
-                max="12"
-                value={availabilityForm.maxHoursPerDay}
-                onChange={(e) =>
-                  setAvailabilityForm((p) => ({ ...p, maxHoursPerDay: Number(e.target.value) }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Max godz. tygodniowo</label>
-              <input
-                type="number"
-                min="1"
-                max="60"
-                value={availabilityForm.maxHoursPerWeek}
-                onChange={(e) =>
-                  setAvailabilityForm((p) => ({ ...p, maxHoursPerWeek: Number(e.target.value) }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Notatki (opcjonalnie)</label>
-              <input
-                type="text"
-                value={availabilityForm.notes}
-                onChange={(e) =>
-                  setAvailabilityForm((p) => ({ ...p, notes: e.target.value }))
-                }
-                placeholder="Dodatkowe informacje"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus-theme"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleSubmitAvailability}
-              disabled={
-                submitAvailabilityMutation.isLoading ||
-                !availabilityForm.startDate ||
-                !availabilityForm.endDate
-              }
-              className="inline-flex items-center rounded-full bg-theme-gradient px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:shadow-md disabled:opacity-60"
-            >
-              {submitAvailabilityMutation.isLoading ? 'Wysyłanie...' : 'Zgłoś dostępność'}
-            </button>
-          </div>
-
-          {submitAvailabilityMutation.isSuccess && (
-            <div className="text-xs text-emerald-600">
-              Dostępność została zgłoszona i oczekuje na zatwierdzenie przez administratora.
-            </div>
-          )}
-
-          {submitAvailabilityMutation.isError && (
-            <div className="text-xs text-red-600">
-              {submitAvailabilityMutation.error?.response?.data?.message ||
-                'Wystąpił błąd podczas zgłaszania dostępności.'}
-            </div>
-          )}
-
-          {/* List of submitted availabilities */}
-          {availabilityData && availabilityData.length > 0 && (
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-600">
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Twoje zgłoszenia dostępności
-              </div>
-              <div className="space-y-2">
-                {availabilityData.slice(0, 5).map((avail) => (
-                  <div key={avail._id} className="rounded-lg border border-slate-100 dark:border-slate-600 bg-white dark:bg-slate-700/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {fullDateFormatter.format(new Date(avail.startDate))} -{' '}
-                          {fullDateFormatter.format(new Date(avail.endDate))}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {avail.type} · {avail.preferredStartTime} - {avail.preferredEndTime}
-                        </div>
-                      </div>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${statusBadge(
-                          avail.status
-                        )}`}
-                      >
-                        {getStatusLabel(avail.status)}
-                      </span>
-                    </div>
-                    {avail.notes && (
-                      <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">{avail.notes}</div>
-                    )}
+          {nextShift && (
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20 min-w-[260px]">
+              <div className="text-xs uppercase tracking-[0.2em] text-blue-100">Następna zmiana</div>
+              <div className="text-xl font-semibold mt-1">{fullDateFormatter.format(new Date(nextShift.date))}</div>
+              <div className="text-sm text-blue-100">{nextShift.startTime} - {nextShift.endTime}</div>
+              <div className="flex gap-3 mt-3 text-center">
+                {[{ label: 'Dni', value: countdown.days }, { label: 'Godz', value: countdown.hours }, { label: 'Min', value: countdown.minutes }].map((item) => (
+                  <div key={item.label} className="flex-1">
+                    <div className="text-2xl font-bold">{item.value}</div>
+                    <div className="text-[11px] uppercase tracking-wide text-blue-100">{item.label}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Notifications & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="app-card p-4 lg:col-span-2">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/notifications')}>
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Powiadomienia wewnętrzne</h2>
-              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {metrics.map((metric) => (
+          <button
+            key={metric.label}
+            onClick={() => navigate(metric.route)}
+            className="group rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900/70 shadow-[0_14px_34px_-24px_rgba(15,23,42,0.5)] p-4 text-left hover:-translate-y-0.5 transition"
+          >
+            <p className="text-xs text-slate-500 dark:text-slate-400">{metric.label}</p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{metric.value}</p>
+              <span className="text-[11px] text-sky-600 dark:text-sky-300 opacity-0 group-hover:opacity-100 transition">Przejdź →</span>
             </div>
-            <span className="text-[11px] font-medium text-theme-primary">
-              {notificationsLoading ? 'Ładowanie...' : `${unreadCount} do przeczytania`}
-            </span>
-          </div>
+          </button>
+        ))}
+      </div>
 
-          {isAdmin && (
-            <div className="flex flex-col sm:flex-row gap-2 mb-3">
-              <input
-                type="text"
-                value={newNotification}
-                onChange={(e) => setNewNotification(e.target.value)}
-                placeholder="Dodaj krótką notatkę / komunikat"
-                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs input-primary"
-              />
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 space-y-4">
+          <div className="rounded-3xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900/70 p-5 shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Grafik</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Nadchodzące zmiany</h2>
+              </div>
               <button
-                type="button"
-                onClick={addNotification}
-                disabled={createNotificationMutation.isLoading}
-                className="inline-flex justify-center rounded-lg bg-theme-gradient px-4 py-2 text-xs font-semibold text-white hover:shadow-md disabled:opacity-60"
+                onClick={() => navigate('/schedule-builder')}
+                className="text-sm font-semibold text-sky-600 dark:text-sky-300"
               >
-                {createNotificationMutation.isLoading ? 'Zapisywanie...' : 'Dodaj'}
+                Otwórz grafik →
               </button>
             </div>
-          )}
-
-          {notificationError && (
-            <div className="mb-3 text-[11px] text-red-600 dark:text-red-400">{notificationError}</div>
-          )}
-
-          <div className="space-y-2">
-            {alerts.map((alert) => (
-              <div
-                key={alert._id}
-                className="flex items-start justify-between rounded-xl border border-slate-100 dark:border-slate-600 bg-white dark:bg-slate-700/50 px-3 py-2"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{alert.title}</div>
-                  <div className="text-[11px] text-slate-600 dark:text-slate-400">{alert.message}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-theme-primary mt-1">
-                    {alert.type}
+            {scheduleLoading ? (
+              <p className="text-sm text-slate-500">Ładowanie grafiku...</p>
+            ) : upcomingShifts.length === 0 ? (
+              <p className="text-sm text-slate-500">Brak zaplanowanych zmian w najbliższym czasie.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {upcomingShifts.map((shift) => (
+                  <div key={shift.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/60 dark:bg-slate-800/40">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{shift.label} · {shift.date}</div>
+                    <div className="text-lg font-semibold text-slate-900 dark:text-white">{shift.time}</div>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">{shift.person}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{shift.location}</p>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => markAsReadMutation.mutate(alert._id)}
-                  disabled={markAsReadMutation.isLoading || alert.read}
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border ${
-                    alert.read
-                      ? 'border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700'
-                      : 'badge-primary'
-                  }`}
-                >
-                  {alert.read ? 'Przeczytane' : 'Oznacz jako przeczytane'}
-                </button>
+                ))}
               </div>
-            ))}
-            {alerts.length === 0 && !notificationsLoading && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Brak powiadomień. {isAdmin && 'Dodaj komunikat lub poczekaj na automatyczne wpisy.'}
+            )}
+          </div>
+
+          <div className="rounded-3xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900/70 p-5 shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Wnioski</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Urlopy i L4</h2>
+              </div>
+              <button onClick={() => navigate('/leaves')} className="text-sm font-semibold text-sky-600 dark:text-sky-300">
+                Przejdź do listy →
+              </button>
+            </div>
+            {timeOffItems.length === 0 ? (
+              <p className="text-sm text-slate-500">Brak zgłoszonych urlopów.</p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {timeOffItems.map((item) => (
+                  <div key={item.id} className="py-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.employee}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.range}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.type}</p>
+                    </div>
+                    <span className={`text-xs px-3 py-1 rounded-full border ${item.status === 'approved' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : item.status === 'pending' ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-slate-200 text-slate-700 bg-slate-50'}`}>
+                      {item.status === 'pending' ? 'Oczekuje' : item.status === 'rejected' ? 'Odrzucony' : 'Zatwierdzony'}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
 
-        {isAdmin && (
-          <div className="app-card p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Szybkie akcje</h2>
-            <p className="text-[11px] text-slate-600">
-              Dodawaj natychmiastowe wpisy do grafiku, urlopów i powiadomień.
-            </p>
-
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickAction('schedule')}
-                className="w-full rounded-lg border border-theme-light bg-theme-very-light px-3 py-2 text-xs font-semibold text-theme-primary hover-bg-theme-light"
-              >
-                Dodaj zmianę w grafiku
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickAction('leave')}
-                className="w-full rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
-              >
-                Zarejestruj wniosek urlopowy
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickAction('notify')}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                Wyślij komunikat do zespołu
-              </button>
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900/70 p-5 shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Powiadomienia</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Kanał komunikatów</h2>
+              </div>
+              <span className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                {unreadCount} nieprzeczytane
+              </span>
             </div>
-
-            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-              Powiadomienia zapisują się w bazie i możesz je oznaczać jako przeczytane.
-              Wpisy w grafiku, urlopach i L4 pobierane są bezpośrednio z API.
+            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+              {alerts.length === 0 ? (
+                <p className="text-sm text-slate-500">Brak powiadomień.</p>
+              ) : (
+                alerts.slice(0, 6).map((alert) => (
+                  <div key={alert._id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50/60 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{alert.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{alert.message}</p>
+                    </div>
+                    {!alert.read && (
+                      <button
+                        onClick={() => markAsReadMutation.mutate(alert._id)}
+                        className="text-[11px] text-sky-600 dark:text-sky-300"
+                      >
+                        Oznacz
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-4 space-y-2">
+              <label className="text-xs text-slate-500 dark:text-slate-400">Dodaj krótką notatkę</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newNotification}
+                  onChange={(e) => setNewNotification(e.target.value)}
+                  placeholder="Napisz wiadomość dla zespołu"
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={addNotification}
+                  disabled={createNotificationMutation.isLoading}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-semibold shadow"
+                >
+                  Wyślij
+                </button>
+              </div>
+              {notificationError && <p className="text-xs text-red-600">{notificationError}</p>}
             </div>
           </div>
-        )}
+
+          {!isAdmin && (
+            <div className="rounded-3xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900/70 p-5 shadow space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Dostępność</p>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Zgłoś preferencje</h2>
+                </div>
+                <button onClick={() => navigate('/profile')} className="text-xs font-semibold text-sky-600 dark:text-sky-300">Profil →</button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Od</label>
+                  <input
+                    type="date"
+                    value={availabilityForm.startDate}
+                    onChange={(e) => setAvailabilityForm((p) => ({ ...p, startDate: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Do</label>
+                  <input
+                    type="date"
+                    value={availabilityForm.endDate}
+                    onChange={(e) => setAvailabilityForm((p) => ({ ...p, endDate: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[{ value: 1, label: 'Pon' }, { value: 2, label: 'Wt' }, { value: 3, label: 'Śr' }, { value: 4, label: 'Czw' }, { value: 5, label: 'Pt' }, { value: 6, label: 'Sob' }, { value: 0, label: 'Niedz' }].map((day) => (
+                  <button
+                    key={day.value}
+                    onClick={() => toggleAvailabilityDay(day.value)}
+                    className={`px-3 py-1 rounded-full border text-xs ${availabilityForm.daysOfWeek.includes(day.value)
+                      ? 'border-sky-500 text-sky-600 bg-sky-50'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Start</label>
+                  <input
+                    type="time"
+                    value={availabilityForm.preferredStartTime}
+                    onChange={(e) => setAvailabilityForm((p) => ({ ...p, preferredStartTime: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Koniec</label>
+                  <input
+                    type="time"
+                    value={availabilityForm.preferredEndTime}
+                    onChange={(e) => setAvailabilityForm((p) => ({ ...p, preferredEndTime: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Max godz./dzień</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={availabilityForm.maxHoursPerDay}
+                    onChange={(e) => setAvailabilityForm((p) => ({ ...p, maxHoursPerDay: Number(e.target.value) }))}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Max godz./tydzień</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={availabilityForm.maxHoursPerWeek}
+                    onChange={(e) => setAvailabilityForm((p) => ({ ...p, maxHoursPerWeek: Number(e.target.value) }))}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-600 dark:text-slate-400">Notatki</label>
+                <input
+                  type="text"
+                  value={availabilityForm.notes}
+                  onChange={(e) => setAvailabilityForm((p) => ({ ...p, notes: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-sm"
+                  placeholder="np. preferencje dotyczące lokalizacji"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSubmitAvailability}
+                  disabled={submitAvailabilityMutation.isLoading || !availabilityForm.startDate || !availabilityForm.endDate}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-semibold shadow disabled:opacity-60"
+                >
+                  {submitAvailabilityMutation.isLoading ? 'Wysyłanie...' : 'Wyślij zgłoszenie'}
+                </button>
+              </div>
+              {submitAvailabilityMutation.isSuccess && (
+                <p className="text-xs text-emerald-600">Dostępność została zapisana.</p>
+              )}
+              {submitAvailabilityMutation.isError && (
+                <p className="text-xs text-red-600">{submitAvailabilityMutation.error?.response?.data?.message || 'Wystąpił błąd podczas zgłaszania dostępności.'}</p>
+              )}
+              {availabilityData && availabilityData.length > 0 && (
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Ostatnie zgłoszenia</p>
+                  {availabilityData.slice(0, 3).map((item) => (
+                    <div key={item._id} className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                      {fullDateFormatter.format(new Date(item.startDate))} - {fullDateFormatter.format(new Date(item.endDate))} · {item.preferredStartTime} - {item.preferredEndTime}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {summaryError && <p className="text-sm text-red-600">Nie udało się pobrać podsumowania.</p>}
     </div>
   );
 };
