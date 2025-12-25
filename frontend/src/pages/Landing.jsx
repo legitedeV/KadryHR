@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import FloatingParticles from '../components/FloatingParticles';
-import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const features = [
   {
@@ -94,7 +93,6 @@ const Landing = () => {
     <div className="min-h-screen relative overflow-hidden bg-gradient-layout text-slate-800 dark:text-slate-100">
       <div className="absolute inset-0 opacity-50 pointer-events-none bg-[radial-gradient(circle_at_30%_20%,rgba(37,99,235,0.14),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.12),transparent_40%)]" />
       <FloatingParticles count={14} minSize={50} maxSize={160} speed={0.7} />
-      <ThemeSwitcher />
 
       <header className="sticky top-0 z-40 border-b border-white/30 dark:border-slate-800/70 backdrop-blur-2xl bg-white/80 dark:bg-slate-950/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -33,7 +32,6 @@ const Login = () => {
         background: `radial-gradient(circle at 20% 20%, rgba(var(--theme-primary-rgb),0.18), transparent 35%),
         radial-gradient(circle at 80% 0%, rgba(14,165,233,0.15), transparent 40%)`
       }} />
-      <ThemeSwitcher />
       <div className="max-w-md w-full bg-white/90 dark:bg-slate-900/80 rounded-3xl shadow-[0_22px_60px_-32px_rgba(15,23,42,0.7)] border border-slate-200/70 dark:border-slate-800/80 p-8 space-y-6 backdrop-blur-xl">
         <div className="text-center space-y-3">
           <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br from-slate-900 via-sky-900 to-slate-900 items-center justify-center shadow-xl mx-auto">
