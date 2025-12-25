@@ -4,6 +4,7 @@
   "description": "KadryHR - Nowoczesny system zarządzania zasobami ludzkimi",
   "private": true,
   "workspaces": [
+    "apps/api",
     "apps/legacy-api",
     "apps/legacy-web",
     "apps/web",
