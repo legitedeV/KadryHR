@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
@@ -30,6 +30,11 @@ export const ThemeProvider = ({ children }) => {
     root.dataset.theme = 'dark';
     root.setAttribute('data-theme', 'dark');
     root.classList.add('dark');
+  };
+
+  // Explicitly lock the UI to dark mode to match the current design
+  const applyDarkMode = () => {
+    applyModeToRoot('dark');
   };
 
   // Apply theme mode to document
