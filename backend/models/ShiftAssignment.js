@@ -4,6 +4,11 @@ const { Schema } = mongoose;
 
 const shiftAssignmentSchema = new Schema(
   {
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
     schedule: {
       type: Schema.Types.ObjectId,
       ref: 'Schedule',
@@ -71,6 +76,7 @@ const shiftAssignmentSchema = new Schema(
 shiftAssignmentSchema.index({ schedule: 1, employee: 1, date: 1 });
 shiftAssignmentSchema.index({ employee: 1, date: 1 });
 shiftAssignmentSchema.index({ date: 1 });
+shiftAssignmentSchema.index({ company: 1, date: 1 });
 
 // Virtual for duration in hours
 shiftAssignmentSchema.virtual('durationHours').get(function() {

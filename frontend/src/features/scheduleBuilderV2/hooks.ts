@@ -28,7 +28,11 @@ export function useScheduleData(month: string) {
   const scheduleQuery = useQuery<MonthScheduleResponse>({
     queryKey: scheduleKey(month),
     queryFn: () => fetchMonthSchedule(month),
-    enabled: Boolean(month)
+    enabled: Boolean(month),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnReconnect: 'always',
+    refetchOnMount: 'always'
   });
 
   const applyOptimistic = (
@@ -90,7 +94,7 @@ export function useScheduleData(month: string) {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleKey(month) });
+      queryClient.invalidateQueries({ queryKey: scheduleKey(month), refetchType: 'active' });
     }
   });
 
@@ -128,7 +132,7 @@ export function useScheduleData(month: string) {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleKey(month) });
+      queryClient.invalidateQueries({ queryKey: scheduleKey(month), refetchType: 'active' });
     }
   });
 
@@ -152,7 +156,7 @@ export function useScheduleData(month: string) {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleKey(month) });
+      queryClient.invalidateQueries({ queryKey: scheduleKey(month), refetchType: 'active' });
     }
   });
 

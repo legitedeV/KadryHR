@@ -5,6 +5,12 @@ const Employee = require('../models/Employee');
 
 const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+const resolveCompanyId = (req) => {
+  const user = req.user || {};
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+  return (isAdmin ? user.id : user.supervisor || user.companyId || user.id) || user.id;
+};
+
 function parseMonth(monthParam) {
   if (!MONTH_REGEX.test(monthParam)) {
     const error = new Error('Nieprawidłowy format miesiąca. Użyj YYYY-MM.');
@@ -31,16 +37,18 @@ function hasTimeConflict(base, existing) {
   return Math.max(baseStart, otherStart) < Math.min(baseEnd, otherEnd);
 }
 
-async function ensureSchedule(month, userId) {
+async function ensureSchedule(month, req) {
   const { month: monthLabel, year } = parseMonth(month);
-  let schedule = await Schedule.findOne({ month: monthLabel });
+  const companyId = resolveCompanyId(req);
+  let schedule = await Schedule.findOne({ month: monthLabel, company: companyId });
 
   if (!schedule) {
     schedule = await Schedule.create({
+      company: companyId,
       month: monthLabel,
       year,
       name: `Grafik ${monthLabel}`,
-      createdBy: userId,
+      createdBy: req.user?.id,
       status: 'draft'
     });
   }
@@ -50,9 +58,10 @@ async function ensureSchedule(month, userId) {
 
 const getScheduleForMonth = asyncHandler(async (req, res) => {
   const { month } = req.params;
-  const schedule = await ensureSchedule(month, req.userId);
+  const schedule = await ensureSchedule(month, req);
+  const companyId = resolveCompanyId(req);
 
-  const shifts = await ShiftAssignment.find({ schedule: schedule._id })
+  const shifts = await ShiftAssignment.find({ schedule: schedule._id, company: companyId })
     .populate('employee', 'firstName lastName position')
     .sort({ date: 1 });
 
@@ -62,7 +71,7 @@ const getScheduleForMonth = asyncHandler(async (req, res) => {
 const upsertScheduleForMonth = asyncHandler(async (req, res) => {
   const { month } = req.params;
   const { name, notes, status } = req.body;
-  const schedule = await ensureSchedule(month, req.userId);
+  const schedule = await ensureSchedule(month, req);
 
   if (name) schedule.name = name;
   if (notes !== undefined) schedule.notes = notes;
@@ -81,7 +90,8 @@ const createShiftForMonth = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Pracownik i data są wymagane' });
   }
 
-  const schedule = await ensureSchedule(month, req.userId);
+  const schedule = await ensureSchedule(month, req);
+  const companyId = resolveCompanyId(req);
 
   const targetDate = new Date(date);
   const isoMonth = targetDate.toISOString().slice(0, 7);
@@ -92,6 +102,9 @@ const createShiftForMonth = asyncHandler(async (req, res) => {
   const employee = await Employee.findById(employeeId);
   if (!employee) {
     return res.status(404).json({ message: 'Pracownik nie znaleziony' });
+  }
+  if (employee.companyId && employee.companyId.toString() !== companyId) {
+    return res.status(403).json({ message: 'Pracownik nie należy do Twojej firmy' });
   }
 
   if (type === 'shift') {
@@ -107,7 +120,8 @@ const createShiftForMonth = asyncHandler(async (req, res) => {
   const sameDayAssignments = await ShiftAssignment.find({
     schedule: schedule._id,
     employee: employeeId,
-    date: targetDate
+    date: targetDate,
+    company: companyId
   });
 
   if (sameDayAssignments.length && !allowConflict) {
@@ -126,6 +140,7 @@ const createShiftForMonth = asyncHandler(async (req, res) => {
   }
 
   const shift = await ShiftAssignment.create({
+    company: companyId,
     schedule: schedule._id,
     employee: employeeId,
     date: targetDate,
@@ -134,7 +149,7 @@ const createShiftForMonth = asyncHandler(async (req, res) => {
     endTime,
     notes,
     breakMinutes,
-    createdBy: req.userId
+    createdBy: req.user?.id
   });
 
   await shift.populate('employee', 'firstName lastName position');
@@ -151,7 +166,8 @@ const updateShiftForMonth = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Zmiana nie istnieje' });
   }
 
-  const schedule = await ensureSchedule(month, req.userId);
+  const schedule = await ensureSchedule(month, req);
+  const companyId = resolveCompanyId(req);
   if (String(shift.schedule) !== String(schedule._id)) {
     return res.status(400).json({ message: 'Zmiana nie należy do wskazanego miesiąca' });
   }
@@ -160,6 +176,9 @@ const updateShiftForMonth = asyncHandler(async (req, res) => {
     const employee = await Employee.findById(employeeId);
     if (!employee) {
       return res.status(404).json({ message: 'Pracownik nie znaleziony' });
+    }
+    if (employee.companyId && employee.companyId.toString() !== companyId) {
+      return res.status(403).json({ message: 'Pracownik nie należy do Twojej firmy' });
     }
     shift.employee = employeeId;
   }
@@ -188,10 +207,15 @@ const updateShiftForMonth = asyncHandler(async (req, res) => {
     }
   }
 
+  if (!shift.company) {
+    shift.company = companyId;
+  }
+
   const sameDayAssignments = await ShiftAssignment.find({
     schedule: shift.schedule,
     employee: shift.employee,
     date: shift.date,
+    company: companyId,
     _id: { $ne: shift._id }
   });
 
@@ -218,9 +242,10 @@ const updateShiftForMonth = asyncHandler(async (req, res) => {
 
 const deleteShiftForMonth = asyncHandler(async (req, res) => {
   const { month, shiftId } = req.params;
-  const schedule = await ensureSchedule(month, req.userId);
+  const schedule = await ensureSchedule(month, req);
+  const companyId = resolveCompanyId(req);
 
-  const shift = await ShiftAssignment.findOne({ _id: shiftId, schedule: schedule._id });
+  const shift = await ShiftAssignment.findOne({ _id: shiftId, schedule: schedule._id, company: companyId });
   if (!shift) {
     return res.status(404).json({ message: 'Zmiana nie istnieje' });
   }
