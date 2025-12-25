@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -66,6 +66,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [featureIndex, setFeatureIndex] = useState(0);
 
   const handleDemoLogin = async () => {
     setIsDemoLoading(true);
@@ -88,6 +89,17 @@ const Landing = () => {
       setIsDemoLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFeatureIndex((prev) => (prev + 1) % features.length);
+    }, 4800);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleNextFeature = () => setFeatureIndex((prev) => (prev + 1) % features.length);
+  const handlePrevFeature = () => setFeatureIndex((prev) => (prev - 1 + features.length) % features.length);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-layout text-slate-800 dark:text-slate-100">
@@ -134,8 +146,12 @@ const Landing = () => {
       <main className="relative z-10">
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-16 lg:py-24 grid gap-10 lg:grid-cols-2 items-center">
           <div className="space-y-6">
-            <span className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full border"
-              style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 40%, transparent)', color: 'var(--theme-primary)', background: 'color-mix(in srgb, var(--theme-light) 70%, transparent)' }}
+            <span
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full text-white shadow-lg"
+              style={{
+                background: 'linear-gradient(120deg, #0ea5e9, #2563eb, #8b5cf6)',
+                borderColor: 'transparent',
+              }}
             >
               Kompleksowe HR w jednej aplikacji
             </span>
@@ -229,18 +245,64 @@ const Landing = () => {
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 max-w-3xl">Każdy moduł korzysta z tych samych kart, tabel i stanów. Łatwiej szkolić zespół, bo interfejs jest przewidywalny niezależnie od miejsca w aplikacji.</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {features.map((feature) => (
-                <div key={feature.title} className="rounded-3xl border border-slate-200/70 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-[0_18px_38px_-26px_rgba(15,23,42,0.5)]">
-                  <div className="flex items-center gap-3 text-sky-600 dark:text-sky-300">
-                    <div className="h-11 w-11 rounded-2xl bg-sky-50 dark:bg-slate-800 flex items-center justify-center">
-                      {feature.icon}
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
-                  </div>
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{feature.description}</p>
+
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200/70 dark:border-slate-800/80 bg-gradient-to-r from-white via-slate-50 to-sky-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 shadow-[0_18px_38px_-26px_rgba(15,23,42,0.5)]">
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 gap-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-300">
+                  <span className="h-2 w-2 rounded-full bg-sky-500" />
+                  Suwak funkcji
                 </div>
-              ))}
+                <div className="flex gap-2">
+                  <button onClick={handlePrevFeature} className="h-9 w-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-100 flex items-center justify-center hover:shadow">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button onClick={handleNextFeature} className="h-9 w-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-100 flex items-center justify-center hover:shadow">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-500"
+                  style={{ transform: `translateX(-${featureIndex * 100}%)` }}
+                >
+                  {features.map((feature, idx) => (
+                    <div key={feature.title} className="min-w-full px-5 pb-6">
+                      <div
+                        className={`rounded-3xl border h-full border-slate-200/70 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.55)] transition-all duration-500 ${
+                          idx === featureIndex ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="h-12 w-12 rounded-2xl bg-sky-50 dark:bg-slate-800 flex items-center justify-center text-sky-600 dark:text-sky-300">
+                            {feature.icon}
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{feature.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 pb-5">
+                {features.map((feature, idx) => (
+                  <button
+                    key={feature.title}
+                    onClick={() => setFeatureIndex(idx)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${featureIndex === idx ? 'w-8 bg-sky-500' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
+                    aria-label={`Pokaż funkcję ${feature.title}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
