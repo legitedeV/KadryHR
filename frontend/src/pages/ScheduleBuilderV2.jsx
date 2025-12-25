@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import Alert from '../components/Alert';
@@ -6,6 +6,8 @@ import Alert from '../components/Alert';
 const ScheduleBuilderV2 = () => {
   const queryClient = useQueryClient();
   const scrollContainerRef = useRef(null);
+  const gridWrapperRef = useRef(null);
+  const gridContentRef = useRef(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -18,6 +20,14 @@ const ScheduleBuilderV2 = () => {
   const [draggedAssignment, setDraggedAssignment] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
   const [copiedAssignment, setCopiedAssignment] = useState(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [showManageTemplatesModal, setShowManageTemplatesModal] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [applyMode, setApplyMode] = useState('overwrite');
+  const [scheduleScale, setScheduleScale] = useState(1);
+  const [scaledHeight, setScaledHeight] = useState(null);
+  const [availableHeight, setAvailableHeight] = useState(null);
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -69,6 +79,15 @@ const ScheduleBuilderV2 = () => {
     enabled: !!selectedSchedule,
   });
 
+  // Fetch schedule templates
+  const { data: scheduleTemplatesData } = useQuery({
+    queryKey: ['schedule-templates'],
+    queryFn: async () => {
+      const { data } = await api.get('/schedule-templates');
+      return data.templates || [];
+    }
+  });
+
   // Fetch shift templates
   const { data: templatesData } = useQuery({
     queryKey: ['shift-templates'],
@@ -112,13 +131,57 @@ const ScheduleBuilderV2 = () => {
       const { data } = await api.post(`/schedules/v2/${scheduleId}/assignments`, payload);
       return data.assignment;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['schedule-v2-detail']);
+    onMutate: async (variables) => {
+      const { scheduleId, employeeId, shiftTemplateId } = variables;
+      if (!scheduleId) return;
+
+      await queryClient.cancelQueries(['schedule-v2-detail', scheduleId]);
+      const previous = queryClient.getQueryData(['schedule-v2-detail', scheduleId]);
+      const employee = employeesData?.find((e) => e._id === employeeId);
+      const shiftTemplate = templatesData?.find((t) => t._id === shiftTemplateId);
+      const optimisticAssignment = {
+        _id: `temp-${Date.now()}`,
+        ...variables,
+        employee: employee ? { ...employee } : { _id: employeeId },
+        shiftTemplate: shiftTemplate
+          ? { _id: shiftTemplate._id, name: shiftTemplate.name, color: shiftTemplate.color }
+          : undefined
+      };
+
+      queryClient.setQueryData(['schedule-v2-detail', scheduleId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          assignments: [...(old.assignments || []), optimisticAssignment]
+        };
+      });
+
+      return { previous, scheduleId, tempId: optimisticAssignment._id };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previous && context.scheduleId) {
+        queryClient.setQueryData(['schedule-v2-detail', context.scheduleId], context.previous);
+      }
+      setError(err.response?.data?.message || 'Nie udało się utworzyć przypisania');
+    },
+    onSuccess: (assignment, variables, context) => {
+      if (context?.scheduleId) {
+        queryClient.setQueryData(['schedule-v2-detail', context.scheduleId], (old) => {
+          if (!old) return old;
+          const assignments = (old.assignments || []).filter((a) => a._id !== context.tempId);
+          return {
+            ...old,
+            assignments: [...assignments, assignment]
+          };
+        });
+      }
       setShowModal(false);
       setSuccess('Przypisanie utworzone pomyślnie');
     },
-    onError: (err) => {
-      setError(err.response?.data?.message || 'Nie udało się utworzyć przypisania');
+    onSettled: (_data, _error, variables) => {
+      if (variables?.scheduleId) {
+        queryClient.invalidateQueries(['schedule-v2-detail', variables.scheduleId]);
+      }
     }
   });
 
@@ -128,28 +191,99 @@ const ScheduleBuilderV2 = () => {
       const { data } = await api.put(`/schedules/v2/assignments/${id}`, payload);
       return data.assignment;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['schedule-v2-detail']);
+    onMutate: async ({ id, scheduleId, employeeId, date, ...payload }) => {
+      if (!scheduleId) return;
+      await queryClient.cancelQueries(['schedule-v2-detail', scheduleId]);
+      const previous = queryClient.getQueryData(['schedule-v2-detail', scheduleId]);
+
+      const employee = employeeId ? employeesData?.find((e) => e._id === employeeId) : null;
+      const shiftTemplate = payload.shiftTemplateId
+        ? templatesData?.find((t) => t._id === payload.shiftTemplateId)
+        : null;
+
+      queryClient.setQueryData(['schedule-v2-detail', scheduleId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          assignments: (old.assignments || []).map((assignment) => {
+            if (assignment._id !== id) return assignment;
+            return {
+              ...assignment,
+              ...payload,
+              ...(employeeId && { employee: employee ? { ...employee } : { _id: employeeId } }),
+              ...(date && { date }),
+              ...(shiftTemplate && {
+                shiftTemplate: {
+                  _id: shiftTemplate._id,
+                  name: shiftTemplate.name,
+                  color: shiftTemplate.color
+                }
+              })
+            };
+          })
+        };
+      });
+
+      return { previous, scheduleId };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previous && context.scheduleId) {
+        queryClient.setQueryData(['schedule-v2-detail', context.scheduleId], context.previous);
+      }
+      setError(err.response?.data?.message || 'Nie udało się zaktualizować przypisania');
+    },
+    onSuccess: (assignment, variables, context) => {
+      if (context?.scheduleId) {
+        queryClient.setQueryData(['schedule-v2-detail', context.scheduleId], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            assignments: (old.assignments || []).map((item) =>
+              item._id === assignment._id ? assignment : item
+            )
+          };
+        });
+      }
       setShowModal(false);
       setSuccess('Przypisanie zaktualizowane pomyślnie');
     },
-    onError: (err) => {
-      setError(err.response?.data?.message || 'Nie udało się zaktualizować przypisania');
+    onSettled: (_data, _error, variables) => {
+      if (variables?.scheduleId) {
+        queryClient.invalidateQueries(['schedule-v2-detail', variables.scheduleId]);
+      }
     }
   });
 
   // Delete assignment mutation
   const deleteAssignmentMutation = useMutation({
-    mutationFn: async (id) => {
+    mutationFn: async ({ id }) => {
       await api.delete(`/schedules/v2/assignments/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['schedule-v2-detail']);
+    onMutate: async ({ id, scheduleId }) => {
+      if (!scheduleId) return;
+      await queryClient.cancelQueries(['schedule-v2-detail', scheduleId]);
+      const previous = queryClient.getQueryData(['schedule-v2-detail', scheduleId]);
+      queryClient.setQueryData(['schedule-v2-detail', scheduleId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          assignments: (old.assignments || []).filter((assignment) => assignment._id !== id)
+        };
+      });
+      return { previous, scheduleId };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previous && context.scheduleId) {
+        queryClient.setQueryData(['schedule-v2-detail', context.scheduleId], context.previous);
+      }
+      setError(err.response?.data?.message || 'Nie udało się usunąć przypisania');
+    },
+    onSuccess: (_data, variables) => {
+      if (variables?.scheduleId) {
+        queryClient.invalidateQueries(['schedule-v2-detail', variables.scheduleId]);
+      }
       setShowModal(false);
       setSuccess('Przypisanie usunięte pomyślnie');
-    },
-    onError: (err) => {
-      setError(err.response?.data?.message || 'Nie udało się usunąć przypisania');
     }
   });
 
@@ -165,6 +299,79 @@ const ScheduleBuilderV2 = () => {
     },
     onError: (err) => {
       setError(err.response?.data?.message || 'Nie udało się zaktualizować statusu');
+    }
+  });
+
+  // Template mutations
+  const createTemplateMutation = useMutation({
+    mutationFn: async (payload) => {
+      const { data } = await api.post('/schedule-templates', payload);
+      return data.template;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['schedule-templates']);
+      setShowSaveTemplateModal(false);
+      setTemplateName('');
+      setSuccess('Szablon zapisany');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się zapisać szablonu');
+    }
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, name }) => {
+      const { data } = await api.put(`/schedule-templates/${id}`, { name });
+      return data.template;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['schedule-templates']);
+      setSuccess('Szablon zaktualizowany');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się zaktualizować szablonu');
+    }
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/schedule-templates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['schedule-templates']);
+      setSuccess('Szablon usunięty');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się usunąć szablonu');
+    }
+  });
+
+  const applyTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, scheduleId, targetMonth, mode }) => {
+      const { data } = await api.post(`/schedule-templates/${templateId}/apply`, {
+        scheduleId,
+        targetMonth,
+        mode
+      });
+      return { ...data, scheduleId };
+    },
+    onSuccess: (data) => {
+      if (data.scheduleId) {
+        queryClient.setQueryData(['schedule-v2-detail', data.scheduleId], (old) => ({
+          ...(old || {}),
+          schedule: data.schedule || old?.schedule,
+          assignments: data.assignments || old?.assignments || []
+        }));
+      }
+      setSuccess('Szablon zastosowany');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się zastosować szablonu');
+    },
+    onSettled: (_data, _error, variables) => {
+      if (variables?.scheduleId) {
+        queryClient.invalidateQueries(['schedule-v2-detail', variables.scheduleId]);
+      }
     }
   });
 
@@ -215,10 +422,113 @@ const ScheduleBuilderV2 = () => {
     return map;
   }, [tasksData]);
 
+  const recalcScale = useCallback(() => {
+    if (!gridWrapperRef.current || !gridContentRef.current) return;
+
+    const contentHeight = gridContentRef.current.offsetHeight;
+    if (!contentHeight) return;
+
+    const { top } = gridWrapperRef.current.getBoundingClientRect();
+    const nextAvailableHeight = window.innerHeight - top - 24; // leave small breathing room
+    const rawScale = nextAvailableHeight / contentHeight;
+
+    // Prefer keeping the grid at least 75% size for readability, but if the viewport is tighter
+    // allow a graceful degradation (down to 0.65) to fully fit without vertical scrollbars.
+    const preferredScale = Math.min(1, Math.max(0.75, rawScale));
+    const fallbackScale = Math.max(rawScale, 0.65);
+    const nextScale = rawScale < 0.75 ? fallbackScale : preferredScale;
+
+    setScheduleScale(nextScale);
+    setScaledHeight(contentHeight * nextScale);
+    setAvailableHeight(nextAvailableHeight);
+  }, []);
+
+  useEffect(() => {
+    recalcScale();
+    const observerTarget = gridContentRef.current;
+    if (!observerTarget) return () => {};
+
+    const resizeObserver = new ResizeObserver(() => recalcScale());
+    resizeObserver.observe(observerTarget);
+    window.addEventListener('resize', recalcScale);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', recalcScale);
+    };
+  }, [recalcScale, scheduleData, employeesData, daysInMonth.length]);
+
   const handleCreateSchedule = () => {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
     const name = `Grafik ${monthStr}`;
     createScheduleMutation.mutate({ name, month: monthStr, year });
+  };
+
+  useEffect(() => {
+    if (!selectedTemplateId && scheduleTemplatesData?.length) {
+      setSelectedTemplateId(scheduleTemplatesData[0]._id);
+    }
+  }, [selectedTemplateId, scheduleTemplatesData]);
+
+  const buildTemplatePayload = useCallback(() => {
+    if (!scheduleData?.assignments?.length) {
+      setError('Brak danych grafiku do zapisania');
+      return null;
+    }
+
+    if (!templateName.trim()) {
+      setError('Podaj nazwę szablonu');
+      return null;
+    }
+
+    const assignments = scheduleData.assignments.map((assignment) => ({
+      employeeId: assignment.employee._id,
+      date: new Date(assignment.date).toISOString().split('T')[0],
+      type: assignment.type,
+      startTime: assignment.startTime,
+      endTime: assignment.endTime,
+      shiftTemplateId: assignment.shiftTemplate?._id,
+      notes: assignment.notes,
+      color: assignment.color
+    }));
+
+    return {
+      name: templateName.trim(),
+      assignments,
+      month: selectedMonth,
+      year
+    };
+  }, [scheduleData, selectedMonth, templateName, year]);
+
+  const handleSaveTemplate = () => {
+    const payload = buildTemplatePayload();
+    if (!payload) return;
+    createTemplateMutation.mutate(payload);
+  };
+
+  const handleApplyTemplate = () => {
+    if (!selectedTemplateId || !selectedSchedule) {
+      setError('Wybierz szablon oraz grafik docelowy');
+      return;
+    }
+
+    applyTemplateMutation.mutate({
+      templateId: selectedTemplateId,
+      scheduleId: selectedSchedule._id,
+      targetMonth: selectedMonth,
+      mode: applyMode
+    });
+  };
+
+  const handleRenameTemplate = (id, name) => {
+    updateTemplateMutation.mutate({ id, name });
+  };
+
+  const handleDeleteTemplate = (id) => {
+    deleteTemplateMutation.mutate(id);
+    if (selectedTemplateId === id) {
+      setSelectedTemplateId('');
+    }
   };
 
   const handleCellClick = (employee, date) => {
@@ -287,6 +597,7 @@ const ScheduleBuilderV2 = () => {
       // Update the assignment with new employee and date
       await updateAssignmentMutation.mutateAsync({
         id: draggedAssignment._id,
+        scheduleId: selectedSchedule._id,
         employeeId: targetEmployeeId,
         date: targetDateStr,
         type: draggedAssignment.type,
@@ -347,6 +658,7 @@ const ScheduleBuilderV2 = () => {
     if (modalData.existing) {
       updateAssignmentMutation.mutate({
         id: modalData.existing._id,
+        scheduleId: selectedSchedule._id,
         ...formData
       });
     } else {
@@ -361,7 +673,7 @@ const ScheduleBuilderV2 = () => {
 
   const handleDeleteAssignment = () => {
     if (modalData.existing) {
-      deleteAssignmentMutation.mutate(modalData.existing._id);
+      deleteAssignmentMutation.mutate({ id: modalData.existing._id, scheduleId: selectedSchedule._id });
     }
   };
 
@@ -422,7 +734,7 @@ const ScheduleBuilderV2 = () => {
   }, [schedulesData, selectedSchedule]);
 
   return (
-    <div className="w-full space-y-4 animate-fade-in">
+    <div className="w-full space-y-4 animate-fade-in overflow-hidden">
       {/* Header */}
       <div className="app-card p-4 sm:p-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -534,138 +846,194 @@ const ScheduleBuilderV2 = () => {
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 {selectedSchedule.name}
               </h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  selectedSchedule.status === 'published'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                }`}>
-                  {selectedSchedule.status === 'published' ? 'Opublikowany' : 'Wersja robocza'}
-                </span>
-                {selectedSchedule.status === 'draft' ? (
-                  <button
-                    className="btn-primary px-3 py-2 text-sm"
-                    onClick={() =>
-                      updateScheduleStatusMutation.mutate({
-                        id: selectedSchedule._id,
-                        status: 'published'
-                      })
-                    }
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedSchedule.status === 'published'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  }`}>
+                    {selectedSchedule.status === 'published' ? 'Opublikowany' : 'Wersja robocza'}
+                  </span>
+                  {selectedSchedule.status === 'draft' ? (
+                    <button
+                      className="btn-primary px-3 py-2 text-sm"
+                      onClick={() =>
+                        updateScheduleStatusMutation.mutate({
+                          id: selectedSchedule._id,
+                          status: 'published'
+                        })
+                      }
+                    >
+                      Opublikuj grafik
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-secondary px-3 py-2 text-sm"
+                      onClick={() =>
+                        updateScheduleStatusMutation.mutate({
+                          id: selectedSchedule._id,
+                          status: 'draft'
+                        })
+                      }
+                    >
+                      Cofnij publikację
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="input-primary min-w-[180px]"
                   >
-                    Opublikuj grafik
-                  </button>
-                ) : (
-                  <button
-                    className="btn-secondary px-3 py-2 text-sm"
-                    onClick={() =>
-                      updateScheduleStatusMutation.mutate({
-                        id: selectedSchedule._id,
-                        status: 'draft'
-                      })
-                    }
+                    <option value="">Wybierz szablon</option>
+                    {scheduleTemplatesData?.map((template) => (
+                      <option key={template._id} value={template._id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={applyMode}
+                    onChange={(e) => setApplyMode(e.target.value)}
+                    className="input-primary"
                   >
-                    Cofnij publikację
+                    <option value="overwrite">Nadpisz</option>
+                    <option value="merge">Scal</option>
+                  </select>
+                  <button className="btn-secondary" onClick={() => setShowSaveTemplateModal(true)}>
+                    Zapisz jako szablon
                   </button>
-                )}
+                  <button
+                    className="btn-primary"
+                    onClick={handleApplyTemplate}
+                    disabled={applyTemplateMutation.isLoading}
+                  >
+                    {applyTemplateMutation.isLoading ? 'Trwa stosowanie...' : 'Zastosuj szablon'}
+                  </button>
+                  <button className="btn-secondary" onClick={() => setShowManageTemplatesModal(true)}>
+                    Zarządzaj
+                  </button>
+                </div>
               </div>
             </div>
 
             {scheduleLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2"
-                     style={{ borderColor: 'var(--theme-primary)' }}></div>
+                <div
+                  className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2"
+                  style={{ borderColor: 'var(--theme-primary)' }}
+                ></div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
               </div>
             ) : (
               <div
-                ref={scrollContainerRef}
-                className="w-full overflow-x-visible"
+                className="relative overflow-hidden"
+                ref={gridWrapperRef}
+                style={{
+                  height: scaledHeight ? `${scaledHeight}px` : undefined,
+                  maxHeight: availableHeight ? `${availableHeight}px` : undefined
+                }}
               >
-                <table className="w-full border-collapse table-fixed" style={{ tableLayout: 'fixed' }}>
-                  <thead>
-                    <tr>
-                      <th
-                        className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
-                        style={{ 
-                          width: '200px', 
-                          minWidth: '200px',
-                          boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
-                        }}
-                        >
-                          Pracownik
-                      </th>
-                      {daysInMonth.map((date, index) => (
-                        <th
-                          key={index}
-                          className="p-1 sm:p-1.5 text-center text-[10px] sm:text-[11px] font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
-                          style={{ width: '42px', minWidth: '42px' }}
-                        >
-                          <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
-                          <div className="font-bold">{date.getDate()}</div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {employeesData?.map((employee) => (
-                      <tr key={employee._id}>
-                        <td 
-                          className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
-                          style={{ 
-                            width: '200px', 
-                            minWidth: '200px',
-                            boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
-                          }}
-                        >
-                          <div className="truncate">
-                            {employee.firstName} {employee.lastName}
-                          </div>
-                        </td>
-                        {daysInMonth.map((date, index) => {
-                          const dateStr = date.toISOString().split('T')[0];
-                          const key = `${employee._id}-${dateStr}`;
-                          const assignment = assignmentsByEmployeeAndDate[key];
-                          const tasks = tasksByEmployeeAndDate[key] || [];
-                          
-                          return (
-                            <td 
+                <div
+                  ref={gridContentRef}
+                  className="w-full"
+                  style={{
+                    transform: `scale(${scheduleScale})`,
+                    transformOrigin: 'top left',
+                    width: `${(1 / scheduleScale) * 100}%`,
+                    minWidth: '100%'
+                  }}
+                >
+                  <div ref={scrollContainerRef} className="w-full overflow-x-auto">
+                    <table className="w-full border-collapse table-fixed" style={{ tableLayout: 'fixed' }}>
+                      <thead>
+                        <tr>
+                          <th
+                            className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600"
+                            style={{
+                              width: '200px',
+                              minWidth: '200px',
+                              boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                            }}
+                          >
+                            Pracownik
+                          </th>
+                          {daysInMonth.map((date, index) => (
+                            <th
                               key={index}
-                              onClick={(e) => {
-                                // Don't open modal if clicking on draggable assignment
-                                if (e.target.closest('[draggable="true"]')) return;
-                                handleCellClick(employee, date);
-                              }}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, employee, date)}
-                              className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative"
-                              style={{ minWidth: '42px' }}
+                              className="p-1 sm:p-1.5 text-center text-[10px] sm:text-[11px] font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
+                              style={{ width: '42px', minWidth: '42px' }}
                             >
-                              {assignment && (
-                                <div 
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, assignment)}
-                                  onDragEnd={handleDragEnd}
-                                  className="px-2 py-1 rounded text-[10px] sm:text-xs text-white text-center font-medium truncate cursor-move"
-                                  style={{ backgroundColor: getAssignmentColor(assignment) }}
-                                  title={`${getAssignmentDisplay(assignment)} (przeciągnij aby przenieść)`}
-                                >
-                                  {getAssignmentDisplay(assignment)}
-                                </div>
-                              )}
-                              {tasks.length > 0 && (
-                                <div 
-                                  className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: 'var(--theme-primary)' }}
-                                  title={`${tasks.length} zadań`}
-                                />
-                              )}
+                              <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                              <div className="font-bold">{date.getDate()}</div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeesData?.map((employee) => (
+                          <tr key={employee._id}>
+                            <td
+                              className="sticky left-0 z-20 bg-white dark:bg-slate-800 p-2 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600"
+                              style={{
+                                width: '200px',
+                                minWidth: '200px',
+                                boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
+                              }}
+                            >
+                              <div className="truncate">
+                                {employee.firstName} {employee.lastName}
+                              </div>
                             </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            {daysInMonth.map((date, index) => {
+                              const dateStr = date.toISOString().split('T')[0];
+                              const key = `${employee._id}-${dateStr}`;
+                              const assignment = assignmentsByEmployeeAndDate[key];
+                              const tasks = tasksByEmployeeAndDate[key] || [];
+
+                              return (
+                                <td
+                                  key={index}
+                                  onClick={(e) => {
+                                    if (e.target.closest('[draggable="true"]')) return;
+                                    handleCellClick(employee, date);
+                                  }}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleDrop(e, employee, date)}
+                                  className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative"
+                                  style={{ minWidth: '42px' }}
+                                >
+                                  {assignment && (
+                                    <div
+                                      draggable
+                                      onDragStart={(e) => handleDragStart(e, assignment)}
+                                      onDragEnd={handleDragEnd}
+                                      className="px-2 py-1 rounded text-[10px] sm:text-xs text-white text-center font-medium truncate cursor-move"
+                                      style={{ backgroundColor: getAssignmentColor(assignment) }}
+                                      title={`${getAssignmentDisplay(assignment)} (przeciągnij aby przenieść)`}
+                                    >
+                                      {getAssignmentDisplay(assignment)}
+                                    </div>
+                                  )}
+                                  {tasks.length > 0 && (
+                                    <div
+                                      className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: 'var(--theme-primary)' }}
+                                      title={`${tasks.length} zadań`}
+                                    />
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -680,6 +1048,25 @@ const ScheduleBuilderV2 = () => {
           onSave={handleSaveAssignment}
           onDelete={handleDeleteAssignment}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {showSaveTemplateModal && (
+        <TemplateSaveModal
+          value={templateName}
+          onChange={setTemplateName}
+          onClose={() => setShowSaveTemplateModal(false)}
+          onSave={handleSaveTemplate}
+          isSaving={createTemplateMutation.isLoading}
+        />
+      )}
+
+      {showManageTemplatesModal && (
+        <TemplateManagerModal
+          templates={scheduleTemplatesData || []}
+          onRename={handleRenameTemplate}
+          onDelete={handleDeleteTemplate}
+          onClose={() => setShowManageTemplatesModal(false)}
         />
       )}
     </div>
@@ -859,6 +1246,105 @@ const AssignmentModal = ({ data, templates, onSave, onDelete, onClose }) => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+const TemplateSaveModal = ({ value, onChange, onClose, onSave, isSaving }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Zapisz jako szablon</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nazwa szablonu</label>
+            <input
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="input-primary w-full"
+              placeholder="Np. Grafik miesięczny"
+            />
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Zapisujemy bieżący układ zmian dla wszystkich pracowników w tym miesiącu.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button className="btn-secondary" onClick={onClose}>
+              Anuluj
+            </button>
+            <button className="btn-primary" onClick={onSave} disabled={isSaving || !value.trim()}>
+              {isSaving ? 'Zapisywanie...' : 'Zapisz szablon'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TemplateManagerModal = ({ templates, onRename, onDelete, onClose }) => {
+  const [localNames, setLocalNames] = useState(() =>
+    Object.fromEntries((templates || []).map((template) => [template._id, template.name]))
+  );
+
+  useEffect(() => {
+    setLocalNames(Object.fromEntries((templates || []).map((template) => [template._id, template.name])));
+  }, [templates]);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Zarządzaj szablonami</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          {(templates || []).length === 0 && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Brak zapisanych szablonów.</p>
+          )}
+          {templates?.map((template) => (
+            <div
+              key={template._id}
+              className="flex flex-col sm:flex-row sm:items-center gap-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3"
+            >
+              <input
+                className="input-primary flex-1"
+                value={localNames[template._id] || ''}
+                onChange={(e) =>
+                  setLocalNames({
+                    ...localNames,
+                    [template._id]: e.target.value
+                  })
+                }
+              />
+              <div className="flex gap-2">
+                <button
+                  className="btn-secondary"
+                  onClick={() => onRename(template._id, localNames[template._id] || '')}
+                >
+                  Zmień nazwę
+                </button>
+                <button className="btn-danger" onClick={() => onDelete(template._id)}>
+                  Usuń
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
