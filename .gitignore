@@ -11,3 +11,6 @@ yarn-error.log*
 /uploads
 /dist
 /build
+
+# API environment
+/apps/api/.env

@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  passwordHash  String
+  fullName      String?
+  memberships   Membership[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Organization {
+  id           String        @id @default(uuid())
+  name         String
+  memberships  Membership[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Membership {
+  id             String          @id @default(uuid())
+  userId         String
+  orgId          String
+  role           MembershipRole
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([userId, orgId])
+}

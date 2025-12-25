@@ -1,36 +1,62 @@
 # KadryHR API V2
 
-Modern HR Management System API built with NestJS and Fastify.
+Modern HR Management System API built with NestJS, Fastify, PostgreSQL, Prisma, and JWT-based authentication.
 
 ## Features
 
 - **NestJS Framework**: Scalable and maintainable architecture
 - **Fastify**: High-performance HTTP server
+- **PostgreSQL + Prisma**: Type-safe database access with migrations
+- **Authentication & RBAC**: JWT with organization-aware memberships and roles
 - **Swagger/OpenAPI**: Interactive API documentation (dev/staging only)
 - **TypeScript**: Type-safe development
 - **Shared Validation**: Zod schemas from @kadryhr/shared
 
 ## Getting Started
 
-### Installation
-
-```bash
-npm install
-```
+### Prerequisites
+- Node.js 22+
+- Docker (for local PostgreSQL)
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and configure:
+Copy `.env.example` to `.env` inside `apps/api` and adjust if needed:
 
-```env
-NODE_ENV=development
-PORT=3001
-API_PREFIX=v2
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+Key variables:
+- `DATABASE_URL` - PostgreSQL connection string (defaults to local docker-compose database)
+- `JWT_SECRET` / `JWT_EXPIRES_IN` - JWT signing configuration
+
+### Start local PostgreSQL
+
+Use the provided docker-compose file from the repository root:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d postgres
+```
+
+### Install dependencies & generate Prisma client
+
+```bash
+npm install --workspace apps/api
+cd apps/api
+npx prisma generate
+```
+
+### Apply database migrations
+
+```bash
+cd apps/api
+npx prisma migrate dev
 ```
 
 ### Development
 
 ```bash
+cd apps/api
 npm run dev
 ```
 
@@ -43,27 +69,20 @@ npm run start:prod
 
 ## API Endpoints
 
-### Health Check
+### Health & Version
+- `GET /v2/health`
+- `GET /v2/version`
 
-```
-GET /v2/health
-```
-
-Returns API health status.
-
-### Version Information
-
-```
-GET /v2/version
-```
-
-Returns API version and environment information.
+### Authentication (API V2)
+- `POST /v2/auth/register` — creates User + Organization + OWNER membership, returns JWT
+- `POST /v2/auth/login` — returns JWT with default organization context
+- `GET /v2/auth/me` — requires `Authorization: Bearer <token>` and organization context (token `orgId` or `X-Org-Id` header); returns user profile, memberships, and active organization
 
 ## Documentation
 
 Swagger UI is available at `/docs` in development and staging environments:
 
-```
+```bash
 http://localhost:3001/docs
 ```
 
@@ -84,22 +103,25 @@ npm run test:cov
 
 ```
 src/
-├── health/           # Health check module
-│   ├── dto/
-│   ├── health.controller.ts
-│   └── health.module.ts
-├── version/          # Version info module
-│   ├── dto/
-│   ├── version.controller.ts
-│   └── version.module.ts
-├── app.module.ts     # Root module
-└── main.ts           # Application entry point
+├── app.module.ts      # Root module
+├── auth/              # Auth module (JWT, registration, login, profile)
+├── common/            # Shared guards & decorators (org context, current user)
+├── health/            # Health check module
+├── prisma/            # PrismaService (database access)
+├── version/           # Version info module
+└── main.ts            # Application entry point
+prisma/
+└── schema.prisma      # Database schema (User, Organization, Membership)
 ```
 
-## Technology Stack
+## RBAC & Multi-tenancy
+- **Roles**: OWNER, ADMIN, MANAGER, EMPLOYEE
+- **Org guard**: Uses `X-Org-Id` header or JWT `orgId` claim and verifies membership
+- **JWT payload**: Contains user id, email, and current organization id for context-sensitive access
 
-- **NestJS**: 10.x
-- **Fastify**: Latest
-- **TypeScript**: 5.x
-- **Swagger**: @nestjs/swagger
-- **Validation**: Zod (via @kadryhr/shared)
+## Local Verification Checklist
+1. Start PostgreSQL (`docker compose -f docker-compose.dev.yml up -d postgres`).
+2. Copy `.env.example` to `.env` and confirm `DATABASE_URL` matches the running database.
+3. Run `npm install --workspace apps/api`.
+4. Run `npx prisma migrate dev` to create the schema and generate the Prisma client.
+5. Start API with `npm run dev` and exercise `/v2/auth/register`, `/v2/auth/login`, and `/v2/auth/me` with a valid `X-Org-Id`.
