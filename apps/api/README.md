@@ -83,7 +83,7 @@ npm run start:prod
 Swagger UI is available at `/docs` in development and staging environments:
 
 ```bash
-http://localhost:3001/docs
+http://localhost:3002/docs
 ```
 
 ## Testing
@@ -124,4 +124,18 @@ prisma/
 2. Copy `.env.example` to `.env` and confirm `DATABASE_URL` matches the running database.
 3. Run `npm install --workspace apps/api`.
 4. Run `npx prisma migrate dev` to create the schema and generate the Prisma client.
-5. Start API with `npm run dev` and exercise `/v2/auth/register`, `/v2/auth/login`, and `/v2/auth/me` with a valid `X-Org-Id`.
+5. Start API with `npm run dev` (default port **3002**) and exercise `/v2/auth/register`, `/v2/auth/login`, and `/v2/auth/me` with a valid `X-Org-Id`.
+
+### Running with the full dev stack
+
+The root `docker-compose.dev.yml` can launch PostgreSQL, the NestJS API (port **3002**), the Next.js web app (port **3001**), and the legacy Vite frontend (port **3000**) behind a single Nginx proxy on `http://localhost:8080`:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Key proxy routes:
+
+- `http://localhost:8080/schedule-builder` → Next.js V2 app (default)
+- `http://localhost:8080/schedule-builder/legacy` → legacy Vite fallback
+- `http://localhost:8080/api/v2/health` → NestJS API V2 health check

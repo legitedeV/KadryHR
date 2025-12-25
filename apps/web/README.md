@@ -32,6 +32,18 @@ npm run dev
 ```
 Aplikacja będzie dostępna pod adresem: http://localhost:3001
 
+### Full dev stack (API + web + legacy)
+
+Użyj `docker-compose.dev.yml`, aby jednocześnie uruchomić Postgresa, API V2, Next.js (WEB V2) i legacy Vite za reverse proxy na porcie 8080:
+
+```bash
+docker compose -f ../../docker-compose.dev.yml up --build
+```
+
+- `http://localhost:8080/schedule-builder` — WEB V2 (domyślny kreator)
+- `http://localhost:8080/schedule-builder/legacy` — awaryjny dostęp do legacy Vite
+- `http://localhost:8080/api/v2/health` — health-check API V2
+
 ### Build
 ```bash
 npm run build
