@@ -27,6 +27,7 @@ const ScheduleBuilderV2 = () => {
   const [applyMode, setApplyMode] = useState('overwrite');
   const [scheduleScale, setScheduleScale] = useState(1);
   const [scaledHeight, setScaledHeight] = useState(null);
+  const [availableHeight, setAvailableHeight] = useState(null);
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -428,11 +429,18 @@ const ScheduleBuilderV2 = () => {
     if (!contentHeight) return;
 
     const { top } = gridWrapperRef.current.getBoundingClientRect();
-    const availableHeight = window.innerHeight - top - 24; // leave small breathing room
-    const nextScale = Math.min(1, Math.max(0.75, availableHeight / contentHeight));
+    const nextAvailableHeight = window.innerHeight - top - 24; // leave small breathing room
+    const rawScale = nextAvailableHeight / contentHeight;
+
+    // Prefer keeping the grid at least 75% size for readability, but if the viewport is tighter
+    // allow a graceful degradation (down to 0.65) to fully fit without vertical scrollbars.
+    const preferredScale = Math.min(1, Math.max(0.75, rawScale));
+    const fallbackScale = Math.max(rawScale, 0.65);
+    const nextScale = rawScale < 0.75 ? fallbackScale : preferredScale;
 
     setScheduleScale(nextScale);
     setScaledHeight(contentHeight * nextScale);
+    setAvailableHeight(nextAvailableHeight);
   }, []);
 
   useEffect(() => {
@@ -922,9 +930,12 @@ const ScheduleBuilderV2 = () => {
               </div>
             ) : (
               <div
-                className="relative"
+                className="relative overflow-hidden"
                 ref={gridWrapperRef}
-                style={scaledHeight ? { height: `${scaledHeight}px` } : undefined}
+                style={{
+                  height: scaledHeight ? `${scaledHeight}px` : undefined,
+                  maxHeight: availableHeight ? `${availableHeight}px` : undefined
+                }}
               >
                 <div
                   ref={gridContentRef}
