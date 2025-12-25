@@ -1,0 +1,6 @@
+{
+  "title": "feat: Add Next.js V2 web application",
+  "body": "## Opis zmian\n\nDodano nową aplikację webową V2 zbudowaną w Next.js 16 jako równoległy system do legacy app.\n\n## Zmiany\n\n- ✅ Utworzono `apps/web` z Next.js 16, TypeScript i Tailwind CSS\n- ✅ Zaimplementowano podstawowe strony:\n  - `/` - Strona główna z nawigacją\n  - `/health` - Status systemu i usług\n  - `/login` - Formularz logowania (placeholder)\n  - `/schedule-builder` - Kreator grafików (placeholder layout)\n- ✅ Skonfigurowano system motywów zgodny z legacy app\n- ✅ Ustawiono routing i strukturę layoutu\n- ✅ Aplikacja działa na porcie 3001 (równolegle do legacy na 3000)\n\n## Technologie\n\n- Next.js 16 (App Router)\n- TypeScript 5\n- Tailwind CSS 4\n- React 19\n\n## Testowanie\n\n```bash\n# Development\ncd apps/web\nnpm run dev\n# Aplikacja dostępna na http://localhost:3001\n\n# Build\nnpm run build\n```\n\n## Status\n\n- ✅ Aplikacja kompiluje się bez błędów\n- ✅ Dev server uruchamia się poprawnie\n- ✅ Wszystkie strony renderują się prawidłowo\n- ⏳ Gotowe do integracji z API V2\n\n## Następne kroki\n\n1. Integracja z API V2\n2. Implementacja autentykacji\n3. Dodanie pełnej funkcjonalności kreatora grafików\n4. Rozbudowa o kolejne moduły systemu",
+  "head": "agent/zadanie-dodaj-now-aplikacj-web-jako-v2-nextjs-type-7878",
+  "base": "main"
+}
