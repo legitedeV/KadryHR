@@ -16,6 +16,8 @@ const ScheduleBuilderV2 = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [draggedAssignment, setDraggedAssignment] = useState(null);
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [copiedAssignment, setCopiedAssignment] = useState(null);
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -151,6 +153,21 @@ const ScheduleBuilderV2 = () => {
     }
   });
 
+  const updateScheduleStatusMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
+      const { data } = await api.put(`/schedules/v2/${id}`, { status });
+      return data.schedule;
+    },
+    onSuccess: (schedule) => {
+      queryClient.invalidateQueries(['schedules-v2']);
+      setSelectedSchedule(schedule);
+      setSuccess('Status grafiku zaktualizowany');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się zaktualizować statusu');
+    }
+  });
+
   // Get days in month
   const daysInMonth = useMemo(() => {
     const days = [];
@@ -210,7 +227,9 @@ const ScheduleBuilderV2 = () => {
     const dateStr = date.toISOString().split('T')[0];
     const key = `${employee._id}-${dateStr}`;
     const existing = assignmentsByEmployeeAndDate[key];
-    
+
+    setSelectedCell({ employeeId: employee._id, date: dateStr });
+
     setModalData({
       employee,
       date: dateStr,
@@ -281,8 +300,47 @@ const ScheduleBuilderV2 = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Nie udało się przenieść zmiany');
     }
-    
+
     setDraggedAssignment(null);
+  };
+
+  const handleCopyShortcut = () => {
+    if (!selectedCell) return;
+    const key = `${selectedCell.employeeId}-${selectedCell.date}`;
+    const existing = assignmentsByEmployeeAndDate[key];
+    if (!existing) {
+      setError('Brak zmiany do skopiowania w wybranej komórce');
+      return;
+    }
+    setCopiedAssignment(existing);
+    setSuccess('Zmiana skopiowana (Ctrl+V aby wkleić)');
+  };
+
+  const handlePasteShortcut = async () => {
+    if (!selectedSchedule || !selectedCell || !copiedAssignment) return;
+
+    const targetKey = `${selectedCell.employeeId}-${selectedCell.date}`;
+    if (assignmentsByEmployeeAndDate[targetKey]) {
+      setError('Docelowa komórka ma już zmianę. Usuń ją najpierw.');
+      return;
+    }
+
+    try {
+      await createAssignmentMutation.mutateAsync({
+        scheduleId: selectedSchedule._id,
+        employeeId: selectedCell.employeeId,
+        date: selectedCell.date,
+        type: copiedAssignment.type,
+        startTime: copiedAssignment.startTime,
+        endTime: copiedAssignment.endTime,
+        notes: copiedAssignment.notes,
+        color: copiedAssignment.color,
+        shiftTemplateId: copiedAssignment.shiftTemplate?._id
+      });
+      setSuccess('Zmiana wklejona');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Nie udało się wkleić zmiany');
+    }
   };
 
   const handleSaveAssignment = (formData) => {
@@ -338,6 +396,23 @@ const ScheduleBuilderV2 = () => {
     if (!assignment) return 'transparent';
     return assignment.color || '#3b82f6';
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      if (e.ctrlKey && key === 'c') {
+        e.preventDefault();
+        handleCopyShortcut();
+      }
+      if (e.ctrlKey && key === 'v') {
+        e.preventDefault();
+        handlePasteShortcut();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCell, copiedAssignment, assignmentsByEmployeeAndDate, selectedSchedule]);
 
   // Auto-select first schedule if available
   React.useEffect(() => {
@@ -459,14 +534,39 @@ const ScheduleBuilderV2 = () => {
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 {selectedSchedule.name}
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  selectedSchedule.status === 'published' 
+                  selectedSchedule.status === 'published'
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                 }`}>
                   {selectedSchedule.status === 'published' ? 'Opublikowany' : 'Wersja robocza'}
                 </span>
+                {selectedSchedule.status === 'draft' ? (
+                  <button
+                    className="btn-primary px-3 py-2 text-sm"
+                    onClick={() =>
+                      updateScheduleStatusMutation.mutate({
+                        id: selectedSchedule._id,
+                        status: 'published'
+                      })
+                    }
+                  >
+                    Opublikuj grafik
+                  </button>
+                ) : (
+                  <button
+                    className="btn-secondary px-3 py-2 text-sm"
+                    onClick={() =>
+                      updateScheduleStatusMutation.mutate({
+                        id: selectedSchedule._id,
+                        status: 'draft'
+                      })
+                    }
+                  >
+                    Cofnij publikację
+                  </button>
+                )}
               </div>
             </div>
 
@@ -477,28 +577,28 @@ const ScheduleBuilderV2 = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ładowanie...</p>
               </div>
             ) : (
-              <div 
+              <div
                 ref={scrollContainerRef}
-                className="w-full overflow-x-auto"
+                className="w-full overflow-x-visible"
               >
-                <table className="w-full border-collapse" style={{ minWidth: '100%' }}>
+                <table className="w-full border-collapse table-fixed" style={{ tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th 
+                      <th
                         className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 p-2 text-left text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600" 
                         style={{ 
                           width: '200px', 
                           minWidth: '200px',
                           boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)'
                         }}
-                      >
-                        Pracownik
+                        >
+                          Pracownik
                       </th>
                       {daysInMonth.map((date, index) => (
-                        <th 
+                        <th
                           key={index}
-                          className="p-1 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
-                          style={{ minWidth: '60px' }}
+                          className="p-1 sm:p-1.5 text-center text-[10px] sm:text-[11px] font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800"
+                          style={{ width: '42px', minWidth: '42px' }}
                         >
                           <div className="hidden sm:block whitespace-nowrap">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
                           <div className="font-bold">{date.getDate()}</div>
@@ -538,7 +638,7 @@ const ScheduleBuilderV2 = () => {
                               onDragOver={handleDragOver}
                               onDrop={(e) => handleDrop(e, employee, date)}
                               className="p-1 sm:p-2 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative"
-                              style={{ minWidth: '60px' }}
+                              style={{ minWidth: '42px' }}
                             >
                               {assignment && (
                                 <div 
