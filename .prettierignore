@@ -1,0 +1,8 @@
+node_modules
+apps/legacy-api/node_modules
+apps/legacy-web/node_modules
+packages/shared/node_modules
+dist
+build
+coverage
+uploads

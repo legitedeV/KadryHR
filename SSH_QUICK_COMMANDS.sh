@@ -25,7 +25,7 @@ promote_to_super_admin() {
     echo -e "${YELLOW}🔄 Promowanie użytkownika: ${EMAIL}${NC}"
     echo ""
     
-    cd /home/deploy/apps/kadryhr-app/backend || exit 1
+    cd /home/deploy/apps/kadryhr-app/apps/legacy-api || exit 1
     
     if [ -f "scripts/manageRoles.js" ]; then
         node scripts/manageRoles.js promote "$EMAIL"
@@ -52,7 +52,7 @@ list_admins() {
     echo -e "${YELLOW}📋 Lista adminów i super adminów:${NC}"
     echo ""
     
-    cd /home/deploy/apps/kadryhr-app/backend || exit 1
+    cd /home/deploy/apps/kadryhr-app/apps/legacy-api || exit 1
     
     if [ -f "scripts/manageRoles.js" ]; then
         node scripts/manageRoles.js list
@@ -82,7 +82,7 @@ check_user() {
     echo -e "${YELLOW}🔍 Sprawdzanie użytkownika: ${EMAIL}${NC}"
     echo ""
     
-    cd /home/deploy/apps/kadryhr-app/backend || exit 1
+    cd /home/deploy/apps/kadryhr-app/apps/legacy-api || exit 1
     
     if [ -f "scripts/manageRoles.js" ]; then
         node scripts/manageRoles.js check "$EMAIL"
@@ -216,7 +216,7 @@ show_help() {
     echo "  ./SSH_QUICK_COMMANDS.sh check admin@kadryhr.local"
     echo ""
     echo "Bezpośrednie komendy Node.js:"
-    echo "  cd /home/deploy/apps/kadryhr-app/backend"
+    echo "  cd /home/deploy/apps/kadryhr-app/apps/legacy-api"
     echo "  node scripts/manageRoles.js promote admin@kadryhr.local"
     echo "  node scripts/manageRoles.js list"
     echo "  node scripts/manageRoles.js check admin@kadryhr.local"

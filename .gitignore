@@ -1,7 +1,11 @@
 /node_modules
-backend/node_modules
-frontend/node_modules
+/apps/legacy-api/node_modules
+/apps/legacy-web/node_modules
+/packages/shared/node_modules
 .env
-backend/.env
+/apps/legacy-api/.env
 npm-debug.log*
 yarn-error.log*
+/uploads
+/dist
+/build
