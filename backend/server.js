@@ -2,28 +2,37 @@ const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
-// Load environment variables from common locations to stay backward compatible
+// Load the first available .env file to keep compatibility with existing deployments
 const envCandidates = [
   path.join(__dirname, '.env'),
   path.join(__dirname, '..', '.env'),
   path.join(__dirname, '..', 'apps', 'legacy-api', '.env'),
+  path.join(__dirname, '..', 'apps', 'api', '.env'),
 ];
 
-for (const envPath of envCandidates) {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-  }
+const envPath = envCandidates.find(fs.existsSync);
+if (envPath) {
+  dotenv.config({ path: envPath });
 }
 
-const legacyApiDir = path.join(__dirname, '..', 'apps', 'legacy-api');
-const legacyEntrypoint = path.join(legacyApiDir, 'server.js');
+const entryCandidates = [
+  // Legacy Express API
+  path.join(__dirname, '..', 'apps', 'legacy-api', 'server.js'),
+  path.join(__dirname, '..', 'apps', 'legacy-api', 'dist', 'server.js'),
+  // New NestJS API build output
+  path.join(__dirname, '..', 'apps', 'api', 'dist', 'main.js'),
+];
 
-if (!fs.existsSync(legacyEntrypoint)) {
-  throw new Error(`Legacy API entrypoint not found at ${legacyEntrypoint}`);
+const entrypoint = entryCandidates.find(fs.existsSync);
+if (!entrypoint) {
+  const errorDetails = entryCandidates.map((candidate) => ` - ${candidate}`).join('\n');
+  throw new Error(`Backend entrypoint not found. Checked:\n${errorDetails}`);
 }
 
-// Ensure process.cwd matches the legacy API location for relative assets and logging
-process.chdir(legacyApiDir);
+const entryDir = path.dirname(entrypoint);
+if (process.cwd() !== entryDir) {
+  process.chdir(entryDir);
+}
 
-// Start the legacy Express server
-require(legacyEntrypoint);
+// Start the selected backend entrypoint (CommonJS only)
+require(entrypoint);
