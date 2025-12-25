@@ -28,6 +28,23 @@ const ScheduleBuilderV2 = () => {
   const [scheduleScale, setScheduleScale] = useState(1);
   const [scaledHeight, setScaledHeight] = useState(null);
   const [availableHeight, setAvailableHeight] = useState(null);
+  const [generatorConfig, setGeneratorConfig] = useState(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .split('T')[0];
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      .toISOString()
+      .split('T')[0];
+
+    return {
+      startDate: start,
+      endDate: end,
+      daysOfWeek: [1, 2, 3, 4, 5],
+      employeeIds: [],
+      shiftTemplateId: ''
+    };
+  });
 
   // Parse selected month
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -375,6 +392,22 @@ const ScheduleBuilderV2 = () => {
     }
   });
 
+  const generateScheduleMutation = useMutation({
+    mutationFn: async ({ scheduleId, config }) => {
+      const { data } = await api.post(`/schedules/v2/${scheduleId}/generate`, config);
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      if (variables?.scheduleId) {
+        queryClient.invalidateQueries(['schedule-v2-detail', variables.scheduleId]);
+      }
+      setSuccess(data?.message || 'Grafik wygenerowany');
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || 'Nie udało się wygenerować grafiku');
+    }
+  });
+
   // Get days in month
   const daysInMonth = useMemo(() => {
     const days = [];
@@ -458,6 +491,17 @@ const ScheduleBuilderV2 = () => {
     };
   }, [recalcScale, scheduleData, employeesData, daysInMonth.length]);
 
+  useEffect(() => {
+    const start = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const end = new Date(year, month, 0).toISOString().split('T')[0];
+
+    setGeneratorConfig((prev) => ({
+      ...prev,
+      startDate: start,
+      endDate: end
+    }));
+  }, [year, month]);
+
   const handleCreateSchedule = () => {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
     const name = `Grafik ${monthStr}`;
@@ -469,6 +513,24 @@ const ScheduleBuilderV2 = () => {
       setSelectedTemplateId(scheduleTemplatesData[0]._id);
     }
   }, [selectedTemplateId, scheduleTemplatesData]);
+
+  useEffect(() => {
+    if (templatesData?.length && !generatorConfig.shiftTemplateId) {
+      setGeneratorConfig((prev) => ({
+        ...prev,
+        shiftTemplateId: templatesData[0]._id
+      }));
+    }
+  }, [templatesData, generatorConfig.shiftTemplateId]);
+
+  useEffect(() => {
+    if (employeesData?.length && generatorConfig.employeeIds.length === 0) {
+      setGeneratorConfig((prev) => ({
+        ...prev,
+        employeeIds: employeesData.map((emp) => emp._id)
+      }));
+    }
+  }, [employeesData, generatorConfig.employeeIds.length]);
 
   const buildTemplatePayload = useCallback(() => {
     if (!scheduleData?.assignments?.length) {
@@ -677,6 +739,81 @@ const ScheduleBuilderV2 = () => {
     }
   };
 
+  const handleScheduleSelect = (scheduleId) => {
+    const nextSchedule = schedulesData?.find((schedule) => schedule._id === scheduleId);
+    if (nextSchedule) {
+      setSelectedSchedule(nextSchedule);
+    }
+  };
+
+  const toggleGeneratorEmployee = (employeeId) => {
+    setGeneratorConfig((prev) => {
+      const exists = prev.employeeIds.includes(employeeId);
+      const employeeIds = exists
+        ? prev.employeeIds.filter((id) => id !== employeeId)
+        : [...prev.employeeIds, employeeId];
+      return { ...prev, employeeIds };
+    });
+  };
+
+  const toggleGeneratorDay = (day) => {
+    setGeneratorConfig((prev) => {
+      const exists = prev.daysOfWeek.includes(day);
+      const daysOfWeek = exists ? prev.daysOfWeek.filter((d) => d !== day) : [...prev.daysOfWeek, day];
+      return { ...prev, daysOfWeek };
+    });
+  };
+
+  const handlePresetDays = (days) => {
+    setGeneratorConfig((prev) => ({
+      ...prev,
+      daysOfWeek: days
+    }));
+  };
+
+  const handleFillMonthRange = () => {
+    const start = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const end = new Date(year, month, 0).toISOString().split('T')[0];
+    setGeneratorConfig((prev) => ({ ...prev, startDate: start, endDate: end }));
+  };
+
+  const handleSelectAllEmployees = () => {
+    if (!employeesData?.length) return;
+    setGeneratorConfig((prev) => ({
+      ...prev,
+      employeeIds: employeesData.map((emp) => emp._id)
+    }));
+  };
+
+  const handleClearEmployees = () => {
+    setGeneratorConfig((prev) => ({ ...prev, employeeIds: [] }));
+  };
+
+  const handleRunGenerator = () => {
+    if (!selectedSchedule) {
+      setError('Wybierz grafik do automatycznego uzupełnienia');
+      return;
+    }
+
+    if (!generatorConfig.employeeIds.length) {
+      setError('Wybierz przynajmniej jednego pracownika');
+      return;
+    }
+
+    if (!generatorConfig.startDate || !generatorConfig.endDate) {
+      setError('Podaj zakres dat');
+      return;
+    }
+
+    generateScheduleMutation.mutate({
+      scheduleId: selectedSchedule._id,
+      config: {
+        ...generatorConfig,
+        daysOfWeek: generatorConfig.daysOfWeek.sort()
+      }
+    });
+  };
+
   const handlePrevMonth = () => {
     const date = new Date(year, month - 2, 1);
     setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
@@ -708,6 +845,23 @@ const ScheduleBuilderV2 = () => {
     if (!assignment) return 'transparent';
     return assignment.color || '#3b82f6';
   };
+
+  const coverageStats = useMemo(() => {
+    const totalEmployees = employeesData?.length || 0;
+    const totalCells = totalEmployees * daysInMonth.length;
+    const totalAssignments = scheduleData?.assignments?.length || 0;
+    const leaves = scheduleData?.assignments?.filter((assignment) => assignment.type === 'leave').length || 0;
+    const sickLeaves = scheduleData?.assignments?.filter((assignment) => assignment.type === 'sick').length || 0;
+    const daysOff = scheduleData?.assignments?.filter((assignment) => assignment.type === 'off').length || 0;
+
+    return {
+      coverage: totalCells ? Math.round((totalAssignments / totalCells) * 100) : 0,
+      leaves,
+      sickLeaves,
+      daysOff,
+      totalAssignments
+    };
+  }, [daysInMonth.length, employeesData, scheduleData]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -780,6 +934,232 @@ const ScheduleBuilderV2 = () => {
       {/* Alerts */}
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
+
+      {/* Schedule selection + generator */}
+      <div className="app-card p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 font-semibold">
+              Grafiki w miesiącu
+            </p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {schedulesData?.length ? (
+                schedulesData.map((schedule) => {
+                  const isActive = selectedSchedule?._id === schedule._id;
+                  return (
+                    <button
+                      key={schedule._id}
+                      onClick={() => handleScheduleSelect(schedule._id)}
+                      className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 transition-all shadow-sm ${
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent'
+                          : 'bg-white/60 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
+                      }`}
+                    >
+                      <span className="truncate max-w-[160px]">{schedule.name}</span>
+                      <span
+                        className={`text-[11px] px-2 py-0.5 rounded-full ${
+                          schedule.status === 'published'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                        }`}
+                      >
+                        {schedule.status === 'published' ? 'Live' : 'Draft'}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  Brak grafiku dla miesiąca - utwórz nowy.
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button className="btn-secondary" onClick={handleFillMonthRange}>
+              Pełny zakres miesiąca
+            </button>
+            <button className="btn-primary" onClick={handleCreateSchedule}>
+              + Nowy grafik
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 space-y-4">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 font-semibold">
+                    Asystent grafiku
+                  </p>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Automatyczne uzupełnianie zmian
+                  </h3>
+                </div>
+                {selectedSchedule && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{selectedSchedule.name}</span>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Zakres dat</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={generatorConfig.startDate}
+                      onChange={(e) => setGeneratorConfig((prev) => ({ ...prev, startDate: e.target.value }))}
+                      className="input-primary"
+                    />
+                    <input
+                      type="date"
+                      value={generatorConfig.endDate}
+                      onChange={(e) => setGeneratorConfig((prev) => ({ ...prev, endDate: e.target.value }))}
+                      className="input-primary"
+                    />
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <button className="btn-secondary px-3 py-1.5 text-sm" onClick={() => handlePresetDays([1, 2, 3, 4, 5])}>
+                      Pon - Pt
+                    </button>
+                    <button className="btn-secondary px-3 py-1.5 text-sm" onClick={() => handlePresetDays([0, 6])}>
+                      Weekendy
+                    </button>
+                    <button className="btn-secondary px-3 py-1.5 text-sm" onClick={() => handlePresetDays([0, 1, 2, 3, 4, 5, 6])}>
+                      Wszystkie dni
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {['Nd', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So'].map((label, idx) => {
+                      const active = generatorConfig.daysOfWeek.includes(idx);
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => toggleGeneratorDay(idx)}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                            active
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Szablon zmiany</label>
+                  <select
+                    value={generatorConfig.shiftTemplateId}
+                    onChange={(e) => setGeneratorConfig((prev) => ({ ...prev, shiftTemplateId: e.target.value }))}
+                    className="input-primary"
+                  >
+                    {templatesData?.map((template) => (
+                      <option key={template._id} value={template._id}>
+                        {template.name} ({template.startTime} - {template.endTime})
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mt-3">Pracownicy</label>
+                  <div className="flex gap-2 mb-2">
+                    <button className="btn-secondary px-3 py-1.5 text-xs" onClick={handleSelectAllEmployees}>
+                      Wszyscy
+                    </button>
+                    <button className="btn-secondary px-3 py-1.5 text-xs" onClick={handleClearEmployees}>
+                      Wyczyść
+                    </button>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 p-2 flex flex-wrap gap-2">
+                    {employeesData?.map((employee) => {
+                      const active = generatorConfig.employeeIds.includes(employee._id);
+                      return (
+                        <button
+                          key={employee._id}
+                          type="button"
+                          onClick={() => toggleGeneratorEmployee(employee._id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            active
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {employee.firstName} {employee.lastName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <button
+                  className="btn-primary"
+                  onClick={handleRunGenerator}
+                  disabled={generateScheduleMutation.isLoading}
+                >
+                  {generateScheduleMutation.isLoading ? 'Generowanie...' : 'Uzupełnij grafik automatycznie'}
+                </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Wybierz dni tygodnia, zakres dat i pracowników. System doda zmiany z wybranego szablonu.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/60 p-4">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 font-semibold">Podgląd</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pokrycie</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{coverageStats.coverage}%</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{coverageStats.totalAssignments} zmian</span>
+                </div>
+                <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                    style={{ width: `${Math.min(100, coverageStats.coverage)}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Urlopy / L4</p>
+                <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {coverageStats.leaves} urlopów
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">{coverageStats.sickLeaves} L4, {coverageStats.daysOff} dni wolne</div>
+              </div>
+            </div>
+            {selectedSchedule && (
+              <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Status grafiku</p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedSchedule.name}</span>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedSchedule.status === 'published'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                    }`}
+                  >
+                    {selectedSchedule.status === 'published' ? 'Opublikowany' : 'Wersja robocza'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Kliknij przyciski poniżej tabeli, aby opublikować lub cofnąć publikację.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Validation Summary */}
       {selectedSchedule && validationData && (
