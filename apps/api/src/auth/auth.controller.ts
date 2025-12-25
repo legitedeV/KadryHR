@@ -9,17 +9,22 @@ import { OrgContextDecorator } from '../common/decorators/org-context.decorator'
 import { OrgGuard } from '../common/guards/org.guard';
 import { JwtPayload } from './auth.types';
 import { OrgContext } from '../common/interfaces/request-with-auth.interface';
+import { RateLimit } from '../common/decorators/rate-limit.decorator';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 
 @Controller('auth')
+@UseGuards(RateLimitGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @RateLimit({ limit: 5, ttlMs: 60_000 })
   async register(@Body() dto: RegisterDto): Promise<AuthResponse> {
     return this.authService.register(dto);
   }
 
   @Post('login')
+  @RateLimit({ limit: 10, ttlMs: 60_000 })
   async login(@Body() dto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(dto);
   }

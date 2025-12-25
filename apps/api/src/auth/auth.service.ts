@@ -16,12 +16,14 @@ import {
   OrganizationSummary,
   UserWithMemberships,
 } from './auth.types';
+import { MailQueueService } from '../notifications/mail-queue.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly mailQueue: MailQueueService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
@@ -60,6 +62,9 @@ export class AuthService {
         include: { organization: true },
       }),
     ]);
+
+    // Queue welcome email asynchronously to avoid blocking the request lifecycle
+    this.mailQueue.queueWelcomeEmail(dto.email, membership.organization.name);
 
     const organizations = await this.getOrganizationSummaries(user.id);
     const currentOrgId = membership.organization.id;
@@ -136,7 +141,8 @@ export class AuthService {
 
     const organizations = this.mapOrganizationSummaries(user.memberships);
 
-    const currentOrganization = organizations.find((org) => org.id === orgId) || null;
+    const currentOrganization =
+      organizations.find((org) => org.id === orgId) || null;
 
     return {
       user: this.sanitizeUser(user),

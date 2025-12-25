@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { setupBrowserSentry } from "../lib/observability/sentry-lite";
 
 export type AuthState = {
   email: string;
@@ -22,6 +23,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setupBrowserSentry();
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
