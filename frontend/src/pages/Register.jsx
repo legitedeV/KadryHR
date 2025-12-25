@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -65,7 +64,6 @@ const Register = () => {
         background: `radial-gradient(circle at 22% 18%, rgba(var(--theme-primary-rgb),0.18), transparent 36%),
         radial-gradient(circle at 82% 0%, rgba(14,165,233,0.15), transparent 40%)`
       }} />
-      <ThemeSwitcher />
       <div className="w-full max-w-md bg-white/90 dark:bg-slate-900/85 rounded-3xl shadow-[0_22px_60px_-32px_rgba(15,23,42,0.7)] border border-slate-200/70 dark:border-slate-800/80 px-7 py-7 backdrop-blur-xl">
         <div className="flex items-center justify-between mb-3">
           <div>

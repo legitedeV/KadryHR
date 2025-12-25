@@ -3,7 +3,6 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { PERMISSIONS } from '../utils/permissions';
 import api from '../api/axios';
@@ -25,15 +24,11 @@ import {
   BellIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
   LinkIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
-  const { themeMode, updateThemeMode } = useTheme();
   const { hasPermission, hasAnyPermission, isAdmin } = usePermissions();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -179,39 +174,6 @@ const Sidebar = () => {
       adminOnly: true
     },
   ];
-
-  const ThemeToggle = ({ mode, icon: Icon, label, isActive }) => (
-    <button
-      onClick={() => updateThemeMode(mode)}
-      className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
-      style={{ color: 'var(--text-secondary)' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
-    >
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5" />
-        <span>{label}</span>
-      </div>
-      <div
-        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-sm"
-        style={isActive ? {
-          background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
-        } : {
-          backgroundColor: 'var(--border-secondary)'
-        }}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
-            isActive ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </div>
-    </button>
-  );
 
   const linkClasses = ({ isActive }) =>
     [
@@ -518,42 +480,6 @@ const Sidebar = () => {
                     </button>
                   )}
                 </Menu.Item>
-
-                {/* Theme Separator */}
-                <div 
-                  className="my-1 border-t"
-                  style={{ borderColor: 'var(--border-primary)' }}
-                />
-                
-                {/* Theme Section Header */}
-                <div className="px-4 py-2">
-                  <p 
-                    className="text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    Motyw
-                  </p>
-                </div>
-                
-                {/* Theme Options */}
-                <ThemeToggle
-                  mode="light"
-                  icon={SunIcon}
-                  label="Jasny"
-                  isActive={themeMode === 'light'}
-                />
-                <ThemeToggle
-                  mode="dark"
-                  icon={MoonIcon}
-                  label="Ciemny"
-                  isActive={themeMode === 'dark'}
-                />
-                <ThemeToggle
-                  mode="system"
-                  icon={ComputerDesktopIcon}
-                  label="Systemowy"
-                  isActive={themeMode === 'system'}
-                />
 
                 {/* Logout Separator */}
                 <div 

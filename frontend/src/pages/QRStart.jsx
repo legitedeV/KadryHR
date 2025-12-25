@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import Alert from '../components/Alert';
-import ThemeSwitcher from '../components/ThemeSwitcher';
 
 const QRStart = () => {
   const [searchParams] = useSearchParams();
@@ -120,7 +119,6 @@ const QRStart = () => {
           radial-gradient(circle at 50% 88%, rgba(37,99,235,0.14), transparent 40%)`
         }}
       />
-      <ThemeSwitcher />
 
       <div className="w-full max-w-xl relative z-10">
         <div className="mb-6 inline-flex items-center gap-3 rounded-full px-4 py-2 border border-white/60 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl shadow-[0_18px_60px_-36px_rgba(15,23,42,0.55)]">

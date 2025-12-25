@@ -3,15 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
 import {
   UserCircleIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
   BellIcon,
   ChatBubbleLeftRightIcon,
   XMarkIcon,
@@ -19,7 +15,6 @@ import {
 
 const TopBar = ({ title }) => {
   const { user, logout } = useAuth();
-  const { themeMode, updateThemeMode } = useTheme();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -80,35 +75,6 @@ const TopBar = ({ title }) => {
     }
     return null;
   };
-
-  const ThemeToggle = ({ mode, icon: Icon, label, isActive }) => (
-    <button
-      onClick={() => updateThemeMode(mode)}
-      className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5" />
-        <span>{label}</span>
-      </div>
-      {/* iOS-style toggle */}
-      <div
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          isActive
-            ? 'shadow-sm'
-            : 'bg-slate-300 dark:bg-slate-600'
-        }`}
-        style={isActive ? {
-          background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
-        } : {}}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
-            isActive ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </div>
-    </button>
-  );
 
   return (
     <div className="sticky top-0 z-30 border-b border-white/60 dark:border-slate-800/70 bg-white/75 dark:bg-slate-950/70 backdrop-blur-xl shadow-sm">
@@ -225,36 +191,6 @@ const TopBar = ({ title }) => {
                       </button>
                     )}
                   </Menu.Item>
-
-                  {/* Theme Separator */}
-                  <div className="my-1 border-t border-white/60 dark:border-slate-800/70" />
-                  
-                  {/* Theme Section Header */}
-                  <div className="px-4 py-2">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                      Motyw
-                    </p>
-                  </div>
-                  
-                  {/* Theme Options */}
-                  <ThemeToggle
-                    mode="light"
-                    icon={SunIcon}
-                    label="Jasny"
-                    isActive={themeMode === 'light'}
-                  />
-                  <ThemeToggle
-                    mode="dark"
-                    icon={MoonIcon}
-                    label="Ciemny"
-                    isActive={themeMode === 'dark'}
-                  />
-                  <ThemeToggle
-                    mode="system"
-                    icon={ComputerDesktopIcon}
-                    label="Systemowy"
-                    isActive={themeMode === 'system'}
-                  />
 
                   {/* Logout Separator */}
                   <div className="my-1 border-t border-white/60 dark:border-slate-800/70" />

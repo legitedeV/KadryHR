@@ -388,11 +388,7 @@ const updateThemePreference = asyncHandler(async (req, res) => {
     return res.status(401).json({ message: 'Nieautoryzowany' });
   }
 
-  const { themePreference } = req.body;
-
-  if (!['light', 'dark', 'system'].includes(themePreference)) {
-    return res.status(400).json({ message: 'Nieprawidłowa preferencja motywu' });
-  }
+  const themePreference = 'dark';
 
   await User.collection.updateOne(
     { _id: new mongoose.Types.ObjectId(String(userId)) },
@@ -405,7 +401,7 @@ const updateThemePreference = asyncHandler(async (req, res) => {
   );
 
   return res.status(200).json({
-    message: 'Preferencja motywu zaktualizowana',
+    message: 'Motyw KadryHR jest ustawiony na stały tryb nocny',
     themePreference,
   });
 });
@@ -426,7 +422,7 @@ const getSettings = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     settings: user.settings || {},
-    themePreference: user.themePreference || 'system',
+    themePreference: 'dark',
   });
 });
 

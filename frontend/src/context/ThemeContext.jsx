@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext(null);
 
@@ -27,19 +27,9 @@ export const ThemeProvider = ({ children }) => {
 
   const applyModeToRoot = (mode) => {
     const root = document.documentElement;
-    const effectiveTheme = mode === 'system' ? getSystemTheme() : mode;
-
-    root.dataset.theme = effectiveTheme;
-
-    // Set data-theme attribute for CSS variables
-    root.setAttribute('data-theme', effectiveTheme);
-    
-    // Keep .dark class for backward compatibility
-    if (effectiveTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    root.dataset.theme = 'dark';
+    root.setAttribute('data-theme', 'dark');
+    root.classList.add('dark');
   };
 
   // Apply theme mode to document
@@ -92,9 +82,9 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--theme-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
   }, []);
 
-  // Ensure correct theme applied on initial render
+  // Ensure correct theme applied on initial render and lock to dark
   useEffect(() => {
-    applyModeToRoot(themeMode);
+    applyDarkMode();
   }, []);
 
   const updateThemeMode = (mode) => {
