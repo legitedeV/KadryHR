@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const employeeSchema = new mongoose.Schema({
+  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+  // Deprecated – kept for backwards compatibility, use organization instead
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
@@ -59,8 +61,9 @@ const employeeSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes for performance
+employeeSchema.index({ organization: 1, isActive: 1 });
+employeeSchema.index({ organization: 1, firstName: 1, lastName: 1 });
 employeeSchema.index({ companyId: 1, isActive: 1 });
-employeeSchema.index({ companyId: 1, firstName: 1, lastName: 1 });
 employeeSchema.index({ user: 1 });
 employeeSchema.index({ createdAt: -1 });
 

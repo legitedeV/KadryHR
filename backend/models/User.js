@@ -31,6 +31,12 @@ const userSchema = new mongoose.Schema(
       enum: ['admin', 'user', 'super_admin'],
       default: 'user',
     },
+    organization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true,
+    },
     supervisor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -71,6 +77,9 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+userSchema.index({ email: 1 });
+userSchema.index({ organization: 1, role: 1 });
 
 // Hashowanie hasła przed zapisem
 userSchema.pre('save', async function (next) {

@@ -27,23 +27,40 @@ const Employees = () => {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  const [statusError, setStatusError] = useState(null);
+
+  const statusOptions = [
+    { value: 'all', label: 'Wszyscy' },
+    { value: 'active', label: 'Aktywni' },
+    { value: 'inactive', label: 'Nieaktywni' },
+  ];
 
   // Check if user has permission to view employees
   const canViewEmployees = hasAnyPermission(['employees.view', 'employees.create', 'employees.edit', 'employees.delete']);
   const canCreateEmployees = hasPermission('employees.create');
   const canDeleteEmployees = hasPermission('employees.delete');
+  const canEditEmployees = hasPermission('employees.edit');
 
   // Pobieranie listy pracowników
   const { data: employeesData, isLoading, error: listError } = useQuery({
-    queryKey: ['employees'],
+    queryKey: ['employees', statusFilter],
     queryFn: async () => {
-      const { data } = await api.get('/employees');
+      const params = {};
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      const { data } = await api.get('/employees', { params });
       return data;
     },
     enabled: canViewEmployees && !permissionsLoading,
   });
 
   const employees = employeesData?.employees || [];
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter((emp) => emp.isActive !== false).length;
+  const inactiveEmployees = totalEmployees - activeEmployees;
 
   // Mutacja dodawania pracownika
   const createMutation = useMutation({
@@ -122,6 +139,28 @@ const Employees = () => {
     deleteMutation.mutate(id);
   };
 
+  const toggleStatus = async (employee) => {
+    if (!canEditEmployees) return;
+    const nextStatus = !employee.isActive;
+    setStatusError(null);
+    setUpdatingStatusId(employee._id);
+
+    try {
+      await api.patch(`/employees/${employee._id}`, {
+        isActive: nextStatus,
+      });
+      queryClient.invalidateQueries(['employees']);
+    } catch (err) {
+      console.error('Nie udało się zaktualizować statusu pracownika', err);
+      setStatusError(
+        err?.response?.data?.message ||
+          'Nie udało się zaktualizować statusu. Spróbuj ponownie.'
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const scrollToForm = () => {
     const formElement = document.getElementById('new-employee-form');
     if (formElement) {
@@ -169,20 +208,46 @@ const Employees = () => {
         title="Pracownicy"
         description="Zarządzaj listą pracowników, stawkami i godzinami pracy w jednym miejscu."
         meta={[
-          { label: 'Łącznie w systemie', value: `${employees.length || 0} osób` },
-          { label: 'Domyślne godziny', value: `${form.hoursPerMonth} h/mies.` },
-          { label: 'Twoja rola', value: user?.role === 'admin' || user?.role === 'super_admin' ? 'Administrator' : 'Pracownik' },
+          { label: 'Łącznie w systemie', value: `${totalEmployees} osób` },
+          { label: 'Aktywni', value: `${activeEmployees} osób` },
+          { label: 'Nieaktywni', value: `${inactiveEmployees} osób` },
         ]}
-        actions={canCreateEmployees && (
-          <button
-            type="button"
-            onClick={scrollToForm}
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white shadow-md"
-            style={{ background: 'linear-gradient(120deg, var(--theme-primary), var(--theme-secondary))' }}
-          >
-            <PlusIcon className="w-4 h-4" />
-            Dodaj pracownika
-          </button>
+        actions={(
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-2">
+            {canCreateEmployees && (
+              <button
+                type="button"
+                onClick={scrollToForm}
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white shadow-md"
+                style={{ background: 'linear-gradient(120deg, var(--theme-primary), var(--theme-secondary))' }}
+              >
+                <PlusIcon className="w-4 h-4" />
+                Dodaj pracownika
+              </button>
+            )}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-1">
+              {statusOptions.map((option) => {
+                const isActiveOption = statusFilter === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setStatusFilter(option.value)}
+                    className={`
+                      inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200
+                      ${
+                        isActiveOption
+                          ? 'bg-white text-theme-primary shadow-sm'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      }
+                    `}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
       />
 
@@ -366,9 +431,16 @@ const Employees = () => {
       )}
 
       <div className="app-card p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-          Lista pracowników
-        </h2>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Lista pracowników
+          </h2>
+          {statusError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 max-w-md">
+              {statusError}
+            </div>
+          )}
+        </div>
 
         {isLoading ? (
           <p className="text-xs text-slate-500">Ładowanie...</p>
@@ -387,6 +459,7 @@ const Employees = () => {
                     <th className="py-2 pr-4 text-left font-medium">Imię i nazwisko</th>
                     <th className="py-2 px-4 text-left font-medium">Email</th>
                     <th className="py-2 px-4 text-left font-medium">Stanowisko</th>
+                    <th className="py-2 px-4 text-left font-medium">Status</th>
                     <th className="py-2 px-4 text-right font-medium">Stawka (PLN/h)</th>
                     <th className="py-2 px-4 text-right font-medium">
                       Pensja miesięczna
@@ -411,6 +484,33 @@ const Employees = () => {
                       <td className="py-2 px-4 text-slate-700">
                         {emp.position || '-'}
                       </td>
+                      <td className="py-2 px-4">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide ${
+                              emp.isActive !== false
+                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-500 border border-slate-200'
+                            }`}
+                          >
+                            {emp.isActive !== false ? 'Aktywny' : 'Nieaktywny'}
+                          </span>
+                          {canEditEmployees && (
+                            <button
+                              type="button"
+                              onClick={() => toggleStatus(emp)}
+                              disabled={updatingStatusId === emp._id}
+                              className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-200 hover:border-theme-primary hover:text-theme-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {updatingStatusId === emp._id
+                                ? 'Aktualizowanie...'
+                                : emp.isActive !== false
+                                ? 'Dezaktywuj'
+                                : 'Aktywuj'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-2 px-4 text-right text-slate-700">
                         {emp.hourlyRate != null ? emp.hourlyRate.toFixed(2) : '-'}
                       </td>
@@ -420,16 +520,18 @@ const Employees = () => {
                           : '-'}
                       </td>
                       <td className="py-2 pl-4 text-right">
-                        {canDeleteEmployees && (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(emp._id)}
-                            disabled={deleteMutation.isPending}
-                            className="inline-flex items-center rounded-lg border border-red-200 dark:border-red-800 px-2 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {canDeleteEmployees && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(emp._id)}
+                              disabled={deleteMutation.isPending}
+                              className="inline-flex items-center rounded-lg border border-red-200 dark:border-red-800 px-2 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -453,11 +555,18 @@ const Employees = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                        {emp.monthlySalary != null
-                          ? `${emp.monthlySalary.toFixed(2)} zł / m-c`
-                          : '-'}
+                      <div className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-wide border ${
+                        emp.isActive !== false
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}>
+                        {emp.isActive !== false ? 'Aktywny' : 'Nieaktywny'}
                       </div>
+                      {emp.monthlySalary != null && (
+                        <div className="mt-1 text-xs font-semibold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                          {`${emp.monthlySalary.toFixed(2)} zł / m-c`}
+                        </div>
+                      )}
                       {emp.hourlyRate != null && (
                         <div className="text-[11px] text-slate-500">
                           {emp.hourlyRate.toFixed(2)} zł / h
@@ -471,10 +580,26 @@ const Employees = () => {
                       <span className="font-medium">Godziny/m-c:</span>{' '}
                       {emp.hoursPerMonth != null ? emp.hoursPerMonth : '-'}
                     </div>
+                    {canEditEmployees && (
+                      <div className="text-right">
+                        <button
+                          type="button"
+                          onClick={() => toggleStatus(emp)}
+                          disabled={updatingStatusId === emp._id}
+                          className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-200 hover:border-theme-primary hover:text-theme-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {updatingStatusId === emp._id
+                            ? 'Aktualizowanie...'
+                            : emp.isActive !== false
+                            ? 'Dezaktywuj'
+                            : 'Aktywuj'}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {canDeleteEmployees && (
-                    <div className="mt-2 flex justify-end">
+                  <div className="mt-2 flex items-center justify-end gap-2">
+                    {canDeleteEmployees && (
                       <button
                         type="button"
                         onClick={() => handleDelete(emp._id)}
@@ -483,8 +608,8 @@ const Employees = () => {
                       >
                         {deleteMutation.isPending ? 'Usuwanie...' : 'Usuń'}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
