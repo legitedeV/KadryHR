@@ -204,6 +204,11 @@ const ScheduleBuilderV2 = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalState, setModalState] = useState({ employeeId: '', date: '', shiftTemplateId: '', notes: '', noteType: '' });
   const [dragState, setDragState] = useState(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectionRect, setSelectionRect] = useState(null);
+  const [isPointerSelecting, setIsPointerSelecting] = useState(false);
+  const [copyBuffer, setCopyBuffer] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const daysInMonth = useMemo(() => buildDays(selectedMonth), [selectedMonth]);
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -340,7 +345,13 @@ const ScheduleBuilderV2 = () => {
     });
   }, [employeesData, searchTerm, statusFilter, assignments]);
 
+  const resetSelection = () => {
+    setSelectionRect(null);
+    setIsPointerSelecting(false);
+  };
+
   const openModal = (employeeId, dateKey) => {
+    if (selectionMode) return;
     setModalState((prev) => {
       const key = `${employeeId}-${dateKey}`;
       const existing = assignmentsByKey[key];
@@ -385,6 +396,10 @@ const ScheduleBuilderV2 = () => {
     setModalOpen(false);
   };
 
+  useEffect(() => {
+    resetSelection();
+  }, [selectedSchedule?._id, selectedMonth, assignments.length]);
+
   const handleMonthChange = (direction) => {
     const date = new Date(`${selectedMonth}-01T00:00:00`);
     date.setMonth(date.getMonth() + direction);
@@ -392,10 +407,102 @@ const ScheduleBuilderV2 = () => {
   };
 
   const handleDragStart = (assignment, employeeId, dateKey) => {
+    if (selectionMode) return;
     setDragState({ assignment, sourceEmployeeId: employeeId, sourceDate: dateKey });
   };
 
   const handleDragEnd = () => setDragState(null);
+
+  const selectionContainsKey = (employeeId, dateKey) => {
+    if (!selectionRect) return false;
+    return selectionRect.keys.has(`${employeeId}-${dateKey}`);
+  };
+
+  const pointerIndices = useMemo(() => {
+    if (!filteredEmployees.length) return { employees: {}, days: {} };
+    const employeeMap = {};
+    filteredEmployees.forEach((emp, idx) => {
+      employeeMap[emp._id] = idx;
+    });
+    const dayMap = {};
+    daysInMonth.forEach((day, idx) => {
+      dayMap[day.key] = idx;
+    });
+    return { employees: employeeMap, days: dayMap };
+  }, [filteredEmployees, daysInMonth]);
+
+  const clampRect = (start, end) => {
+    if (!start || !end) return null;
+    const [startEmp, startDay] = start;
+    const [endEmp, endDay] = end;
+    if (startEmp == null || startDay == null || endEmp == null || endDay == null) return null;
+
+    const minEmp = Math.min(startEmp, endEmp);
+    const maxEmp = Math.max(startEmp, endEmp);
+    const minDay = Math.min(startDay, endDay);
+    const maxDay = Math.max(startDay, endDay);
+
+    const keys = new Set();
+    for (let empIndex = minEmp; empIndex <= maxEmp; empIndex += 1) {
+      const employeeId = filteredEmployees[empIndex]?._id;
+      if (!employeeId) continue;
+      for (let dayIndex = minDay; dayIndex <= maxDay; dayIndex += 1) {
+        const dayKey = daysInMonth[dayIndex]?.key;
+        if (!dayKey) continue;
+        keys.add(`${employeeId}-${dayKey}`);
+      }
+    }
+
+    return {
+      minEmp,
+      maxEmp,
+      minDay,
+      maxDay,
+      keys,
+    };
+  };
+
+  const handlePointerDown = (employeeId, dayKey) => {
+    if (!selectionMode) return;
+    const empIdx = pointerIndices.employees[employeeId];
+    const dayIdx = pointerIndices.days[dayKey];
+    if (empIdx == null || dayIdx == null) return;
+    setIsPointerSelecting(true);
+    const rect = clampRect([empIdx, dayIdx], [empIdx, dayIdx]);
+    setSelectionRect(rect);
+  };
+
+  const handlePointerEnter = (employeeId, dayKey) => {
+    if (!selectionMode || !isPointerSelecting) return;
+    const empIdx = pointerIndices.employees[employeeId];
+    const dayIdx = pointerIndices.days[dayKey];
+    if (empIdx == null || dayIdx == null) return;
+    setSelectionRect((prev) => {
+      if (!prev) return clampRect([empIdx, dayIdx], [empIdx, dayIdx]);
+      return clampRect([prev.minEmp, prev.minDay], [empIdx, dayIdx]);
+    });
+  };
+
+  const handlePointerUp = () => {
+    if (!selectionMode) return;
+    setIsPointerSelecting(false);
+  };
+
+  const runBulkAction = async (actions, successMessage) => {
+    if (!actions.length) {
+      setAlert({ type: 'info', message: 'Brak zmian do wykonania.' });
+      return;
+    }
+    try {
+      setBulkLoading(true);
+      await Promise.all(actions);
+      setAlert({ type: 'success', message: successMessage });
+    } catch (err) {
+      setAlert({ type: 'error', message: err.response?.data?.message || 'Operacja nie powiodła się.' });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const handleDropOnCell = async (employeeId, dateKey) => {
     if (!dragState || !selectedSchedule) return;
@@ -451,6 +558,7 @@ const ScheduleBuilderV2 = () => {
     const key = `${employee._id}-${day.key}`;
     const assignment = assignmentsByKey[key];
     const isDragSource = dragState?.assignment?._id === assignment?._id;
+    const isSelected = selectionContainsKey(employee._id, day.key);
     const color = assignment?.shiftTemplate?.color || '#22c55e';
     const parsedNotes = parseNotes(assignment?.notes);
     const fallbackNote = parsedNotes.noteText || assignment?.type || '';
@@ -461,16 +569,30 @@ const ScheduleBuilderV2 = () => {
       : parsedNotes.noteType === 'Informacja'
       ? 'bg-sky-100 text-sky-700'
       : 'bg-slate-100 text-slate-600';
+    const showPlaceholder = !assignment && !selectionMode;
+    const selectionRing = isSelected ? 'ring-2 ring-theme-primary/40 border-theme-primary/60 bg-theme-primary/5' : '';
+
+    const commonHandlers = selectionMode
+      ? {
+          onMouseDown: () => handlePointerDown(employee._id, day.key),
+          onMouseEnter: () => handlePointerEnter(employee._id, day.key),
+          onMouseUp: handlePointerUp,
+        }
+      : {
+          onClick: () => openModal(employee._id, day.key),
+        };
+
     return (
       <button
         key={day.key}
-        onClick={() => openModal(employee._id, day.key)}
-        draggable={!!assignment}
+        {...commonHandlers}
+        draggable={!selectionMode && !!assignment}
         onDragStart={() => assignment && handleDragStart(assignment, employee._id, day.key)}
         onDragEnd={handleDragEnd}
         className={`group relative flex h-[4.25rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs transition-all duration-150 hover:-translate-y-[1px] hover:border-theme-primary hover:shadow-sm ${
-          assignment ? 'cursor-grab active:cursor-grabbing' : ''
-        } ${isDragSource ? 'ring-2 ring-theme-primary/40 border-theme-primary/60' : ''}`}
+          assignment && !selectionMode ? 'cursor-grab active:cursor-grabbing' : ''
+        } ${selectionRing}`}
+        onDoubleClick={() => !selectionMode && openModal(employee._id, day.key)}
       >
         {assignment ? (
           <div className="flex flex-col items-center text-center leading-tight gap-0.5">
@@ -495,7 +617,16 @@ const ScheduleBuilderV2 = () => {
             <div className="mt-1 h-1.5 w-12 rounded-full" style={{ backgroundColor: color }} />
           </div>
         ) : (
-          <span className="text-[11px] font-semibold text-slate-500 transition group-hover:text-theme-primary">Dodaj zmianę</span>
+          <span
+            className={`flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-400 transition group-hover:border-theme-primary group-hover:text-theme-primary ${
+              showPlaceholder ? '' : 'hidden'
+            }`}
+          >
+            +
+          </span>
+        )}
+        {selectionMode && !assignment && (
+          <span className="absolute inset-2 rounded-lg border border-dashed border-theme-primary/60" />
         )}
       </button>
     );
@@ -655,12 +786,13 @@ const ScheduleBuilderV2 = () => {
                     const hasAssignment = !!assignmentsByKey[key];
                     const isDropTarget =
                       !!dragState && !(dragState.sourceEmployeeId === employee._id && dragState.sourceDate === day.key);
+                    const isSelected = selectionContainsKey(employee._id, day.key);
                     return (
                       <div
                         key={`${employee._id}-${day.key}`}
                         className={`border-b border-slate-200 px-2 py-2 transition ${
                           isDropTarget && dragState ? 'bg-sky-50/70 ring-1 ring-sky-100' : ''
-                        } ${hasAssignment ? 'hover:bg-slate-50/70' : ''}`}
+                        } ${hasAssignment ? 'hover:bg-slate-50/70' : ''} ${isSelected ? 'bg-theme-primary/5' : ''}`}
                         onDragOver={(e) => {
                           if (dragState) e.preventDefault();
                         }}

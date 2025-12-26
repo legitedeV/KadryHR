@@ -27,7 +27,11 @@ const Alert = ({ type = 'info', title, message, onClose }) => {
   const style = styles[type] || styles.info;
 
   return (
-    <div className={`border rounded-lg p-4 ${style.container} animate-slide-down`}>
+    <div
+      className={`border rounded-lg p-4 ${style.container} animate-slide-down`}
+      role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
+      aria-live={type === 'error' || type === 'warning' ? 'assertive' : 'polite'}
+    >
       <div className="flex items-start gap-3">
         <div className={`flex-shrink-0 w-8 h-8 rounded-full ${style.iconBg} flex items-center justify-center`}>
           <span className="text-base">{style.icon}</span>
