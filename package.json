@@ -6,7 +6,6 @@
   "workspaces": [
     "apps/api",
     "apps/legacy-api",
-    "apps/legacy-web",
     "apps/web",
     "packages/shared"
   ],
