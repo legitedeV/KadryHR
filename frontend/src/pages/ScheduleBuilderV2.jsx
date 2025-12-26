@@ -31,6 +31,28 @@ const StatusBadge = ({ label, color }) => (
   </span>
 );
 
+const quickShiftTemplates = [
+  { key: 'shift-1', label: 'I zmiana', hours: '05:45 - 15:00', templateName: 'I zmiana', color: '#0ea5e9' },
+  { key: 'shift-2', label: 'II zmiana', hours: '14:45 - 23:00', templateName: 'II zmiana', color: '#a855f7' },
+  { key: 'delivery', label: 'D - Dostawa', hours: 'Godzina do ustalenia', templateName: 'Dostawa', color: '#f59e0b' },
+];
+
+const noteTypeOptions = [
+  { value: '', label: 'Brak' },
+  { value: 'Informacja', label: 'Informacja' },
+  { value: 'Pilne', label: 'Pilne' },
+  { value: 'Dostawa', label: 'Dostawa' },
+];
+
+const parseNotes = (notes) => {
+  if (!notes) return { noteType: '', noteText: '' };
+  const matched = noteTypeOptions.find((opt) => opt.value && notes.startsWith(`${opt.value}:`));
+  if (matched) {
+    return { noteType: matched.value, noteText: notes.replace(`${matched.value}:`, '').trim() };
+  }
+  return { noteType: '', noteText: notes };
+};
+
 const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemplates, formState, setFormState, loading }) => {
   if (!open) return null;
 
@@ -92,6 +114,50 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-700">Rodzaj notatki</label>
+              <select
+                value={formState.noteType || ''}
+                onChange={handleChange('noteType')}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-theme-primary focus:outline-none"
+              >
+                {noteTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-semibold text-slate-700">Szybkie szablony</span>
+              <div className="flex flex-wrap gap-2">
+                {quickShiftTemplates.map((template) => (
+                  <button
+                    key={template.key}
+                    type="button"
+                    onClick={() => {
+                      const match = shiftTemplates.find((t) =>
+                        t.name?.toLowerCase().includes(template.templateName.toLowerCase())
+                      );
+                      setFormState((prev) => ({
+                        ...prev,
+                        shiftTemplateId: match?._id || prev.shiftTemplateId,
+                        notes: template.hours,
+                        noteType: template.label.includes('Dostawa') ? 'Dostawa' : 'Informacja',
+                      }));
+                    }}
+                    className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-theme-primary hover:text-theme-primary"
+                    style={{ boxShadow: `0 6px 18px ${template.color}22` }}
+                  >
+                    {template.label}
+                    <span className="ml-1 text-[10px] text-slate-500">{template.hours}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-3">
@@ -136,7 +202,7 @@ const ScheduleBuilderV2 = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [alert, setAlert] = useState({ type: null, message: null });
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalState, setModalState] = useState({ employeeId: '', date: '', shiftTemplateId: '', notes: '' });
+  const [modalState, setModalState] = useState({ employeeId: '', date: '', shiftTemplateId: '', notes: '', noteType: '' });
   const [dragState, setDragState] = useState(null);
 
   const daysInMonth = useMemo(() => buildDays(selectedMonth), [selectedMonth]);
@@ -240,6 +306,12 @@ const ScheduleBuilderV2 = () => {
     }
   }, [schedules]);
 
+  useEffect(() => {
+    if (selectedSchedule?.month) {
+      setSelectedMonth(selectedSchedule.month);
+    }
+  }, [selectedSchedule]);
+
   const assignments = useMemo(() => scheduleDetail?.assignments || [], [scheduleDetail]);
   const assignmentsByKey = useMemo(() => {
     const map = {};
@@ -272,12 +344,14 @@ const ScheduleBuilderV2 = () => {
     setModalState((prev) => {
       const key = `${employeeId}-${dateKey}`;
       const existing = assignmentsByKey[key];
+      const parsedNotes = parseNotes(existing?.notes);
       return {
         ...prev,
         employeeId,
         date: dateKey,
         shiftTemplateId: existing?.shiftTemplate?._id || '',
-        notes: existing?.notes || '',
+        notes: parsedNotes.noteText,
+        noteType: parsedNotes.noteType,
         assignmentId: existing?._id,
       };
     });
@@ -286,12 +360,15 @@ const ScheduleBuilderV2 = () => {
 
   const handleSave = () => {
     if (!selectedSchedule) return;
+    const notes = modalState.noteType
+      ? `${modalState.noteType}: ${modalState.notes || ''}`.trim()
+      : modalState.notes;
     const payload = {
       scheduleId: selectedSchedule._id,
       employeeId: modalState.employeeId,
       date: modalState.date,
       shiftTemplateId: modalState.shiftTemplateId,
-      notes: modalState.notes,
+      notes,
     };
 
     if (modalState.assignmentId) {
@@ -375,6 +452,15 @@ const ScheduleBuilderV2 = () => {
     const assignment = assignmentsByKey[key];
     const isDragSource = dragState?.assignment?._id === assignment?._id;
     const color = assignment?.shiftTemplate?.color || '#22c55e';
+    const parsedNotes = parseNotes(assignment?.notes);
+    const fallbackNote = parsedNotes.noteText || assignment?.type || '';
+    const noteAccent = parsedNotes.noteType === 'Pilne'
+      ? 'bg-rose-100 text-rose-700'
+      : parsedNotes.noteType === 'Dostawa'
+      ? 'bg-amber-100 text-amber-700'
+      : parsedNotes.noteType === 'Informacja'
+      ? 'bg-sky-100 text-sky-700'
+      : 'bg-slate-100 text-slate-600';
     return (
       <button
         key={day.key}
@@ -382,18 +468,34 @@ const ScheduleBuilderV2 = () => {
         draggable={!!assignment}
         onDragStart={() => assignment && handleDragStart(assignment, employee._id, day.key)}
         onDragEnd={handleDragEnd}
-        className={`group relative flex h-14 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs transition hover:border-theme-primary ${
+        className={`group relative flex h-[4.25rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs transition-all duration-150 hover:-translate-y-[1px] hover:border-theme-primary hover:shadow-sm ${
           assignment ? 'cursor-grab active:cursor-grabbing' : ''
         } ${isDragSource ? 'ring-2 ring-theme-primary/40 border-theme-primary/60' : ''}`}
       >
         {assignment ? (
-          <div className="flex flex-col items-center text-center leading-tight">
+          <div className="flex flex-col items-center text-center leading-tight gap-0.5">
             <span className="text-[11px] font-semibold text-slate-800">{assignment.shiftTemplate?.name || 'Zmiana'}</span>
-            <span className="text-[10px] text-slate-500">{assignment.notes || assignment.type || 'Zaplanowano'}</span>
-            <div className="mt-1 h-1.5 w-10 rounded-full" style={{ backgroundColor: color }} />
+            <div className="flex flex-wrap items-center justify-center gap-1 text-[10px] text-slate-500">
+              {assignment.shiftTemplate?.startTime && assignment.shiftTemplate?.endTime && (
+                <span className="rounded-full bg-slate-100 px-2 py-[2px] font-semibold text-slate-700">
+                  {assignment.shiftTemplate.startTime} - {assignment.shiftTemplate.endTime}
+                </span>
+              )}
+              {parsedNotes.noteText && (
+                <span className={`rounded-full px-2 py-[2px] font-semibold ${noteAccent}`}>
+                  {parsedNotes.noteText}
+                </span>
+              )}
+              {!parsedNotes.noteText && fallbackNote && (
+                <span className="rounded-full bg-slate-100 px-2 py-[2px] font-semibold text-slate-600">
+                  {fallbackNote}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 h-1.5 w-12 rounded-full" style={{ backgroundColor: color }} />
           </div>
         ) : (
-          <span className="text-[11px] text-slate-400">Dodaj</span>
+          <span className="text-[11px] font-semibold text-slate-500 transition group-hover:text-theme-primary">Dodaj zmianę</span>
         )}
       </button>
     );
@@ -514,17 +616,24 @@ const ScheduleBuilderV2 = () => {
         </div>
 
         <div className="lg:col-span-9 app-card p-0 overflow-hidden">
-          <div className="w-full">
+          <div className="w-full overflow-x-auto pb-2">
             <div
-              className="grid w-full"
-              style={{ gridTemplateColumns: `200px repeat(${daysInMonth.length}, minmax(28px, 1fr))` }}
+              className="grid min-w-[1100px]"
+              style={{ gridTemplateColumns: `220px repeat(${daysInMonth.length}, minmax(34px, 1fr))` }}
             >
-              <div className="sticky left-0 z-10 bg-white px-3 py-2 border-b border-r border-slate-200">
+              <div className="sticky left-0 z-10 bg-white px-4 py-3 border-b border-r border-slate-200">
                 <p className="text-xs font-semibold text-slate-700">Pracownicy</p>
                 <p className="text-[11px] text-slate-500">Kliknij aby przypisać zmiany</p>
               </div>
               {daysInMonth.map((day) => (
-                <div key={day.key} className="border-b border-slate-200 px-2 py-2 text-center text-[11px] font-semibold text-slate-600">
+                <div
+                  key={day.key}
+                  className={`border-b border-slate-200 px-2 py-2 text-center text-[11px] font-semibold ${
+                    day.weekday.toLowerCase().includes('sob') || day.weekday.toLowerCase().includes('nie')
+                      ? 'bg-slate-50 text-slate-500'
+                      : 'text-slate-600'
+                  }`}
+                >
                   <div>{day.day}</div>
                   <div className="text-[10px] text-slate-400">{day.weekday}</div>
                 </div>
@@ -532,7 +641,7 @@ const ScheduleBuilderV2 = () => {
 
               {filteredEmployees.map((employee) => (
                 <React.Fragment key={employee._id}>
-                  <div className="sticky left-0 z-10 flex items-center gap-2 border-b border-r border-slate-200 bg-white px-3 py-3">
+                  <div className="sticky left-0 z-10 flex items-center gap-2 border-b border-r border-slate-200 bg-white px-4 py-3">
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-white flex items-center justify-center text-sm font-semibold">
                       {employee.firstName?.[0]}
                     </div>
@@ -550,8 +659,8 @@ const ScheduleBuilderV2 = () => {
                       <div
                         key={`${employee._id}-${day.key}`}
                         className={`border-b border-slate-200 px-1 py-1 transition ${
-                          isDropTarget && dragState ? 'bg-sky-50/60 ring-1 ring-sky-100' : ''
-                        } ${hasAssignment ? 'hover:bg-slate-50' : ''}`}
+                          isDropTarget && dragState ? 'bg-sky-50/70 ring-1 ring-sky-100' : ''
+                        } ${hasAssignment ? 'hover:bg-slate-50/70' : ''}`}
                         onDragOver={(e) => {
                           if (dragState) e.preventDefault();
                         }}
