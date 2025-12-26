@@ -32,8 +32,9 @@ function resolveApiUrl() {
       return "http://localhost:3002/v2";
     }
 
-    const origin = normalizeUrl(window.location.origin) || "";
-    return `${origin}/v2`;
+    // For production/remote access, try relative path first (works with nginx proxy)
+    // If accessing directly without proxy, the .env.local should have NEXT_PUBLIC_API_URL set
+    return "/v2";
   }
 
   const nodeEnv = process.env.NODE_ENV || "development";

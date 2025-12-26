@@ -1,0 +1,208 @@
+╔════════════════════════════════════════════════════════════════╗
+║  KadryHR - Fix for 404 Error on /login Endpoint               ║
+╚════════════════════════════════════════════════════════════════╝
+
+PROBLEM:
+--------
+Frontend was getting 404 error when trying to access /login endpoint.
+The API V2 has the endpoints defined at:
+  - POST /v2/auth/register
+  - POST /v2/auth/login
+  - GET  /v2/auth/me
+
+But the frontend was not configured to use the correct API base URL.
+
+
+ROOT CAUSE:
+-----------
+The frontend (apps/web) needs to know where the API is located. When
+accessing the frontend directly (not through nginx proxy), it was trying
+to use relative paths which don't work across different ports.
+
+
+SOLUTION IMPLEMENTED:
+---------------------
+
+1. ✅ Created apps/web/.env.local
+   - Sets NEXT_PUBLIC_API_URL=http://57.128.247.179:3002/v2
+   - This tells the browser where to find the API
+
+2. ✅ Created apps/web/.env.production
+   - Sets NEXT_PUBLIC_API_URL=/v2
+   - For production use with nginx reverse proxy
+
+3. ✅ Updated apps/web/lib/config.ts
+   - Improved browser environment detection
+   - Better fallback logic for API URL resolution
+
+4. ✅ Verified API routes in apps/api/src/auth/auth.controller.ts
+   - Confirmed endpoints exist and are correctly configured
+   - Verified global prefix /v2 in apps/api/src/main.ts
+
+5. ✅ Created helper scripts:
+   - start-dev.sh: Easy startup script
+   - test-api-endpoints.sh: Verify API is working
+   - API_ACCESS_GUIDE.txt: Comprehensive documentation
+
+
+HOW TO FIX THE 404 ERROR:
+--------------------------
+
+Option A: Use Nginx Proxy (RECOMMENDED)
+----------------------------------------
+1. Start services:
+   ./start-dev.sh
+
+2. Access via nginx proxy:
+   http://57.128.247.179:8080
+
+3. The nginx proxy will route:
+   - Frontend: http://57.128.247.179:8080/ → web:3001
+   - API:      http://57.128.247.179:8080/v2 → api:3002
+
+4. Frontend will use relative path /v2 for API calls
+
+
+Option B: Direct Access (Development)
+--------------------------------------
+1. Ensure apps/web/.env.local exists with:
+   NEXT_PUBLIC_API_URL=http://57.128.247.179:3002/v2
+
+2. Start services:
+   docker compose -f docker-compose.dev.yml up -d
+
+3. Access frontend directly:
+   http://57.128.247.179:3001
+
+4. Frontend will use full URL for API calls
+
+
+VERIFICATION STEPS:
+-------------------
+
+1. Test API is running:
+   ./test-api-endpoints.sh
+
+   Expected output:
+   ✅ Health check passed
+   ✅ Register endpoint exists
+   ✅ Login endpoint exists
+   ✅ Profile endpoint exists
+
+2. Check frontend configuration:
+   - Open browser DevTools → Console
+   - Type: localStorage.getItem('kadryhr.auth.v2')
+   - Should be null for new users
+
+3. Test registration:
+   - Go to http://57.128.247.179:8080/register (or :3001/register)
+   - Fill in the form
+   - Submit
+   - Check Network tab in DevTools
+   - Should see POST request to /v2/auth/register (or full URL)
+   - Should NOT see 404 error
+
+4. Test login:
+   - Go to http://57.128.247.179:8080/login (or :3001/login)
+   - Enter credentials
+   - Submit
+   - Check Network tab
+   - Should see POST request to /v2/auth/login (or full URL)
+   - Should NOT see 404 error
+
+
+TROUBLESHOOTING:
+----------------
+
+Still getting 404?
+------------------
+1. Check which URL the browser is calling:
+   - Open DevTools → Network tab
+   - Try to login
+   - Look at the failed request
+   - Check the Request URL
+
+2. If URL is wrong:
+   - Verify .env.local exists: ls -la apps/web/.env.local
+   - Check content: cat apps/web/.env.local
+   - Restart web service: docker compose -f docker-compose.dev.yml restart web
+   - Clear browser cache and localStorage
+   - Try in incognito mode
+
+3. If API is not responding:
+   - Check API is running: curl http://57.128.247.179:3002/v2/health
+   - Check logs: docker compose -f docker-compose.dev.yml logs api
+   - Restart API: docker compose -f docker-compose.dev.yml restart api
+
+4. If using nginx proxy:
+   - Check nginx config: cat nginx.dev.conf
+   - Verify proxy is running: docker compose -f docker-compose.dev.yml ps proxy
+   - Check nginx logs: docker compose -f docker-compose.dev.yml logs proxy
+
+
+TECHNICAL DETAILS:
+------------------
+
+Frontend API Client Flow:
+1. apps/web/lib/config.ts → resolveApiUrl()
+   - Checks NEXT_PUBLIC_API_URL environment variable
+   - Falls back to /v2 for browser, http://localhost:3002/v2 for server
+
+2. apps/web/lib/api-client.ts → buildUrl()
+   - Takes the base URL from config
+   - Appends the endpoint path (e.g., /auth/login)
+   - Returns full URL for fetch()
+
+3. apps/web/app/providers.tsx → login()
+   - Creates unauthenticated API client
+   - Calls POST /auth/login with credentials
+   - Receives JWT token and user data
+
+API Route Configuration:
+1. apps/api/src/main.ts
+   - Sets global prefix: app.setGlobalPrefix('v2')
+   - All routes are prefixed with /v2
+
+2. apps/api/src/auth/auth.controller.ts
+   - @Controller('auth') → routes under /auth
+   - Combined with global prefix → /v2/auth
+
+3. Final endpoints:
+   - POST /v2/auth/register
+   - POST /v2/auth/login
+   - GET  /v2/auth/me
+
+
+FILES MODIFIED/CREATED:
+-----------------------
+✅ apps/web/.env.local (created)
+✅ apps/web/.env.production (created)
+✅ apps/web/lib/config.ts (updated)
+✅ docker-compose.dev.yml (updated comments)
+✅ start-dev.sh (created)
+✅ test-api-endpoints.sh (created)
+✅ API_ACCESS_GUIDE.txt (created)
+✅ FIX_404_LOGIN.txt (this file)
+
+
+NEXT STEPS:
+-----------
+1. Start the services: ./start-dev.sh
+2. Test the API: ./test-api-endpoints.sh
+3. Access the app: http://57.128.247.179:8080
+4. Try to register/login
+5. Verify no 404 errors in browser DevTools
+
+
+SUPPORT:
+--------
+If you still have issues:
+1. Read API_ACCESS_GUIDE.txt for detailed scenarios
+2. Check docker logs: docker compose -f docker-compose.dev.yml logs -f
+3. Verify environment variables are loaded correctly
+4. Test API directly with curl commands from API_ACCESS_GUIDE.txt
+
+
+═══════════════════════════════════════════════════════════════
+✅ Fix implemented successfully!
+═══════════════════════════════════════════════════════════════

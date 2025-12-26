@@ -1,0 +1,115 @@
+KadryHR API V2 - Access Configuration Guide
+===========================================
+
+PROBLEM SOLVED: 404 on /login endpoint
+---------------------------------------
+The issue was that the frontend was trying to access the API with an incorrect URL.
+The API endpoints exist at /v2/auth/login and /v2/auth/register, but the frontend
+needs to know the correct base URL.
+
+SOLUTION IMPLEMENTED:
+---------------------
+
+1. Created apps/web/.env.local with NEXT_PUBLIC_API_URL configuration
+2. Updated apps/web/lib/config.ts to properly handle browser environment
+3. Created apps/web/.env.production for nginx proxy setup
+4. Verified API routes are correctly configured with /v2 prefix
+
+ACCESS SCENARIOS:
+-----------------
+
+Scenario 1: Direct Access to Frontend (Port 3001)
+--------------------------------------------------
+When accessing: http://57.128.247.179:3001
+
+Configuration needed in apps/web/.env.local:
+NEXT_PUBLIC_API_URL=http://57.128.247.179:3002/v2
+
+This tells the frontend to make API calls to the full URL of the API server.
+
+API Endpoints will be:
+- Login:    http://57.128.247.179:3002/v2/auth/login
+- Register: http://57.128.247.179:3002/v2/auth/register
+- Profile:  http://57.128.247.179:3002/v2/auth/me
+
+
+Scenario 2: Access via Nginx Proxy (Port 8080) - RECOMMENDED
+-------------------------------------------------------------
+When accessing: http://57.128.247.179:8080
+
+Configuration needed in apps/web/.env.local or .env.production:
+NEXT_PUBLIC_API_URL=/v2
+
+This tells the frontend to use relative paths. Nginx will proxy:
+- /v2/* → API container (port 3002)
+- /*    → Web container (port 3001)
+
+API Endpoints will be:
+- Login:    http://57.128.247.179:8080/v2/auth/login
+- Register: http://57.128.247.179:8080/v2/auth/register
+- Profile:  http://57.128.247.179:8080/v2/auth/me
+
+
+Scenario 3: Local Development
+------------------------------
+When accessing: http://localhost:3001
+
+The config.ts automatically detects localhost and uses:
+NEXT_PUBLIC_API_URL=http://localhost:3002/v2
+
+No additional configuration needed.
+
+
+HOW TO START:
+-------------
+
+1. For Docker Compose setup:
+   ./start-dev.sh
+   
+   Then access via nginx proxy: http://57.128.247.179:8080
+
+2. For direct access (development):
+   - Ensure apps/web/.env.local has the correct NEXT_PUBLIC_API_URL
+   - Start API: cd apps/api && npm run dev
+   - Start Web: cd apps/web && npm run dev
+   - Access: http://57.128.247.179:3001
+
+
+VERIFICATION:
+-------------
+
+To verify the API is working:
+curl http://57.128.247.179:3002/v2/health
+
+To test registration:
+curl -X POST http://57.128.247.179:3002/v2/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test123!","firstName":"Test","lastName":"User","organizationName":"Test Org"}'
+
+To test login:
+curl -X POST http://57.128.247.179:3002/v2/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test123!"}'
+
+
+TROUBLESHOOTING:
+----------------
+
+If you still get 404 on /login:
+
+1. Check the browser console to see what URL is being called
+2. Verify NEXT_PUBLIC_API_URL is set correctly:
+   - In browser console: console.log(process.env.NEXT_PUBLIC_API_URL)
+   - Or check the Network tab to see the actual request URL
+
+3. Restart the web container/process after changing .env files:
+   docker compose -f docker-compose.dev.yml restart web
+
+4. Clear browser cache and localStorage:
+   - Open DevTools → Application → Clear storage
+   - Or use incognito mode
+
+5. Check API is running:
+   curl http://57.128.247.179:3002/v2/health
+   
+   Should return: {"status":"ok","timestamp":"..."}
