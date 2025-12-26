@@ -8,8 +8,8 @@ echo "================================"
 echo ""
 
 APP_DIR="/home/deploy/apps/kadryhr-app"
-BACKEND_DIR="$APP_DIR/apps/legacy-api"
-FRONTEND_DIR="$APP_DIR/apps/legacy-web"
+BACKEND_DIR="$APP_DIR/apps/api"
+FRONTEND_DIR="$APP_DIR/apps/web"
 
 # Sprawdź czy jesteśmy w odpowiednim katalogu
 if [ ! -d "$APP_DIR" ]; then
@@ -73,9 +73,11 @@ if pm2 describe kadryhr-backend >/dev/null 2>&1; then
     pm2 list | grep kadryhr-backend
 else
     echo "   ⚠️  Backend nie jest uruchomiony w PM2"
-    echo "   Uruchamiam..."
+    echo "   Uruchamiam (NestJS V2)..."
     cd "$BACKEND_DIR"
-    pm2 start server.js --name kadryhr-backend
+    npm install
+    npm run build
+    pm2 start npm --name kadryhr-backend -- run start:prod
     cd "$APP_DIR"
     echo "   ✅ Backend uruchomiony"
 fi
@@ -83,13 +85,13 @@ echo ""
 
 # 4. Sprawdź frontend build
 echo "🎨 Krok 4: Sprawdzanie Frontend..."
-if [ -d "$FRONTEND_DIR/dist" ]; then
-    echo "   ✅ Frontend zbudowany (dist/ istnieje)"
-    echo "   Pliki:"
-    ls -lh "$FRONTEND_DIR"/dist/ | head -5
+if [ -d "$FRONTEND_DIR/.next" ]; then
+    echo "   ✅ Frontend V2 zbudowany (.next istnieje)"
+    echo "   Pliki (top 5):"
+    ls -lh "$FRONTEND_DIR"/.next/ | head -5
 else
-    echo "   ⚠️  Brak katalogu dist/"
-    echo "   Buduję frontend..."
+    echo "   ⚠️  Brak katalogu .next/"
+    echo "   Buduję frontend V2 (Next.js)..."
     cd "$FRONTEND_DIR"
     npm install
     npm run build
@@ -100,10 +102,11 @@ echo ""
 
 # 5. Test API
 echo "🧪 Krok 5: Testowanie API..."
-if curl -s http://localhost:5000/health >/dev/null 2>&1; then
-    echo "   ✅ Backend API odpowiada"
+API_PORT=${PORT:-3002}
+if curl -s "http://localhost:${API_PORT}/v2/health" >/dev/null 2>&1; then
+    echo "   ✅ Backend API V2 odpowiada"
     echo "   Health check:"
-    curl -s http://localhost:5000/health | head -10
+    curl -s "http://localhost:${API_PORT}/v2/health" | head -10
 else
     echo "   ❌ Backend API nie odpowiada"
     echo "   Sprawdź logi: pm2 logs kadryhr-backend"
