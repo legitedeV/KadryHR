@@ -167,6 +167,42 @@ describe('LeavesService', () => {
     expect(approved.decidedById).toBe('manager-1');
   });
 
+  it('prevents status transitions once a request is decided', async () => {
+    const created = await service.create('org-1', {
+      employeeId: 'emp-1',
+      type: LeaveType.SICK,
+      startDate: '2025-04-15',
+      endDate: '2025-04-16',
+    });
+
+    await service.reject('org-1', created.id, { note: 'not enough balance' });
+
+    await expect(service.approve('org-1', created.id, {})).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('deletes pending requests and blocks removal of decided ones', async () => {
+    const created = await service.create('org-1', {
+      employeeId: 'emp-1',
+      type: LeaveType.ANNUAL,
+      startDate: '2025-04-20',
+      endDate: '2025-04-21',
+    });
+
+    await service.remove('org-1', created.id);
+    expect(prisma.leaveRequests).toHaveLength(0);
+
+    const decided = await service.create('org-1', {
+      employeeId: 'emp-1',
+      type: LeaveType.ANNUAL,
+      startDate: '2025-04-22',
+      endDate: '2025-04-23',
+    });
+
+    await service.approve('org-1', decided.id, {});
+
+    await expect(service.remove('org-1', decided.id)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('lists leaves with filters', async () => {
     await service.create('org-1', {
       employeeId: 'emp-1',
