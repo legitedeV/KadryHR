@@ -62,7 +62,7 @@ npm run dev
 
 ### V2 test admin
 
-Create a ready-to-login admin account (runs against the database configured in `apps/api/.env`):
+Create a ready-to-login admin account (runs against the database configured in `apps/api/.env`; falls back to `.env.example` or the default docker-compose database if not set):
 
 ```bash
 npm run --workspace apps/api seed:test-admin

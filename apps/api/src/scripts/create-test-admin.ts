@@ -3,10 +3,13 @@ import { join } from 'path';
 import { MembershipRole, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
-function loadEnv(): void {
-  const envPath = join(__dirname, '../../.env');
+const DEFAULT_DATABASE_URL =
+  'postgresql://postgres:postgres@localhost:5432/kadryhr_dev';
+
+function loadEnvFile(fileName: string): boolean {
+  const envPath = join(__dirname, '../../', fileName);
   if (!existsSync(envPath)) {
-    return;
+    return false;
   }
 
   const content = readFileSync(envPath, 'utf-8');
@@ -26,12 +29,20 @@ function loadEnv(): void {
       process.env[key] = value;
     }
   }
+
+  return true;
 }
 
-loadEnv();
+const envLoaded = loadEnvFile('.env') || loadEnvFile('.env.example');
 
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is required. Please configure apps/api/.env.');
+  process.env.DATABASE_URL = DEFAULT_DATABASE_URL;
+
+  if (!envLoaded) {
+    console.warn(
+      'ℹ️  Falling back to the default docker-compose database (DATABASE_URL not set; no .env/.env.example found).',
+    );
+  }
 }
 
 const prisma = new PrismaClient();
