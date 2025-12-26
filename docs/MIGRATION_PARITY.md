@@ -37,13 +37,13 @@ Legacy Route | Feature | Status in V2 (OK/PARTIAL/MISSING) | Notes | Owner
 `/register` | Invite-based tenant/user registration | MISSING | No registration flow in V2 | TBD
 `/qr/start` | Verify QR token and start session with geolocation | MISSING | No equivalent flow in V2 | TBD
 `/app` | Dashboard summaries, schedules, pending leaves, notifications, availability | OK | Dostępny pulpit V2 z kartami, podsumowaniami i integracją API | TBD
-`/self-service` | Submit leave and swap requests, view my leaves | MISSING | No self-service route in V2 | TBD
+`/self-service` | Submit leave and swap requests, view my leaves | OK | V2 self-service page submits leave requests via NestJS V2 API and shows my statuses | V2 Core
 `/my-tasks` | View/complete/reject my tasks with comments/attachments | MISSING | No my-tasks route in V2 | TBD
 `/schedule-builder` | Shift editor (multi-select, bulk edit, publish) | PARTIAL | V2 has schedule builder page but lacks auth/org integration and publish parity validation | TBD
 `/schedule-builder/legacy` | Legacy builder reference | MISSING | No legacy builder equivalent in V2 | TBD
 `/time-tracking` | Clock in/out via QR/manual, status, recent entries | MISSING | No time-tracking page in V2 | TBD
 `/chat` | Conversations list, messages, sockets, new chat | MISSING | No chat UI in V2 | TBD
-`/leaves` | All leaves & sick leaves list with filters | MISSING | No leaves route in V2 | TBD
+`/leaves` | All leaves & sick leaves list with filters | OK | V2 admin panel with filters plus approve/reject/cancel hooked to NestJS leaves workflow | V2 Core
 `/notifications` | Notification center (mark read/clear) | MISSING | No notifications route in V2 | TBD
 `/profile` | Profile view/edit incl. password/preferences | MISSING | No profile route in V2 | TBD
 `/settings` | Org settings (company, branding, integrations) | MISSING | No settings route in V2 | TBD

@@ -1,4 +1,4 @@
-import { ApiClient } from "@/app/lib/api-client";
+import { ApiClient } from "@/lib/api-client";
 
 export type LeaveRequest = {
   id: string;
