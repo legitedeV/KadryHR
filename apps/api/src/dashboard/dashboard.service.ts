@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ScheduleStatus } from '@prisma/client';
+import { LeaveStatus, ScheduleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScheduleService } from '../schedule/schedule.service';
 
@@ -50,17 +50,30 @@ export class DashboardService {
       orderBy: { date: 'asc' },
     });
 
-    const leaveAssignments = upcomingAssignments.filter((assignment) =>
-      this.isLeaveType(assignment.type),
-    );
+    const [pendingLeaves, upcomingLeaves] = await Promise.all([
+      this.prisma.leaveRequest.findMany({
+        where: { orgId, status: LeaveStatus.PENDING },
+        include: { employee: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.leaveRequest.findMany({
+        where: {
+          orgId,
+          status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+          startDate: { gte: today, lt: this.addDays(today, 30) },
+        },
+        include: { employee: true },
+        orderBy: { startDate: 'asc' },
+      }),
+    ]);
 
-    const leaveSummaries = leaveAssignments.slice(0, 6).map((assignment) => ({
-      id: assignment.id,
-      employeeName: assignment.employee?.name || 'Pracownik',
-      date: assignment.date.toISOString(),
-      type: assignment.type,
-      status: 'PENDING' as const,
-      note: assignment.note,
+    const leaveSummaries = upcomingLeaves.slice(0, 6).map((leave) => ({
+      id: leave.id,
+      employeeName: leave.employee?.name || 'Pracownik',
+      date: leave.startDate.toISOString(),
+      type: leave.type,
+      status: leave.status,
+      note: leave.reason,
     }));
 
     const publishedSchedules = await this.prisma.schedule.count({
@@ -115,7 +128,7 @@ export class DashboardService {
       stats: {
         activeEmployees: activeEmployeesCount,
         publishedSchedules,
-        pendingLeaves: leaveAssignments.length,
+        pendingLeaves: pendingLeaves.length,
         upcomingShifts: futureShifts.length,
         unreadNotifications,
         coverageRatio: activeEmployeesCount
@@ -130,7 +143,7 @@ export class DashboardService {
         upcoming: nextShifts,
       },
       leaves: {
-        pendingCount: leaveAssignments.length,
+        pendingCount: pendingLeaves.length,
         upcoming: leaveSummaries,
       },
       notifications: {
@@ -218,11 +231,6 @@ export class DashboardService {
     }
 
     return items;
-  }
-
-  private isLeaveType(type: string) {
-    const normalized = type.toLowerCase();
-    return normalized.includes('urlop') || normalized.includes('sick') || normalized.includes('chor');
   }
 
   private toMonthKey(date: Date) {
