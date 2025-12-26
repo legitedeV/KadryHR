@@ -15,6 +15,8 @@ export type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Pulpit", href: "/app" },
+  { label: "Self-service", href: "/self-service", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"] },
+  { label: "Urlopy", href: "/leaves", roles: ["OWNER", "ADMIN", "MANAGER"] },
   { label: "Grafiki", href: "/schedule-builder", roles: ["OWNER", "ADMIN", "MANAGER"] },
   { label: "Czas pracy", href: "/time-tracking", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "wkrótce" },
   { label: "Powiadomienia", href: "/notifications", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "wkrótce" },

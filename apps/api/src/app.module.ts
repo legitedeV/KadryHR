@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployeesModule } from './employees/employees.module';
 import { InvitesModule } from './invites/invites.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { LeavesModule } from './leaves/leaves.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     EmployeesModule,
     InvitesModule,
     PermissionsModule,
+    LeavesModule,
   ],
 })
 export class AppModule {}
