@@ -64,7 +64,7 @@ async function bootstrap() {
     );
   }
 
-  const port = process.env.PORT || 3001;
+  const port = Number(process.env.PORT) || 3002;
   await app.listen(port, '0.0.0.0');
 
   console.log(`🚀 KadryHR API V2 is running on: http://localhost:${port}/${apiPrefix}`);
