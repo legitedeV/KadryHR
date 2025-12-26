@@ -27,7 +27,18 @@ function resolveApiUrl() {
   if (envUrl) return envUrl;
 
   if (typeof window !== "undefined") {
-    return "/v2";
+    const isLocalHost = ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
+    if (isLocalHost) {
+      return "http://localhost:3002/v2";
+    }
+
+    const origin = normalizeUrl(window.location.origin) || "";
+    return `${origin}/v2`;
+  }
+
+  const nodeEnv = process.env.NODE_ENV || "development";
+  if (nodeEnv === "development") {
+    return "http://localhost:3002/v2";
   }
 
   return "/v2";
