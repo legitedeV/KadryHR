@@ -25,7 +25,8 @@
     "start:docker": "nest start --watch",
     "prestart": "npm run prisma:generate",
     "prestart:prod": "npm run prisma:migrate:deploy && npm run prisma:generate",
-    "predev": "npm run dev:prepare"
+    "predev": "npm run dev:prepare",
+    "seed:test-admin": "ts-node -r tsconfig-paths/register src/scripts/create-test-admin.ts"
   },
   "dependencies": {
     "@fastify/static": "^7.0.0",

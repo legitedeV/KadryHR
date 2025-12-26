@@ -60,6 +60,27 @@ cd apps/api
 npm run dev
 ```
 
+### V2 test admin
+
+Create a ready-to-login admin account (runs against the database configured in `apps/api/.env`):
+
+```bash
+npm run --workspace apps/api seed:test-admin
+```
+
+Default credentials:
+
+- Email: `admin.v2+test@kadryhr.local`
+- Password: `AdminTest123!`
+- Organization: `KadryHR Test Org V2`
+
+You can override the values with environment variables before running the script:
+
+- `TEST_ADMIN_EMAIL`
+- `TEST_ADMIN_PASSWORD`
+- `TEST_ADMIN_NAME`
+- `TEST_ADMIN_ORG_NAME`
+
 ### Production
 
 ```bash
