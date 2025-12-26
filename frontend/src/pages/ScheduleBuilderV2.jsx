@@ -239,7 +239,7 @@ const ScheduleBuilderV2 = () => {
     queryKey: ['shift-templates'],
     queryFn: async () => {
       const { data } = await api.get('/shift-templates');
-      return data.templates || [];
+      return Array.isArray(data) ? data : data.templates || [];
     },
   });
 
@@ -618,8 +618,8 @@ const ScheduleBuilderV2 = () => {
         <div className="lg:col-span-9 app-card p-0 overflow-hidden">
           <div className="w-full overflow-x-auto pb-2">
             <div
-              className="grid min-w-[1100px]"
-              style={{ gridTemplateColumns: `220px repeat(${daysInMonth.length}, minmax(34px, 1fr))` }}
+              className="grid"
+              style={{ gridTemplateColumns: `240px repeat(${daysInMonth.length}, minmax(52px, 1fr))` }}
             >
               <div className="sticky left-0 z-10 bg-white px-4 py-3 border-b border-r border-slate-200">
                 <p className="text-xs font-semibold text-slate-700">Pracownicy</p>
@@ -628,7 +628,7 @@ const ScheduleBuilderV2 = () => {
               {daysInMonth.map((day) => (
                 <div
                   key={day.key}
-                  className={`border-b border-slate-200 px-2 py-2 text-center text-[11px] font-semibold ${
+                  className={`border-b border-slate-200 px-3 py-2 text-center text-[11px] font-semibold ${
                     day.weekday.toLowerCase().includes('sob') || day.weekday.toLowerCase().includes('nie')
                       ? 'bg-slate-50 text-slate-500'
                       : 'text-slate-600'
@@ -658,7 +658,7 @@ const ScheduleBuilderV2 = () => {
                     return (
                       <div
                         key={`${employee._id}-${day.key}`}
-                        className={`border-b border-slate-200 px-1 py-1 transition ${
+                        className={`border-b border-slate-200 px-2 py-2 transition ${
                           isDropTarget && dragState ? 'bg-sky-50/70 ring-1 ring-sky-100' : ''
                         } ${hasAssignment ? 'hover:bg-slate-50/70' : ''}`}
                         onDragOver={(e) => {
