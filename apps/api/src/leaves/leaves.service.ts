@@ -30,8 +30,8 @@ export class LeavesService {
 
     if (query.search) {
       where.OR = [
-        { employee: { name: { contains: query.search, mode: 'insensitive' } } },
-        { reason: { contains: query.search, mode: 'insensitive' } },
+        { employee: { name: { contains: query.search } } },
+        { reason: { contains: query.search } },
       ];
     }
 
