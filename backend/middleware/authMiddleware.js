@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Organization = require('../models/Organization');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev';
 
@@ -68,11 +69,44 @@ async function protect(req, res, next) {
       });
     }
 
+    let organization = null;
+    let organizationId = null;
+
+    if (rawUser.organization) {
+      organizationId = rawUser.organization.toString();
+      try {
+        const orgDoc = await Organization.findById(rawUser.organization)
+          .select('name slug isActive subscription metadata');
+        if (orgDoc) {
+          organization = {
+            id: orgDoc._id.toString(),
+            name: orgDoc.name,
+            slug: orgDoc.slug,
+            isActive: orgDoc.isActive,
+            subscription: orgDoc.subscription,
+            metadata: orgDoc.metadata,
+          };
+        }
+      } catch (orgErr) {
+        console.error('[AUTH] Nie udało się załadować organizacji:', {
+          userId: rawUser._id.toString(),
+          organizationId,
+          error: orgErr.message,
+        });
+      }
+    }
+
+    const fallbackCompanyId = rawUser._id.toString();
+    const resolvedCompanyId = organizationId || fallbackCompanyId;
+
     req.user = {
       id: rawUser._id.toString(),
       email: rawUser.email,
       name: rawUser.name || 'Użytkownik',
       role: rawUser.role || 'user',
+      organizationId,
+      companyId: resolvedCompanyId,
+      organization,
     };
     req.userId = req.user.id;
 
@@ -80,6 +114,7 @@ async function protect(req, res, next) {
       userId: req.user.id,
       email: req.user.email,
       role: req.user.role,
+      organizationId: req.user.organizationId,
       path: req.path,
     });
 
