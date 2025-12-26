@@ -1,77 +1,200 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createApiClient } from "../lib/api-client";
+import { AuthenticatedUser, MembershipRole, OrganizationSummary, ProfileResponse } from "../lib/auth-types";
 import { setupBrowserSentry } from "../lib/observability/sentry-lite";
 
-export type AuthState = {
-  email: string;
-  orgId: string;
+export type SessionState = {
   token: string;
+  user: AuthenticatedUser;
+  organizations: OrganizationSummary[];
+  currentOrganization: OrganizationSummary | null;
 };
 
 type AuthContextValue = {
-  auth: AuthState | null;
+  session: SessionState | null;
   isReady: boolean;
-  login: (email: string, orgId: string) => void;
+  isLoading: boolean;
+  api: ReturnType<typeof createApiClient>;
+  login: (input: { email: string; password: string; orgId?: string }) => Promise<void>;
   logout: () => void;
-  setOrgId: (orgId: string) => void;
+  refreshProfile: (orgId?: string) => Promise<void>;
+  selectOrganization: (orgId: string) => Promise<void>;
+  hasRole: (roles?: MembershipRole | MembershipRole[]) => boolean;
 };
 
+const STORAGE_KEY = "kadryhr.auth.v2";
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [session, setSession] = useState<SessionState | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const api = useMemo(
+    () => createApiClient(() => ({ token: session?.token, orgId: session?.currentOrganization?.id })),
+    [session],
+  );
+
+  const persistSession = (value: SessionState | null) => {
+    if (typeof window === "undefined") return;
+    if (!value) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  };
+
+  const hydrateFromStorage = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as SessionState;
+    } catch (err) {
+      console.error("Failed to parse stored session", err);
+      return null;
+    }
+  }, []);
+
+  const fetchProfile = useCallback(
+    async (token: string, orgId?: string) => {
+      const profileClient = createApiClient(() => ({ token, orgId }));
+      return profileClient.get<ProfileResponse>("/auth/me");
+    },
+    [],
+  );
+
+  const login = useCallback(
+    async ({ email, password, orgId }: { email: string; password: string; orgId?: string }) => {
+      setIsLoading(true);
+      try {
+        const unauthenticatedClient = createApiClient(() => ({}));
+        const authResponse = await unauthenticatedClient.post<{
+          accessToken: string;
+          user: AuthenticatedUser;
+          organizations: OrganizationSummary[];
+          currentOrganization: OrganizationSummary | null;
+        }>("/auth/login", { email, password }, { skipAuth: true });
+
+        const preferredOrgId =
+          orgId || authResponse.currentOrganization?.id || authResponse.organizations[0]?.id;
+
+        const profile = await fetchProfile(authResponse.accessToken, preferredOrgId);
+
+        const resolvedOrg =
+          profile.currentOrganization ||
+          authResponse.organizations.find((org) => org.id === preferredOrgId) ||
+          profile.organizations[0] ||
+          null;
+
+        const nextSession: SessionState = {
+          token: authResponse.accessToken,
+          user: profile.user,
+          organizations: profile.organizations,
+          currentOrganization: resolvedOrg,
+        };
+
+        setSession(nextSession);
+        persistSession(nextSession);
+      } finally {
+        setIsLoading(false);
+        setIsReady(true);
+      }
+    },
+    [fetchProfile],
+  );
+
+  const logout = useCallback(() => {
+    setSession(null);
+    persistSession(null);
+  }, []);
+
+  const refreshProfile = useCallback(
+    async (orgId?: string) => {
+      if (!session?.token) return;
+      setIsLoading(true);
+      try {
+        const profile = await fetchProfile(session.token, orgId || session.currentOrganization?.id || undefined);
+        const resolvedOrg = profile.currentOrganization || session.currentOrganization || profile.organizations[0] || null;
+        const nextSession: SessionState = {
+          token: session.token,
+          user: profile.user,
+          organizations: profile.organizations,
+          currentOrganization: resolvedOrg,
+        };
+        setSession(nextSession);
+        persistSession(nextSession);
+      } catch (error) {
+        console.error("Profile refresh failed", error);
+        logout();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchProfile, logout, session],
+  );
+
+  const selectOrganization = useCallback(
+    async (orgId: string) => {
+      if (!session?.token) return;
+      await refreshProfile(orgId);
+    },
+    [refreshProfile, session?.token],
+  );
+
+  const hasRole = useCallback(
+    (roles?: MembershipRole | MembershipRole[]) => {
+      if (!roles) return true;
+      if (!session?.currentOrganization?.role) return false;
+      const allowed = Array.isArray(roles) ? roles : [roles];
+      return allowed.includes(session.currentOrganization.role);
+    },
+    [session?.currentOrganization?.role],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setupBrowserSentry();
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("kadryhr_auth");
+    const stored = hydrateFromStorage();
     if (stored) {
-      setAuth(JSON.parse(stored));
-    }
-    setIsReady(true);
-  }, []);
-
-  const persist = (next: AuthState | null) => {
-    if (typeof window === "undefined") return;
-    if (next) {
-      window.localStorage.setItem("kadryhr_auth", JSON.stringify(next));
+      setSession(stored);
+      fetchProfile(stored.token, stored.currentOrganization?.id)
+        .then((profile) => {
+          const resolvedOrg = profile.currentOrganization || stored.currentOrganization || profile.organizations[0] || null;
+          const nextSession: SessionState = {
+            token: stored.token,
+            user: profile.user,
+            organizations: profile.organizations,
+            currentOrganization: resolvedOrg,
+          };
+          setSession(nextSession);
+          persistSession(nextSession);
+          setIsReady(true);
+        })
+        .catch((err) => {
+          console.error("Failed to bootstrap session", err);
+          logout();
+          setIsReady(true);
+        });
     } else {
-      window.localStorage.removeItem("kadryhr_auth");
+      setIsReady(true);
     }
-  };
+  }, [fetchProfile, hydrateFromStorage, logout]);
 
-  const login = (email: string, orgId: string) => {
-    const nextAuth: AuthState = {
-      email,
-      orgId,
-      token: `token-${Date.now()}`,
-    };
-    setAuth(nextAuth);
-    persist(nextAuth);
-  };
-
-  const logout = () => {
-    setAuth(null);
-    persist(null);
-  };
-
-  const setOrgId = (orgId: string) => {
-    setAuth((prev) => {
-      if (!prev) return prev;
-      const updated = { ...prev, orgId };
-      persist(updated);
-      return updated;
-    });
-  };
-
-  const value = useMemo(() => ({ auth, isReady, login, logout, setOrgId }), [auth, isReady]);
+  const value = useMemo(
+    () => ({ session, isReady, isLoading, api, login, logout, refreshProfile, selectOrganization, hasRole }),
+    [api, hasRole, isLoading, isReady, login, logout, refreshProfile, selectOrganization, session],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -32,8 +32,8 @@
 ## Parity Matrix
 Legacy Route | Feature | Status in V2 (OK/PARTIAL/MISSING) | Notes | Owner
 --- | --- | --- | --- | ---
-`/` | Landing CTA and onboarding links | PARTIAL | Basic V2 homepage exists but lacks marketing/registration parity | TBD
-`/login` | Email/password login + return URL handling | PARTIAL | V2 login form exists but uses stub login and no returnUrl/invite handling | TBD
+`/` | Landing CTA and onboarding links | PARTIAL | Domyślnie pokazuje nowy panel V2 z layoutem/sidebarem i kontekstem org; marketing/onboarding nadal brak | TBD
+`/login` | Email/password login + return URL handling | OK | Logowanie przez API V2 (/v2/auth/login + /v2/auth/me), obsługa returnUrl i kontekstu orgId | TBD
 `/register` | Invite-based tenant/user registration | MISSING | No registration flow in V2 | TBD
 `/qr/start` | Verify QR token and start session with geolocation | MISSING | No equivalent flow in V2 | TBD
 `/app` | Dashboard summaries, schedules, pending leaves, notifications, availability | MISSING | No dashboard route in V2 | TBD
