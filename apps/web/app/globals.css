@@ -9,36 +9,36 @@
   --theme-dark: #0f172a;
   --theme-primary-rgb: 37, 99, 235;
 
-  --surface-primary: #ffffff;
-  --surface-secondary: #f7f8fb;
-  --surface-tertiary: #eef2f6;
-  --surface-elevated: #ffffff;
-  --surface-overlay: rgba(15, 23, 42, 0.08);
-  --surface-hover: rgba(37, 99, 235, 0.08);
+  --surface-primary: #0b1220;
+  --surface-secondary: #0f172a;
+  --surface-tertiary: #111827;
+  --surface-elevated: #0f172a;
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+  --surface-hover: rgba(255, 255, 255, 0.08);
 
-  --text-primary: #0f172a;
-  --text-secondary: #1f2937;
-  --text-tertiary: #475569;
-  --text-inverse: #ffffff;
+  --text-primary: #e5e7eb;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-inverse: #0b1220;
 
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-focus: var(--theme-primary);
+  --border-primary: #1f2937;
+  --border-secondary: #273449;
+  --border-focus: var(--theme-secondary);
 
-  --input-bg: #ffffff;
-  --input-border: #e2e8f0;
-  --input-focus-bg: #f8fafc;
+  --input-bg: #0f172a;
+  --input-border: #1f2937;
+  --input-focus-bg: #0f172a;
   --input-placeholder: #94a3b8;
 
-  --shadow-sm: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
-  --shadow-md: 0 18px 38px -16px rgba(15, 23, 42, 0.15);
-  --shadow-lg: 0 24px 48px -20px rgba(15, 23, 42, 0.18);
-  --shadow-xl: 0 32px 60px -24px rgba(15, 23, 42, 0.22);
+  --shadow-sm: 0 12px 30px -18px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 20px 42px -20px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 26px 60px -24px rgba(0, 0, 0, 0.75);
+  --shadow-xl: 0 36px 80px -30px rgba(0, 0, 0, 0.85);
 
-  --page-bg: #eff4fb;
-  --page-gradient-start: #eef2ff;
-  --page-gradient-mid: #f8fafc;
-  --page-gradient-end: #e0f2fe;
+  --page-bg: #050914;
+  --page-gradient-start: #0b1220;
+  --page-gradient-mid: #0b1220;
+  --page-gradient-end: #0b1220;
 }
 
 @theme inline {
@@ -47,38 +47,38 @@
   --font-sans: var(--font-manrope);
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --surface-primary: #0b1220;
-    --surface-secondary: #0f172a;
-    --surface-tertiary: #111827;
-    --surface-elevated: #0f172a;
-    --surface-overlay: rgba(0, 0, 0, 0.6);
-    --surface-hover: rgba(255, 255, 255, 0.08);
+    --surface-primary: #ffffff;
+    --surface-secondary: #f7f8fb;
+    --surface-tertiary: #eef2f6;
+    --surface-elevated: #ffffff;
+    --surface-overlay: rgba(15, 23, 42, 0.08);
+    --surface-hover: rgba(37, 99, 235, 0.08);
 
-    --text-primary: #e5e7eb;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #94a3b8;
-    --text-inverse: #0b1220;
+    --text-primary: #0f172a;
+    --text-secondary: #1f2937;
+    --text-tertiary: #475569;
+    --text-inverse: #ffffff;
 
-    --border-primary: #1f2937;
-    --border-secondary: #273449;
-    --border-focus: var(--theme-secondary);
+    --border-primary: #e2e8f0;
+    --border-secondary: #cbd5e1;
+    --border-focus: var(--theme-primary);
 
-    --input-bg: #0f172a;
-    --input-border: #1f2937;
-    --input-focus-bg: #0f172a;
+    --input-bg: #ffffff;
+    --input-border: #e2e8f0;
+    --input-focus-bg: #f8fafc;
     --input-placeholder: #94a3b8;
 
-    --shadow-sm: 0 12px 30px -18px rgba(0, 0, 0, 0.55);
-    --shadow-md: 0 20px 42px -20px rgba(0, 0, 0, 0.65);
-    --shadow-lg: 0 26px 60px -24px rgba(0, 0, 0, 0.75);
-    --shadow-xl: 0 36px 80px -30px rgba(0, 0, 0, 0.85);
+    --shadow-sm: 0 10px 30px -12px rgba(15, 23, 42, 0.12);
+    --shadow-md: 0 18px 38px -16px rgba(15, 23, 42, 0.15);
+    --shadow-lg: 0 24px 48px -20px rgba(15, 23, 42, 0.18);
+    --shadow-xl: 0 32px 60px -24px rgba(15, 23, 42, 0.22);
 
-    --page-bg: #050914;
-    --page-gradient-start: #0b1220;
-    --page-gradient-mid: #0b1220;
-    --page-gradient-end: #0b1220;
+    --page-bg: #eff4fb;
+    --page-gradient-start: #eef2ff;
+    --page-gradient-mid: #f8fafc;
+    --page-gradient-end: #e0f2fe;
   }
 }
 
@@ -99,7 +99,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .app-card {
   position: relative;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.86));
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--surface-primary) 94%, rgba(var(--theme-primary-rgb), 0.08)),
+    color-mix(in srgb, var(--surface-secondary) 90%, var(--theme-secondary) 10%)
+  );
   border: 1px solid color-mix(in srgb, var(--border-primary) 82%, rgba(var(--theme-primary-rgb), 0.28));
   color: var(--text-primary);
   box-shadow: 0 20px 70px -40px rgba(15, 23, 42, 0.65);
