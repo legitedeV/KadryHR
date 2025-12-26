@@ -1,8 +1,9 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
+  HttpStatus,
   Injectable,
-  TooManyRequestsException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { FastifyRequest } from 'fastify';
@@ -36,10 +37,13 @@ export class RateLimitGuard implements CanActivate {
 
     if (record.count >= limit) {
       const retryAfterSeconds = Math.ceil((record.expiresAt - now) / 1000);
-      throw new TooManyRequestsException({
-        message: 'Too many requests. Please try again soon.',
-        retryAfterSeconds,
-      });
+      throw new HttpException(
+        {
+          message: 'Too many requests. Please try again soon.',
+          retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     record.count += 1;

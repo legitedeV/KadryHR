@@ -23,7 +23,7 @@ services:
     image: node:22
     working_dir: /workspace
     command: >
-      sh -c "npm install --workspace apps/api && cd apps/api && npx prisma migrate deploy && npm run dev"
+      sh -c "npm install --workspace apps/api && npm run dev:docker --workspace apps/api"
     environment:
       NODE_ENV: development
       PORT: 3002
@@ -38,6 +38,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "node -e \"fetch('http://localhost:3002/v2/health').then(res => { if (res.status !== 200) { process.exit(1); } }).catch(() => process.exit(1));\"",
+      ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   web:
     image: node:22
@@ -52,7 +61,7 @@ services:
       - "3001:3001"
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_healthy
 
@@ -81,7 +90,7 @@ services:
       legacy-web:
         condition: service_started
       api:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres_data:
