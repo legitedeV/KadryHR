@@ -14,3 +14,7 @@ yarn-error.log*
 
 # API environment
 /apps/api/.env
+
+# build outputs
+apps/api/dist/
+frontend/dist/
