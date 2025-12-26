@@ -36,7 +36,7 @@ Legacy Route | Feature | Status in V2 (OK/PARTIAL/MISSING) | Notes | Owner
 `/login` | Email/password login + return URL handling | OK | Logowanie przez API V2 (/v2/auth/login + /v2/auth/me), obsługa returnUrl i kontekstu orgId | TBD
 `/register` | Invite-based tenant/user registration | MISSING | No registration flow in V2 | TBD
 `/qr/start` | Verify QR token and start session with geolocation | MISSING | No equivalent flow in V2 | TBD
-`/app` | Dashboard summaries, schedules, pending leaves, notifications, availability | MISSING | No dashboard route in V2 | TBD
+`/app` | Dashboard summaries, schedules, pending leaves, notifications, availability | OK | Dostępny pulpit V2 z kartami, podsumowaniami i integracją API | TBD
 `/self-service` | Submit leave and swap requests, view my leaves | MISSING | No self-service route in V2 | TBD
 `/my-tasks` | View/complete/reject my tasks with comments/attachments | MISSING | No my-tasks route in V2 | TBD
 `/schedule-builder` | Shift editor (multi-select, bulk edit, publish) | PARTIAL | V2 has schedule builder page but lacks auth/org integration and publish parity validation | TBD
