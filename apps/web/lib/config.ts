@@ -9,22 +9,38 @@ function normalizeUrl(value?: string) {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
-const apiUrl =
-  normalizeUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
-  normalizeUrl(process.env.API_BASE_URL) ||
-  normalizeUrl(process.env.NEXT_PUBLIC_API_URL) ||
-  normalizeUrl(process.env.API_URL) ||
-  "http://localhost:3002/v2";
+function resolveApiUrl() {
+  const envUrl =
+    normalizeUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
+    normalizeUrl(process.env.API_BASE_URL) ||
+    normalizeUrl(process.env.NEXT_PUBLIC_API_URL) ||
+    normalizeUrl(process.env.API_URL);
 
-const webUrl =
-  normalizeUrl(process.env.NEXT_PUBLIC_WEB_URL) ||
-  normalizeUrl(process.env.WEB_URL) ||
-  "http://localhost:3001";
+  if (envUrl) return envUrl;
 
-const clientUrl =
-  normalizeUrl(process.env.NEXT_PUBLIC_CLIENT_URL) ||
-  normalizeUrl(process.env.CLIENT_URL) ||
-  webUrl;
+  if (typeof window !== "undefined") {
+    return normalizeUrl(`${window.location.origin}/v2`);
+  }
+
+  return "http://localhost:3002/v2";
+}
+
+function resolveWebUrl() {
+  const envWebUrl = normalizeUrl(process.env.NEXT_PUBLIC_WEB_URL) || normalizeUrl(process.env.WEB_URL);
+
+  if (envWebUrl) return envWebUrl;
+
+  if (typeof window !== "undefined") {
+    return normalizeUrl(window.location.origin);
+  }
+
+  return "http://localhost:3001";
+}
+
+const apiUrl = resolveApiUrl();
+const webUrl = resolveWebUrl();
+
+const clientUrl = normalizeUrl(process.env.NEXT_PUBLIC_CLIENT_URL) || normalizeUrl(process.env.CLIENT_URL) || webUrl;
 
 export const appConfig: AppConfig = {
   apiUrl,
