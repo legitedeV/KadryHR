@@ -7,5 +7,6 @@ import { ScheduleService } from './schedule.service';
   imports: [PrismaModule],
   controllers: [ScheduleController, AssignmentController],
   providers: [ScheduleService],
+  exports: [ScheduleService],
 })
 export class ScheduleModule {}

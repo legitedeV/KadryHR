@@ -14,7 +14,7 @@ export type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Pulpit", href: "/" },
+  { label: "Pulpit", href: "/app" },
   { label: "Grafiki", href: "/schedule-builder", roles: ["OWNER", "ADMIN", "MANAGER"] },
   { label: "Czas pracy", href: "/time-tracking", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "wkrótce" },
   { label: "Powiadomienia", href: "/notifications", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "wkrótce" },
@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="px-3 py-4 space-y-1">
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}

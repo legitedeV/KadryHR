@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { VersionModule } from './version/version.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     HealthModule,
     VersionModule,
     ScheduleModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
