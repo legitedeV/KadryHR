@@ -19,6 +19,20 @@ services:
       timeout: 5s
       retries: 5
 
+  api-migrate:
+    image: node:22
+    working_dir: /workspace
+    command: >
+      sh -c "npm install --workspace apps/api && npm run prisma:generate --workspace apps/api && npm run prisma:migrate:deploy --workspace apps/api"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kadryhr_dev
+    volumes:
+      - ./:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   api:
     image: node:22
     working_dir: /workspace
@@ -38,15 +52,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      api-migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: [
         "CMD-SHELL",
         "node -e \"fetch('http://localhost:3002/v2/health').then(res => { if (res.status !== 200) { process.exit(1); } }).catch(() => process.exit(1));\"",
       ]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 10
-      start_period: 5s
+      start_period: 30s
 
   web:
     image: node:22
@@ -65,19 +81,6 @@ services:
       postgres:
         condition: service_healthy
 
-  legacy-web:
-    image: node:22
-    working_dir: /workspace
-    command: >
-      sh -c "npm install --workspace apps/legacy-web && npm run dev --workspace apps/legacy-web -- --host 0.0.0.0 --port 3000"
-    volumes:
-      - ./:/workspace
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   proxy:
     image: nginx:1.27-alpine
     volumes:
@@ -86,8 +89,6 @@ services:
       - "8080:80"
     depends_on:
       web:
-        condition: service_started
-      legacy-web:
         condition: service_started
       api:
         condition: service_healthy
