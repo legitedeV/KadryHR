@@ -31,8 +31,8 @@ export default function QrStartPage() {
               Uruchom rejestrację czasu przez QR
             </h1>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Użyj tokenu publikacji wygenerowanego w module QR generator (<code>{appConfig.apiUrl}</code>). Wersja publiczna
-              nie wymaga logowania — możesz uruchomić na kiosku lub tablecie.
+              Użyj tokenu publikacji wygenerowanego w module QR generator (bazowy URL API: {appConfig.apiUrl}). Wersja
+              publiczna nie wymaga logowania — możesz uruchomić na kiosku lub tablecie.
             </p>
           </div>
           <div className="rounded-lg border px-4 py-3" style={{ borderColor: "var(--border-primary)", background: "var(--surface-secondary)" }}>

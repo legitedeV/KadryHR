@@ -42,3 +42,13 @@
 - [ ] Run `npm run build --workspaces` and `npx prisma migrate deploy` before switching traffic.
 - [ ] Validate health at `/v2/health` and version at `/v2/version` after deploy.
 - [ ] Monitor Sentry for new events; investigate any rate-limit spikes from auth endpoints (register/login guarded by in-memory throttling).
+
+## Reverse proxy smoke test
+- Po uruchomieniu `docker compose -f docker-compose.dev.yml up --build`, sprawdź proxy i API V2:
+  ```bash
+  curl -i http://localhost:8080/v2/health
+  curl -i -X POST http://localhost:8080/v2/auth/register \
+    -H 'Content-Type: application/json' \
+    -d '{"fullName":"Smoke Tester","email":"smoke+'"'"'$(date +%s)'"'"'@example.com","password":"Passw0rd!","organizationName":"Smoke Inc"}'
+  ```
+- Oczekiwany wynik: `200 OK` dla health oraz `201 Created` (lub walidacyjny błąd JSON z API) bez błędów `Failed to fetch` po stronie przeglądarki.
