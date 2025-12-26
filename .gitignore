@@ -4,3 +4,8 @@ frontend/node_modules
 .env
 npm-debug.log*
 yarn-error.log*
+
+.env
+backend/.env
+frontend/.env
+
