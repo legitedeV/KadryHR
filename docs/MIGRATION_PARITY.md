@@ -41,7 +41,7 @@ Legacy Route | Feature | Status in V2 (OK/PARTIAL/MISSING) | Notes | Owner
 `/my-tasks` | View/complete/reject my tasks with comments/attachments | MISSING | No my-tasks route in V2 | TBD
 `/schedule-builder` | Shift editor (multi-select, bulk edit, publish) | PARTIAL | V2 has schedule builder page but lacks auth/org integration and publish parity validation | TBD
 `/schedule-builder/legacy` | Legacy builder reference | MISSING | No legacy builder equivalent in V2 | TBD
-`/time-tracking` | Clock in/out via QR/manual, status, recent entries | MISSING | No time-tracking page in V2 | TBD
+`/time-tracking` | Clock in/out via QR/manual, status, recent entries | OK | V2 panel z akcjami, statusem i historią | V2 Core
 `/chat` | Conversations list, messages, sockets, new chat | MISSING | No chat UI in V2 | TBD
 `/leaves` | All leaves & sick leaves list with filters | OK | V2 admin panel with filters plus approve/reject/cancel hooked to NestJS leaves workflow | V2 Core
 `/notifications` | Notification center (mark read/clear) | MISSING | No notifications route in V2 | TBD
@@ -54,5 +54,5 @@ Legacy Route | Feature | Status in V2 (OK/PARTIAL/MISSING) | Notes | Owner
 `/permissions` | RBAC role/permission management | MISSING | No permissions route in V2 | TBD
 `/webhooks` | Webhook configuration/testing | MISSING | No webhooks route in V2 | TBD
 `/tasks` | Admin task creation/assignment/status control | MISSING | No tasks route in V2 | TBD
-`/qr-generator` | QR code generation for time tracking | MISSING | No qr-generator route in V2 | TBD
+`/qr-generator` | QR code generation for time tracking | OK | Nowy generator kodów QR powiązanych z organizacją | V2 Core
 `/admin/requests` | Admin review of inbound requests | MISSING | No admin/requests route in V2 | TBD

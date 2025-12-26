@@ -10,6 +10,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { InvitesModule } from './invites/invites.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { LeavesModule } from './leaves/leaves.module';
+import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { LeavesModule } from './leaves/leaves.module';
     InvitesModule,
     PermissionsModule,
     LeavesModule,
+    TimeTrackingModule,
   ],
 })
 export class AppModule {}
