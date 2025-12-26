@@ -15,15 +15,25 @@ export type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Pulpit", href: "/app" },
+  { label: "Profil", href: "/profile" },
   { label: "Self-service", href: "/self-service", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"] },
+  { label: "Moje zadania", href: "/my-tasks", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "nowe" },
+  { label: "Zadania", href: "/tasks", roles: ["OWNER", "ADMIN", "MANAGER"], badge: "wkrótce" },
   { label: "Urlopy", href: "/leaves", roles: ["OWNER", "ADMIN", "MANAGER"] },
   { label: "Grafiki", href: "/schedule-builder", roles: ["OWNER", "ADMIN", "MANAGER"] },
+  { label: "Grafiki legacy", href: "/schedule-builder/legacy", roles: ["OWNER", "ADMIN", "MANAGER"], badge: "fallback" },
   { label: "Czas pracy", href: "/time-tracking", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"] },
   { label: "QR generator", href: "/qr-generator", roles: ["OWNER", "ADMIN", "MANAGER"] },
-  { label: "Powiadomienia", href: "/notifications", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "wkrótce" },
+  { label: "Powiadomienia", href: "/notifications", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "nowe" },
+  { label: "Chat", href: "/chat", roles: ["OWNER", "ADMIN", "MANAGER", "EMPLOYEE"], badge: "wkrótce" },
   { label: "Zespoły", href: "/employees", roles: ["OWNER", "ADMIN", "MANAGER"], badge: "wkrótce" },
-  { label: "Płace", href: "/payroll", roles: ["OWNER", "ADMIN"], badge: "wkrótce" },
+  { label: "Zaproszenia", href: "/invites", roles: ["OWNER", "ADMIN"], badge: "nowe" },
+  { label: "Uprawnienia", href: "/permissions", roles: ["OWNER", "ADMIN"], badge: "w toku" },
+  { label: "Webhooki", href: "/webhooks", roles: ["OWNER", "ADMIN"], badge: "backlog" },
+  { label: "Raporty", href: "/reports", roles: ["OWNER", "ADMIN"] },
+  { label: "Płace", href: "/payroll", roles: ["OWNER", "ADMIN"], badge: "backlog" },
   { label: "Ustawienia", href: "/settings", roles: ["OWNER", "ADMIN"], badge: "wkrótce" },
+  { label: "Admin requests", href: "/admin/requests", roles: ["OWNER", "ADMIN"], badge: "backlog" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
