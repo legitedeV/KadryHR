@@ -21,6 +21,7 @@ model User {
   fullName      String?
   memberships   Membership[]
   employees     Employee[]
+  invites       Invite[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -30,6 +31,7 @@ model Organization {
   name         String
   memberships  Membership[]
   employees    Employee[]
+  invites      Invite[]
   schedules    Schedule[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -57,6 +59,7 @@ model Employee {
   id           String        @id @default(uuid())
   orgId        String
   name         String
+  email        String?
   active       Boolean       @default(true)
   organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
   assignments  ShiftAssignment[]
@@ -66,6 +69,31 @@ model Employee {
   updatedAt    DateTime      @updatedAt
 
   @@index([orgId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+model Invite {
+  id           String         @id @default(uuid())
+  orgId        String
+  email        String
+  role         MembershipRole
+  status       InviteStatus   @default(PENDING)
+  token        String         @unique
+  lastSentAt   DateTime       @default(now())
+  resendCount  Int            @default(0)
+  createdBy    User?          @relation(fields: [createdById], references: [id])
+  createdById  String?
+  organization Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([orgId])
+  @@unique([orgId, email, status])
 }
 
 model Schedule {

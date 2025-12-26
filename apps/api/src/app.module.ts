@@ -6,6 +6,9 @@ import { VersionModule } from './version/version.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { EmployeesModule } from './employees/employees.module';
+import { InvitesModule } from './invites/invites.module';
+import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
     VersionModule,
     ScheduleModule,
     DashboardModule,
+    EmployeesModule,
+    InvitesModule,
+    PermissionsModule,
   ],
 })
 export class AppModule {}
