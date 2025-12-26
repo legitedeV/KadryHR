@@ -137,6 +137,7 @@ const ScheduleBuilderV2 = () => {
   const [alert, setAlert] = useState({ type: null, message: null });
   const [modalOpen, setModalOpen] = useState(false);
   const [modalState, setModalState] = useState({ employeeId: '', date: '', shiftTemplateId: '', notes: '' });
+  const [dragState, setDragState] = useState(null);
 
   const daysInMonth = useMemo(() => buildDays(selectedMonth), [selectedMonth]);
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -313,15 +314,77 @@ const ScheduleBuilderV2 = () => {
     setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
   };
 
+  const handleDragStart = (assignment, employeeId, dateKey) => {
+    setDragState({ assignment, sourceEmployeeId: employeeId, sourceDate: dateKey });
+  };
+
+  const handleDragEnd = () => setDragState(null);
+
+  const handleDropOnCell = async (employeeId, dateKey) => {
+    if (!dragState || !selectedSchedule) return;
+    const targetKey = `${employeeId}-${dateKey}`;
+    const sourceKey = `${dragState.sourceEmployeeId}-${dragState.sourceDate}`;
+    if (targetKey === sourceKey) {
+      setDragState(null);
+      return;
+    }
+
+    const targetAssignment = assignmentsByKey[targetKey];
+    const draggedAssignment = dragState.assignment;
+
+    try {
+      if (targetAssignment) {
+        await Promise.all([
+          updateAssignment.mutateAsync({
+            id: draggedAssignment._id,
+            scheduleId: selectedSchedule._id,
+            employeeId,
+            date: dateKey,
+            shiftTemplateId: draggedAssignment.shiftTemplate?._id,
+            notes: draggedAssignment.notes,
+          }),
+          updateAssignment.mutateAsync({
+            id: targetAssignment._id,
+            scheduleId: selectedSchedule._id,
+            employeeId: dragState.sourceEmployeeId,
+            date: dragState.sourceDate,
+            shiftTemplateId: targetAssignment.shiftTemplate?._id,
+            notes: targetAssignment.notes,
+          }),
+        ]);
+        setAlert({ type: 'success', message: 'Zamieniono zmiany miejscami.' });
+      } else {
+        await updateAssignment.mutateAsync({
+          id: draggedAssignment._id,
+          scheduleId: selectedSchedule._id,
+          employeeId,
+          date: dateKey,
+          shiftTemplateId: draggedAssignment.shiftTemplate?._id,
+          notes: draggedAssignment.notes,
+        });
+      }
+    } catch (err) {
+      setAlert({ type: 'error', message: err.response?.data?.message || 'Nie udało się przenieść zmiany.' });
+    } finally {
+      setDragState(null);
+    }
+  };
+
   const renderCell = (employee, day) => {
     const key = `${employee._id}-${day.key}`;
     const assignment = assignmentsByKey[key];
+    const isDragSource = dragState?.assignment?._id === assignment?._id;
     const color = assignment?.shiftTemplate?.color || '#22c55e';
     return (
       <button
         key={day.key}
         onClick={() => openModal(employee._id, day.key)}
-        className="group relative flex h-14 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs transition hover:border-theme-primary"
+        draggable={!!assignment}
+        onDragStart={() => assignment && handleDragStart(assignment, employee._id, day.key)}
+        onDragEnd={handleDragEnd}
+        className={`group relative flex h-14 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs transition hover:border-theme-primary ${
+          assignment ? 'cursor-grab active:cursor-grabbing' : ''
+        } ${isDragSource ? 'ring-2 ring-theme-primary/40 border-theme-primary/60' : ''}`}
       >
         {assignment ? (
           <div className="flex flex-col items-center text-center leading-tight">
@@ -451,45 +514,64 @@ const ScheduleBuilderV2 = () => {
         </div>
 
         <div className="lg:col-span-9 app-card p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <div className="min-w-[900px]">
-              <div className="grid" style={{ gridTemplateColumns: `200px repeat(${daysInMonth.length}, minmax(60px, 1fr))` }}>
-                <div className="sticky left-0 z-10 bg-white px-3 py-2 border-b border-r border-slate-200">
-                  <p className="text-xs font-semibold text-slate-700">Pracownicy</p>
-                  <p className="text-[11px] text-slate-500">Kliknij aby przypisać zmiany</p>
+          <div className="w-full">
+            <div
+              className="grid w-full"
+              style={{ gridTemplateColumns: `200px repeat(${daysInMonth.length}, minmax(28px, 1fr))` }}
+            >
+              <div className="sticky left-0 z-10 bg-white px-3 py-2 border-b border-r border-slate-200">
+                <p className="text-xs font-semibold text-slate-700">Pracownicy</p>
+                <p className="text-[11px] text-slate-500">Kliknij aby przypisać zmiany</p>
+              </div>
+              {daysInMonth.map((day) => (
+                <div key={day.key} className="border-b border-slate-200 px-2 py-2 text-center text-[11px] font-semibold text-slate-600">
+                  <div>{day.day}</div>
+                  <div className="text-[10px] text-slate-400">{day.weekday}</div>
                 </div>
-                {daysInMonth.map((day) => (
-                  <div key={day.key} className="border-b border-slate-200 px-2 py-2 text-center text-[11px] font-semibold text-slate-600">
-                    <div>{day.day}</div>
-                    <div className="text-[10px] text-slate-400">{day.weekday}</div>
-                  </div>
-                ))}
+              ))}
 
-                {filteredEmployees.map((employee) => (
-                  <React.Fragment key={employee._id}>
-                    <div className="sticky left-0 z-10 flex items-center gap-2 border-b border-r border-slate-200 bg-white px-3 py-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-white flex items-center justify-center text-sm font-semibold">
-                        {employee.firstName?.[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{employee.firstName} {employee.lastName}</p>
-                        <p className="text-[11px] text-slate-500">{employee.position || 'Pracownik'}</p>
-                      </div>
+              {filteredEmployees.map((employee) => (
+                <React.Fragment key={employee._id}>
+                  <div className="sticky left-0 z-10 flex items-center gap-2 border-b border-r border-slate-200 bg-white px-3 py-3">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-white flex items-center justify-center text-sm font-semibold">
+                      {employee.firstName?.[0]}
                     </div>
-                    {daysInMonth.map((day) => (
-                      <div key={`${employee._id}-${day.key}`} className="border-b border-slate-200 px-1 py-1">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{employee.firstName} {employee.lastName}</p>
+                      <p className="text-[11px] text-slate-500">{employee.position || 'Pracownik'}</p>
+                    </div>
+                  </div>
+                  {daysInMonth.map((day) => {
+                    const key = `${employee._id}-${day.key}`;
+                    const hasAssignment = !!assignmentsByKey[key];
+                    const isDropTarget =
+                      !!dragState && !(dragState.sourceEmployeeId === employee._id && dragState.sourceDate === day.key);
+                    return (
+                      <div
+                        key={`${employee._id}-${day.key}`}
+                        className={`border-b border-slate-200 px-1 py-1 transition ${
+                          isDropTarget && dragState ? 'bg-sky-50/60 ring-1 ring-sky-100' : ''
+                        } ${hasAssignment ? 'hover:bg-slate-50' : ''}`}
+                        onDragOver={(e) => {
+                          if (dragState) e.preventDefault();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          handleDropOnCell(employee._id, day.key);
+                        }}
+                      >
                         {renderCell(employee, day)}
                       </div>
-                    ))}
-                  </React.Fragment>
-                ))}
+                    );
+                  })}
+                </React.Fragment>
+              ))}
 
-                {!scheduleLoading && filteredEmployees.length === 0 && (
-                  <div className="col-span-full py-10 text-center text-sm text-slate-500">
-                    Brak pracowników spełniających kryteria.
-                  </div>
-                )}
-              </div>
+              {!scheduleLoading && filteredEmployees.length === 0 && (
+                <div className="col-span-full py-10 text-center text-sm text-slate-500">
+                  Brak pracowników spełniających kryteria.
+                </div>
+              )}
             </div>
           </div>
         </div>
