@@ -10,6 +10,8 @@ function normalizeUrl(value?: string) {
 }
 
 const apiUrl =
+  normalizeUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
+  normalizeUrl(process.env.API_BASE_URL) ||
   normalizeUrl(process.env.NEXT_PUBLIC_API_URL) ||
   normalizeUrl(process.env.API_URL) ||
   "http://localhost:3002/v2";

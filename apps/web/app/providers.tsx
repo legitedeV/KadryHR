@@ -221,11 +221,22 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
+function generateToastId() {
+  const cryptoApi = typeof self !== "undefined" ? self.crypto : undefined;
+  if (cryptoApi?.randomUUID) return cryptoApi.randomUUID();
+  if (cryptoApi?.getRandomValues) {
+    const buffer = new Uint32Array(2);
+    cryptoApi.getRandomValues(buffer);
+    return `${buffer[0].toString(16)}-${buffer[1].toString(16)}`;
+  }
+  return Math.random().toString(36).slice(2);
+}
+
 function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const pushToast = (message: string, type: Toast["type"] = "info") => {
-    const id = crypto.randomUUID();
+    const id = generateToastId();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
