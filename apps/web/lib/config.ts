@@ -6,23 +6,31 @@ export type AppConfig = {
 
 function normalizeUrl(value?: string) {
   if (!value) return undefined;
-  return value.endsWith("/") ? value.slice(0, -1) : value;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const withoutTrailingSlash = trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+  if (/^https?:\/\//.test(withoutTrailingSlash) || withoutTrailingSlash.startsWith("/")) {
+    return withoutTrailingSlash;
+  }
+
+  return `/${withoutTrailingSlash}`;
 }
 
 function resolveApiUrl() {
   const envUrl =
-    normalizeUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
-    normalizeUrl(process.env.API_BASE_URL) ||
     normalizeUrl(process.env.NEXT_PUBLIC_API_URL) ||
-    normalizeUrl(process.env.API_URL);
+    normalizeUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
+    normalizeUrl(process.env.API_URL) ||
+    normalizeUrl(process.env.API_BASE_URL);
 
   if (envUrl) return envUrl;
 
   if (typeof window !== "undefined") {
-    return normalizeUrl(`${window.location.origin}/v2`);
+    return "/v2";
   }
 
-  return "http://localhost:3002/v2";
+  return "/v2";
 }
 
 function resolveWebUrl() {

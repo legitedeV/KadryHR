@@ -58,8 +58,8 @@ export default function RegisterPage() {
               Utwórz konto organizacji
             </h1>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Formularz wykorzystuje endpoint <code>/auth/register</code> API V2 ({appConfig.apiUrl}).
-              Po rejestracji możesz zaprosić zespół lub dokończyć onboarding jako admin.
+              Formularz wykorzystuje endpoint <code>/auth/register</code> API V2 (bazowy URL: {appConfig.apiUrl}). Po
+              rejestracji możesz zaprosić zespół lub dokończyć onboarding jako admin.
             </p>
           </div>
           <div className="rounded-lg border px-4 py-3" style={{ borderColor: "var(--border-primary)", background: "var(--surface-secondary)" }}>

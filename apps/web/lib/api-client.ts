@@ -13,17 +13,29 @@ type RequestOptions = RequestInit & {
 export type ApiError = Error & { status?: number; payload?: unknown };
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = new URL(`${appConfig.apiUrl}${normalizedPath}`);
+  const base = appConfig.apiUrl;
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+  const baseWithoutTrailing = base.endsWith("/") ? base.slice(0, -1) : base;
+  const joined = `${baseWithoutTrailing}/${normalizedPath}`;
 
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
-      if (value === undefined) return;
-      url.searchParams.set(key, String(value));
-    });
+  if (!query) {
+    return joined.startsWith("http") ? joined : ensureLeadingSlash(joined);
   }
 
-  return url.toString();
+  const searchParams = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined) return;
+    searchParams.set(key, String(value));
+  });
+
+  const queryString = searchParams.toString();
+  const urlWithQuery = queryString ? `${joined}?${queryString}` : joined;
+
+  return urlWithQuery.startsWith("http") ? urlWithQuery : ensureLeadingSlash(urlWithQuery);
+}
+
+function ensureLeadingSlash(value: string) {
+  return value.startsWith("/") ? value : `/${value}`;
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

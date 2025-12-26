@@ -42,7 +42,7 @@ export default function LoginPage() {
             Logowanie
           </h1>
           <p style={{ color: "var(--text-tertiary)" }}>
-            Uwierzytelnianie przez API V2 ({appConfig.apiUrl}).
+            Uwierzytelnianie przez API V2 (bazowy URL: {appConfig.apiUrl}).
           </p>
         </div>
 
