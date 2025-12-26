@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth, useToast } from "../providers";
+import { useAuth, useToast } from "../../providers";
 import { Employee, Shift, deleteShifts, fetchSchedule, upsertShifts } from "./data-client";
 
 function formatMonthKey(date: Date) {
@@ -42,18 +43,20 @@ export default function ScheduleBuilderPage() {
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<SelectionAnchor>(null);
   const [scale, setScale] = useState(1);
+  const router = useRouter();
 
   const monthKey = useMemo(() => formatMonthKey(cursor), [cursor]);
   const days = useMemo(() => getDaysInMonth(cursor), [cursor]);
 
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
-  const { auth, isReady, login, setOrgId } = useAuth();
+  const { session, isReady } = useAuth();
+  const orgId = session?.currentOrganization?.id;
 
   const { data, isPending } = useQuery({
-    queryKey: ["schedule", auth?.orgId, monthKey],
-    queryFn: () => fetchSchedule(auth!.orgId, monthKey),
-    enabled: Boolean(auth?.orgId),
+    queryKey: ["schedule", orgId, monthKey],
+    queryFn: () => fetchSchedule(orgId!, monthKey),
+    enabled: Boolean(orgId),
   });
 
   const employees = data?.employees ?? [];
@@ -79,14 +82,14 @@ export default function ScheduleBuilderPage() {
 
   const mutation = useMutation({
     mutationFn: async (payload: Shift[] | { deleteIds: string[] }) => {
-      if (!auth?.orgId) throw new Error("Brak organizacji");
+      if (!orgId) throw new Error("Brak organizacji");
       if (Array.isArray(payload)) {
-        return upsertShifts(auth.orgId, payload);
+        return upsertShifts(orgId, payload);
       }
-      return deleteShifts(auth.orgId, payload.deleteIds);
+      return deleteShifts(orgId, payload.deleteIds);
     },
     onMutate: async (payload) => {
-      const key = ["schedule", auth?.orgId, monthKey] as const;
+      const key = ["schedule", orgId, monthKey] as const;
       const previous = queryClient.getQueryData<{ employees: Employee[]; shifts: Shift[] }>(key);
       if (!previous) return { previous };
 
@@ -102,12 +105,12 @@ export default function ScheduleBuilderPage() {
     },
     onError: (_err, _variables, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(["schedule", auth?.orgId, monthKey], context.previous);
+        queryClient.setQueryData(["schedule", orgId, monthKey], context.previous);
       }
       pushToast("Błąd synchronizacji. Przywrócono poprzednie dane.", "error");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedule", auth?.orgId, monthKey] });
+      queryClient.invalidateQueries({ queryKey: ["schedule", orgId, monthKey] });
       pushToast("Zapisano zmiany.", "success");
     },
   });
@@ -164,7 +167,7 @@ export default function ScheduleBuilderPage() {
   };
 
   const handleClearSelection = () => {
-    if (!selection.size || !auth?.orgId) return;
+    if (!selection.size || !orgId) return;
     const idsToDelete = Array.from(selection)
       .map((key) => {
         const [employeeId, date] = key.split(":");
@@ -264,7 +267,7 @@ export default function ScheduleBuilderPage() {
   };
 
   const handleSaveEditor = () => {
-    if (!editor || !auth?.orgId) return;
+    if (!editor || !orgId) return;
     const targetCells = editor.multi && selection.size ? Array.from(selection) : [cellKey(editor.employeeId, editor.date)];
     const updates: Shift[] = targetCells.map((key) => {
       const [employeeId, date] = key.split(":");
@@ -284,13 +287,9 @@ export default function ScheduleBuilderPage() {
   };
 
   const handleDelete = () => {
-    if (!editor?.shiftId || !auth?.orgId) return;
+    if (!editor?.shiftId || !orgId) return;
     mutation.mutate({ deleteIds: [editor.shiftId] });
     setEditor(null);
-  };
-
-  const handleQuickLogin = (orgId: string) => {
-    login("demo@kadry.hr", orgId);
   };
 
   return (
@@ -313,36 +312,25 @@ export default function ScheduleBuilderPage() {
             </p>
           </div>
           <div className="app-card px-4 py-3 text-sm min-w-[240px]">
-            {auth ? (
+            {session ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span style={{ color: "var(--text-secondary)" }}>Użytkownik</span>
-                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{auth.email}</span>
+                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {session.user.fullName || session.user.email}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={auth.orgId}
-                    onChange={(e) => setOrgId(e.target.value)}
-                    className="input-primary text-sm"
-                    aria-label="orgId"
-                  />
-                  <button
-                    className="px-3 py-2 rounded-lg text-sm"
-                    style={{ backgroundColor: "var(--surface-tertiary)", color: "var(--text-secondary)" }}
-                    onClick={() => setOrgId(auth.orgId)}
-                  >
-                    Zapisz org
-                  </button>
+                <div className="flex items-center justify-between">
+                  <span style={{ color: "var(--text-secondary)" }}>Organizacja</span>
+                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {session.currentOrganization?.name || "brak"}
+                  </span>
                 </div>
-                <div className="flex justify-between pt-1">
-                  <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>Token: {auth.token}</span>
-                  <button
-                    className="text-xs font-semibold"
-                    style={{ color: "var(--theme-primary)" }}
-                    onClick={() => login(auth.email, auth.orgId)}
-                  >
-                    Odśwież
-                  </button>
+                <div className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  Rola: {session.currentOrganization?.role || "brak"} · orgId: {orgId || "-"}
+                </div>
+                <div className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  Użyj selektora w nagłówku, aby zmienić kontekst żądania.
                 </div>
               </div>
             ) : (
@@ -350,18 +338,12 @@ export default function ScheduleBuilderPage() {
                 <div className="font-semibold" style={{ color: "var(--text-primary)" }}>
                   Zaloguj się aby edytować grafik
                 </div>
-                <div className="flex items-center gap-2">
-                  <button className="btn-primary flex-1" onClick={() => handleQuickLogin("kadryhr-demo")}>
-                    Demo login
-                  </button>
-                  <button
-                    className="px-3 py-2 rounded-lg border"
-                    style={{ color: "var(--text-secondary)", borderColor: "var(--border-primary)" }}
-                    onClick={() => handleQuickLogin("org-b")}
-                  >
-                    org-b
-                  </button>
-                </div>
+                <button
+                  className="btn-primary w-full"
+                  onClick={() => router.push(`/login?returnUrl=${encodeURIComponent("/schedule-builder")}`)}
+                >
+                  Przejdź do logowania
+                </button>
                 <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   Dane zapisywane lokalnie per orgId, widoczne natychmiast (optimistic UI).
                 </p>
@@ -370,13 +352,13 @@ export default function ScheduleBuilderPage() {
           </div>
         </div>
 
-        {(!auth && isReady) ? (
+        {(!session && isReady) ? (
           <div className="app-card p-6 text-center" style={{ color: "var(--text-secondary)" }}>
-            Wymagane logowanie. Użyj przycisku "Demo login" lub przejdź na stronę logowania.
+            Wymagane logowanie. Użyj strony logowania i wybierz organizację w nagłówku po uwierzytelnieniu.
           </div>
         ) : null}
 
-        {auth ? (
+        {session ? (
           <div className="app-card p-4 space-y-4" style={{ overflow: "hidden" }}>
             <div className="flex flex-wrap items-center gap-3 justify-between">
               <div className="flex items-center gap-2">
