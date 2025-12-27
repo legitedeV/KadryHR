@@ -196,6 +196,127 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
   );
 };
 
+const TemplateModal = ({ open, onClose, onSave, onApply, templates, loading }) => {
+  const [templateName, setTemplateName] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [applyMode, setApplyMode] = useState('overwrite');
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-2xl rounded-xl bg-white p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900">Szablony grafików</h3>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
+        </div>
+
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">Zapisz obecny grafik jako szablon</h4>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Nazwa szablonu, np. Grafik Styczeń 2025"
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-theme-primary focus:outline-none"
+              />
+              <button
+                onClick={() => {
+                  onSave(templateName);
+                  setTemplateName('');
+                }}
+                disabled={loading || !templateName.trim()}
+                className="rounded-lg bg-theme-gradient px-4 py-2 text-sm font-semibold text-white shadow hover:shadow-md disabled:opacity-60"
+              >
+                Zapisz szablon
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">Zastosuj istniejący szablon</h4>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Wybierz szablon</label>
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-theme-primary focus:outline-none"
+                >
+                  <option value="">-- Wybierz szablon --</option>
+                  {templates.map((tpl) => (
+                    <option key={tpl._id} value={tpl._id}>
+                      {tpl.name} ({tpl.month || 'brak daty'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Tryb zastosowania</label>
+                <div className="mt-2 flex gap-3">
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="applyMode"
+                      value="overwrite"
+                      checked={applyMode === 'overwrite'}
+                      onChange={(e) => setApplyMode(e.target.value)}
+                    />
+                    Nadpisz (usuń obecne zmiany)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="applyMode"
+                      value="merge"
+                      checked={applyMode === 'merge'}
+                      onChange={(e) => setApplyMode(e.target.value)}
+                    />
+                    Scal (zachowaj obecne)
+                  </label>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  onApply(selectedTemplate, applyMode);
+                  setSelectedTemplate('');
+                }}
+                disabled={loading || !selectedTemplate}
+                className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-slate-800 disabled:opacity-60"
+              >
+                Zastosuj szablon
+              </button>
+            </div>
+          </div>
+
+          {templates.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-slate-800 mb-3">Zapisane szablony ({templates.length})</h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {templates.map((tpl) => (
+                  <div
+                    key={tpl._id}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{tpl.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {tpl.month || 'Brak daty'} • Utworzono: {new Date(tpl.createdAt).toLocaleDateString('pl-PL')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ScheduleBuilderV2 = () => {
   const queryClient = useQueryClient();
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -207,13 +328,9 @@ const ScheduleBuilderV2 = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [alert, setAlert] = useState({ type: null, message: null });
   const [modalOpen, setModalOpen] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [modalState, setModalState] = useState({ employeeId: '', date: '', shiftTemplateId: '', notes: '', noteType: '' });
   const [dragState, setDragState] = useState(null);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectionRect, setSelectionRect] = useState(null);
-  const [isPointerSelecting, setIsPointerSelecting] = useState(false);
-  const [copyBuffer, setCopyBuffer] = useState(null);
-  const [bulkLoading, setBulkLoading] = useState(false);
 
   const daysInMonth = useMemo(() => buildDays(selectedMonth), [selectedMonth]);
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -250,6 +367,14 @@ const ScheduleBuilderV2 = () => {
     queryFn: async () => {
       const { data } = await api.get('/shift-templates');
       return Array.isArray(data) ? data : data.templates || [];
+    },
+  });
+
+  const { data: scheduleTemplatesData, refetch: refetchTemplates } = useQuery({
+    queryKey: ['schedule-templates'],
+    queryFn: async () => {
+      const { data } = await api.get('/schedule-templates');
+      return data.templates || [];
     },
   });
 
@@ -308,6 +433,34 @@ const ScheduleBuilderV2 = () => {
     onError: (err) => setAlert({ type: 'error', message: err.response?.data?.message || 'Nie udało się usunąć zmiany.' }),
   });
 
+  const saveTemplate = useMutation({
+    mutationFn: async ({ name, assignments, month, year }) => {
+      const { data } = await api.post('/schedule-templates', { name, assignments, month, year });
+      return data.template;
+    },
+    onSuccess: () => {
+      refetchTemplates();
+      setAlert({ type: 'success', message: 'Szablon zapisany pomyślnie.' });
+    },
+    onError: (err) => setAlert({ type: 'error', message: err.response?.data?.message || 'Nie udało się zapisać szablonu.' }),
+  });
+
+  const applyTemplate = useMutation({
+    mutationFn: async ({ templateId, scheduleId, targetMonth, mode }) => {
+      const { data } = await api.post(`/schedule-templates/${templateId}/apply`, {
+        scheduleId,
+        targetMonth,
+        mode,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['schedule-v2-detail', selectedSchedule?._id]);
+      setAlert({ type: 'success', message: 'Szablon zastosowany pomyślnie.' });
+    },
+    onError: (err) => setAlert({ type: 'error', message: err.response?.data?.message || 'Nie udało się zastosować szablonu.' }),
+  });
+
   useEffect(() => {
     if (schedules && schedules.length > 0) {
       setSelectedSchedule((prev) => prev || schedules[0]);
@@ -350,13 +503,7 @@ const ScheduleBuilderV2 = () => {
     });
   }, [employeesData, searchTerm, statusFilter, assignments]);
 
-  const resetSelection = () => {
-    setSelectionRect(null);
-    setIsPointerSelecting(false);
-  };
-
   const openModal = (employeeId, dateKey) => {
-    if (selectionMode) return;
     setModalState((prev) => {
       const key = `${employeeId}-${dateKey}`;
       const existing = assignmentsByKey[key];
@@ -418,10 +565,6 @@ const ScheduleBuilderV2 = () => {
     setModalOpen(false);
   };
 
-  useEffect(() => {
-    resetSelection();
-  }, [selectedSchedule?._id, selectedMonth, assignments.length]);
-
   const handleMonthChange = (direction) => {
     const date = new Date(`${selectedMonth}-01T00:00:00`);
     date.setMonth(date.getMonth() + direction);
@@ -429,102 +572,10 @@ const ScheduleBuilderV2 = () => {
   };
 
   const handleDragStart = (assignment, employeeId, dateKey) => {
-    if (selectionMode) return;
     setDragState({ assignment, sourceEmployeeId: employeeId, sourceDate: dateKey });
   };
 
   const handleDragEnd = () => setDragState(null);
-
-  const selectionContainsKey = (employeeId, dateKey) => {
-    if (!selectionRect) return false;
-    return selectionRect.keys.has(`${employeeId}-${dateKey}`);
-  };
-
-  const pointerIndices = useMemo(() => {
-    if (!filteredEmployees.length) return { employees: {}, days: {} };
-    const employeeMap = {};
-    filteredEmployees.forEach((emp, idx) => {
-      employeeMap[emp._id] = idx;
-    });
-    const dayMap = {};
-    daysInMonth.forEach((day, idx) => {
-      dayMap[day.key] = idx;
-    });
-    return { employees: employeeMap, days: dayMap };
-  }, [filteredEmployees, daysInMonth]);
-
-  const clampRect = (start, end) => {
-    if (!start || !end) return null;
-    const [startEmp, startDay] = start;
-    const [endEmp, endDay] = end;
-    if (startEmp == null || startDay == null || endEmp == null || endDay == null) return null;
-
-    const minEmp = Math.min(startEmp, endEmp);
-    const maxEmp = Math.max(startEmp, endEmp);
-    const minDay = Math.min(startDay, endDay);
-    const maxDay = Math.max(startDay, endDay);
-
-    const keys = new Set();
-    for (let empIndex = minEmp; empIndex <= maxEmp; empIndex += 1) {
-      const employeeId = filteredEmployees[empIndex]?._id;
-      if (!employeeId) continue;
-      for (let dayIndex = minDay; dayIndex <= maxDay; dayIndex += 1) {
-        const dayKey = daysInMonth[dayIndex]?.key;
-        if (!dayKey) continue;
-        keys.add(`${employeeId}-${dayKey}`);
-      }
-    }
-
-    return {
-      minEmp,
-      maxEmp,
-      minDay,
-      maxDay,
-      keys,
-    };
-  };
-
-  const handlePointerDown = (employeeId, dayKey) => {
-    if (!selectionMode) return;
-    const empIdx = pointerIndices.employees[employeeId];
-    const dayIdx = pointerIndices.days[dayKey];
-    if (empIdx == null || dayIdx == null) return;
-    setIsPointerSelecting(true);
-    const rect = clampRect([empIdx, dayIdx], [empIdx, dayIdx]);
-    setSelectionRect(rect);
-  };
-
-  const handlePointerEnter = (employeeId, dayKey) => {
-    if (!selectionMode || !isPointerSelecting) return;
-    const empIdx = pointerIndices.employees[employeeId];
-    const dayIdx = pointerIndices.days[dayKey];
-    if (empIdx == null || dayIdx == null) return;
-    setSelectionRect((prev) => {
-      if (!prev) return clampRect([empIdx, dayIdx], [empIdx, dayIdx]);
-      return clampRect([prev.minEmp, prev.minDay], [empIdx, dayIdx]);
-    });
-  };
-
-  const handlePointerUp = () => {
-    if (!selectionMode) return;
-    setIsPointerSelecting(false);
-  };
-
-  const runBulkAction = async (actions, successMessage) => {
-    if (!actions.length) {
-      setAlert({ type: 'info', message: 'Brak zmian do wykonania.' });
-      return;
-    }
-    try {
-      setBulkLoading(true);
-      await Promise.all(actions);
-      setAlert({ type: 'success', message: successMessage });
-    } catch (err) {
-      setAlert({ type: 'error', message: err.response?.data?.message || 'Operacja nie powiodła się.' });
-    } finally {
-      setBulkLoading(false);
-    }
-  };
 
   const handleDropOnCell = async (employeeId, dateKey) => {
     if (!dragState || !selectedSchedule) return;
@@ -576,11 +627,49 @@ const ScheduleBuilderV2 = () => {
     }
   };
 
+  const handleSaveTemplate = (name) => {
+    if (!selectedSchedule || !assignments.length) {
+      setAlert({ type: 'error', message: 'Brak zmian do zapisania w szablonie.' });
+      return;
+    }
+
+    const templateAssignments = assignments.map((a) => ({
+      employeeId: a.employee._id,
+      date: a.date,
+      type: a.type,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      shiftTemplateId: a.shiftTemplate?._id,
+      notes: a.notes,
+      color: a.shiftTemplate?.color,
+    }));
+
+    saveTemplate.mutate({
+      name,
+      assignments: templateAssignments,
+      month: selectedMonth,
+      year,
+    });
+  };
+
+  const handleApplyTemplate = (templateId, mode) => {
+    if (!selectedSchedule) {
+      setAlert({ type: 'error', message: 'Wybierz grafik, do którego chcesz zastosować szablon.' });
+      return;
+    }
+
+    applyTemplate.mutate({
+      templateId,
+      scheduleId: selectedSchedule._id,
+      targetMonth: selectedMonth,
+      mode,
+    });
+    setTemplateModalOpen(false);
+  };
+
   const renderCell = (employee, day) => {
     const key = `${employee._id}-${day.key}`;
     const assignment = assignmentsByKey[key];
-    const isDragSource = dragState?.assignment?._id === assignment?._id;
-    const isSelected = selectionContainsKey(employee._id, day.key);
     const color = assignment?.shiftTemplate?.color || '#22c55e';
     const parsedNotes = parseNotes(assignment?.notes);
     const fallbackNote = parsedNotes.noteText || assignment?.type || '';
@@ -591,30 +680,19 @@ const ScheduleBuilderV2 = () => {
       : parsedNotes.noteType === 'Informacja'
       ? 'bg-sky-100 text-sky-700'
       : 'bg-slate-100 text-slate-600';
-    const showPlaceholder = !assignment && !selectionMode;
-    const selectionRing = isSelected ? 'ring-2 ring-theme-primary/40 border-theme-primary/60 bg-theme-primary/5' : '';
-
-    const commonHandlers = selectionMode
-      ? {
-          onMouseDown: () => handlePointerDown(employee._id, day.key),
-          onMouseEnter: () => handlePointerEnter(employee._id, day.key),
-          onMouseUp: handlePointerUp,
-        }
-      : {
-          onClick: () => openModal(employee._id, day.key),
-        };
+    const showPlaceholder = !assignment;
 
     return (
       <button
         key={day.key}
-        {...commonHandlers}
-        draggable={!selectionMode && !!assignment}
+        onClick={() => openModal(employee._id, day.key)}
+        draggable={!!assignment}
         onDragStart={() => assignment && handleDragStart(assignment, employee._id, day.key)}
         onDragEnd={handleDragEnd}
         className={`group relative flex h-[4.25rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs transition-all duration-150 hover:-translate-y-[1px] hover:border-theme-primary hover:shadow-sm ${
-          assignment && !selectionMode ? 'cursor-grab active:cursor-grabbing' : ''
-        } ${selectionRing}`}
-        onDoubleClick={() => !selectionMode && openModal(employee._id, day.key)}
+          assignment ? 'cursor-grab active:cursor-grabbing' : ''
+        }`}
+        onDoubleClick={() => openModal(employee._id, day.key)}
       >
         {assignment ? (
           <div className="flex flex-col items-center text-center leading-tight gap-0.5">
@@ -646,9 +724,6 @@ const ScheduleBuilderV2 = () => {
           >
             +
           </span>
-        )}
-        {selectionMode && !assignment && (
-          <span className="absolute inset-2 rounded-lg border border-dashed border-theme-primary/60" />
         )}
       </button>
     );
@@ -690,6 +765,13 @@ const ScheduleBuilderV2 = () => {
               className="rounded-lg bg-theme-gradient px-4 py-2 text-sm font-semibold text-white shadow hover:shadow-md"
             >
               Nowy grafik
+            </button>
+            <button
+              onClick={() => setTemplateModalOpen(true)}
+              disabled={!selectedSchedule}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-slate-800 disabled:opacity-60"
+            >
+              Szablony
             </button>
           </div>
         </div>
@@ -739,7 +821,7 @@ const ScheduleBuilderV2 = () => {
               </div>
             </div>
             <div className="pt-2 text-xs text-slate-500">
-              Kliknij w komórkę, aby dodać lub edytować zmianę. Zmiany są zapisywane w czasie rzeczywistym.
+              Kliknij w komórkę, aby dodać lub edytować zmianę. Przeciągnij zmianę, aby przenieść ją na inny dzień lub pracownika.
             </div>
           </div>
 
@@ -808,13 +890,12 @@ const ScheduleBuilderV2 = () => {
                     const hasAssignment = !!assignmentsByKey[key];
                     const isDropTarget =
                       !!dragState && !(dragState.sourceEmployeeId === employee._id && dragState.sourceDate === day.key);
-                    const isSelected = selectionContainsKey(employee._id, day.key);
                     return (
                       <div
                         key={`${employee._id}-${day.key}`}
                         className={`border-b border-slate-200 px-2 py-2 transition ${
                           isDropTarget && dragState ? 'bg-sky-50/70 ring-1 ring-sky-100' : ''
-                        } ${hasAssignment ? 'hover:bg-slate-50/70' : ''} ${isSelected ? 'bg-theme-primary/5' : ''}`}
+                        } ${hasAssignment ? 'hover:bg-slate-50/70' : ''}`}
                         onDragOver={(e) => {
                           if (dragState) e.preventDefault();
                         }}
@@ -850,6 +931,15 @@ const ScheduleBuilderV2 = () => {
         formState={modalState}
         setFormState={setModalState}
         loading={createAssignment.isLoading || updateAssignment.isLoading || deleteAssignment.isLoading}
+      />
+
+      <TemplateModal
+        open={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSave={handleSaveTemplate}
+        onApply={handleApplyTemplate}
+        templates={scheduleTemplatesData || []}
+        loading={saveTemplate.isLoading || applyTemplate.isLoading}
       />
     </div>
   );
