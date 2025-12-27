@@ -2,7 +2,7 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const WorktimeEntry = require('../models/WorktimeEntry');
 const Employee = require('../models/Employee');
-const { protect, requireRole } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const { requirePermission } = require('../middleware/permissionMiddleware');
 
 const router = express.Router();

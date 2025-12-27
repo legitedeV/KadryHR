@@ -289,7 +289,7 @@ const Payroll = () => {
                 </svg>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Wprowadź dane po lewej i kliknij<br />"Oblicz wynagrodzenie"
+                Wprowadź dane po lewej i kliknij<br />&quot;Oblicz wynagrodzenie&quot;
               </p>
             </div>
           )}

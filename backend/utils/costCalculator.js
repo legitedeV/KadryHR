@@ -20,7 +20,6 @@ const calculateShiftCost = (shift, employee, options = {}) => {
   const hourlyRate = employee.hourlyRate || 0;
   
   let baseCost = duration * hourlyRate;
-  let multiplier = 1.0;
   let breakdown = {
     baseHours: duration,
     baseRate: hourlyRate,

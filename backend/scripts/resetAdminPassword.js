@@ -48,7 +48,7 @@ const NEW_PASSWORD = 'Admin123!';
       user.password = hash;
       try {
         user.passwordHash = hash;
-      } catch (e) {
+      } catch (_e) {
         // jeśli schema jest „sztywna” i nie ma passwordHash – olewamy
       }
       await user.save();

@@ -36,7 +36,7 @@ const generateQRToken = asyncHandler(async (req, res) => {
   );
 
   // Save token to database
-  const qrToken = await QRToken.create({
+  await QRToken.create({
     user: userId,
     employee: employee._id,
     tokenHash,

@@ -235,7 +235,7 @@ shiftAssignmentSchema.pre('save', async function(next) {
           taken: false
         }));
       }
-    } catch (err) {
+    } catch (_err) {
       // Continue without breaks if template fetch fails
     }
   }

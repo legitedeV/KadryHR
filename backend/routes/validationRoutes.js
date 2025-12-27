@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, requireRole } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const LaborLawValidator = require('../utils/laborLawValidator');
 const ShiftAssignment = require('../models/ShiftAssignment');
 const Employee = require('../models/Employee');
@@ -13,7 +13,7 @@ const validator = new LaborLawValidator();
  */
 router.post('/schedule', protect, async (req, res) => {
   try {
-    const { scheduleId, assignments } = req.body;
+    const { assignments } = req.body;
 
     // Fetch employees
     const employeeIds = [...new Set(assignments.map(a => a.employeeId || a.employee))];
