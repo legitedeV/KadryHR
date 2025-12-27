@@ -98,7 +98,7 @@ const ErrorFallback = ({ error, errorInfo, resetError }) => {
           </button>
         </div>
 
-        {process.env.NODE_ENV === 'development' && errorInfo && (
+        {import.meta.env.DEV && errorInfo && (
           <details className="mt-6">
             <summary className="cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
               Szczegóły techniczne (tylko w trybie deweloperskim)

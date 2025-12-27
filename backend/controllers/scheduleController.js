@@ -3,7 +3,6 @@ const Employee = require('../models/Employee');
 const Leave = require('../models/Leave');
 const EmployeeAvailability = require('../models/EmployeeAvailability');
 const ShiftTemplate = require('../models/ShiftTemplate');
-const ScheduleConstraint = require('../models/ScheduleConstraint');
 const { createNotification } = require('../utils/notificationService');
 const { validateSchedule } = require('../utils/laborLawValidator');
 const { calculateScheduleCost, optimizeCosts, forecastCosts } = require('../utils/costCalculator');

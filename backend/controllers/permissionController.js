@@ -1,7 +1,6 @@
 const Permission = require('../models/Permission');
 const UserPermission = require('../models/UserPermission');
 const User = require('../models/User');
-const Employee = require('../models/Employee');
 
 /**
  * Inicjalizacja domyślnych uprawnień w systemie

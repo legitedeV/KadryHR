@@ -3,7 +3,7 @@
  * Generuje optymalne grafiki z uwzględnieniem wielu czynników
  */
 
-const { validateSchedule, calculateShiftDuration, toMinutes } = require('./laborLawValidator');
+const { validateSchedule, calculateShiftDuration } = require('./laborLawValidator');
 const { calculateScheduleCost } = require('./costCalculator');
 
 /**
@@ -36,7 +36,6 @@ const generateIntelligentSchedule = async (params) => {
   }
   
   const {
-    minStaffPerShift = 1,
     maxStaffPerShift = 10,
     preferredStaffPerShift = 2,
     allowOvertime = true,
@@ -238,7 +237,7 @@ const selectEmployeesForShift = (
   
   // Filtrowanie dostępnych pracowników
   const available = employees.filter(emp => {
-    const empId = emp._id.toString();
+    const _empId = emp._id.toString();
     
     // Sprawdź czy pracownik jest aktywny
     if (!emp.isActive) return false;

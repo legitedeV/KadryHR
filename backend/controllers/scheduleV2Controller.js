@@ -2,7 +2,6 @@ const asyncHandler = require('express-async-handler');
 const Schedule = require('../models/Schedule');
 const ShiftAssignment = require('../models/ShiftAssignment');
 const Employee = require('../models/Employee');
-const ShiftTemplate = require('../models/ShiftTemplate');
 
 // @desc    Get schedules with optional filters
 // @route   GET /api/schedules/v2
@@ -367,7 +366,7 @@ const generateSchedule = asyncHandler(async (req, res) => {
 // @access  Private
 const getScheduleValidation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { calculateHours, calculateEmployeeHours, validateSchedule, checkLeaveConflicts } = require('../utils/scheduleUtils');
+  const { calculateEmployeeHours, validateSchedule } = require('../utils/scheduleUtils');
   
   const schedule = await Schedule.findById(id);
   if (!schedule) {
@@ -381,21 +380,21 @@ const getScheduleValidation = asyncHandler(async (req, res) => {
   // Group assignments by employee
   const employeeAssignments = {};
   assignments.forEach(assignment => {
-    const empId = assignment.employee._id.toString();
-    if (!employeeAssignments[empId]) {
-      employeeAssignments[empId] = {
+    const _empId = assignment.employee._id.toString();
+    if (!employeeAssignments[_empId]) {
+      employeeAssignments[_empId] = {
         employee: assignment.employee,
         assignments: []
       };
     }
-    employeeAssignments[empId].assignments.push(assignment);
+    employeeAssignments[_empId].assignments.push(assignment);
   });
   
   // Calculate summaries and validations for each employee
   const employeeSummaries = [];
   const allViolations = [];
   
-  for (const [empId, data] of Object.entries(employeeAssignments)) {
+  for (const [_empId, data] of Object.entries(employeeAssignments)) {
     const summary = calculateEmployeeHours(data.assignments);
     const validation = validateSchedule(data.assignments);
     

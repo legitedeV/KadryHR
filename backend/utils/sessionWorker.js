@@ -41,7 +41,7 @@ async function autoCloseExpiredSessions() {
       const autoClockOutTime = new Date(session.timestamp.getTime() + (MAX_WORK_MINUTES * 60 * 1000));
 
       // Create auto clock-out entry
-      const autoClockOut = await TimeEntry.create({
+      await TimeEntry.create({
         employee: session.employee._id,
         user: session.user._id,
         type: 'clock-out',

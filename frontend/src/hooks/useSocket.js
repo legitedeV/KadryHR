@@ -59,8 +59,10 @@ export const useSocket = (token) => {
     }
   };
 
+  const getSocket = () => socketRef.current;
+
   return {
-    socket: socketRef.current,
+    socket: getSocket,
     isConnected,
     emit,
     on,

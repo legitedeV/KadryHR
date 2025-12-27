@@ -15,7 +15,7 @@ const ShiftAssignment = require('../models/ShiftAssignment');
 const publishSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const { notifyEmployees = true } = req.body;
+    const { notifyEmployees: _notifyEmployees = true } = req.body;
 
     // Use service layer
     const schedule = await scheduleService.publishSchedule(
@@ -24,7 +24,7 @@ const publishSchedule = async (req, res) => {
       req.organizationId
     );
 
-    // TODO: Send notifications to employees if notifyEmployees is true
+    // TODO: Send notifications to employees if _notifyEmployees is true
     // This would integrate with notification service
 
     res.json({

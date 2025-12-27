@@ -2,13 +2,12 @@ const Schedule = require('../models/Schedule');
 const ShiftAssignment = require('../models/ShiftAssignment');
 const ShiftTemplate = require('../models/ShiftTemplate');
 const Leave = require('../models/Leave');
-const Employee = require('../models/Employee');
 
 class ScheduleService {
   /**
    * Check for shift conflicts (overlapping shifts, leave conflicts)
    */
-  async checkConflicts(employeeId, date, startTime, endTime, excludeAssignmentId = null, organizationId) {
+  async checkConflicts(employeeId, date, startTime, endTime, excludeAssignmentId = null, _organizationId) {
     const conflicts = [];
 
     // Parse times
@@ -87,7 +86,7 @@ class ScheduleService {
   /**
    * Publish schedule (change status from draft to published)
    */
-  async publishSchedule(scheduleId, userId, organizationId) {
+  async publishSchedule(scheduleId, userId, _organizationId) {
     const schedule = await Schedule.findOne({ _id: scheduleId });
 
     if (!schedule) {
@@ -110,7 +109,7 @@ class ScheduleService {
   /**
    * Copy week of shifts to another week
    */
-  async copyWeek(scheduleId, sourceWeekStart, targetWeekStart, employeeIds, organizationId) {
+  async copyWeek(scheduleId, sourceWeekStart, targetWeekStart, employeeIds, _organizationId) {
     const sourceDate = new Date(sourceWeekStart);
     const targetDate = new Date(targetWeekStart);
 
@@ -162,7 +161,7 @@ class ScheduleService {
   /**
    * Apply template to multiple days/employees
    */
-  async applyTemplate(scheduleId, templateId, dates, employeeIds, organizationId) {
+  async applyTemplate(scheduleId, templateId, dates, employeeIds, _organizationId) {
     const template = await ShiftTemplate.findOne({ _id: templateId });
 
     if (!template) {
@@ -216,7 +215,7 @@ class ScheduleService {
   /**
    * Delete shifts in date range
    */
-  async deleteRange(scheduleId, startDate, endDate, employeeIds, organizationId) {
+  async deleteRange(scheduleId, startDate, endDate, employeeIds, _organizationId) {
     const query = {
       schedule: scheduleId,
       date: {
@@ -237,7 +236,7 @@ class ScheduleService {
   /**
    * Get schedule statistics
    */
-  async getScheduleStats(scheduleId, organizationId) {
+  async getScheduleStats(scheduleId, _organizationId) {
     const shifts = await ShiftAssignment.find({ schedule: scheduleId });
 
     const stats = {

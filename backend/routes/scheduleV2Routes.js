@@ -1,6 +1,6 @@
 const express = require('express');
 const scheduleV2Controller = require('../controllers/scheduleV2Controller');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const { requirePermission } = require('../middleware/permissionMiddleware');
 
 const router = express.Router();

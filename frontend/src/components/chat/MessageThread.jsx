@@ -3,13 +3,13 @@ import React, { useEffect, useRef } from 'react';
 const MessageThread = ({ messages, currentUserId, loading }) => {
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('pl-PL', { 

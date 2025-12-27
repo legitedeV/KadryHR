@@ -53,7 +53,7 @@ exports.createWebhook = asyncHandler(async (req, res) => {
   // Validate URL format
   try {
     new URL(url);
-  } catch (err) {
+  } catch (_err) {
     return res.status(400).json({ 
       message: 'Nieprawidłowy format URL' 
     });
@@ -100,7 +100,7 @@ exports.updateWebhook = asyncHandler(async (req, res) => {
     try {
       new URL(url);
       webhook.url = url;
-    } catch (err) {
+    } catch (_err) {
       return res.status(400).json({ message: 'Nieprawidłowy format URL' });
     }
   }

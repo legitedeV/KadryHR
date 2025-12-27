@@ -114,7 +114,7 @@ io.use((socket, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super-secret-dev');
     socket.userId = decoded.id;
     next();
-  } catch (err) {
+  } catch (_err) {
     next(new Error('Authentication error'));
   }
 });
@@ -304,7 +304,7 @@ app.all('/api/*', (req, res) => {
 });
 
 // === GLOBAL ERROR HANDLER ===
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Wewnętrzny błąd serwera';
 

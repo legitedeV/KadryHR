@@ -5,7 +5,7 @@ const ShiftTemplate = require('../models/ShiftTemplate');
  */
 exports.getShiftTemplates = async (req, res, next) => {
   try {
-    const { id: userId, role, companyId } = req.user || {};
+    const { id: userId, companyId } = req.user || {};
 
     if (!userId) {
       return res.status(401).json({ message: 'Brak autoryzacji.' });

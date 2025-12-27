@@ -159,7 +159,7 @@ describe('scheduleService', () => {
 
       Schedule.findOne.mockResolvedValue(mockSchedule);
 
-      const result = await scheduleService.publishSchedule(scheduleId, userId, orgId);
+      await scheduleService.publishSchedule(scheduleId, userId, orgId);
 
       expect(mockSchedule.status).toBe('published');
       expect(mockSchedule.publishedBy).toBe(userId);

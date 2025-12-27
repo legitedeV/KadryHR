@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePermissions } from '../hooks/usePermissions';
+import { useTheme } from '../context/ThemeContext';
 import PermissionBadge from '../components/PermissionBadge';
+import api from '../utils/api';
 
 const Settings = () => {
   const { themeMode, updateThemeMode } = useTheme();
   const { permissions, isAdmin } = usePermissions();
   const [selectedMode, setSelectedMode] = useState(themeMode);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
-  const [error, setError] = useState(null);
+  const [_error, setError] = useState(null);
 
   const handleModeChange = (mode) => {
     setSelectedMode(mode);

@@ -3,7 +3,6 @@ const Employee = require('../models/Employee');
 const PerformanceReview = require('../models/PerformanceReview');
 const TrainingEnrollment = require('../models/TrainingEnrollment');
 const Leave = require('../models/Leave');
-const TimeEntry = require('../models/TimeEntry');
 
 exports.generateAnalytics = async (req, res, next) => {
   try {
