@@ -56,6 +56,30 @@ const initializePermissions = async () => {
     
     // Panel pracownika
     { name: 'self_service.view', displayName: 'Panel pracownika', description: 'Dostęp do panelu samoobsługi', module: 'self_service', category: 'view' },
+    
+    // Oceny pracownicze
+    { name: 'performance.view', displayName: 'Przeglądanie ocen', description: 'Dostęp do ocen pracowniczych', module: 'performance', category: 'view' },
+    { name: 'performance.manage', displayName: 'Zarządzanie ocenami', description: 'Możliwość tworzenia i edycji ocen', module: 'performance', category: 'manage' },
+    
+    // Szkolenia i rozwój
+    { name: 'training.view', displayName: 'Przeglądanie szkoleń', description: 'Dostęp do szkoleń', module: 'training', category: 'view' },
+    { name: 'training.manage', displayName: 'Zarządzanie szkoleniami', description: 'Możliwość tworzenia i zarządzania szkoleniami', module: 'training', category: 'manage' },
+    
+    // Onboarding
+    { name: 'onboarding.view', displayName: 'Przeglądanie onboardingu', description: 'Dostęp do procesów wdrożenia', module: 'onboarding', category: 'view' },
+    { name: 'onboarding.manage', displayName: 'Zarządzanie onboardingiem', description: 'Możliwość zarządzania procesami wdrożenia', module: 'onboarding', category: 'manage' },
+    
+    // Benefity
+    { name: 'benefits.view', displayName: 'Przeglądanie benefitów', description: 'Dostęp do benefitów pracowniczych', module: 'benefits', category: 'view' },
+    { name: 'benefits.manage', displayName: 'Zarządzanie benefitami', description: 'Możliwość zarządzania benefitami', module: 'benefits', category: 'manage' },
+    
+    // Wellness
+    { name: 'wellness.view', displayName: 'Przeglądanie programów wellness', description: 'Dostęp do programów wellness', module: 'wellness', category: 'view' },
+    { name: 'wellness.manage', displayName: 'Zarządzanie wellness', description: 'Możliwość zarządzania programami wellness', module: 'wellness', category: 'manage' },
+    
+    // Analityka
+    { name: 'analytics.view', displayName: 'Przeglądanie analityki', description: 'Dostęp do analityki HR', module: 'analytics', category: 'view' },
+    { name: 'analytics.manage', displayName: 'Zarządzanie analityką', description: 'Możliwość generowania raportów analitycznych', module: 'analytics', category: 'manage' },
   ];
 
   for (const perm of defaultPermissions) {

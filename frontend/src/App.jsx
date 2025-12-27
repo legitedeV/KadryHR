@@ -31,6 +31,12 @@ const AllLeaves = lazy(() => import('./pages/AllLeaves'));
 const AllNotifications = lazy(() => import('./pages/AllNotifications'));
 const Permissions = lazy(() => import('./pages/Permissions'));
 const Webhooks = lazy(() => import('./pages/Webhooks'));
+const Performance = lazy(() => import('./pages/Performance'));
+const Training = lazy(() => import('./pages/Training'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Benefits = lazy(() => import('./pages/Benefits'));
+const Wellness = lazy(() => import('./pages/Wellness'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const MyTasks = lazy(() => import('./pages/MyTasks'));
 
@@ -300,6 +306,66 @@ const App = () => {
               <AdminRequests />
             </Layout>
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/performance"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Performance />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/training"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Training />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/onboarding"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Onboarding />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/benefits"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Benefits />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/wellness"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Wellness />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <AdminRoute>
+            <Layout>
+              <Analytics />
+            </Layout>
+          </AdminRoute>
         }
       />
       

@@ -25,6 +25,12 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   LinkIcon,
+  ChartBarIcon,
+  AcademicCapIcon,
+  UserPlusIcon,
+  GiftIcon,
+  HeartIcon,
+  ChartPieIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -171,6 +177,42 @@ const Sidebar = () => {
       to: '/webhooks', 
       label: 'Webhooks', 
       icon: LinkIcon,
+      adminOnly: true
+    },
+    { 
+      to: '/performance', 
+      label: 'Oceny pracownicze', 
+      icon: ChartBarIcon,
+      permission: 'performance.view'
+    },
+    { 
+      to: '/training', 
+      label: 'Szkolenia', 
+      icon: AcademicCapIcon,
+      permission: 'training.view'
+    },
+    { 
+      to: '/onboarding', 
+      label: 'Onboarding', 
+      icon: UserPlusIcon,
+      permission: 'onboarding.view'
+    },
+    { 
+      to: '/benefits', 
+      label: 'Benefity', 
+      icon: GiftIcon,
+      permission: 'benefits.view'
+    },
+    { 
+      to: '/wellness', 
+      label: 'Wellness', 
+      icon: HeartIcon,
+      permission: 'wellness.view'
+    },
+    { 
+      to: '/analytics', 
+      label: 'Analityka', 
+      icon: ChartPieIcon,
       adminOnly: true
     },
   ];
