@@ -65,21 +65,12 @@ jobs:
         working-directory: ./frontend
         run: npm run build
       
-<<<<<<< HEAD
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/dist
           retention-days: 7
-=======
-- name: Upload build artifacts
-  uses: actions/upload-artifact@v4
-  with:
-    name: frontend-build
-    path: frontend/dist
-    retention-days: 7
->>>>>>> 8b226cb5a9cfe637fe44d98ae7dc884b01303b7b
 
   security-audit:
     name: Security Audit
