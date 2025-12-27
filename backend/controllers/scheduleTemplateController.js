@@ -33,10 +33,27 @@ const getTemplates = asyncHandler(async (req, res) => {
 
   const templates = await ScheduleTemplate.find({ company: companyId })
     .sort({ createdAt: -1 })
-    .select('-assignments')
+    .select('name month year createdAt')
     .lean();
 
   res.json({ templates });
+});
+
+// @route GET /api/schedule-templates/:id
+const getTemplateById = asyncHandler(async (req, res) => {
+  const companyId = getCompanyId(req.user);
+  const { id } = req.params;
+
+  const template = await ScheduleTemplate.findOne({ _id: id, company: companyId })
+    .populate('assignments.employee', 'firstName lastName position')
+    .populate('assignments.shiftTemplate', 'name color startTime endTime')
+    .lean();
+
+  if (!template) {
+    return res.status(404).json({ message: 'Szablon nie został znaleziony' });
+  }
+
+  res.json({ template });
 });
 
 // @route POST /api/schedule-templates
@@ -193,6 +210,7 @@ const applyTemplate = asyncHandler(async (req, res) => {
 
 module.exports = {
   getTemplates,
+  getTemplateById,
   createTemplate,
   updateTemplate,
   deleteTemplate,

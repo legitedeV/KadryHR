@@ -7,6 +7,7 @@ const requirePermission = permissionMiddleware.requirePermission || permissionMi
 const controller = require('../controllers/scheduleTemplateController');
 
 router.get('/', protect, controller.getTemplates);
+router.get('/:id', protect, controller.getTemplateById);
 router.post('/', protect, requirePermission('schedule.edit', { allowAdmin: true }), controller.createTemplate);
 router.put('/:id', protect, requirePermission('schedule.edit', { allowAdmin: true }), controller.updateTemplate);
 router.delete('/:id', protect, requirePermission('schedule.edit', { allowAdmin: true }), controller.deleteTemplate);
