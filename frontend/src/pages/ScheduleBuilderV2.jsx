@@ -3,6 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import Alert from '../components/Alert';
 
+const toDateKey = (date) => {
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().split('T')[0];
+};
+
 const monthLabel = (value) => {
   const [year, month] = value.split('-').map(Number);
   return new Date(year, month - 1).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
@@ -14,7 +19,7 @@ const buildDays = (value) => {
   return Array.from({ length: totalDays }, (_, idx) => {
     const date = new Date(year, month - 1, idx + 1);
     return {
-      key: date.toISOString().split('T')[0],
+      key: toDateKey(date),
       day: idx + 1,
       weekday: date.toLocaleDateString('pl-PL', { weekday: 'short' }),
     };
@@ -321,7 +326,7 @@ const ScheduleBuilderV2 = () => {
   const assignmentsByKey = useMemo(() => {
     const map = {};
     assignments.forEach((assignment) => {
-      const dateStr = new Date(assignment.date).toISOString().split('T')[0];
+      const dateStr = toDateKey(new Date(assignment.date));
       const key = `${assignment.employee._id}-${dateStr}`;
       map[key] = assignment;
     });
@@ -364,6 +369,9 @@ const ScheduleBuilderV2 = () => {
         notes: parsedNotes.noteText,
         noteType: parsedNotes.noteType,
         assignmentId: existing?._id,
+        type: existing?.type || 'shift',
+        startTime: existing?.startTime || existing?.shiftTemplate?.startTime || '',
+        endTime: existing?.endTime || existing?.shiftTemplate?.endTime || '',
       };
     });
     setModalOpen(true);
@@ -374,12 +382,26 @@ const ScheduleBuilderV2 = () => {
     const notes = modalState.noteType
       ? `${modalState.noteType}: ${modalState.notes || ''}`.trim()
       : modalState.notes;
+
+    const selectedTemplate = shiftTemplatesData?.find((tpl) => tpl._id === modalState.shiftTemplateId);
+    const payloadType = modalState.type || 'shift';
+    const startTime = modalState.startTime || selectedTemplate?.startTime;
+    const endTime = modalState.endTime || selectedTemplate?.endTime;
+
+    if (!startTime || !endTime) {
+      setAlert({ type: 'error', message: 'Szablon zmiany musi zawierać godziny rozpoczęcia i zakończenia.' });
+      return;
+    }
+
     const payload = {
       scheduleId: selectedSchedule._id,
       employeeId: modalState.employeeId,
       date: modalState.date,
       shiftTemplateId: modalState.shiftTemplateId,
       notes,
+      type: payloadType,
+      startTime,
+      endTime,
     };
 
     if (modalState.assignmentId) {

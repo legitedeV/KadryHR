@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Schedule = require('../models/Schedule');
 const ShiftAssignment = require('../models/ShiftAssignment');
 const Employee = require('../models/Employee');
+const ShiftTemplate = require('../models/ShiftTemplate');
 
 // @desc    Get schedules with optional filters
 // @route   GET /api/schedules/v2

@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const User = require('../models/User');
+const Employee = require('../models/Employee');
 const { createNotification } = require('../utils/notificationService');
 
 /**
@@ -422,30 +424,44 @@ exports.getTaskEmployees = async (req, res, next) => {
       return res.status(401).json({ message: 'Brak autoryzacji.' });
     }
 
-    // Only admins can access this endpoint
     const isAdmin = role === 'admin' || role === 'super_admin';
     if (!isAdmin) {
       return res.status(403).json({ message: 'Tylko administratorzy mogą pobierać listę pracowników.' });
     }
 
-    // Build query for active employees
-    const query = { isActive: true };
-
-    // Multi-tenant: filter by company
-    // If user is admin, get employees from their company
-    // If user has companyId (employee of a company), use that
-    if (companyId) {
-      query.supervisor = companyId;
-    } else if (role === 'admin' || role === 'super_admin') {
-      query.supervisor = userId;
+    const resolvedCompanyId = companyId || userId;
+    if (!resolvedCompanyId || !mongoose.Types.ObjectId.isValid(resolvedCompanyId)) {
+      return res.status(400).json({ message: 'Nie można ustalić organizacji użytkownika.' });
     }
 
-    const employees = await User.find(query)
-      .select('_id name email role')
-      .sort({ name: 1 })
+    const employees = await Employee.find({
+      isActive: true,
+      $or: [
+        { organization: resolvedCompanyId },
+        { companyId: resolvedCompanyId }
+      ]
+    })
+      .populate({
+        path: 'user',
+        select: 'name email isActive role'
+      })
+      .sort({ firstName: 1, lastName: 1 })
       .limit(500);
 
-    res.json({ employees });
+    const formattedEmployees = employees
+      .filter((employee) => employee.user && employee.user.isActive)
+      .map((employee) => ({
+        _id: employee.user._id,
+        employeeId: employee._id,
+        name: employee.user.name || `${employee.firstName} ${employee.lastName}`.trim(),
+        email: employee.user.email,
+        role: employee.user.role,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        position: employee.position
+      }));
+
+    res.json({ employees: formattedEmployees });
   } catch (err) {
     next(err);
   }
