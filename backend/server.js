@@ -201,6 +201,7 @@ const suggestionRoutes = require('./routes/suggestionRoutes');
 const swapRoutes = require('./routes/swapRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const shiftTemplateRoutes = require('./routes/shiftTemplateRoutes');
+const overtimePolicyRoutes = require('./routes/overtimePolicyRoutes');
 const timeTrackingRoutes = require('./routes/timeTrackingRoutes');
 const qrRoutes = require('./routes/qrRoutes');
 const avatarRoutes = require('./routes/avatarRoutes');
@@ -276,6 +277,7 @@ app.use('/api/suggestions', cacheMiddleware(5 * 60 * 1000), suggestionRoutes); /
 app.use('/api/swap-requests', swapRoutes);
 app.use('/api/availability', cacheMiddleware(5 * 60 * 1000), availabilityRoutes); // 5 min cache
 app.use('/api/shift-templates', cacheMiddleware(10 * 60 * 1000), shiftTemplateRoutes); // 10 min cache
+app.use('/api/overtime-policies', cacheMiddleware(10 * 60 * 1000), overtimePolicyRoutes); // 10 min cache
 app.use('/api/time-tracking', timeTrackingRoutes); // No cache - real-time data
 app.use('/api/qr', qrRoutes); // QR token routes
 app.use('/api/avatar', avatarRoutes); // Avatar upload routes

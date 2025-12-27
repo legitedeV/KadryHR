@@ -1,11 +1,21 @@
 const express = require('express');
 const scheduleController = require('../controllers/scheduleController');
+const bulkScheduleController = require('../controllers/bulkScheduleController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // wszystkie endpointy wymagają zalogowania (cookie lub Bearer token)
 router.use(protect);
+
+// === BULK OPERATIONS ===
+router.post('/bulk-create', bulkScheduleController.bulkCreateAssignments);
+router.put('/bulk-update', bulkScheduleController.bulkUpdateAssignments);
+router.delete('/bulk-delete', bulkScheduleController.bulkDeleteAssignments);
+router.post('/copy-shift', bulkScheduleController.copyShift);
+router.post('/duplicate-week', bulkScheduleController.duplicateWeek);
+router.post('/copy-employee-schedule', bulkScheduleController.copyEmployeeSchedule);
+router.post('/bulk-reassign', bulkScheduleController.bulkReassignShifts);
 
 // === PODSTAWOWE OPERACJE ===
 
