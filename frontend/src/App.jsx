@@ -23,6 +23,8 @@ const Profile = lazy(() => import('./pages/Profile'));
 const SelfService = lazy(() => import('./pages/SelfService'));
 const ScheduleBuilder = lazy(() => import('./pages/ScheduleBuilder'));
 const ScheduleBuilderV2 = lazy(() => import('./pages/ScheduleBuilderV2'));
+const ScheduleBuilderV2Enhanced = lazy(() => import('./pages/ScheduleBuilderV2Enhanced'));
+const OvertimePolicyManager = lazy(() => import('./pages/OvertimePolicyManager'));
 const TimeTracking = lazy(() => import('./pages/TimeTracking'));
 const QRCodeGenerator = lazy(() => import('./pages/QRCodeGenerator'));
 const Chat = lazy(() => import('./pages/Chat'));
@@ -130,6 +132,30 @@ const App = () => {
               <ScheduleBuilderV2 />
             </Layout>
           </PrivateRoute>
+        }
+      />
+      
+      {/* Enhanced Schedule builder with breaks, overtime, bulk ops */}
+      <Route
+        path="/schedule-builder-enhanced"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <ScheduleBuilderV2Enhanced />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Overtime Policy Manager */}
+      <Route
+        path="/overtime-policies"
+        element={
+          <AdminRoute>
+            <Layout>
+              <OvertimePolicyManager />
+            </Layout>
+          </AdminRoute>
         }
       />
       
