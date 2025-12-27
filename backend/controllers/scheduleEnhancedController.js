@@ -24,13 +24,42 @@ const publishSchedule = async (req, res) => {
       req.organizationId
     );
 
-    // TODO: Send notifications to employees if notifyEmployees is true
-    // This would integrate with notification service
+    // Send notifications to employees if requested
+    if (notifyEmployees) {
+      try {
+        const { createNotification } = require('../utils/notificationService');
+        const Employee = require('../models/Employee');
+        
+        // Get all assignments for this schedule
+        const assignments = await ShiftAssignment.find({ schedule: id })
+          .populate('employee', 'firstName lastName user')
+          .distinct('employee');
+        
+        // Send notification to each employee
+        const notificationPromises = assignments
+          .filter(emp => emp && emp.user)
+          .map(emp => 
+            createNotification({
+              user: emp.user,
+              type: 'schedule',
+              title: 'Nowy grafik opublikowany',
+              message: `Grafik "${schedule.name}" został opublikowany i jest dostępny do wglądu.`,
+              link: `/schedule/${id}`
+            })
+          );
+        
+        await Promise.allSettled(notificationPromises);
+      } catch (notifError) {
+        console.error('Error sending notifications:', notifError);
+        // Don't fail the request if notifications fail
+      }
+    }
 
     res.json({
       success: true,
       message: 'Schedule published successfully',
       data: schedule,
+      notificationsSent: notifyEmployees
     });
   } catch (error) {
     console.error('Error publishing schedule:', error);

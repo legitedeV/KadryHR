@@ -1,6 +1,5 @@
 const Onboarding = require('../models/Onboarding');
 const Employee = require('../models/Employee');
-const Training = require('../models/Training');
 const { createNotification } = require('../utils/notificationService');
 
 exports.createOnboarding = async (req, res, next) => {

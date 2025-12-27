@@ -367,7 +367,8 @@ const generateSchedule = asyncHandler(async (req, res) => {
 // @access  Private
 const getScheduleValidation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { calculateHours, calculateEmployeeHours, validateSchedule, checkLeaveConflicts } = require('../utils/scheduleUtils');
+  const { calculateEmployeeHours, validateSchedule, checkLeaveConflicts } = require('../utils/scheduleUtils');
+  const Leave = require('../models/Leave');
   
   const schedule = await Schedule.findById(id);
   if (!schedule) {
@@ -391,6 +392,21 @@ const getScheduleValidation = asyncHandler(async (req, res) => {
     employeeAssignments[empId].assignments.push(assignment);
   });
   
+  // Get all employee IDs
+  const employeeIds = Object.keys(employeeAssignments);
+  
+  // Fetch leaves for all employees in the schedule period
+  const scheduleStart = new Date(schedule.year, schedule.month - 1, 1);
+  const scheduleEnd = new Date(schedule.year, schedule.month, 0);
+  
+  const leaves = await Leave.find({
+    employee: { $in: employeeIds },
+    status: { $in: ['approved', 'pending'] },
+    $or: [
+      { startDate: { $lte: scheduleEnd }, endDate: { $gte: scheduleStart } }
+    ]
+  });
+  
   // Calculate summaries and validations for each employee
   const employeeSummaries = [];
   const allViolations = [];
@@ -399,13 +415,20 @@ const getScheduleValidation = asyncHandler(async (req, res) => {
     const summary = calculateEmployeeHours(data.assignments);
     const validation = validateSchedule(data.assignments);
     
+    // Check for leave conflicts
+    const employeeLeaves = leaves.filter(l => l.employee.toString() === empId);
+    const leaveConflicts = checkLeaveConflicts(data.assignments, employeeLeaves);
+    
+    const allEmployeeViolations = [...validation.violations, ...leaveConflicts];
+    
     employeeSummaries.push({
       employee: data.employee,
       ...summary,
-      violations: validation.violations
+      violations: allEmployeeViolations,
+      leaveConflicts: leaveConflicts.length
     });
     
-    allViolations.push(...validation.violations);
+    allViolations.push(...allEmployeeViolations);
   }
   
   // Overall schedule summary

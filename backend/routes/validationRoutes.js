@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, requireRole } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const LaborLawValidator = require('../utils/laborLawValidator');
 const ShiftAssignment = require('../models/ShiftAssignment');
 const Employee = require('../models/Employee');
@@ -42,7 +42,7 @@ router.post('/schedule', protect, async (req, res) => {
  */
 router.post('/assignment', protect, async (req, res) => {
   try {
-    const { assignment, employeeId, scheduleId } = req.body;
+    const { assignment, employeeId } = req.body;
 
     // Fetch employee
     const employee = await Employee.findById(employeeId);
@@ -50,9 +50,8 @@ router.post('/assignment', protect, async (req, res) => {
       return res.status(404).json({ message: 'Pracownik nie znaleziony' });
     }
 
-    // Fetch existing assignments for this employee in the schedule
+    // Fetch existing assignments for this employee
     const existingAssignments = await ShiftAssignment.find({
-      schedule: scheduleId,
       employee: employeeId
     });
 

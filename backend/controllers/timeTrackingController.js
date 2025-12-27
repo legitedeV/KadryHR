@@ -1,12 +1,10 @@
 const asyncHandler = require('express-async-handler');
-const mongoose = require('mongoose');
 const TimeEntry = require('../models/TimeEntry');
 const Employee = require('../models/Employee');
-const User = require('../models/User');
 const { checkAndCloseSession, MAX_WORK_MINUTES } = require('../utils/sessionWorker');
 
 // Maximum work time in hours
-const MAX_WORK_HOURS = 10;
+const MAX_WORK_HOURS = MAX_WORK_MINUTES / 60;
 
 // @desc    Clock in/out with QR code
 // @route   POST /api/time-tracking/scan

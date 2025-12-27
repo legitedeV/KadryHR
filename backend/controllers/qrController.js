@@ -45,6 +45,7 @@ const generateQRToken = asyncHandler(async (req, res) => {
 
   return res.status(201).json({
     token,
+    tokenId: qrToken._id,
     expiresAt,
     validitySeconds: Math.round((expiresAt - Date.now()) / 1000),
     qrUrl: `${process.env.FRONTEND_URL}/qr/start?token=${token}`
