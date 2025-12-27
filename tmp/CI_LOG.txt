@@ -1,0 +1,135 @@
+================================================================================
+API INVENTORY AND CONTRACT CHECK - CI LOG
+================================================================================
+Generated: 2025-12-27T00:45:58Z
+Repository: legitedeV/KadryHR
+Branch: feature/api-inventory-contract-check
+Pull Request: #126
+URL: https://github.com/legitedeV/KadryHR/pull/126
+
+================================================================================
+SCRIPTS CREATED
+================================================================================
+
+1. scripts/inventory.js
+   - Scans backend Express routes (backend/routes/*.js)
+   - Scans Mongoose models (backend/models/*.js)
+   - Scans frontend pages and API calls (frontend/src)
+   - Generates tmp/inventory.json
+
+2. scripts/contract-check.js
+   - Detects backend endpoints without frontend usage
+   - Detects frontend API calls without backend endpoints
+   - Identifies UI-only pages
+   - Generates tmp/contract-check-report.json
+
+================================================================================
+NPM COMMANDS ADDED
+================================================================================
+
+npm run inventory        # Generate API inventory
+npm run contract:check   # Check API contract consistency
+
+================================================================================
+INVENTORY RESULTS
+================================================================================
+
+Backend:
+  - 128 Express endpoints detected
+  - 25 Mongoose models detected
+  - Route files: 25
+
+Frontend:
+  - 24 pages detected
+  - 114 API references detected (hooks, pages, api)
+
+================================================================================
+CONTRACT CHECK RESULTS
+================================================================================
+
+Summary:
+  - Total Backend Endpoints:        128
+  - Total Frontend API References:  114
+  - Unused Backend Endpoints:       108
+  - Missing Backend Endpoints:      91
+  - UI-Only Pages:                  2
+
+Main Issues Detected:
+
+1. URL Path Inconsistencies (singular vs plural):
+   - Backend: /api/employee/*    vs Frontend: /api/employees/*
+   - Backend: /api/notification/* vs Frontend: /api/notifications/*
+   - Backend: /api/leave/*        vs Frontend: /api/leaves/*
+   - Backend: /api/invite/*       vs Frontend: /api/invites/*
+   - Backend: /api/task/*         vs Frontend: /api/tasks/*
+   - Backend: /api/webhook/*      vs Frontend: /api/webhooks/*
+
+2. Unused Backend Endpoints (108 total):
+   Examples:
+   - POST /api/auth/register
+   - GET  /api/auth/me
+   - POST /api/auth/logout
+   - GET  /api/employee/summary
+   - POST /api/payroll/calculate
+   - GET  /api/realtime/events
+   
+   Note: Some may be used by external systems or webhooks
+
+3. Missing Backend Endpoints (91 total):
+   Primarily caused by path inconsistencies (singular vs plural)
+
+4. UI-Only Pages (2):
+   - Payroll.jsx
+   - Register.jsx
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+1. Standardize API paths (choose singular or plural convention)
+2. Update backend or frontend to match chosen convention
+3. Review unused endpoints - remove if obsolete
+4. Add scripts to CI/CD pipeline for continuous validation
+5. Consider adding API documentation generation
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+Modified:
+  - package.json (added npm scripts)
+
+Created:
+  - scripts/inventory.js
+  - scripts/contract-check.js
+
+Generated (not committed):
+  - tmp/inventory.json
+  - tmp/contract-check-report.json
+
+================================================================================
+GIT COMMIT
+================================================================================
+
+Commit: a3070c48e98d8d35dec16be53bdd44ce5c6fe008
+Branch: feature/api-inventory-contract-check
+Message: feat: Add API inventory and contract check scripts
+
+Changes:
+  - 3 files changed
+  - 514 insertions(+)
+  - 1 deletion(-)
+
+================================================================================
+PULL REQUEST
+================================================================================
+
+PR #126: feat: Add API inventory and contract check scripts
+Status: Open
+URL: https://github.com/legitedeV/KadryHR/pull/126
+
+Ready for review and merge.
+
+================================================================================
+END OF LOG
+================================================================================

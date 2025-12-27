@@ -8,7 +8,9 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build:frontend": "cd frontend && npm run build",
-    "start:backend": "cd backend && npm start"
+    "start:backend": "cd backend && npm start",
+    "inventory": "node scripts/inventory.js",
+    "contract:check": "node scripts/contract-check.js"
   },
   "repository": {
     "type": "git",
