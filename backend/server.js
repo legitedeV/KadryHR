@@ -210,6 +210,12 @@ const realtimeRoutes = require('./routes/realtimeRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const userRoutes = require('./routes/userRoutes');
+const performanceRoutes = require('./routes/performanceRoutes');
+const trainingRoutes = require('./routes/trainingRoutes');
+const onboardingRoutes = require('./routes/onboardingRoutes');
+const benefitRoutes = require('./routes/benefitRoutes');
+const wellnessRoutes = require('./routes/wellnessRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // === ROUTES MOUNT ===
 
@@ -278,6 +284,12 @@ app.use('/api/permissions', permissionRoutes); // Permissions management routes
 app.use('/api/realtime', realtimeRoutes); // Realtime SSE events
 app.use('/api/webhooks', webhookRoutes); // Webhook management
 app.use('/api/tasks', taskRoutes); // Task management routes
+app.use('/api/performance', cacheMiddleware(5 * 60 * 1000), performanceRoutes); // Performance reviews
+app.use('/api/training', trainingRoutes); // Training & LMS
+app.use('/api/onboarding', onboardingRoutes); // Onboarding process
+app.use('/api/benefits', cacheMiddleware(10 * 60 * 1000), benefitRoutes); // Benefits administration
+app.use('/api/wellness', cacheMiddleware(5 * 60 * 1000), wellnessRoutes); // Wellness programs
+app.use('/api/analytics', analyticsRoutes); // HR Analytics & Insights
 
 // Serve static files (avatars)
 app.use('/uploads', express.static('uploads'));
