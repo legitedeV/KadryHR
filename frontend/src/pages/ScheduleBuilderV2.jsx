@@ -37,9 +37,9 @@ const StatusBadge = ({ label, color }) => (
 );
 
 const quickShiftTemplates = [
-  { key: 'shift-1', label: 'I zmiana', hours: '05:45 - 15:00', templateName: 'I zmiana', color: '#0ea5e9' },
-  { key: 'shift-2', label: 'II zmiana', hours: '14:45 - 23:00', templateName: 'II zmiana', color: '#a855f7' },
-  { key: 'delivery', label: 'D - Dostawa', hours: 'Godzina do ustalenia', templateName: 'Dostawa', color: '#f59e0b' },
+  { key: 'shift-1', label: 'I zmiana', startTime: '05:45', endTime: '15:00', templateName: 'I zmiana', color: '#0ea5e9' },
+  { key: 'shift-2', label: 'II zmiana', startTime: '14:45', endTime: '23:00', templateName: 'II zmiana', color: '#a855f7' },
+  { key: 'delivery', label: 'D - Dostawa', startTime: '08:00', endTime: '16:00', templateName: 'Dostawa', color: '#f59e0b', note: 'Godzina do ustalenia' },
 ];
 
 const noteTypeOptions = [
@@ -59,6 +59,18 @@ const parseNotes = (notes) => {
 };
 
 const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemplates, formState, setFormState, loading }) => {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const handleChange = (key) => (e) => {
@@ -66,9 +78,9 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl my-8 max-h-[calc(100vh-4rem)] flex flex-col">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div>
             <p className="text-xs text-slate-500">{formState.date}</p>
             <h3 className="text-lg font-semibold text-slate-900">Przypisz zmianę</h3>
@@ -76,7 +88,7 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">✕</button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto flex-1 pr-2">
           <div>
             <label className="text-xs font-semibold text-slate-700">Pracownik</label>
             <select
@@ -120,21 +132,7 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-700">Rodzaj notatki</label>
-              <select
-                value={formState.noteType || ''}
-                onChange={handleChange('noteType')}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-theme-primary focus:outline-none"
-              >
-                {noteTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
             <div className="flex flex-col gap-2">
               <span className="text-xs font-semibold text-slate-700">Szybkie szablony</span>
               <div className="flex flex-wrap gap-2">
@@ -149,15 +147,16 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
                       setFormState((prev) => ({
                         ...prev,
                         shiftTemplateId: match?._id || prev.shiftTemplateId,
-                        notes: template.hours,
-                        noteType: template.label.includes('Dostawa') ? 'Dostawa' : 'Informacja',
+                        startTime: template.startTime,
+                        endTime: template.endTime,
+                        notes: template.note || prev.notes,
                       }));
                     }}
                     className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-theme-primary hover:text-theme-primary"
                     style={{ boxShadow: `0 6px 18px ${template.color}22` }}
                   >
                     {template.label}
-                    <span className="ml-1 text-[10px] text-slate-500">{template.hours}</span>
+                    <span className="ml-1 text-[10px] text-slate-500">{template.startTime} - {template.endTime}</span>
                   </button>
                 ))}
               </div>
@@ -165,7 +164,7 @@ const AssignmentModal = ({ open, onClose, onSave, onDelete, employees, shiftTemp
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="mt-5 flex items-center justify-between gap-3 flex-shrink-0 pt-4 border-t border-slate-200">
           {formState.assignmentId && (
             <button
               onClick={onDelete}
