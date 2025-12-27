@@ -1,19 +1,49 @@
-import js from "@eslint/js";
-import globals from "globals";
-import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
-import json from "@eslint/json";
-import markdown from "@eslint/markdown";
-import css from "@eslint/css";
-import { defineConfig } from "eslint/config";
+// eslint.config.mjs
+import js from '@eslint/js';
+import globals from 'globals';
 
-export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
-  tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
-  { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
-  { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
-  { files: ["**/*.json5"], plugins: { json }, language: "json/json5", extends: ["json/recommended"] },
-  { files: ["**/*.md"], plugins: { markdown }, language: "markdown/commonmark", extends: ["markdown/recommended"] },
-  { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"] },
-]);
+/**
+ * ESLint config for KadryHR backend (Node.js + CommonJS)
+ */
+export default [
+  // Bazowy zestaw reguł dla JS
+  js.configs.recommended,
+
+  // Ustawienia dla całego backendu
+  {
+    files: ['**/*.js'],
+    ignores: [
+      'node_modules/**',
+      'uploads/**',
+      'dist/**',
+      'coverage/**',
+      // dodaj tu generowane katalogi, jeśli jakieś masz
+    ],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      // Tu możesz dorzucić swoje reguły, na start coś łagodnego:
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-console': 'off',
+    },
+  },
+
+  // (Opcjonalnie) inne pliki, np. testy
+  {
+    files: ['**/*.test.js', '**/__tests__/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+    },
+    rules: {
+      // Możesz złagodzić reguły dla testów, jeśli potrzeba
+    },
+  },
+];
