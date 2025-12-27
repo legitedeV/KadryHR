@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  EMPLOYEE
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Organisation {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  users       User[]
+  employees   Employee[]
+  locations   Location[]
+  shifts      Shift[]
+  availability Availability[]
+}
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  passwordHash      String
+  role              Role
+  organisationId    String
+  firstName         String?
+  lastName          String?
+  refreshTokenHash  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee?
+
+  @@index([organisationId])
+}
+
+model Employee {
+  id             String        @id @default(uuid())
+  organisationId String
+  userId         String?       @unique
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  position       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shifts       Shift[]
+  availability Availability[]
+
+  @@index([organisationId])
+}
+
+model Location {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  address        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  shifts       Shift[]
+
+  @@index([organisationId])
+}
+
+model Shift {
+  id             String    @id @default(uuid())
+  organisationId String
+  employeeId     String
+  locationId     String?
+  position       String?
+  notes          String?
+  startsAt       DateTime
+  endsAt         DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location     Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([locationId])
+}
+
+model Availability {
+  id             String    @id @default(uuid())
+  organisationId String
+  employeeId     String
+  date           DateTime?
+  weekday        Weekday?
+  startMinutes   Int
+  endMinutes     Int
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([employeeId])
+}
