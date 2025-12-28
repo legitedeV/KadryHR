@@ -5,11 +5,15 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { OrganisationsModule } from './organisations/organisations.module';
 import { UsersModule } from './users/users.module';
+import { AvailabilityModule } from './availability/availability.module';
+import { ShiftsModule } from './shifts/shifts.module';
+import { LocationsModule } from './locations/locations.module';
+import { EmployeesModule } from './employees/employees.module';
 import { EmployeesModule } from './employees/employees.module';
 import { LocationsModule } from './locations/locations.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { AvailabilityModule } from './availability/availability.module';
-import { OrganisationsModule } from './organisations/organisations.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
