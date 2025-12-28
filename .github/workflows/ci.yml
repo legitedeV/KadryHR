@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-lint-and-test:
-    name: Backend - Lint & Test
+    name: Backend (Legacy) - Lint & Test
     runs-on: ubuntu-latest
     
     steps:
@@ -33,6 +33,41 @@ jobs:
       - name: Check code formatting
         working-directory: ./backend
         run: npx prettier --check "**/*.{js,json,md}"
+
+  backend-v2-lint-build-test:
+    name: Backend v2 - Lint, Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend-v2/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend-v2
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        working-directory: ./backend-v2
+        run: npx prisma generate
+      
+      - name: Run ESLint
+        working-directory: ./backend-v2
+        run: npm run lint
+      
+      - name: Build
+        working-directory: ./backend-v2
+        run: npm run build
+      
+      - name: Run tests
+        working-directory: ./backend-v2
+        run: npm test
 
   frontend-lint-and-build:
     name: Frontend - Lint & Build

@@ -16,7 +16,7 @@ import { Role } from '@prisma/client';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../auth/types/authenticated-user.type';
+import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shifts')

@@ -25,6 +25,7 @@ backend-v2/*.log
 
 # jeśli nie chcesz trzymać wygenerowanego klienta Prisma
 backend-v2/generated/
+backend-v2/src/generated/
 
 # frontend-v2
 frontend-v2/node_modules/
