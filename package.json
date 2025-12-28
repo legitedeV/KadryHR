@@ -1,27 +1,28 @@
 {
-  "name": "kadryhr-app",
-  "version": "1.1.0",
-  "description": "KadryHR - Nowoczesny system zarządzania zasobami ludzkimi",
+  "name": "kadryhr-frontend-v2",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install:all": "cd backend && npm install && cd ../frontend && npm install",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build:frontend": "cd frontend && npm run build",
-    "start:backend": "cd backend && npm start",
-    "inventory": "node scripts/inventory.js",
-    "contract:check": "node scripts/contract-check.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/legitedeV/KadryHR.git"
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
-  "keywords": [
-    "hr",
-    "kadry",
-    "zarządzanie",
-    "pracownicy"
-  ],
-  "author": "KadryHR Team",
-  "license": "MIT"
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "22.5.1",
+    "@types/react": "18.3.5",
+    "@types/react-dom": "18.3.0",
+    "babel-plugin-react-compiler": "0.0.0-experimental-9c9e2b9-20241211",
+    "eslint": "9.9.0",
+    "eslint-config-next": "14.2.5",
+    "postcss": "8.4.41",
+    "tailwindcss": "4.0.0",
+    "typescript": "5.6.2"
+  }
 }
