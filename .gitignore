@@ -14,3 +14,22 @@ frontend/.env
 backend/.env
 frontend/.env
 
+# backend-v2
+backend-v2/node_modules/
+backend-v2/dist/
+backend-v2/build/
+backend-v2/coverage/
+backend-v2/*.log
+
+# jeśli nie chcesz trzymać wygenerowanego klienta Prisma
+backend-v2/generated/
+
+# frontend-v2
+frontend-v2/node_modules/
+frontend-v2/dist/
+frontend-v2/build/
+frontend-v2/coverage/
+frontend-v2/*.log
+
+# jeśli nie chcesz trzymać wygenerowanego klienta Prisma
+frontend-v2/generated/
