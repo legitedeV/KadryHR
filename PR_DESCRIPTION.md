@@ -1,384 +1,316 @@
-# Pull Request: Refactor Schedule Builder to Production-Grade Quality
+# 🚀 Backend v2: Complete NestJS + TypeScript + PostgreSQL + Prisma Implementation
 
-## 🎯 Overview
+## 📋 Overview
 
-This PR transforms KadryHR's schedule management system from a prototype to a **production-ready, enterprise-grade SaaS solution** comparable to industry leaders like Deputy, When I Work, and Planday.
+This PR introduces **backend-v2**, a complete rewrite of the KadryHR backend using modern technologies and best practices. The new backend is production-ready and provides a solid foundation for future web and mobile applications.
 
-## 📊 Product Analysis
+## ✨ Key Features
 
-A comprehensive analysis was conducted comparing KadryHR with market leaders. Key findings:
+### Architecture
+- **Multi-tenant SaaS**: Row-based multi-tenancy with `organisationId` in all domain entities
+- **Single PostgreSQL database**: Efficient tenant isolation at the row level
+- **Clean NestJS architecture**: Modular design with clear separation of concerns
 
-- ✅ **Strong foundation**: Good data models (ShiftAssignment, ShiftTemplate, Schedule)
-- ❌ **Code duplication**: 3 schedule builder versions (removed 2)
-- ❌ **Anti-patterns**: Quick templates filled notes instead of setting shift times
-- ⚠️ **Incomplete workflows**: Draft/Published status not fully implemented
-- ⚠️ **Multi-tenant gaps**: Organization filtering not consistently enforced
+### Authentication & Authorization
+- **JWT-based authentication**: Access tokens (15min) + Refresh tokens (7 days)
+- **Role-based access control**: OWNER, MANAGER, EMPLOYEE roles
+- **Secure password handling**: bcrypt hashing with 10 rounds
+- **Token rotation**: Refresh tokens are rotated and hashed in database
 
-**Full analysis**: See `docs/product-analysis.md`
+### Core Domain Modules
+1. **Organisations**: Tenant management
+2. **Users**: User accounts with roles and authentication
+3. **Employees**: Employee records within organisations
+4. **Locations**: Workplace locations
+5. **Shifts**: Shift scheduling with datetime ranges
+6. **Availability**: Employee availability (date-based or weekday-based)
 
-## 🚀 Changes Made
+### Technical Stack
+- **Framework**: NestJS 11
+- **Language**: TypeScript 5
+- **Database**: PostgreSQL
+- **ORM**: Prisma 7
+- **Validation**: class-validator, class-transformer
+- **Testing**: Jest
+- **Code Quality**: ESLint, Prettier
 
-### 1. Code Consolidation ✅
-- **Removed** `/schedule-builder-enhanced` route and component
-- **Consolidated** to single schedule builder at `/schedule-builder`
-- **Eliminated** code duplication and maintenance overhead
-- **Result**: Single source of truth, easier maintenance
+## 🔧 What's Included
 
-### 2. Fixed Quick Templates Anti-Pattern ✅
-**Before (WRONG):**
-```javascript
-// Quick template filled NOTES with shift hours
-setFormState({ notes: '05:45 - 15:00' });
-```
+### Source Code
+- ✅ Complete NestJS application structure
+- ✅ Prisma schema with all domain models
+- ✅ Database migrations
+- ✅ Seed script for development data
+- ✅ DTOs with validation decorators
+- ✅ Guards and decorators for authorization
+- ✅ Error handling and filters
+- ✅ Unit tests (3 test suites, 6 tests - all passing)
 
-**After (CORRECT):**
-```javascript
-// Quick template sets actual shift times
-setFormState({ 
-  startTime: '05:45', 
-  endTime: '15:00',
-  notes: '' // Notes for actual notes
-});
-```
+### Configuration
+- ✅ Environment variable validation
+- ✅ TypeScript configuration
+- ✅ ESLint and Prettier setup
+- ✅ Jest configuration
+- ✅ Prisma configuration
 
-**Impact**: 
-- Shift times now stored in proper fields
-- Enables accurate reporting and analytics
-- Follows industry best practices
+### Documentation
+- ✅ Comprehensive README.md with:
+  - Setup instructions
+  - API documentation
+  - Database schema overview
+  - Deployment guide
+  - Security best practices
+  - Development workflow
 
-### 3. Improved Modal UX ✅
-**Problems Fixed:**
-- ❌ Modal didn't fit viewport on smaller screens
-- ❌ Page scrolled instead of modal content
-- ❌ No body scroll lock
-- ❌ Confusing "Note Type" dropdown
+### CI/CD
+- ✅ Updated GitHub Actions workflow
+- ✅ Automated linting, building, and testing
+- ✅ Separate job for backend-v2 (doesn't interfere with legacy backend)
 
-**Solutions:**
-- ✅ Added `max-height: calc(100vh - 4rem)` with flex layout
-- ✅ Content scrolls, not page
-- ✅ Body scroll locked when modal open
-- ✅ Removed "Note Type" dropdown (anti-pattern)
-- ✅ Better visual separation with borders
+## 🏃 How to Run Locally
 
-### 4. Multi-Tenant Infrastructure ✅
-**New Middleware**: `withTenant.js`
-```javascript
-// Automatically filters all queries by organization
-req.filterByOrganization({ status: 'active' });
-// Returns: { status: 'active', organization: req.organizationId }
-```
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 14+
+- npm
 
-**Benefits:**
-- Prevents data leakage between tenants
-- Consistent organization filtering
-- Centralized multi-tenant logic
+### Setup Steps
 
-### 5. Service Layer ✅
-**New Service**: `scheduleService.js`
-
-**Features:**
-- `checkConflicts()` - Detects overlapping shifts and leave conflicts
-- `publishSchedule()` - Changes status from draft to published
-- `copyWeek()` - Bulk copy shifts to another week
-- `applyTemplate()` - Apply template to multiple days/employees
-- `deleteRange()` - Bulk delete shifts in date range
-- `getScheduleStats()` - Calculate schedule statistics
-
-**Benefits:**
-- Business logic separated from controllers
-- Easier to test
-- Reusable across endpoints
-
-### 6. Validation Layer ✅
-**New Validators**: `shiftValidators.js` (using Zod)
-
-**Schemas:**
-- `createShiftAssignmentSchema` - Validate new shift creation
-- `updateShiftAssignmentSchema` - Validate shift updates
-- `bulkOperationSchema` - Validate bulk operations
-- `publishScheduleSchema` - Validate publish action
-- `conflictCheckSchema` - Validate conflict detection
-
-**Benefits:**
-- Type-safe validation
-- Structured error messages
-- Consistent validation across endpoints
-
-### 7. Code Quality Tools ✅
-**Added:**
-- ESLint configuration (frontend + backend)
-- Prettier configuration
-- npm scripts: `lint`, `lint:fix`, `format`
-
-**Usage:**
+1. **Navigate to backend-v2**:
 ```bash
-# Backend
-cd backend
-npm run lint        # Check for issues
-npm run lint:fix    # Auto-fix issues
-npm run format      # Format code
+cd backend-v2
+```
 
-# Frontend
-cd frontend
+2. **Install dependencies**:
+```bash
+npm install
+```
+
+3. **Configure environment**:
+Create `.env` file:
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/kadryhr_v2?schema=public"
+JWT_ACCESS_SECRET="your-access-secret-change-in-production"
+JWT_REFRESH_SECRET="your-refresh-secret-change-in-production"
+JWT_ACCESS_TTL="15m"
+JWT_REFRESH_TTL="7d"
+APP_PORT=3001
+NODE_ENV="development"
+```
+
+4. **Generate Prisma Client**:
+```bash
+npm run prisma:generate
+```
+
+5. **Run migrations**:
+```bash
+npm run prisma:migrate
+```
+
+6. **Seed database** (optional):
+```bash
+npm run prisma:seed
+```
+
+This creates:
+- Organisation: "Seed Organisation"
+- Owner user: `owner@seed.local` / `ChangeMe123!`
+- 3 employees, 2 locations, sample shifts and availability
+
+7. **Start development server**:
+```bash
+npm run dev
+```
+
+API will be available at `http://localhost:3001`
+
+### Testing
+
+```bash
+# Run tests
+npm test
+
+# Run linter
 npm run lint
-npm run lint:fix
-npm run format
+
+# Build
+npm run build
 ```
 
-### 8. CI/CD Pipeline ✅
-**New Workflow**: `.github/workflows/ci.yml`
+## 🚀 Production Deployment
 
-**Jobs:**
-1. **Backend Lint & Test**
-   - ESLint check
-   - Prettier format check
-   
-2. **Frontend Lint & Build**
-   - ESLint check
-   - Prettier format check
-   - Build verification
-   - Upload build artifacts
+### Environment Setup
 
-3. **Security Audit**
-   - npm audit for both frontend and backend
-
-**Triggers:**
-- Push to `main` or `develop`
-- Pull requests to `main` or `develop`
-
-## 📁 Files Changed
-
-### Added Files
-- `docs/product-analysis.md` - Comprehensive product analysis
-- `backend/middleware/withTenant.js` - Multi-tenant middleware
-- `backend/services/scheduleService.js` - Business logic layer
-- `backend/validators/shiftValidators.js` - Input validation
-- `backend/.eslintrc.json` - ESLint config
-- `backend/.prettierrc` - Prettier config
-- `frontend/.eslintrc.json` - ESLint config
-- `frontend/.prettierrc` - Prettier config
-- `.github/workflows/ci.yml` - CI/CD pipeline
-
-### Modified Files
-- `frontend/src/App.jsx` - Removed enhanced route
-- `frontend/src/pages/ScheduleBuilderV2.jsx` - Fixed modal UX and quick templates
-- `backend/package.json` - Added lint/format scripts
-- `frontend/package.json` - Added lint/format scripts
-
-### Deleted Files
-- `frontend/src/pages/ScheduleBuilderV2Enhanced.jsx` - Consolidated into V2
-
-## ✅ Testing Checklist
-
-### Build & Compile
-- [x] Frontend builds successfully (`npm run build`)
-- [x] No TypeScript/ESLint errors
-- [x] No console warnings
-
-### Functionality
-- [x] Schedule builder loads correctly
-- [x] Modal opens and closes properly
-- [x] Quick templates set shift times (not notes)
-- [x] Modal scrolls correctly on small screens
-- [x] Body scroll locked when modal open
-- [x] All routes work (no 404s)
-
-### Code Quality
-- [x] ESLint passes
-- [x] Prettier formatting consistent
-- [x] No code duplication
-- [x] Service layer properly structured
-
-### Multi-Tenant
-- [x] withTenant middleware created
-- [x] filterByOrganization helper works
-- [x] No data leakage risk
-
-## 🔄 Migration Notes
-
-### For Developers
-1. **Use new service layer**: Import `scheduleService` instead of direct model access
-2. **Use validators**: Apply `validate()` middleware to all shift endpoints
-3. **Use withTenant**: Add to all routes that access organization data
-4. **Run linters**: Use `npm run lint:fix` before committing
-
-### For Existing Data
-- No database migrations required
-- Existing shifts work as-is
-- Quick templates now work correctly (no data loss)
-
-## 🎯 Next Steps (Future PRs)
-
-### Short-Term (1-2 weeks)
-1. **Implement Publish Schedule UI**
-   - Add status badge to schedule header
-   - Add "Publish Schedule" button
-   - Show confirmation dialog
-   - Track changes after publish
-
-2. **Add Conflict Detection UI**
-   - Show warnings for overlapping shifts
-   - Show warnings for leave conflicts
-   - Visual indicators in grid
-
-3. **Connect Leave Requests**
-   - Block shifts on approved leaves
-   - Show leave info in schedule
-
-### Medium-Term (3-4 weeks)
-4. **Bulk Operations UI**
-   - Copy week interface
-   - Apply template to multiple days
-   - Mass delete with confirmation
-
-5. **Drag & Drop Improvements**
-   - Drag shift to different day
-   - Drag shift to different employee
-   - Copy with Ctrl+drag
-
-6. **Integration with Time Tracking**
-   - Show planned vs actual hours
-   - Highlight discrepancies
-
-### Long-Term (1-2 months)
-7. **Advanced Features**
-   - Auto-scheduling based on availability
-   - Shift swap/trade workflow
-   - Open shifts (unassigned)
-   - Budget tracking (labor costs)
-
-8. **Unit Tests**
-   - Service layer tests
-   - Validator tests
-   - Integration tests
-
-## 📚 Documentation
-
-### Product Analysis
-See `docs/product-analysis.md` for:
-- Comparison with Deputy, When I Work, Planday
-- Anti-patterns identified
-- Recommended changes
-- Feature comparison matrix
-
-### Code Examples
-
-**Using Service Layer:**
-```javascript
-const scheduleService = require('../services/scheduleService');
-
-// Check conflicts
-const conflicts = await scheduleService.checkConflicts(
-  employeeId, 
-  date, 
-  startTime, 
-  endTime, 
-  null, 
-  organizationId
-);
-
-// Publish schedule
-await scheduleService.publishSchedule(scheduleId, userId, organizationId);
+1. **Set production environment variables**:
+```env
+DATABASE_URL="postgresql://user:password@production-host:5432/kadryhr_v2?schema=public"
+JWT_ACCESS_SECRET="<strong-random-secret>"
+JWT_REFRESH_SECRET="<strong-random-secret>"
+JWT_ACCESS_TTL="15m"
+JWT_REFRESH_TTL="7d"
+APP_PORT=3001
+NODE_ENV="production"
 ```
 
-**Using Validators:**
-```javascript
-const { validate, createShiftAssignmentSchema } = require('../validators/shiftValidators');
-
-router.post('/shifts', 
-  authMiddleware, 
-  withTenant, 
-  validate(createShiftAssignmentSchema), 
-  shiftController.create
-);
+2. **Run migrations**:
+```bash
+cd backend-v2
+npm ci --only=production
+npx prisma generate
+npx prisma migrate deploy
 ```
 
-**Using Multi-Tenant Middleware:**
-```javascript
-const withTenant = require('../middleware/withTenant');
-
-router.get('/schedules', authMiddleware, withTenant, async (req, res) => {
-  // Automatically filtered by organization
-  const schedules = await Schedule.find(req.filterByOrganization());
-  res.json(schedules);
-});
+3. **Build and start**:
+```bash
+npm run build
+npm run start:prod
 ```
 
-## 🎨 Screenshots
+### Docker Deployment (Optional)
 
-### Before: Quick Templates (WRONG)
-- Quick template filled notes with "05:45 - 15:00"
-- Shift times not set
-- "Note Type" dropdown confusing
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npx prisma generate
+RUN npm run build
+EXPOSE 3001
+CMD ["npm", "run", "start:prod"]
+```
 
-### After: Quick Templates (CORRECT)
-- Quick template sets startTime and endTime
-- Notes field for actual notes
-- Cleaner UI without "Note Type"
+Build and run:
+```bash
+docker build -t kadryhr-backend-v2 .
+docker run -p 3001:3001 --env-file .env kadryhr-backend-v2
+```
 
-### Before: Modal UX Issues
-- Modal too tall for small screens
-- Page scrolled instead of modal
-- No scroll lock
+## 📊 API Endpoints
 
-### After: Modal UX Fixed
-- Modal fits viewport with max-height
-- Content scrolls, not page
-- Body scroll locked
-- Better visual separation
+### Authentication
+- `POST /auth/login` - Login with email/password
+- `POST /auth/refresh` - Refresh access token
+- `GET /auth/me` - Get current user info
+- `POST /auth/logout` - Logout and invalidate refresh token
 
-## 🔒 Security
+### Protected Endpoints (require Bearer token)
 
-- ✅ Multi-tenant isolation enforced
-- ✅ Input validation with Zod
-- ✅ No SQL injection risk (using Mongoose)
-- ✅ Organization filtering automatic
-- ✅ Security audit in CI/CD
+#### Organisations
+- `GET /organisations` - Get current organisation
+- `PATCH /organisations/:id` - Update organisation (OWNER only)
 
-## 📈 Performance
+#### Users
+- `POST /users` - Create user (OWNER, MANAGER)
+- `GET /users` - List users
+- `PATCH /users/:id` - Update user (OWNER, MANAGER)
+- `DELETE /users/:id` - Delete user (OWNER only)
 
-- ✅ Code splitting maintained (lazy loading)
-- ✅ Build size optimized
-- ✅ No performance regressions
-- ✅ Service layer reduces controller complexity
+#### Employees
+- `POST /employees` - Create employee
+- `GET /employees` - List employees
+- `PATCH /employees/:id` - Update employee
+- `DELETE /employees/:id` - Delete employee
 
-## 🤝 Review Checklist
+#### Locations
+- `POST /locations` - Create location
+- `GET /locations` - List locations
+- `PATCH /locations/:id` - Update location
+- `DELETE /locations/:id` - Delete location
 
-### For Reviewers
-- [ ] Review `docs/product-analysis.md` for context
-- [ ] Check modal UX improvements (open modal, test scrolling)
-- [ ] Verify quick templates set shift times (not notes)
-- [ ] Review service layer structure
-- [ ] Review validator schemas
-- [ ] Check CI/CD pipeline configuration
-- [ ] Verify no breaking changes
+#### Shifts
+- `POST /shifts` - Create shift
+- `GET /shifts` - List shifts
+- `PATCH /shifts/:id` - Update shift
+- `DELETE /shifts/:id` - Delete shift
 
-### Merge Criteria
-- [ ] All CI checks pass
-- [ ] Code review approved
-- [ ] No merge conflicts
-- [ ] Documentation complete
+#### Availability
+- `POST /availability` - Create availability
+- `GET /availability` - List availability
+- `PATCH /availability/:id` - Update availability
+- `DELETE /availability/:id` - Delete availability
 
-## 🎉 Impact
+## 🔐 Security Considerations
 
-This PR brings KadryHR to **production-grade quality**:
+1. **JWT Secrets**: Use strong, random secrets in production (minimum 32 characters)
+2. **Database**: Use SSL/TLS for database connections in production
+3. **CORS**: Configure CORS appropriately for your frontend domains
+4. **Rate Limiting**: Consider adding rate limiting middleware for production
+5. **Helmet**: Consider adding Helmet.js for security headers
+6. **Environment Variables**: Never commit `.env` files (use `.env.example` as template)
 
-1. **Code Quality**: ESLint, Prettier, CI/CD
-2. **Architecture**: Service layer, validation, multi-tenant
-3. **UX**: Fixed modal, proper quick templates
-4. **Maintainability**: Single schedule builder, no duplication
-5. **Security**: Multi-tenant isolation, input validation
-6. **Scalability**: Service layer, proper separation of concerns
+## 🧪 Testing & Quality
 
-**Result**: KadryHR is now comparable to Deputy and When I Work in terms of code quality and architecture.
+- ✅ All tests passing (3 test suites, 6 tests)
+- ✅ Build successful with no TypeScript errors
+- ✅ ESLint passing with no warnings
+- ✅ Code formatted with Prettier
 
----
+## 📝 Important Notes
+
+### Legacy Backend
+- The existing backend in `/backend` remains **untouched**
+- Both backends can run simultaneously on different ports
+- No breaking changes to existing functionality
+- Migration strategy can be planned separately
+
+### Database
+- Uses standard Prisma client from `@prisma/client`
+- Generated Prisma files are **not** committed (added to `.gitignore`)
+- Migrations are version-controlled in `prisma/migrations/`
+
+### Future Enhancements
+- [ ] Add rate limiting middleware
+- [ ] Add Helmet.js for security headers
+- [ ] Add Swagger/OpenAPI documentation
+- [ ] Add more comprehensive integration tests
+- [ ] Add database connection pooling configuration
+- [ ] Add logging with Winston or Pino
+- [ ] Add health check endpoints
+- [ ] Add metrics and monitoring
+
+## 🎯 Migration Strategy (Future)
+
+When ready to migrate from legacy backend:
+
+1. **Data Migration**: Create scripts to migrate data from legacy DB to new schema
+2. **API Compatibility**: Add compatibility layer if needed
+3. **Gradual Rollout**: Use feature flags to gradually switch to new backend
+4. **Monitoring**: Monitor both backends during transition
+5. **Deprecation**: Deprecate legacy endpoints after successful migration
+
+## ✅ Checklist
+
+- [x] NestJS application structure
+- [x] Prisma schema and migrations
+- [x] Authentication (JWT with refresh tokens)
+- [x] Authorization (role-based guards)
+- [x] All core modules implemented
+- [x] DTOs with validation
+- [x] Error handling
+- [x] Unit tests
+- [x] Linting and formatting
+- [x] README documentation
+- [x] GitHub Actions CI/CD
+- [x] Environment configuration
+- [x] Seed script for development
+- [x] Build successful
+- [x] All tests passing
+
+## 🤝 Review Notes
+
+Please review:
+1. **Architecture**: Is the multi-tenant design appropriate?
+2. **Security**: Are there any security concerns?
+3. **API Design**: Are the endpoints RESTful and intuitive?
+4. **Documentation**: Is the README clear and comprehensive?
+5. **Testing**: Do we need more test coverage?
 
 ## 📞 Questions?
 
-For questions or clarifications, please:
-1. Review `docs/product-analysis.md`
-2. Check code comments in new files
-3. Ask in PR comments
+If you have any questions about the implementation, deployment, or architecture decisions, please comment on this PR or reach out directly.
 
-**Ready to merge!** 🚀
+---
+
+**Ready to merge**: This PR is production-ready and can be merged to `main` when approved. The new backend can be deployed alongside the legacy backend without any conflicts.
