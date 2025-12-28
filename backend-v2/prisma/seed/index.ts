@@ -1,4 +1,4 @@
-import { PrismaClient, Role, Weekday } from '../generated/prisma';
+import { PrismaClient, Role, Weekday } from '../../src/generated/prisma';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
