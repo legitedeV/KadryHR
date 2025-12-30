@@ -1,0 +1,74 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Theme = "light" | "dark";
+
+const STORAGE_KEY = "kadryhr_theme";
+
+export function ThemeToggle() {
+  const [theme, setTheme] = useState<Theme | null>(null);
+
+  function applyTheme(next: Theme) {
+    if (typeof document === "undefined") return;
+    const body = document.body;
+    body.classList.remove("light", "dark");
+    body.classList.add(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, next);
+    }
+  }
+
+  useEffect(() => {
+    const stored =
+      typeof window !== "undefined"
+        ? (localStorage.getItem(STORAGE_KEY) as Theme | null)
+        : null;
+    const prefersDark =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const next: Theme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : prefersDark
+        ? "dark"
+        : "light";
+    applyTheme(next);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTheme(next);
+  }, []);
+
+  function toggle() {
+    const current = theme ?? "dark";
+    const next: Theme = current === "dark" ? "light" : "dark";
+    setTheme(next);
+    applyTheme(next);
+  }
+
+  const activeTheme = theme ?? "dark";
+  const isDark = activeTheme === "dark";
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className="inline-flex items-center gap-2 rounded-full border border-slate-300/70 bg-white/70 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100"
+      aria-label="Przełącz motyw"
+    >
+      <span
+        className={`flex h-5 w-5 items-center justify-center rounded-full transition-all ${
+          isDark
+            ? "bg-amber-400 text-amber-950 shadow"
+            : "bg-slate-200 text-slate-700"
+        }`}
+      >
+        {/* light bulb icon */}
+        <span className="text-[13px]">💡</span>
+      </span>
+      <span className="hidden sm:inline">
+        {isDark ? "Tryb ciemny" : "Tryb jasny"}
+      </span>
+    </button>
+  );
+}

@@ -1,6 +1,5 @@
-// app/layout.tsx
-import "./globals.css";
 import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "KadryHR",
@@ -14,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body className="bg-slate-950 text-slate-50 antialiased">
+      <body className="antialiased transition-colors duration-200 dark">
         {children}
       </body>
     </html>
