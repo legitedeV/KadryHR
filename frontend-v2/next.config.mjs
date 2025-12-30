@@ -8,7 +8,7 @@ const nextConfig = {
   reactStrictMode: true,
   reactCompiler: true,
   turbopack: {
-    // wskazujemy właściwy katalog roboczy, aby uniknąć ostrzeżeń o wielu lockfile
+    // Specifies the working directory to avoid multi-lockfile warnings
     root: __dirname,
   },
 };

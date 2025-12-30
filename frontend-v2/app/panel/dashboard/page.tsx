@@ -74,10 +74,18 @@ export default function DashboardPage() {
   const pendingRequests = requests.filter((r) => r.status === "PENDING");
 
   const totalHoursWeek = shifts.reduce((sum, s) => {
-    const [sh, sm] = s.start.split(":").map(Number);
-    const [eh, em] = s.end.split(":").map(Number);
-    const mins = (eh * 60 + em) - (sh * 60 + sm);
-    return sum + Math.max(mins / 60, 0);
+    const startParts = parseTimeLabel(s.start);
+    const endParts = parseTimeLabel(s.end);
+    if (!startParts || !endParts) {
+      return sum;
+    }
+    const [sh, sm] = startParts;
+    const [eh, em] = endParts;
+    let mins = eh * 60 + em - (sh * 60 + sm);
+    if (mins < 0) {
+      mins += 24 * 60; // shifts crossing midnight
+    }
+    return sum + mins / 60;
   }, 0);
 
   return (
@@ -260,4 +268,12 @@ function mapRequestType(type: RequestItem["type"]) {
     default:
       return type;
   }
+}
+
+function parseTimeLabel(value: string): [number, number] | null {
+  const parts = value.split(":");
+  if (parts.length !== 2) return null;
+  const [h, m] = parts.map((v) => Number.parseInt(v, 10));
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return [h, m];
 }

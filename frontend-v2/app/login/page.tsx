@@ -1,14 +1,28 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiLogin } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
 
+function parseError(err: unknown) {
+  return err instanceof Error ? err.message : "Błąd logowania";
+}
+
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/panel/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,11 +35,9 @@ export default function LoginPage() {
     try {
       const { accessToken } = await apiLogin(email, password);
       saveToken(accessToken);
-      router.push("/panel/dashboard");
+      router.push(redirectTo);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Błąd logowania";
-      setError(message);
+      setError(parseError(err));
     } finally {
       setLoading(false);
     }

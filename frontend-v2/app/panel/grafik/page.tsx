@@ -32,11 +32,12 @@ const dowLabels = [
   "Niedziela",
 ];
 
+const dowFromDate = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
 function getDowKey(date: string) {
   const d = new Date(date);
   const idx = d.getDay(); // 0 = Sun
-  const map = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return map[idx] as (typeof dowOrder)[number];
+  return dowFromDate[idx] ?? "Sun";
 }
 
 export default function GrafikPage() {

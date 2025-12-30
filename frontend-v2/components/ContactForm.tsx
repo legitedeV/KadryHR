@@ -22,8 +22,7 @@ export function ContactForm() {
       return;
     }
     setError(null);
-    // Na razie tylko logujemy – można tu podpiąć endpoint backend-v2.
-    console.log("Kontakt:", { name, email, message });
+    // TODO: Connect to a dedicated backend-v2 endpoint or CRM webhook.
     setSent(true);
     setName("");
     setEmail("");

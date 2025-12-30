@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:3000";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE";
 
@@ -28,7 +28,14 @@ export interface Employee {
   active: boolean;
 }
 
-export type RequestType = "VACATION" | "SICK" | "SHIFT_GIVE" | "SHIFT_SWAP";
+export const REQUEST_TYPES = {
+  VACATION: "VACATION",
+  SICK: "SICK",
+  SHIFT_GIVE: "SHIFT_GIVE",
+  SHIFT_SWAP: "SHIFT_SWAP",
+} as const;
+
+export type RequestType = (typeof REQUEST_TYPES)[keyof typeof REQUEST_TYPES];
 
 export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -59,11 +66,6 @@ export async function apiLogin(email: string, password: string) {
   }
 
   const data = await res.json();
-  const userName =
-    (typeof data?.user?.firstName === "string" || typeof data?.user?.lastName === "string"
-      ? `${data.user.firstName ?? ""} ${data.user.lastName ?? ""}`.trim()
-      : undefined) ?? data?.user?.email ?? "";
-
   const user = data?.user ?? {};
 
   return {
@@ -71,8 +73,8 @@ export async function apiLogin(email: string, password: string) {
     user: {
       id: user.id,
       email: user.email,
-      role: (user.role as UserRole) ?? "EMPLOYEE",
-      name: userName,
+      role: isUserRole(user.role) ? user.role : "EMPLOYEE",
+      name: formatUserName(user),
     },
   };
 }
@@ -92,7 +94,8 @@ export async function apiGetMe(token: string): Promise<User> {
   const data = await res.json();
   return {
     ...data,
-    name: `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || data.email,
+    role: isUserRole(data.role) ? data.role : "EMPLOYEE",
+    name: formatUserName(data),
   } as User;
 }
 
@@ -209,15 +212,21 @@ export async function apiGetRequests(token: string): Promise<RequestItem[]> {
       : item.weekday
       ? nextWeekday(item.weekday)
       : new Date();
+    const note = (item.notes ?? "").toLowerCase();
     const details = `${minutesToLabel(item.startMinutes)}–${minutesToLabel(
       item.endMinutes
     )}${item.notes ? ` · ${item.notes}` : ""}`;
+    const status: RequestStatus = note.includes("zatwierd") // zatwierdzone
+      ? "APPROVED"
+      : note.includes("odrzuc")
+      ? "REJECTED"
+      : "PENDING";
 
     return {
       id: item.id,
       employeeName: byEmployee.get(item.employeeId) ?? "Pracownik",
-      type: "VACATION",
-      status: "PENDING",
+      type: inferRequestType(item),
+      status,
       date: date.toISOString(),
       details,
     };
@@ -266,4 +275,33 @@ function nextWeekday(weekday: string) {
   const diff = (target + 7 - today.getDay()) % 7 || 7;
   date.setDate(today.getDate() + diff);
   return date;
+}
+
+function formatUserName(
+  user:
+    | Partial<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+      }>
+    | null
+    | undefined
+) {
+  const first = typeof user?.firstName === "string" ? user.firstName : "";
+  const last = typeof user?.lastName === "string" ? user.lastName : "";
+  const email = typeof user?.email === "string" ? user.email : "";
+  const name = `${first} ${last}`.trim();
+  return name || email;
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE";
+}
+
+function inferRequestType(item: Availability): RequestType {
+  const note = (item.notes ?? "").toLowerCase();
+  if (note.includes("chorob")) return REQUEST_TYPES.SICK;
+  if (note.includes("urlop")) return REQUEST_TYPES.VACATION;
+  if (item.weekday) return REQUEST_TYPES.SHIFT_SWAP;
+  return REQUEST_TYPES.SHIFT_GIVE;
 }
