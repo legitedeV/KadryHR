@@ -12,7 +12,6 @@ export default function PracownicyPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
     apiGetEmployees(token)
       .then(setEmployees)
       .catch((err) => {
@@ -56,13 +55,13 @@ export default function PracownicyPage() {
                   Imię i nazwisko
                 </th>
                 <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  E-mail
+                  Rola
                 </th>
                 <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  Telefon
+                  Lokalizacja
                 </th>
                 <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  Stanowisko
+                  Status
                 </th>
               </tr>
             </thead>
@@ -70,16 +69,24 @@ export default function PracownicyPage() {
               {employees.map((e) => (
                 <tr key={e.id}>
                   <td className="px-3 py-2 text-slate-800 dark:text-slate-100">
-                    {e.fullName}
+                    {e.name}
                   </td>
                   <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                    {e.email || "—"}
+                    {e.role}
                   </td>
                   <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                    {e.phone || "—"}
+                    {e.locationName}
                   </td>
-                  <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                    {e.position || "—"}
+                  <td className="px-3 py-2">
+                    <span
+                      className={`badge ${
+                        e.active
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
+                          : "bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700"
+                      }`}
+                    >
+                      {e.active ? "aktywny" : "nieaktywny"}
+                    </span>
                   </td>
                 </tr>
               ))}

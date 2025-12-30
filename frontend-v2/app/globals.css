@@ -1,56 +1,53 @@
-@import "tailwindcss";
-
-/* minimalne custom rzeczy – reszta to zwykłe klasy Tailwind w TSX */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  --bg-light: #f7fafc;
+  --bg-light-soft: #ffffff;
+  --bg-dark: #020617;
+  --bg-dark-soft: #020617;
 }
 
-/* żeby layout nie był krótszy niż ekran */
-html,
-body {
+html {
   min-height: 100%;
 }
 
 body {
   min-height: 100vh;
-  margin: 0;
 }
 
-/* tło dla jasnego motywu – przełączane klasą body.light */
 body.light {
   background: radial-gradient(circle at top left, #fef3c7, #e0f2fe);
   color: #0f172a;
 }
 
-/* tło dla ciemnego motywu – przełączane klasą body.dark */
 body.dark {
   background: radial-gradient(circle at top left, #0f172a, #020617);
   color: #e5e7eb;
 }
 
-/* wspólna karta – używana jako className="card ..." */
-.card {
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.6); /* coś jak slate-400 */
-  background-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(12px);
-}
+@layer components {
+  .card {
+    border-radius: 1.2rem;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(12px);
+  }
 
-/* wariant card w ciemnym motywie */
-body.dark .card {
-  border-color: rgba(30, 64, 175, 0.7);
-  background-color: rgba(15, 23, 42, 0.92);
-}
+  .dark .card {
+    border-color: rgba(30, 41, 59, 0.6);
+    background-color: rgba(15, 23, 42, 0.8);
+  }
 
-/* mała pastylka – className="badge ..." */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.7rem;
-  font-weight: 500;
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 9999px;
+    padding: 0.125rem 0.65rem;
+    font-size: 11px;
+    font-weight: 600;
+  }
 }

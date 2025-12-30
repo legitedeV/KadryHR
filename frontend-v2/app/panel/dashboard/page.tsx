@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Employee, Shift, apiGetEmployees, apiGetShifts } from "@/lib/api";
+import { Employee, RequestItem, Shift, apiGetEmployees, apiGetRequests, apiGetShifts } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 interface DashboardData {
   shifts: Shift[];
   employees: Employee[];
+  requests: RequestItem[];
 }
 
 function getWeekRange() {
@@ -35,15 +36,20 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
-    Promise.all([apiGetShifts(token), apiGetEmployees(token)])
-      .then(([shifts, employees]) => setData({ shifts, employees }))
+    Promise.all([
+      apiGetShifts(token, range.from, range.to),
+      apiGetEmployees(token),
+      apiGetRequests(token),
+    ])
+      .then(([shifts, employees, requests]) =>
+        setData({ shifts, employees, requests })
+      )
       .catch((err) => {
         console.error(err);
         setError("Nie udało się pobrać danych do dashboardu");
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [range.from, range.to]);
 
   if (loading) {
     return (
@@ -61,20 +67,25 @@ export default function DashboardPage() {
     );
   }
 
-  const { shifts, employees } = data;
+  const { shifts, employees, requests } = data;
   const todaysDate = new Date().toISOString().slice(0, 10);
   const todaysShifts = shifts.filter((s) => s.date === todaysDate);
+  const unassigned = shifts.filter((s) => s.status === "UNASSIGNED");
+  const pendingRequests = requests.filter((r) => r.status === "PENDING");
 
-  // tygodniowe statystyki na podstawie zakresu
-  const weekShifts = shifts.filter(
-    (s) => s.date >= range.from && s.date <= range.to
-  );
-
-  const totalHoursWeek = weekShifts.reduce((sum, s) => {
-    const [sh, sm] = s.start.split(":").map(Number);
-    const [eh, em] = s.end.split(":").map(Number);
-    const mins = (eh * 60 + em) - (sh * 60 + sm);
-    return sum + Math.max(mins / 60, 0);
+  const totalHoursWeek = shifts.reduce((sum, s) => {
+    const startParts = parseTimeLabel(s.start);
+    const endParts = parseTimeLabel(s.end);
+    if (!startParts || !endParts) {
+      return sum;
+    }
+    const [sh, sm] = startParts;
+    const [eh, em] = endParts;
+    let mins = eh * 60 + em - (sh * 60 + sm);
+    if (mins < 0) {
+      mins += 24 * 60; // shifts crossing midnight
+    }
+    return sum + mins / 60;
   }, 0);
 
   return (
@@ -106,8 +117,9 @@ export default function DashboardPage() {
             {todaysShifts.length}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Dla dzisiejszej daty:{" "}
-            {new Date(todaysDate).toLocaleDateString("pl-PL")}
+            {unassigned.length > 0
+              ? `${unassigned.length} nieobsadzonych w tygodniu`
+              : "Brak nieobsadzonych zmian"}
           </p>
         </div>
 
@@ -116,7 +128,7 @@ export default function DashboardPage() {
             Zmiany w tygodniu
           </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-            {weekShifts.length}
+            {shifts.length}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Łącznie godzin: {Math.round(totalHoursWeek)} h
@@ -125,13 +137,13 @@ export default function DashboardPage() {
 
         <div className="card p-4">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Zmiany łącznie
+            Wnioski oczekujące
           </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-            {shifts.length}
+            {pendingRequests.length}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Wszystkie zapisane zmiany
+            Wszystkich wniosków w tym tygodniu: {requests.length}
           </p>
         </div>
 
@@ -143,13 +155,14 @@ export default function DashboardPage() {
             {employees.length}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Łącznie utworzonych pracowników
+            {employees.filter((e) => e.active).length} aktywnych,{" "}
+            {employees.filter((e) => !e.active).length} nieaktywnych
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* today's shifts */}
+        {/* today shifts */}
         <div className="card p-4 lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -174,46 +187,64 @@ export default function DashboardPage() {
                 >
                   <div>
                     <p className="text-slate-900 dark:text-slate-50">
-                      {s.start}–{s.end} · {s.employeeName}
+                      {s.start}–{s.end} ·{" "}
+                      {s.employeeName || "NIEOBSADZONA"}
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       {s.locationName}
                     </p>
                   </div>
+                  <span
+                    className={`badge ${
+                      s.status === "UNASSIGNED"
+                        ? "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-100 dark:border-rose-800"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
+                    }`}
+                  >
+                    {s.status === "UNASSIGNED" ? "nieobsadzona" : "obsadzona"}
+                  </span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* employees snippet */}
+        {/* requests */}
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                Pracownicy
+                Wnioski pracowników
               </p>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
-                Ostatnio dodani
+                Do akceptacji
               </p>
             </div>
           </div>
           <div className="space-y-2 text-xs max-h-64 overflow-auto pr-1">
-            {employees.length === 0 && (
+            {pendingRequests.length === 0 && (
               <p className="text-slate-500 dark:text-slate-400">
-                Brak pracowników do wyświetlenia.
+                Brak oczekujących wniosków.
               </p>
             )}
-            {employees.slice(0, 8).map((e) => (
+            {pendingRequests.map((r) => (
               <div
-                key={e.id}
+                key={r.id}
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900/90"
               >
-                <p className="text-slate-900 dark:text-slate-50">
-                  {e.fullName}
-                </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {e.position || "Stanowisko nieustawione"}
+                <div className="flex items-center justify-between">
+                  <p className="text-slate-900 dark:text-slate-50">
+                    {mapRequestType(r.type)} ·{" "}
+                    <span className="text-slate-600 dark:text-slate-300">
+                      {r.employeeName}
+                    </span>
+                  </p>
+                  <span className="badge bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-800">
+                    oczekuje
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  {new Date(r.date).toLocaleDateString("pl-PL")} · {r.details}
                 </p>
               </div>
             ))}
@@ -222,4 +253,27 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function mapRequestType(type: RequestItem["type"]) {
+  switch (type) {
+    case "VACATION":
+      return "Urlop";
+    case "SICK":
+      return "Chorobowe";
+    case "SHIFT_GIVE":
+      return "Oddanie zmiany";
+    case "SHIFT_SWAP":
+      return "Zamiana zmiany";
+    default:
+      return type;
+  }
+}
+
+function parseTimeLabel(value: string): [number, number] | null {
+  const parts = value.split(":");
+  if (parts.length !== 2) return null;
+  const [h, m] = parts.map((v) => Number.parseInt(v, 10));
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return [h, m];
 }

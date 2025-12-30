@@ -4,7 +4,7 @@ const config: Config = {
   darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
     extend: {
@@ -19,16 +19,19 @@ const config: Config = {
           600: "#2c6be6",
           700: "#214fba",
           800: "#1f4294",
-          900: "#1d3877",
-        },
+          900: "#1d3877"
+        }
       },
       borderRadius: {
         xl: "0.9rem",
-        "2xl": "1.2rem",
+        "2xl": "1.2rem"
       },
-    },
+      boxShadow: {
+        soft: "0 18px 45px rgba(15,23,42,0.18)"
+      }
+    }
   },
-  plugins: [],
+  plugins: []
 };
 
 export default config;

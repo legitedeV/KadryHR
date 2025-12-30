@@ -11,7 +11,17 @@ const navItems = [
   { href: "/panel/dashboard", label: "Dashboard" },
   { href: "/panel/grafik", label: "Grafik" },
   { href: "/panel/pracownicy", label: "Pracownicy" },
+  { href: "/panel/wnioski", label: "Wnioski" },
+  { href: "/panel/profil", label: "Profil" },
 ];
+
+const titleByPath: Record<string, string> = {
+  "/panel/grafik": "Grafik zmian",
+  "/panel/pracownicy": "Pracownicy",
+  "/panel/wnioski": "Wnioski",
+  "/panel/profil": "Profil użytkownika",
+  "/panel/dashboard": "Dashboard",
+};
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -49,15 +59,12 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
   if (!user) return null;
 
-  const fullName =
-    [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email;
-
   return (
     <div className="min-h-screen flex">
       {/* sidebar */}
       <aside className="hidden md:flex md:flex-col w-60 border-r border-slate-200/70 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
         <div className="h-16 flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-lg">
+          <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
             K
           </div>
           <div>
@@ -95,7 +102,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between gap-2 mb-2">
             <div>
               <div className="text-slate-800 dark:text-slate-100">
-                {fullName}
+                {user.name}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
                 {user.role}
@@ -109,8 +116,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
           <p className="text-[11px]">
-            Organizacja:{" "}
-            <span className="font-medium">{user.organisationId}</span>
+            Lokalizacja: <span className="font-medium">Żabka · demo</span>
           </p>
         </div>
       </aside>
@@ -123,11 +129,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               KadryHR · panel
             </p>
             <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
-              {pathname === "/panel/grafik"
-                ? "Grafik zmian"
-                : pathname === "/panel/pracownicy"
-                ? "Pracownicy"
-                : "Dashboard"}
+              {titleByPath[pathname] ?? "Dashboard"}
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">

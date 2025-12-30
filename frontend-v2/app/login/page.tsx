@@ -1,14 +1,28 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiLogin } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
 
+function parseError(err: unknown) {
+  return err instanceof Error ? err.message : "Błąd logowania";
+}
+
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/panel/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,9 +35,9 @@ export default function LoginPage() {
     try {
       const { accessToken } = await apiLogin(email, password);
       saveToken(accessToken);
-      router.push("/panel/dashboard");
-    } catch (err: any) {
-      setError(err.message ?? "Błąd logowania");
+      router.push(redirectTo);
+    } catch (err: unknown) {
+      setError(parseError(err));
     } finally {
       setLoading(false);
     }
@@ -34,7 +48,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md card p-6 space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-lg">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
               K
             </div>
             <div>
@@ -85,7 +99,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-lg hover:bg-brand-600 disabled:opacity-60"
+            className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-600 disabled:opacity-60"
           >
             {loading ? "Logowanie..." : "Zaloguj"}
           </button>

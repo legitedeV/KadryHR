@@ -32,11 +32,12 @@ const dowLabels = [
   "Niedziela",
 ];
 
+const dowFromDate = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
 function getDowKey(date: string) {
   const d = new Date(date);
   const idx = d.getDay(); // 0 = Sun
-  const map = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return map[idx] as (typeof dowOrder)[number];
+  return dowFromDate[idx] ?? "Sun";
 }
 
 export default function GrafikPage() {
@@ -48,15 +49,8 @@ export default function GrafikPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
-    apiGetShifts(token)
-      .then((all) => {
-        // filtrujemy do aktualnego tygodnia
-        const filtered = all.filter(
-          (s) => s.date >= range.from && s.date <= range.to
-        );
-        setShifts(filtered);
-      })
+    apiGetShifts(token, range.from, range.to)
+      .then(setShifts)
       .catch((err) => {
         console.error(err);
         setError("Nie udało się pobrać grafiku z backendu");
@@ -108,7 +102,10 @@ export default function GrafikPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4 text-xs">
             <div className="flex flex-wrap items-center gap-2">
               <span className="badge bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800">
-                ✔ zmiana
+                ✔ zmiana obsadzona
+              </span>
+              <span className="badge bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:border-rose-800">
+                ! nieobsadzona
               </span>
             </div>
           </div>
@@ -143,10 +140,15 @@ export default function GrafikPage() {
                             {dayShifts.map((s) => (
                               <div
                                 key={s.id}
-                                className="rounded-xl border px-3 py-2 shadow-sm bg-white/80 border-emerald-200 text-emerald-800 dark:border-emerald-800 dark:text-emerald-100 dark:bg-slate-900/90"
+                                className={`rounded-xl border px-3 py-2 shadow-sm bg-white/80 dark:bg-slate-900/90 ${
+                                  s.status === "UNASSIGNED"
+                                    ? "border-rose-200 text-rose-800 dark:border-rose-800 dark:text-rose-100"
+                                    : "border-emerald-200 text-emerald-800 dark:border-emerald-800 dark:text-emerald-100"
+                                }`}
                               >
                                 <div className="font-medium">
-                                  {s.start}–{s.end} · {s.employeeName}
+                                  {s.start}–{s.end} ·{" "}
+                                  {s.employeeName || "NIEOBSADZONA"}
                                 </div>
                                 <div className="text-[11px] text-slate-500 dark:text-slate-300">
                                   {s.locationName}

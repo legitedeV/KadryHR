@@ -1,76 +1,60 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:3001";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE";
 
-export interface AuthUserPayload {
+export interface User {
   id: string;
   email: string;
-  organisationId: string;
+  name: string;
   role: UserRole;
-}
-
-export interface User extends AuthUserPayload {
-  firstName: string | null;
-  lastName: string | null;
-  createdAt: string;
-}
-
-export interface ApiShift {
-  id: string;
-  organisationId: string;
-  employeeId: string;
-  locationId: string | null;
-  position: string | null;
-  notes: string | null;
-  startsAt: string;
-  endsAt: string;
-  employee: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email?: string | null;
-  } | null;
-  location: {
-    id: string;
-    name: string;
-    address?: string | null;
-  } | null;
 }
 
 export interface Shift {
   id: string;
-  employeeName: string;
+  employeeName: string | null;
   date: string; // YYYY-MM-DD
   start: string; // HH:mm
   end: string; // HH:mm
   locationName: string;
-}
-
-export interface ApiEmployee {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email?: string | null;
-  phone?: string | null;
-  position?: string | null;
+  status: "ASSIGNED" | "UNASSIGNED";
 }
 
 export interface Employee {
   id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  position: string | null;
+  name: string;
+  role: string;
+  locationName: string;
+  active: boolean;
 }
 
-/**
- * POST /auth/login
- * body: { email, password }
- * response: { accessToken, refreshToken, user }
- */
+export const REQUEST_TYPES = {
+  VACATION: "VACATION",
+  SICK: "SICK",
+  SHIFT_GIVE: "SHIFT_GIVE",
+  SHIFT_SWAP: "SHIFT_SWAP",
+} as const;
+
+export type RequestType = (typeof REQUEST_TYPES)[keyof typeof REQUEST_TYPES];
+
+export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface RequestItem {
+  id: string;
+  employeeName: string;
+  type: RequestType;
+  status: RequestStatus;
+  date: string;
+  details: string;
+}
+
+const AUTH_PREFIX = "/auth";
+const SHIFTS_PREFIX = "/shifts";
+const EMPLOYEES_PREFIX = "/employees";
+const AVAILABILITY_PREFIX = "/availability";
+
 export async function apiLogin(email: string, password: string) {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  const res = await fetch(`${API_BASE_URL}${AUTH_PREFIX}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -82,19 +66,21 @@ export async function apiLogin(email: string, password: string) {
   }
 
   const data = await res.json();
-  return data as {
-    accessToken: string;
-    refreshToken: string;
-    user: AuthUserPayload;
+  const user = data?.user ?? {};
+
+  return {
+    accessToken: data.accessToken as string,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: isUserRole(user.role) ? user.role : "EMPLOYEE",
+      name: formatUserName(user),
+    },
   };
 }
 
-/**
- * GET /auth/me
- * returns full user record
- */
 export async function apiGetMe(token: string): Promise<User> {
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
+  const res = await fetch(`${API_BASE_URL}${AUTH_PREFIX}/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -105,15 +91,20 @@ export async function apiGetMe(token: string): Promise<User> {
     throw new Error(msg || "Nie udało się pobrać danych użytkownika");
   }
 
-  return res.json();
+  const data = await res.json();
+  return {
+    ...data,
+    role: isUserRole(data.role) ? data.role : "EMPLOYEE",
+    name: formatUserName(data),
+  } as User;
 }
 
-/**
- * GET /shifts
- * returns all shifts for organisation with employee+location relations.
- */
-export async function apiGetShifts(token: string): Promise<Shift[]> {
-  const res = await fetch(`${API_BASE_URL}/shifts`, {
+export async function apiGetShifts(
+  token: string,
+  from: string,
+  to: string
+): Promise<Shift[]> {
+  const res = await fetch(`${API_BASE_URL}${SHIFTS_PREFIX}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -124,20 +115,33 @@ export async function apiGetShifts(token: string): Promise<Shift[]> {
     throw new Error(msg || "Nie udało się pobrać grafiku");
   }
 
-  const data = (await res.json()) as ApiShift[];
-  return data.map(mapShiftFromApi);
-}
-
-/**
- * GET /employees?skip=0&take=200
- */
-export async function apiGetEmployees(token: string): Promise<Employee[]> {
-  const params = new URLSearchParams({
-    skip: "0",
-    take: "200",
+  const data: ShiftResponse[] = await res.json();
+  const inRange = data.filter((s) => {
+    const date = new Date(s.startsAt);
+    const iso = date.toISOString().slice(0, 10);
+    return iso >= from && iso <= to;
   });
 
-  const res = await fetch(`${API_BASE_URL}/employees?${params.toString()}`, {
+  return inRange.map((s) => {
+    const startsAt = new Date(s.startsAt);
+    const endsAt = new Date(s.endsAt);
+    return {
+      id: s.id,
+      employeeName:
+        s.employee?.firstName || s.employee?.lastName
+          ? `${s.employee.firstName ?? ""} ${s.employee.lastName ?? ""}`.trim()
+          : null,
+      date: startsAt.toISOString().slice(0, 10),
+      start: formatTime(startsAt),
+      end: formatTime(endsAt),
+      locationName: s.location?.name ?? "Lokalizacja nieznana",
+      status: s.employeeId ? "ASSIGNED" : "UNASSIGNED",
+    } satisfies Shift;
+  });
+}
+
+export async function apiGetEmployees(token: string): Promise<Employee[]> {
+  const res = await fetch(`${API_BASE_URL}${EMPLOYEES_PREFIX}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -148,59 +152,156 @@ export async function apiGetEmployees(token: string): Promise<Employee[]> {
     throw new Error(msg || "Nie udało się pobrać listy pracowników");
   }
 
-  const data = (await res.json()) as ApiEmployee[];
-  return data.map(mapEmployeeFromApi);
+  const data: EmployeeResponse[] = await res.json();
+  return data.map((e) => ({
+    id: e.id,
+    name: `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || e.email || "Pracownik",
+    role: e.position ?? "Sprzedawca",
+    locationName: e.defaultLocation?.name ?? "—",
+    active: true,
+  }));
 }
 
-function mapShiftFromApi(api: ApiShift): Shift {
-  const starts = new Date(api.startsAt);
-  const ends = new Date(api.endsAt);
-
-  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-
-  const date = starts.toISOString().slice(0, 10);
-  const start = `${pad(starts.getHours())}:${pad(starts.getMinutes())}`;
-  const end = `${pad(ends.getHours())}:${pad(ends.getMinutes())}`;
-
-  const employeeNameRaw = api.employee
-    ? `${api.employee.firstName} ${api.employee.lastName}`.trim()
-    : "";
-  const employeeName = employeeNameRaw || "Brak przypisanego pracownika";
-
-  const locationName = api.location?.name ?? "Brak lokalizacji";
-
-  return {
-    id: api.id,
-    employeeName,
-    date,
-    start,
-    end,
-    locationName,
-  };
+interface Availability {
+  id: string;
+  employeeId: string;
+  date: string | null;
+  weekday: string | null;
+  startMinutes: number;
+  endMinutes: number;
+  notes?: string | null;
 }
 
-function mapEmployeeFromApi(api: ApiEmployee): Employee {
-  const fullName = `${api.firstName} ${api.lastName}`.trim();
-  return {
-    id: api.id,
-    fullName: fullName || api.email || "Pracownik",
-    email: api.email ?? null,
-    phone: api.phone ?? null,
-    position: api.position ?? null,
-  };
+interface ShiftResponse {
+  id: string;
+  employeeId?: string | null;
+  employee?: { firstName?: string | null; lastName?: string | null };
+  location?: { name?: string | null };
+  startsAt: string;
+  endsAt: string;
+}
+
+interface EmployeeResponse {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  position?: string | null;
+  defaultLocation?: { name?: string | null };
+}
+
+export async function apiGetRequests(token: string): Promise<RequestItem[]> {
+  const [availabilityRes, employees] = await Promise.all([
+    fetch(`${API_BASE_URL}${AVAILABILITY_PREFIX}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    apiGetEmployees(token),
+  ]);
+
+  if (!availabilityRes.ok) {
+    const msg = await safeErrorMessage(availabilityRes);
+    throw new Error(msg || "Nie udało się pobrać wniosków");
+  }
+
+  const items = (await availabilityRes.json()) as Availability[];
+  const byEmployee = new Map(employees.map((e) => [e.id, e.name]));
+
+  return items.map((item) => {
+    const date = item.date
+      ? new Date(item.date)
+      : item.weekday
+      ? nextWeekday(item.weekday)
+      : new Date();
+    const note = (item.notes ?? "").toLowerCase();
+    const details = `${minutesToLabel(item.startMinutes)}–${minutesToLabel(
+      item.endMinutes
+    )}${item.notes ? ` · ${item.notes}` : ""}`;
+    const status: RequestStatus = note.includes("zatwierd") // zatwierdzone
+      ? "APPROVED"
+      : note.includes("odrzuc")
+      ? "REJECTED"
+      : "PENDING";
+
+    return {
+      id: item.id,
+      employeeName: byEmployee.get(item.employeeId) ?? "Pracownik",
+      type: inferRequestType(item),
+      status,
+      date: date.toISOString(),
+      details,
+    };
+  });
 }
 
 async function safeErrorMessage(res: Response): Promise<string | null> {
   try {
     const data = await res.json();
-    if (typeof (data as any)?.message === "string") {
-      return (data as any).message;
-    }
-    if (Array.isArray((data as any)?.message)) {
-      return (data as any).message.join(", ");
-    }
+    if (typeof data?.message === "string") return data.message;
+    if (Array.isArray(data?.message)) return data.message.join(", ");
     return null;
   } catch {
     return null;
   }
+}
+
+function formatTime(date: Date) {
+  return `${date.getHours().toString().padStart(2, "0")}:${date
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+function minutesToLabel(total: number) {
+  const h = Math.floor(total / 60)
+    .toString()
+    .padStart(2, "0");
+  const m = (total % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function nextWeekday(weekday: string) {
+  const map: Record<string, number> = {
+    MONDAY: 1,
+    TUESDAY: 2,
+    WEDNESDAY: 3,
+    THURSDAY: 4,
+    FRIDAY: 5,
+    SATURDAY: 6,
+    SUNDAY: 0,
+  };
+  const target = map[weekday] ?? 0;
+  const today = new Date();
+  const date = new Date(today);
+  const diff = (target + 7 - today.getDay()) % 7 || 7;
+  date.setDate(today.getDate() + diff);
+  return date;
+}
+
+function formatUserName(
+  user:
+    | Partial<{
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+      }>
+    | null
+    | undefined
+) {
+  const first = typeof user?.firstName === "string" ? user.firstName : "";
+  const last = typeof user?.lastName === "string" ? user.lastName : "";
+  const email = typeof user?.email === "string" ? user.email : "";
+  const name = `${first} ${last}`.trim();
+  return name || email;
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE";
+}
+
+function inferRequestType(item: Availability): RequestType {
+  const note = (item.notes ?? "").toLowerCase();
+  if (note.includes("chorob")) return REQUEST_TYPES.SICK;
+  if (note.includes("urlop")) return REQUEST_TYPES.VACATION;
+  if (item.weekday) return REQUEST_TYPES.SHIFT_SWAP;
+  return REQUEST_TYPES.SHIFT_GIVE;
 }
