@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
@@ -7,7 +11,17 @@ import { UpdateShiftDto } from './dto/update-shift.dto';
 export class ShiftsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private validateChronology(startsAt: Date, endsAt: Date) {
+    if (startsAt >= endsAt) {
+      throw new BadRequestException('startsAt must be before endsAt');
+    }
+  }
+
   create(organisationId: string, dto: CreateShiftDto) {
+    const startsAt = new Date(dto.startsAt);
+    const endsAt = new Date(dto.endsAt);
+    this.validateChronology(startsAt, endsAt);
+
     return this.prisma.shift.create({
       data: {
         organisationId,
@@ -15,8 +29,8 @@ export class ShiftsService {
         locationId: dto.locationId,
         position: dto.position,
         notes: dto.notes,
-        startsAt: new Date(dto.startsAt),
-        endsAt: new Date(dto.endsAt),
+        startsAt,
+        endsAt,
       },
     });
   }
@@ -40,6 +54,15 @@ export class ShiftsService {
       throw new NotFoundException('Shift not found');
     }
 
+    const nextStartsAt = dto.startsAt
+      ? new Date(dto.startsAt)
+      : existing.startsAt;
+    const nextEndsAt = dto.endsAt ? new Date(dto.endsAt) : existing.endsAt;
+
+    if (dto.startsAt || dto.endsAt) {
+      this.validateChronology(nextStartsAt, nextEndsAt);
+    }
+
     return this.prisma.shift.update({
       where: { id: shiftId },
       data: {
@@ -47,8 +70,8 @@ export class ShiftsService {
         locationId: dto.locationId,
         position: dto.position,
         notes: dto.notes,
-        startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
-        endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
+        startsAt: dto.startsAt ? nextStartsAt : undefined,
+        endsAt: dto.endsAt ? nextEndsAt : undefined,
       },
     });
   }
