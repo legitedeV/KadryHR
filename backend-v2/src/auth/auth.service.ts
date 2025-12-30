@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import type { AuthenticatedUser } from './types/authenticated-user.type';
+import type { StringValue } from 'ms';
 
 @Injectable()
 export class AuthService {
@@ -36,20 +37,34 @@ export class AuthService {
       role: user.role,
     };
 
-    const accessToken = await this.jwtService.signAsync(payload as any, {
-      secret:
-        this.configService.get<string>('app.jwt.secret') || 'changeme-access',
-      expiresIn: (this.configService.get<string>('app.jwt.accessTokenTtl') ||
-        '15m') as any,
-    });
+    const secret =
+      this.configService.get<string>('app.jwt.secret') ?? 'changeme-access';
+    const accessTokenTtl = (this.configService.get<string>(
+      'app.jwt.accessTokenTtl',
+    ) ?? '15m') as StringValue;
 
-    const refreshToken = await this.jwtService.signAsync(payload as any, {
-      secret:
-        this.configService.get<string>('app.refreshTokenSecret') ||
-        'changeme-refresh-secret',
-      expiresIn: (this.configService.get<string>('app.jwt.refreshTokenTtl') ||
-        '7d') as any,
-    });
+    const accessToken = await this.jwtService.signAsync<AuthenticatedUser>(
+      payload,
+      {
+        secret,
+        expiresIn: accessTokenTtl,
+      },
+    );
+
+    const refreshSecret =
+      this.configService.get<string>('app.refreshTokenSecret') ??
+      'changeme-refresh-secret';
+    const refreshTokenTtl = (this.configService.get<string>(
+      'app.jwt.refreshTokenTtl',
+    ) ?? '7d') as StringValue;
+
+    const refreshToken = await this.jwtService.signAsync<AuthenticatedUser>(
+      payload,
+      {
+        secret: refreshSecret,
+        expiresIn: refreshTokenTtl,
+      },
+    );
 
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
     await this.prisma.user.update({
@@ -84,20 +99,34 @@ export class AuthService {
       role: user.role,
     };
 
-    const newAccessToken = await this.jwtService.signAsync(payload as any, {
-      secret:
-        this.configService.get<string>('app.jwt.secret') || 'changeme-access',
-      expiresIn: (this.configService.get<string>('app.jwt.accessTokenTtl') ||
-        '15m') as any,
-    });
+    const secret =
+      this.configService.get<string>('app.jwt.secret') ?? 'changeme-access';
+    const accessTokenTtl = (this.configService.get<string>(
+      'app.jwt.accessTokenTtl',
+    ) ?? '15m') as StringValue;
 
-    const newRefreshToken = await this.jwtService.signAsync(payload as any, {
-      secret:
-        this.configService.get<string>('app.refreshTokenSecret') ||
-        'changeme-refresh-secret',
-      expiresIn: (this.configService.get<string>('app.jwt.refreshTokenTtl') ||
-        '7d') as any,
-    });
+    const newAccessToken = await this.jwtService.signAsync<AuthenticatedUser>(
+      payload,
+      {
+        secret,
+        expiresIn: accessTokenTtl,
+      },
+    );
+
+    const refreshSecret =
+      this.configService.get<string>('app.refreshTokenSecret') ??
+      'changeme-refresh-secret';
+    const refreshTokenTtl = (this.configService.get<string>(
+      'app.jwt.refreshTokenTtl',
+    ) ?? '7d') as StringValue;
+
+    const newRefreshToken = await this.jwtService.signAsync<AuthenticatedUser>(
+      payload,
+      {
+        secret: refreshSecret,
+        expiresIn: refreshTokenTtl,
+      },
+    );
 
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
     await this.prisma.user.update({

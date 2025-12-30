@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
+import type { AuthenticatedUser } from '../types/authenticated-user.type';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -13,13 +14,13 @@ export class JwtRefreshStrategy extends PassportStrategy(
     super({
       jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
       secretOrKey:
-        configService.get<string>('app.refreshTokenSecret') ||
+        configService.get<string>('app.refreshTokenSecret') ??
         'changeme-refresh-secret',
       passReqToCallback: true,
     });
   }
 
-  async validate(req: Request, payload: any) {
+  async validate(req: Request, payload: AuthenticatedUser) {
     const refreshToken = req.body.refreshToken;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token missing');
