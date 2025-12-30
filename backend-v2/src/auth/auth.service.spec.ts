@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+type Role = string;
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -47,7 +47,7 @@ describe('AuthService', () => {
       email: 'test@example.com',
       passwordHash: password,
       organisationId: 'org-id',
-      role: Role.OWNER,
+      role: 'OWNER' as Role,
     });
 
     prisma.user.update = jest.fn().mockResolvedValue(undefined);
