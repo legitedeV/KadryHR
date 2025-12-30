@@ -1,4 +1,3 @@
-// app/lib/auth.ts
 const TOKEN_KEY = "kadryhr_token";
 
 export function saveToken(token: string) {
