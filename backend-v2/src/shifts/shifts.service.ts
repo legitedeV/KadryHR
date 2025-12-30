@@ -54,8 +54,13 @@ export class ShiftsService {
       throw new NotFoundException('Shift not found');
     }
 
-    if (dto.startsAt && dto.endsAt) {
-      this.validateChronology(new Date(dto.startsAt), new Date(dto.endsAt));
+    const nextStartsAt = dto.startsAt
+      ? new Date(dto.startsAt)
+      : existing.startsAt;
+    const nextEndsAt = dto.endsAt ? new Date(dto.endsAt) : existing.endsAt;
+
+    if (dto.startsAt || dto.endsAt) {
+      this.validateChronology(nextStartsAt, nextEndsAt);
     }
 
     return this.prisma.shift.update({
@@ -65,8 +70,8 @@ export class ShiftsService {
         locationId: dto.locationId,
         position: dto.position,
         notes: dto.notes,
-        startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
-        endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
+        startsAt: dto.startsAt ? nextStartsAt : undefined,
+        endsAt: dto.endsAt ? nextEndsAt : undefined,
       },
     });
   }

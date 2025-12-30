@@ -72,4 +72,18 @@ describe('ShiftsService', () => {
       }),
     ).rejects.toThrow('startsAt must be before endsAt');
   });
+
+  it('validates chronology when only one bound changes on update', async () => {
+    mockPrisma.shift.findFirst.mockResolvedValue({
+      id: 'shift-1',
+      startsAt: new Date('2024-01-01T08:00:00.000Z'),
+      endsAt: new Date('2024-01-01T16:00:00.000Z'),
+    });
+
+    await expect(
+      service.update('org-1', 'shift-1', {
+        startsAt: '2024-01-01T18:00:00.000Z',
+      }),
+    ).rejects.toThrow('startsAt must be before endsAt');
+  });
 });
