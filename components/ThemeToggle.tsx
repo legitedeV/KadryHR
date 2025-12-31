@@ -7,25 +7,7 @@ type Theme = "light" | "dark";
 const STORAGE_KEY = "kadryhr_theme";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    // inicjalizacja z localStorage / prefers-color-scheme
-    const stored = (typeof window !== "undefined" &&
-      (localStorage.getItem(STORAGE_KEY) as Theme | null)) as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      applyTheme(stored);
-      setTheme(stored);
-      return;
-    }
-    const prefersDark =
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial: Theme = prefersDark ? "dark" : "light";
-    applyTheme(initial);
-    setTheme(initial);
-  }, []);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   function applyTheme(next: Theme) {
     if (typeof document === "undefined") return;
@@ -37,13 +19,34 @@ export function ThemeToggle() {
     }
   }
 
+  useEffect(() => {
+    const stored =
+      typeof window !== "undefined"
+        ? (localStorage.getItem(STORAGE_KEY) as Theme | null)
+        : null;
+    const prefersDark =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const next: Theme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : prefersDark
+        ? "dark"
+        : "light";
+    applyTheme(next);
+    setTheme(next);
+  }, []);
+
   function toggle() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
+    const current = theme ?? "dark";
+    const next: Theme = current === "dark" ? "light" : "dark";
     setTheme(next);
     applyTheme(next);
   }
 
-  const isDark = theme === "dark";
+  const activeTheme = theme ?? "dark";
+  const isDark = activeTheme === "dark";
 
   return (
     <button
@@ -59,7 +62,7 @@ export function ThemeToggle() {
             : "bg-slate-200 text-slate-700"
         }`}
       >
-        {/* ikonka żarówki */}
+        {/* light bulb icon */}
         <span className="text-[13px]">💡</span>
       </span>
       <span className="hidden sm:inline">

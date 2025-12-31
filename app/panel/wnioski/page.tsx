@@ -13,7 +13,6 @@ export default function WnioskiPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
     apiGetRequests(token)
       .then((items) => {
         setRequests(items);
