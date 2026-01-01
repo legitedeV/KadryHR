@@ -38,3 +38,5 @@ frontend-v2/*.log
 frontend-v2/generated/
 
 .next
+
+.tmp-tests
