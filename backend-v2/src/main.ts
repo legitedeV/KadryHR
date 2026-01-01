@@ -1,11 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { PrismaService } from './prisma/prisma.service';
 import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
+  const prismaService = app.get(PrismaService);
+  await prismaService.enableShutdownHooks(app);
   app.use(helmet());
 
   app.enableCors({
