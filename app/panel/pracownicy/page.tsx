@@ -12,7 +12,6 @@ export default function PracownicyPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
     apiGetEmployees(token)
       .then(setEmployees)
       .catch((err) => {
