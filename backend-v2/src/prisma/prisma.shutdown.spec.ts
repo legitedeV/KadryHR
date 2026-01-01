@@ -9,7 +9,7 @@ process.env.JWT_ACCESS_SECRET =
 process.env.JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || 'test-refresh-secret';
 
-describe('PrismaService shutdown hooks', () => {
+describe('PrismaService lifecycle', () => {
   let app: INestApplication;
   let prismaService: PrismaService;
   let appClosed = false;
@@ -19,8 +19,6 @@ describe('PrismaService shutdown hooks', () => {
     const prisma = {
       $connect: jest.fn().mockResolvedValue(undefined),
       $disconnect: jest.fn().mockResolvedValue(undefined),
-      $on: jest.fn(),
-      enableShutdownHooks: PrismaService.prototype.enableShutdownHooks,
       onModuleDestroy: PrismaService.prototype.onModuleDestroy,
       onModuleInit: PrismaService.prototype.onModuleInit,
     } as unknown as PrismaService;
@@ -36,27 +34,21 @@ describe('PrismaService shutdown hooks', () => {
     prismaService = app.get(PrismaService);
 
     await app.init();
-    await prismaService.enableShutdownHooks(app);
   });
 
   afterEach(async () => {
-    process.removeAllListeners('beforeExit');
-
     if (!appClosed) {
       await app.close();
       appClosed = true;
     }
   });
 
-  it('disconnects Prisma client on app close', async () => {
-    const disconnectSpy = jest
-      .spyOn(prismaService, '$disconnect')
-      .mockResolvedValue();
+  it('connects on init and disconnects on app close', async () => {
+    expect(prismaService.$connect).toHaveBeenCalledTimes(1);
 
     await app.close();
     appClosed = true;
 
-    expect(disconnectSpy).toHaveBeenCalledTimes(1);
-    disconnectSpy.mockRestore();
+    expect(prismaService.$disconnect).toHaveBeenCalledTimes(1);
   });
 });
