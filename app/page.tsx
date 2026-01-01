@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LeadCaptureForm } from "@/components/LeadCaptureForm";
 import { MarketingHeader } from "@/components/MarketingHeader";
 
 const features = [
@@ -94,6 +95,17 @@ export default function HomePage() {
                   </p>
                 </div>
               ))}
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-soft ring-1 ring-slate-100 dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                Zostaw kontakt, odezwiemy się w 1 dzień roboczy
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Formularz z walidacją e-mail i potwierdzeniem wysyłki.
+              </p>
+              <div className="mt-3">
+                <LeadCaptureForm />
+              </div>
             </div>
           </div>
 
