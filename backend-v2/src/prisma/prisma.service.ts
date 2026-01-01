@@ -18,7 +18,15 @@ export class PrismaService
       throw new Error('DATABASE_URL is not set. Please configure the database connection.');
     }
 
-    super();
+    const prismaClientOptions = {
+      datasources: {
+        db: {
+          url: databaseUrl,
+        },
+      },
+    } satisfies ConstructorParameters<typeof PrismaClient>[0];
+
+    super(prismaClientOptions);
   }
 
   async onModuleInit() {
