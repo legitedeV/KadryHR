@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { Employee, RequestItem, Shift, apiGetEmployees, apiGetRequests, apiGetShifts } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
+function parseTimeLabel(value: string): [number, number] | null {
+  const parts = value.split(":");
+  if (parts.length !== 2) return null;
+  const [h, m] = parts.map((v) => Number.parseInt(v, 10));
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return [h, m];
+}
+
 interface DashboardData {
   shifts: Shift[];
   employees: Employee[];
@@ -36,7 +44,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
     Promise.all([
       apiGetShifts(token, range.from, range.to),
       apiGetEmployees(token),
@@ -75,10 +82,19 @@ export default function DashboardPage() {
   const pendingRequests = requests.filter((r) => r.status === "PENDING");
 
   const totalHoursWeek = shifts.reduce((sum, s) => {
-    const [sh, sm] = s.start.split(":").map(Number);
-    const [eh, em] = s.end.split(":").map(Number);
-    const mins = (eh * 60 + em) - (sh * 60 + sm);
-    return sum + Math.max(mins / 60, 0);
+    const startParts = parseTimeLabel(s.start);
+    const endParts = parseTimeLabel(s.end);
+    if (!startParts || !endParts) {
+      console.warn("Pominięto zmianę z nieprawidłową godziną", s);
+      return sum;
+    }
+    const [sh, sm] = startParts;
+    const [eh, em] = endParts;
+    let mins = eh * 60 + em - (sh * 60 + sm);
+    if (mins < 0) {
+      mins += 24 * 60; // shifts crossing midnight
+    }
+    return sum + mins / 60;
   }, 0);
 
   return (

@@ -11,8 +11,17 @@ const navItems = [
   { href: "/panel/dashboard", label: "Dashboard" },
   { href: "/panel/grafik", label: "Grafik" },
   { href: "/panel/pracownicy", label: "Pracownicy" },
-  { href: "/panel/wnioski", label: "Wnioski" }
+  { href: "/panel/wnioski", label: "Wnioski" },
+  { href: "/panel/profil", label: "Profil" },
 ];
+
+const titleByPath: Record<string, string> = {
+  "/panel/grafik": "Grafik zmian",
+  "/panel/pracownicy": "Pracownicy",
+  "/panel/wnioski": "Wnioski",
+  "/panel/profil": "Profil użytkownika",
+  "/panel/dashboard": "Dashboard",
+};
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -120,13 +129,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               KadryHR · panel
             </p>
             <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
-              {pathname === "/panel/grafik"
-                ? "Grafik zmian"
-                : pathname === "/panel/pracownicy"
-                ? "Pracownicy"
-                : pathname === "/panel/wnioski"
-                ? "Wnioski"
-                : "Dashboard"}
+              {titleByPath[pathname] ?? "Dashboard"}
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">

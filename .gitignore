@@ -36,3 +36,7 @@ frontend-v2/*.log
 
 # jeśli nie chcesz trzymać wygenerowanego klienta Prisma
 frontend-v2/generated/
+
+.next
+
+.tmp-tests

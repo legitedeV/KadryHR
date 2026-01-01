@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -8,6 +9,15 @@ const pool = new Pool({
 });
 
 const adapter = new PrismaPg(pool);
+=======
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  INestApplication,
+} from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+>>>>>>> 30bbeef751f1e7ff4deb2abb586dd55f841071c0
 
 @Injectable()
 export class PrismaService
@@ -29,5 +39,15 @@ export class PrismaService
   async onModuleDestroy() {
     await this.$disconnect();
     await pool.end();
+  }
+
+  async enableShutdownHooks(app: INestApplication) {
+    this.$on('beforeExit', async () => {
+      await app.close();
+    });
+
+    process.on('beforeExit', async () => {
+      await this.$disconnect();
+    });
   }
 }

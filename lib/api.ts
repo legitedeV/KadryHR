@@ -53,7 +53,7 @@ const EMPLOYEES_PREFIX = "/api/v2/employees";
 const REQUESTS_PREFIX = "/api/v2/requests";
 
 export async function apiLogin(email: string, password: string) {
-  const res = await fetch(`${API_BASE_URL}${AUTH_PREFIX}/login`, {
+  const res = await safeFetch(`${API_BASE_URL}${AUTH_PREFIX}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -69,7 +69,7 @@ export async function apiLogin(email: string, password: string) {
 }
 
 export async function apiGetMe(token: string): Promise<User> {
-  const res = await fetch(`${API_BASE_URL}${AUTH_PREFIX}/me`, {
+  const res = await safeFetch(`${API_BASE_URL}${AUTH_PREFIX}/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -88,7 +88,7 @@ export async function apiGetShifts(
   from: string,
   to: string
 ): Promise<Shift[]> {
-  const res = await fetch(
+  const res = await safeFetch(
     `${API_BASE_URL}${SHIFTS_PREFIX}?from=${encodeURIComponent(
       from
     )}&to=${encodeURIComponent(to)}`,
@@ -108,7 +108,7 @@ export async function apiGetShifts(
 }
 
 export async function apiGetEmployees(token: string): Promise<Employee[]> {
-  const res = await fetch(`${API_BASE_URL}${EMPLOYEES_PREFIX}`, {
+  const res = await safeFetch(`${API_BASE_URL}${EMPLOYEES_PREFIX}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -123,7 +123,7 @@ export async function apiGetEmployees(token: string): Promise<Employee[]> {
 }
 
 export async function apiGetRequests(token: string): Promise<RequestItem[]> {
-  const res = await fetch(`${API_BASE_URL}${REQUESTS_PREFIX}`, {
+  const res = await safeFetch(`${API_BASE_URL}${REQUESTS_PREFIX}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -145,5 +145,15 @@ async function safeErrorMessage(res: Response): Promise<string | null> {
     return null;
   } catch {
     return null;
+  }
+}
+
+async function safeFetch(input: RequestInfo | URL, init?: RequestInit) {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new Error(
+      "Brak połączenia z API. Sprawdź adres API lub konfigurację proxy."
+    );
   }
 }
