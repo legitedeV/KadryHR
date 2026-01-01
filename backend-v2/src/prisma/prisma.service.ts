@@ -20,9 +20,15 @@ export class PrismaService
   }
 
   async enableShutdownHooks(app: INestApplication) {
-    this.$on('beforeExit', async () => {
+    // Prisma 7 keeps the beforeExit event but removes it from the public
+    // typings, so we cast the listener to maintain graceful shutdown
+    // behavior without losing type safety elsewhere.
+    (this.$on as unknown as (event: 'beforeExit', cb: () => Promise<void>) => void)(
+      'beforeExit',
+      async () => {
       await app.close();
-    });
+      },
+    );
 
     process.on('beforeExit', async () => {
       await this.$disconnect();
