@@ -9,27 +9,15 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.use(helmet());
 
-  const allowedOrigins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://57.128.247.179:3000",
-    "https://kadryhr.pl",
-    "https://www.kadryhr.pl",
-    "http://localhost:6006",
-    "http://127.0.0.1:6006",
-  ];
-
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("CORS blocked for origin: " + origin), false);
-    },
+    origin: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:6006',
+      'http://127.0.0.1:6006',
+    ],
     credentials: true,
-    methods: ["GET","HEAD","PUT","PATCH","POST","DELETE","OPTIONS"],
-    allowedHeaders: ["Content-Type","Authorization"],
   });
-
 
   app.setGlobalPrefix('api');
 
