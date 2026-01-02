@@ -9,25 +9,33 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.use(helmet());
 
-  const allowedOrigins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://57.128.247.179:3000",
-    "https://kadryhr.pl",
-    "https://www.kadryhr.pl",
-    "http://localhost:6006",
-    "http://127.0.0.1:6006",
-  ];
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? '').split(',').filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("CORS blocked for origin: " + origin), false);
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('CORS blocked for origin: ' + origin), false);
     },
     credentials: true,
-    methods: ["GET","HEAD","PUT","PATCH","POST","DELETE","OPTIONS"],
-    allowedHeaders: ["Content-Type","Authorization"],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  app.use((req: any, _res, next) => {
+    const cookieHeader = req.headers?.cookie as string | undefined;
+    const parsed = cookieHeader
+      ? Object.fromEntries(
+          cookieHeader.split(';').map((entry) => {
+            const [key, ...rest] = entry.trim().split('=');
+            return [decodeURIComponent(key), decodeURIComponent(rest.join('=') ?? '')];
+          }),
+        )
+      : {};
+    req.cookies = parsed;
+    next();
   });
 
 

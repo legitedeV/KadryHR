@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiLogin } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { pushToast } from "@/lib/toast";
 
 function parseError(err: unknown) {
   return err instanceof Error ? err.message : "Błąd logowania";
@@ -22,24 +23,40 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/panel/dashboard";
+  const { login, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace(redirectTo);
+    }
+  }, [authLoading, user, redirectTo, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await apiLogin(email, password);
-      router.push(redirectTo);
+      const loggedIn = await login(email, password);
+      if (loggedIn) {
+        pushToast({
+          title: "Zalogowano",
+          description: "Witaj ponownie w KadryHR",
+          variant: "success",
+        });
+        router.push(redirectTo);
+      }
     } catch (err: unknown) {
       setError(parseError(err));
     } finally {
       setLoading(false);
     }
   }
+
+  const disabled = loading || authLoading;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -96,10 +113,10 @@ function LoginForm() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={disabled}
             className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-600 disabled:opacity-60"
           >
-            {loading ? "Logowanie..." : "Zaloguj"}
+            {disabled ? "Logowanie..." : "Zaloguj"}
           </button>
         </form>
 

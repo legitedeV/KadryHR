@@ -5,4 +5,5 @@ export type AuthenticatedUser = {
   email: string;
   organisationId: string;
   role: Role;
+  refreshToken?: string;
 };

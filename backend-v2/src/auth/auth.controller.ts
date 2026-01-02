@@ -1,28 +1,28 @@
-import { Body, Controller, Post, UseGuards, Get, Req } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Get, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from './types/authenticated-user.type';
+import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto.email, loginDto.password);
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.login(loginDto.email, loginDto.password, res);
   }
 
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   async refresh(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: RefreshTokenDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.refreshTokens(user, dto.refreshToken);
+    return this.authService.refreshTokens(user, res);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -33,7 +33,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.logout(user.id);
+  async logout(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.logout(user.id, res);
   }
 }
