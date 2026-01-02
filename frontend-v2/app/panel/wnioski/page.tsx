@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RequestItem, apiGetRequests } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 
 export default function WnioskiPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -11,9 +10,7 @@ export default function WnioskiPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    apiGetRequests(token)
+    apiGetRequests()
       .then((items) => {
         setRequests(items);
         if (items.length > 0) setSelectedId(items[0].id);

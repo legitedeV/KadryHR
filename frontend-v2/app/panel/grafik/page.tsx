@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Shift, apiGetShifts } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 
 function getWeekRange() {
   const now = new Date();
@@ -47,9 +46,7 @@ export default function GrafikPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    apiGetShifts(token, range.from, range.to)
+    apiGetShifts(range.from, range.to)
       .then(setShifts)
       .catch((err) => {
         console.error(err);
