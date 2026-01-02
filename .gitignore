@@ -11,6 +11,8 @@ frontend/.env
 
 *.md
 *.txt
+# allow checked-in audit/reporting notes
+!docs/repo-audit.md
 
 .env
 backend/.env

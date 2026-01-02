@@ -1,5 +1,8 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+import { apiClient, API_BASE_URL } from "./api-client";
+import { clearAuthTokens, getAuthTokens } from "./auth";
+import { pushToast } from "./toast";
+
+export { API_BASE_URL };
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE";
 
@@ -54,22 +57,20 @@ const EMPLOYEES_PREFIX = "/employees";
 const AVAILABILITY_PREFIX = "/availability";
 
 export async function apiLogin(email: string, password: string) {
-  const res = await fetch(`${API_BASE_URL}${AUTH_PREFIX}/login`, {
+  const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
     method: "POST",
+    auth: false,
+    suppressToast: true,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
 
-  if (!res.ok) {
-    const msg = await safeErrorMessage(res);
-    throw new Error(msg || "Nieprawidłowy login lub hasło");
-  }
-
-  const data = await res.json();
   const user = data?.user ?? {};
+  const tokens = { accessToken: data.accessToken, refreshToken: data.refreshToken };
+  apiClient.setTokens(tokens);
 
   return {
-    accessToken: data.accessToken as string,
+    ...tokens,
     user: {
       id: user.id,
       email: user.email,
@@ -79,19 +80,12 @@ export async function apiLogin(email: string, password: string) {
   };
 }
 
-export async function apiGetMe(token: string): Promise<User> {
-  const res = await fetch(`${API_BASE_URL}${AUTH_PREFIX}/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export async function apiGetMe(): Promise<User> {
+  apiClient.hydrateFromStorage();
+  const data = await apiClient.request<UserResponse>(`${AUTH_PREFIX}/me`, {
+    suppressToast: true,
   });
 
-  if (!res.ok) {
-    const msg = await safeErrorMessage(res);
-    throw new Error(msg || "Nie udało się pobrać danych użytkownika");
-  }
-
-  const data = await res.json();
   return {
     ...data,
     role: isUserRole(data.role) ? data.role : "EMPLOYEE",
@@ -99,23 +93,9 @@ export async function apiGetMe(token: string): Promise<User> {
   } as User;
 }
 
-export async function apiGetShifts(
-  token: string,
-  from: string,
-  to: string
-): Promise<Shift[]> {
-  const res = await fetch(`${API_BASE_URL}${SHIFTS_PREFIX}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) {
-    const msg = await safeErrorMessage(res);
-    throw new Error(msg || "Nie udało się pobrać grafiku");
-  }
-
-  const data: ShiftResponse[] = await res.json();
+export async function apiGetShifts(from: string, to: string): Promise<Shift[]> {
+  apiClient.hydrateFromStorage();
+  const data = await apiClient.request<ShiftResponse[]>(`${SHIFTS_PREFIX}`);
   const inRange = data.filter((s) => {
     const date = new Date(s.startsAt);
     const iso = date.toISOString().slice(0, 10);
@@ -140,19 +120,9 @@ export async function apiGetShifts(
   });
 }
 
-export async function apiGetEmployees(token: string): Promise<Employee[]> {
-  const res = await fetch(`${API_BASE_URL}${EMPLOYEES_PREFIX}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) {
-    const msg = await safeErrorMessage(res);
-    throw new Error(msg || "Nie udało się pobrać listy pracowników");
-  }
-
-  const data: EmployeeResponse[] = await res.json();
+export async function apiGetEmployees(): Promise<Employee[]> {
+  apiClient.hydrateFromStorage();
+  const data = await apiClient.request<EmployeeResponse[]>(`${EMPLOYEES_PREFIX}`);
   return data.map((e) => ({
     id: e.id,
     name: `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || e.email || "Pracownik",
@@ -162,51 +132,18 @@ export async function apiGetEmployees(token: string): Promise<Employee[]> {
   }));
 }
 
-interface Availability {
-  id: string;
-  employeeId: string;
-  date: string | null;
-  weekday: string | null;
-  startMinutes: number;
-  endMinutes: number;
-  notes?: string | null;
-}
-
-interface ShiftResponse {
-  id: string;
-  employeeId?: string | null;
-  employee?: { firstName?: string | null; lastName?: string | null };
-  location?: { name?: string | null };
-  startsAt: string;
-  endsAt: string;
-}
-
-interface EmployeeResponse {
-  id: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  email?: string | null;
-  position?: string | null;
-  defaultLocation?: { name?: string | null };
-}
-
-export async function apiGetRequests(token: string): Promise<RequestItem[]> {
+export async function apiGetRequests(): Promise<RequestItem[]> {
+  apiClient.hydrateFromStorage();
   const [availabilityRes, employees] = await Promise.all([
-    fetch(`${API_BASE_URL}${AVAILABILITY_PREFIX}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    apiClient.request<AvailabilityResponse[]>(`${AVAILABILITY_PREFIX}`, {
+      suppressToast: true,
     }),
-    apiGetEmployees(token),
+    apiGetEmployees(),
   ]);
 
-  if (!availabilityRes.ok) {
-    const msg = await safeErrorMessage(availabilityRes);
-    throw new Error(msg || "Nie udało się pobrać wniosków");
-  }
-
-  const items = (await availabilityRes.json()) as Availability[];
   const byEmployee = new Map(employees.map((e) => [e.id, e.name]));
 
-  return items.map((item) => {
+  return availabilityRes.map((item) => {
     const date = item.date
       ? new Date(item.date)
       : item.weekday
@@ -233,15 +170,47 @@ export async function apiGetRequests(token: string): Promise<RequestItem[]> {
   });
 }
 
-async function safeErrorMessage(res: Response): Promise<string | null> {
-  try {
-    const data = await res.json();
-    if (typeof data?.message === "string") return data.message;
-    if (Array.isArray(data?.message)) return data.message.join(", ");
-    return null;
-  } catch {
-    return null;
-  }
+interface AvailabilityResponse {
+  id: string;
+  organisationId: string;
+  employeeId: string;
+  date: string | null;
+  weekday: string | null;
+  startMinutes: number;
+  endMinutes: number;
+  notes?: string | null;
+}
+
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: UserResponse;
+}
+
+interface UserResponse {
+  id: string;
+  email: string;
+  role: string;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
+interface ShiftResponse {
+  id: string;
+  employeeId?: string | null;
+  employee?: { firstName?: string | null; lastName?: string | null };
+  location?: { name?: string | null };
+  startsAt: string;
+  endsAt: string;
+}
+
+interface EmployeeResponse {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  position?: string | null;
+  defaultLocation?: { name?: string | null };
 }
 
 function formatTime(date: Date) {
@@ -298,10 +267,25 @@ function isUserRole(value: unknown): value is UserRole {
   return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE";
 }
 
-function inferRequestType(item: Availability): RequestType {
+function inferRequestType(item: AvailabilityResponse): RequestType {
   const note = (item.notes ?? "").toLowerCase();
   if (note.includes("chorob")) return REQUEST_TYPES.SICK;
   if (note.includes("urlop")) return REQUEST_TYPES.VACATION;
   if (item.weekday) return REQUEST_TYPES.SHIFT_SWAP;
   return REQUEST_TYPES.SHIFT_GIVE;
+}
+
+export function ensureSessionOrRedirect(callback: () => void) {
+  const tokens = getAuthTokens();
+  if (!tokens) {
+    clearAuthTokens();
+    pushToast({
+      title: "Zaloguj się ponownie",
+      description: "Twoja sesja wygasła.",
+      variant: "warning",
+    });
+    callback();
+  } else {
+    apiClient.setTokens(tokens, false);
+  }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGetMe, User } from "@/lib/api";
-import { getToken, clearToken } from "@/lib/auth";
+import { clearAuthTokens, getAuthTokens } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 
 export default function ProfilPage() {
@@ -12,16 +12,16 @@ export default function ProfilPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
+    const tokens = getAuthTokens();
+    if (!tokens) {
       router.replace("/login");
       return;
     }
-    apiGetMe(token)
+    apiGetMe()
       .then(setUser)
       .catch(() => {
         setError("Nie udało się pobrać profilu");
-        clearToken();
+        clearAuthTokens();
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -73,7 +73,7 @@ export default function ProfilPage() {
           </p>
           <button
             onClick={() => {
-              clearToken();
+              clearAuthTokens();
               router.push("/login");
             }}
             className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:text-brand-700 dark:border-slate-700 dark:text-slate-100"
