@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
-import { clearToken, getToken } from "@/lib/auth";
+import { clearAuthTokens, getAuthTokens } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -30,22 +30,22 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
+    const tokens = getAuthTokens();
+    if (!tokens) {
       router.replace("/login");
       return;
     }
-    apiGetMe(token)
+    apiGetMe()
       .then(setUser)
       .catch(() => {
-        clearToken();
+        clearAuthTokens();
         router.replace("/login");
       })
       .finally(() => setLoading(false));
   }, [router]);
 
   function handleLogout() {
-    clearToken();
+    clearAuthTokens();
     router.push("/login");
   }
 

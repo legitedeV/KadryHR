@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Employee, RequestItem, Shift, apiGetEmployees, apiGetRequests, apiGetShifts } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 
 interface DashboardData {
   shifts: Shift[];
@@ -34,12 +33,10 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
     Promise.all([
-      apiGetShifts(token, range.from, range.to),
-      apiGetEmployees(token),
-      apiGetRequests(token),
+      apiGetShifts(range.from, range.to),
+      apiGetEmployees(),
+      apiGetRequests(),
     ])
       .then(([shifts, employees, requests]) =>
         setData({ shifts, employees, requests })

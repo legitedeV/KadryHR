@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Employee, apiGetEmployees } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 
 export default function PracownicyPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -10,9 +9,7 @@ export default function PracownicyPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    apiGetEmployees(token)
+    apiGetEmployees()
       .then(setEmployees)
       .catch((err) => {
         console.error(err);

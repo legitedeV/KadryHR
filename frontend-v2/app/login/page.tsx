@@ -3,7 +3,6 @@
 import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiLogin } from "@/lib/api";
-import { saveToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
 
@@ -33,8 +32,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const { accessToken } = await apiLogin(email, password);
-      saveToken(accessToken);
+      await apiLogin(email, password);
       router.push(redirectTo);
     } catch (err: unknown) {
       setError(parseError(err));

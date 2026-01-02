@@ -1,7 +1,16 @@
 import { PrismaClient, Role, Weekday } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is required to run the seed.');
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(databaseUrl),
+});
 
 async function main() {
   const seedPassword = 'ChangeMe123!';
