@@ -1,8 +1,0 @@
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/kadryhr
-
-JWT_SECRET=to_jest_mocny_tajny_klucz_ktory_sobie_zapisz
-JWT_EXPIRES_IN=7d
-
-CLIENT_URL=http://80.211.252.191
-NODE_ENV=production
