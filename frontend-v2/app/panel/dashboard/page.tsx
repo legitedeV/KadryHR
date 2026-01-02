@@ -5,14 +5,14 @@ import {
   EmployeeRecord,
   PaginatedResponse,
   RequestItem,
-  Shift,
+  ShiftRecord,
   apiGetRequests,
   apiGetShifts,
   apiListEmployees,
 } from "@/lib/api";
 
 interface DashboardData {
-  shifts: Shift[];
+  shifts: ShiftRecord[];
   employees: PaginatedResponse<EmployeeRecord>;
   requests: RequestItem[];
 }
@@ -42,7 +42,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      apiGetShifts(range.from, range.to),
+      apiGetShifts({ from: range.from, to: range.to }),
       apiListEmployees({ take: 50 }),
       apiGetRequests(),
     ])
@@ -71,26 +71,18 @@ export default function DashboardPage() {
   }
 
   const { shifts, employees, requests } = data;
-  const todaysDate = new Date().toISOString().slice(0, 10);
-  const todaysShifts = shifts.filter((s) => s.date === todaysDate);
-  const unassigned = shifts.filter((s) => s.status === "UNASSIGNED");
+  const today = new Date();
+  const todaysShifts = shifts.filter((s) => isSameDay(s.startsAt, today));
+  const unassigned = shifts.filter((s) => !s.employeeId);
   const pendingRequests = requests.filter((r) => r.status === "PENDING");
   const employeeCount = employees.total;
   const activeCount = employeeCount;
 
   const totalHoursWeek = shifts.reduce((sum, s) => {
-    const startParts = parseTimeLabel(s.start);
-    const endParts = parseTimeLabel(s.end);
-    if (!startParts || !endParts) {
-      return sum;
-    }
-    const [sh, sm] = startParts;
-    const [eh, em] = endParts;
-    let mins = eh * 60 + em - (sh * 60 + sm);
-    if (mins < 0) {
-      mins += 24 * 60; // shifts crossing midnight
-    }
-    return sum + mins / 60;
+    const duration =
+      (new Date(s.endsAt).getTime() - new Date(s.startsAt).getTime()) /
+      (1000 * 60 * 60);
+    return sum + Math.max(duration, 0);
   }, 0);
 
   return (
@@ -174,7 +166,7 @@ export default function DashboardPage() {
                 Dzisiejsza obsada
               </p>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
-                {new Date(todaysDate).toLocaleDateString("pl-PL")}
+                {today.toLocaleDateString("pl-PL")}
               </p>
             </div>
           </div>
@@ -191,21 +183,21 @@ export default function DashboardPage() {
                 >
                   <div>
                     <p className="text-slate-900 dark:text-slate-50">
-                      {s.start}–{s.end} ·{" "}
-                      {s.employeeName || "NIEOBSADZONA"}
+                      {timeLabel(s.startsAt)}–{timeLabel(s.endsAt)} ·{" "}
+                      {formatEmployeeName(s)}
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {s.locationName}
+                      {s.location?.name ?? "Lokalizacja"}
                     </p>
                   </div>
                   <span
                     className={`badge ${
-                      s.status === "UNASSIGNED"
+                      !s.employeeId
                         ? "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-100 dark:border-rose-800"
                         : "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
                     }`}
                   >
-                    {s.status === "UNASSIGNED" ? "nieobsadzona" : "obsadzona"}
+                    {!s.employeeId ? "nieobsadzona" : "obsadzona"}
                   </span>
                 </div>
               ))}
@@ -274,10 +266,26 @@ function mapRequestType(type: RequestItem["type"]) {
   }
 }
 
-function parseTimeLabel(value: string): [number, number] | null {
-  const parts = value.split(":");
-  if (parts.length !== 2) return null;
-  const [h, m] = parts.map((v) => Number.parseInt(v, 10));
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return [h, m];
+function isSameDay(iso: string, day: Date) {
+  const date = new Date(iso);
+  return (
+    date.getUTCFullYear() === day.getUTCFullYear() &&
+    date.getUTCMonth() === day.getUTCMonth() &&
+    date.getUTCDate() === day.getUTCDate()
+  );
+}
+
+function timeLabel(iso: string) {
+  const d = new Date(iso);
+  return `${d.getUTCHours().toString().padStart(2, "0")}:${d
+    .getUTCMinutes()
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+function formatEmployeeName(shift: ShiftRecord) {
+  const first = shift.employee?.firstName ?? "";
+  const last = shift.employee?.lastName ?? "";
+  const name = `${first} ${last}`.trim();
+  return name || "Pracownik";
 }

@@ -18,14 +18,42 @@ export interface User {
   organisation: OrganisationSummary;
 }
 
-export interface Shift {
+export interface ShiftRecord {
   id: string;
-  employeeName: string | null;
-  date: string; // YYYY-MM-DD
-  start: string; // HH:mm
-  end: string; // HH:mm
-  locationName: string;
-  status: "ASSIGNED" | "UNASSIGNED";
+  employeeId: string;
+  locationId?: string | null;
+  position?: string | null;
+  notes?: string | null;
+  startsAt: string;
+  endsAt: string;
+  employee?: { id?: string; firstName?: string | null; lastName?: string | null };
+  location?: { id?: string; name?: string | null };
+  availabilityWarning?: string | null;
+}
+
+export interface ShiftPayload {
+  employeeId: string;
+  locationId?: string;
+  position?: string;
+  notes?: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface ShiftSummaryItem {
+  employeeId: string;
+  employeeName: string;
+  hours: number;
+}
+
+export interface AvailabilityRecord {
+  id: string;
+  employeeId: string;
+  date?: string | null;
+  weekday?: string | null;
+  startMinutes: number;
+  endMinutes: number;
+  notes?: string | null;
 }
 
 export const REQUEST_TYPES = {
@@ -150,31 +178,70 @@ export async function apiLogout() {
   clearAuthTokens();
 }
 
-export async function apiGetShifts(from: string, to: string): Promise<Shift[]> {
+export async function apiGetShifts(params: {
+  from: string;
+  to: string;
+  locationId?: string;
+  employeeId?: string;
+}): Promise<ShiftRecord[]> {
   apiClient.hydrateFromStorage();
-  const data = await apiClient.request<ShiftResponse[]>(`${SHIFTS_PREFIX}`);
-  const inRange = data.filter((s) => {
-    const date = new Date(s.startsAt);
-    const iso = date.toISOString().slice(0, 10);
-    return iso >= from && iso <= to;
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
   });
+  if (params.locationId) search.set("locationId", params.locationId);
+  if (params.employeeId) search.set("employeeId", params.employeeId);
 
-  return inRange.map((s) => {
-    const startsAt = new Date(s.startsAt);
-    const endsAt = new Date(s.endsAt);
-    return {
-      id: s.id,
-      employeeName:
-        s.employee?.firstName || s.employee?.lastName
-          ? `${s.employee.firstName ?? ""} ${s.employee.lastName ?? ""}`.trim()
-          : null,
-      date: startsAt.toISOString().slice(0, 10),
-      start: formatTime(startsAt),
-      end: formatTime(endsAt),
-      locationName: s.location?.name ?? "Lokalizacja nieznana",
-      status: s.employeeId ? "ASSIGNED" : "UNASSIGNED",
-    } satisfies Shift;
+  return apiClient.request<ShiftResponse[]>(`${SHIFTS_PREFIX}?${search.toString()}`);
+}
+
+export async function apiCreateShift(payload: ShiftPayload): Promise<ShiftRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftResponse>(`${SHIFTS_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
+}
+
+export async function apiUpdateShift(
+  id: string,
+  payload: Partial<ShiftPayload>,
+): Promise<ShiftRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftResponse>(`${SHIFTS_PREFIX}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteShift(id: string) {
+  apiClient.hydrateFromStorage();
+  await apiClient.request(`${SHIFTS_PREFIX}/${id}`, { method: "DELETE" });
+}
+
+export async function apiGetShiftSummary(params: {
+  from: string;
+  to: string;
+  employeeId?: string;
+}): Promise<ShiftSummaryItem[]> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams({ from: params.from, to: params.to });
+  if (params.employeeId) search.set("employeeId", params.employeeId);
+  return apiClient.request<ShiftSummaryItem[]>(`${SHIFTS_PREFIX}/summary?${search.toString()}`);
+}
+
+export async function apiGetAvailability(params: {
+  from?: string;
+  to?: string;
+  employeeId?: string;
+}): Promise<AvailabilityRecord[]> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  if (params.employeeId) search.set("employeeId", params.employeeId);
+  const query = search.toString();
+  return apiClient.request<AvailabilityRecord[]>(`${AVAILABILITY_PREFIX}${query ? `?${query}` : ""}`);
 }
 
 export async function apiListEmployees(
@@ -346,11 +413,15 @@ interface UserResponse {
 
 interface ShiftResponse {
   id: string;
-  employeeId?: string | null;
-  employee?: { firstName?: string | null; lastName?: string | null };
-  location?: { name?: string | null };
+  employeeId: string;
+  locationId?: string | null;
+  position?: string | null;
+  notes?: string | null;
+  employee?: { id?: string; firstName?: string | null; lastName?: string | null };
+  location?: { id?: string; name?: string | null };
   startsAt: string;
   endsAt: string;
+  availabilityWarning?: string | null;
 }
 
 interface EmployeeResponse {
@@ -372,13 +443,6 @@ interface LocationResponse {
   employees: EmployeeResponse[];
   createdAt: string;
   updatedAt: string;
-}
-
-function formatTime(date: Date) {
-  return `${date.getHours().toString().padStart(2, "0")}:${date
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
 }
 
 function minutesToLabel(total: number) {
