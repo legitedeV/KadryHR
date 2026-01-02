@@ -10,6 +10,8 @@ export interface AppConfig {
   };
   database: {
     url: string;
+    maxRetries: number;
+    retryDelayMs: number;
   };
 }
 
@@ -26,5 +28,7 @@ export const configuration = (): AppConfig => ({
   },
   database: {
     url: process.env.DATABASE_URL ?? '',
+    maxRetries: Number(process.env.DATABASE_MAX_RETRIES ?? 5),
+    retryDelayMs: Number(process.env.DATABASE_RETRY_DELAY_MS ?? 2000),
   },
 });

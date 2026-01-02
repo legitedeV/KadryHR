@@ -32,6 +32,14 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   JWT_REFRESH_TTL?: string;
+
+  @IsOptional()
+  @IsNumber()
+  DATABASE_MAX_RETRIES?: number;
+
+  @IsOptional()
+  @IsNumber()
+  DATABASE_RETRY_DELAY_MS?: number;
 }
 
 export const validateEnv = (config: Record<string, unknown>) => {
