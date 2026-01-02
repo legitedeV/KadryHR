@@ -9,7 +9,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.use(helmet());
 
-  const allowedOrigins = (process.env.CORS_ORIGINS ?? '').split(',').filter(Boolean);
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -30,14 +32,16 @@ async function bootstrap() {
       ? Object.fromEntries(
           cookieHeader.split(';').map((entry) => {
             const [key, ...rest] = entry.trim().split('=');
-            return [decodeURIComponent(key), decodeURIComponent(rest.join('=') ?? '')];
+            return [
+              decodeURIComponent(key),
+              decodeURIComponent(rest.join('=') ?? ''),
+            ];
           }),
         )
       : {};
     req.cookies = parsed;
     next();
   });
-
 
   app.setGlobalPrefix('api');
 

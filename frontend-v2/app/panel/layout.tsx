@@ -10,7 +10,16 @@ import type { UserRole } from "@/lib/api";
 const navItems: { href: string; label: string; roles?: UserRole[] }[] = [
   { href: "/panel/dashboard", label: "Dashboard" },
   { href: "/panel/grafik", label: "Grafik" },
-  { href: "/panel/pracownicy", label: "Pracownicy", roles: ["OWNER", "MANAGER"] },
+  {
+    href: "/panel/pracownicy",
+    label: "Pracownicy",
+    roles: ["OWNER", "MANAGER", "ADMIN"],
+  },
+  {
+    href: "/panel/lokalizacje",
+    label: "Lokalizacje",
+    roles: ["OWNER", "MANAGER", "ADMIN"],
+  },
   { href: "/panel/wnioski", label: "Wnioski" },
   { href: "/panel/profil", label: "Profil" },
 ];
@@ -18,6 +27,7 @@ const navItems: { href: string; label: string; roles?: UserRole[] }[] = [
 const titleByPath: Record<string, string> = {
   "/panel/grafik": "Grafik zmian",
   "/panel/pracownicy": "Pracownicy",
+  "/panel/lokalizacje": "Lokalizacje",
   "/panel/wnioski": "Wnioski",
   "/panel/profil": "Profil użytkownika",
   "/panel/dashboard": "Dashboard",

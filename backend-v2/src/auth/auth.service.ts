@@ -20,7 +20,13 @@ export class AuthService {
     if (!match) return 0;
     const [, value, unit] = match;
     const multiplier =
-      unit === 's' ? 1000 : unit === 'm' ? 60000 : unit === 'h' ? 3600000 : 86400000;
+      unit === 's'
+        ? 1000
+        : unit === 'm'
+          ? 60000
+          : unit === 'h'
+            ? 3600000
+            : 86400000;
     return Number(value) * multiplier;
   }
 
@@ -106,7 +112,11 @@ export class AuthService {
     return { accessToken, refreshToken, refreshTokenTtl };
   }
 
-  private attachRefreshTokenCookie(res: Response, token: string, ttl: StringValue) {
+  private attachRefreshTokenCookie(
+    res: Response,
+    token: string,
+    ttl: StringValue,
+  ) {
     const secure = this.configService.get<string>('NODE_ENV') === 'production';
     const maxAgeMs = this.parseTtlToMs(ttl as string);
     res.cookie('refreshToken', token, {

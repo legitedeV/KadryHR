@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -18,7 +19,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { QueryEmployeesDto } from './dto/query-employees.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('employees')
@@ -28,12 +29,50 @@ export class EmployeesController {
   @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
-    @Query() pagination: PaginationDto,
+    @Query() query: QueryEmployeesDto,
   ) {
-    return this.employeesService.findAll(user.organisationId, pagination);
+    if (user.role === Role.EMPLOYEE) {
+      const employee = await this.employeesService.findByUser(
+        user.organisationId,
+        user.id,
+      );
+
+      if (!employee) {
+        return {
+          data: [],
+          total: 0,
+          skip: query.skip ?? 0,
+          take: query.take ?? 20,
+        };
+      }
+
+      return this.employeesService.findAll(user.organisationId, query, {
+        restrictToEmployeeId: employee.id,
+      });
+    }
+
+    return this.employeesService.findAll(user.organisationId, query);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Get(':id')
+  async findOne(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    if (user.role === Role.EMPLOYEE) {
+      const employee = await this.employeesService.findByUser(
+        user.organisationId,
+        user.id,
+      );
+      if (!employee || employee.id !== id) {
+        throw new ForbiddenException('You can only view your own profile');
+      }
+    }
+
+    return this.employeesService.findOne(user.organisationId, id);
+  }
+
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   @Post()
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -42,22 +81,28 @@ export class EmployeesController {
     return this.employeesService.create(user.organisationId, dto);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   @Patch(':id')
   async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: UpdateEmployeeDto,
   ) {
+    if (user.role === Role.EMPLOYEE) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
     return this.employeesService.update(user.organisationId, id, dto);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   @Delete(':id')
   async remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
+    if (user.role === Role.EMPLOYEE) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
     return this.employeesService.remove(user.organisationId, id);
   }
 }

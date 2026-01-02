@@ -52,18 +52,24 @@ describe('AuthService', () => {
 
     prisma.user.update = jest.fn().mockResolvedValue(undefined);
 
-    const result = await service.login('test@example.com', 'password');
+    const res = { cookie: jest.fn(), clearCookie: jest.fn() } as any;
+
+    const result = await service.login('test@example.com', 'password', res);
 
     expect(result.accessToken).toBe('token');
-    expect(result.refreshToken).toBe('token');
+    expect(result.user).toBeDefined();
     expect(prisma.user.update).toHaveBeenCalled();
+    expect(res.cookie).toHaveBeenCalled();
   });
 
   it('throws on invalid credentials', async () => {
     prisma.user.findUnique = jest.fn().mockResolvedValue(null);
 
     await expect(
-      service.login('bad@example.com', 'password'),
+      service.login('bad@example.com', 'password', {
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      } as any),
     ).rejects.toThrow();
   });
 });

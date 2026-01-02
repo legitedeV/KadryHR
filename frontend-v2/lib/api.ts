@@ -1,6 +1,5 @@
 import { apiClient, API_BASE_URL } from "./api-client";
 import { clearAuthTokens } from "./auth";
-import { pushToast } from "./toast";
 
 export { API_BASE_URL };
 
@@ -29,14 +28,6 @@ export interface Shift {
   status: "ASSIGNED" | "UNASSIGNED";
 }
 
-export interface Employee {
-  id: string;
-  name: string;
-  role: string;
-  locationName: string;
-  active: boolean;
-}
-
 export const REQUEST_TYPES = {
   VACATION: "VACATION",
   SICK: "SICK",
@@ -57,9 +48,68 @@ export interface RequestItem {
   details: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
+export interface LocationSummary {
+  id: string;
+  name: string;
+  address?: string | null;
+}
+
+export interface EmployeeRecord {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+  position?: string | null;
+  locations: LocationSummary[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LocationRecord {
+  id: string;
+  name: string;
+  address?: string | null;
+  employees: EmployeeRecord[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmployeeQuery {
+  search?: string;
+  sortBy?: "firstName" | "lastName" | "email" | "createdAt" | "position";
+  sortOrder?: "asc" | "desc";
+  take?: number;
+  skip?: number;
+  page?: number;
+}
+
+export interface SaveEmployeePayload {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  position?: string;
+  locationIds?: string[];
+}
+
+export interface SaveLocationPayload {
+  name: string;
+  address?: string;
+  employeeIds?: string[];
+}
+
 const AUTH_PREFIX = "/auth";
 const SHIFTS_PREFIX = "/shifts";
 const EMPLOYEES_PREFIX = "/employees";
+const LOCATIONS_PREFIX = "/locations";
 const AVAILABILITY_PREFIX = "/availability";
 
 export async function apiLogin(email: string, password: string) {
@@ -127,16 +177,106 @@ export async function apiGetShifts(from: string, to: string): Promise<Shift[]> {
   });
 }
 
-export async function apiGetEmployees(): Promise<Employee[]> {
+export async function apiListEmployees(
+  params: EmployeeQuery = {},
+): Promise<PaginatedResponse<EmployeeRecord>> {
   apiClient.hydrateFromStorage();
-  const data = await apiClient.request<EmployeeResponse[]>(`${EMPLOYEES_PREFIX}`);
-  return data.map((e) => ({
-    id: e.id,
-    name: `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || e.email || "Pracownik",
-    role: e.position ?? "Sprzedawca",
-    locationName: e.defaultLocation?.name ?? "—",
-    active: true,
-  }));
+  const take = params.take ?? 10;
+  const skip = params.skip ?? (params.page != null ? Math.max(params.page - 1, 0) * take : 0);
+  const searchParams = new URLSearchParams();
+  searchParams.set("take", String(take));
+  searchParams.set("skip", String(skip));
+  if (params.search) searchParams.set("search", params.search);
+  if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+  if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+
+  const query = searchParams.toString();
+  const response = await apiClient.request<PaginatedResponse<EmployeeResponse>>(
+    `${EMPLOYEES_PREFIX}${query ? `?${query}` : ""}`,
+  );
+
+  return {
+    ...response,
+    data: response.data.map(mapEmployee),
+  };
+}
+
+export async function apiGetEmployee(id: string): Promise<EmployeeRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<EmployeeResponse>(`${EMPLOYEES_PREFIX}/${id}`);
+  return mapEmployee(response);
+}
+
+export async function apiCreateEmployee(
+  payload: SaveEmployeePayload,
+): Promise<EmployeeRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<EmployeeResponse>(`${EMPLOYEES_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return mapEmployee(response);
+}
+
+export async function apiUpdateEmployee(
+  id: string,
+  payload: Partial<SaveEmployeePayload>,
+): Promise<EmployeeRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<EmployeeResponse>(`${EMPLOYEES_PREFIX}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return mapEmployee(response);
+}
+
+export async function apiDeleteEmployee(id: string) {
+  apiClient.hydrateFromStorage();
+  await apiClient.request(`${EMPLOYEES_PREFIX}/${id}`, { method: "DELETE" });
+}
+
+export async function apiListLocations(): Promise<LocationRecord[]> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LocationResponse[]>(`${LOCATIONS_PREFIX}`);
+  return response.map(mapLocation);
+}
+
+export async function apiCreateLocation(payload: SaveLocationPayload): Promise<LocationRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LocationResponse>(`${LOCATIONS_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return mapLocation(response);
+}
+
+export async function apiUpdateLocation(
+  id: string,
+  payload: Partial<SaveLocationPayload>,
+): Promise<LocationRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LocationResponse>(`${LOCATIONS_PREFIX}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return mapLocation(response);
+}
+
+export async function apiUpdateLocationEmployees(
+  id: string,
+  employeeIds: string[],
+): Promise<LocationRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LocationResponse>(`${LOCATIONS_PREFIX}/${id}/employees`, {
+    method: "PATCH",
+    body: JSON.stringify({ employeeIds }),
+  });
+  return mapLocation(response);
+}
+
+export async function apiDeleteLocation(id: string) {
+  apiClient.hydrateFromStorage();
+  await apiClient.request(`${LOCATIONS_PREFIX}/${id}`, { method: "DELETE" });
 }
 
 export async function apiGetRequests(): Promise<RequestItem[]> {
@@ -145,10 +285,12 @@ export async function apiGetRequests(): Promise<RequestItem[]> {
     apiClient.request<AvailabilityResponse[]>(`${AVAILABILITY_PREFIX}`, {
       suppressToast: true,
     }),
-    apiGetEmployees(),
+    apiListEmployees({ take: 200, skip: 0 }),
   ]);
 
-  const byEmployee = new Map(employees.map((e) => [e.id, e.name]));
+  const byEmployee = new Map(
+    employees.data.map((e) => [e.id, `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || e.email || "Pracownik"]),
+  );
 
   return availabilityRes.map((item) => {
     const date = item.date
@@ -158,7 +300,7 @@ export async function apiGetRequests(): Promise<RequestItem[]> {
       : new Date();
     const note = (item.notes ?? "").toLowerCase();
     const details = `${minutesToLabel(item.startMinutes)}–${minutesToLabel(
-      item.endMinutes
+      item.endMinutes,
     )}${item.notes ? ` · ${item.notes}` : ""}`;
     const status: RequestStatus = note.includes("zatwierd") // zatwierdzone
       ? "APPROVED"
@@ -216,8 +358,20 @@ interface EmployeeResponse {
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;
+  phone?: string | null;
   position?: string | null;
-  defaultLocation?: { name?: string | null };
+  locations?: LocationSummary[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface LocationResponse {
+  id: string;
+  name: string;
+  address?: string | null;
+  employees: EmployeeResponse[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 function formatTime(date: Date) {
@@ -261,7 +415,7 @@ function formatUserName(
         email: string | null;
       }>
     | null
-    | undefined
+    | undefined,
 ) {
   const first = typeof user?.firstName === "string" ? user.firstName : "";
   const last = typeof user?.lastName === "string" ? user.lastName : "";
@@ -290,4 +444,29 @@ export function mapUser(user: UserResponse): User {
     name: formatUserName(user),
     organisation: user.organisation,
   } as User;
+}
+
+function mapEmployee(employee: EmployeeResponse): EmployeeRecord {
+  return {
+    id: employee.id,
+    firstName: employee.firstName ?? "",
+    lastName: employee.lastName ?? "",
+    email: employee.email ?? undefined,
+    phone: employee.phone ?? undefined,
+    position: employee.position ?? undefined,
+    locations: employee.locations ?? [],
+    createdAt: employee.createdAt,
+    updatedAt: employee.updatedAt,
+  };
+}
+
+function mapLocation(location: LocationResponse): LocationRecord {
+  return {
+    id: location.id,
+    name: location.name,
+    address: location.address ?? undefined,
+    employees: (location.employees ?? []).map(mapEmployee),
+    createdAt: location.createdAt,
+    updatedAt: location.updatedAt,
+  };
 }

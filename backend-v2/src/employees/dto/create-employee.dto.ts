@@ -1,4 +1,11 @@
-import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateEmployeeDto {
   @IsString()
@@ -20,4 +27,9 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   position?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  locationIds?: string[];
 }
