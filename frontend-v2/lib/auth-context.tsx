@@ -65,15 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refresh = async () => {
-    try {
-      const profile = await apiGetMe();
-      setUser(profile);
-      return profile;
-    } catch (error) {
-      clearAuthTokens();
-      setUser(null);
-      pushToast({
+    const refresh = async () => {
+      try {
+        const profile = await apiGetMe();
+        setUser(profile);
+        return profile;
+      } catch {
+        clearAuthTokens();
+        setUser(null);
+        pushToast({
         title: "Sesja wygasła",
         description: "Zaloguj się ponownie.",
         variant: "warning",

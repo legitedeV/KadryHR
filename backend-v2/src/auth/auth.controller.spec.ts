@@ -33,20 +33,26 @@ describe('AuthController', () => {
   });
 
   it('calls service.login on login', async () => {
-    await controller.login({
-      email: 'test@example.com',
-      password: 'password123',
-    });
+    const res = { cookie: jest.fn(), clearCookie: jest.fn() } as any;
+    await controller.login(
+      {
+        email: 'test@example.com',
+        password: 'password123',
+      },
+      res,
+    );
     expect(service.login).toHaveBeenCalledWith(
       'test@example.com',
       'password123',
+      res,
     );
   });
 
   it('calls service.refreshTokens on refresh', async () => {
+    const res = { cookie: jest.fn(), clearCookie: jest.fn() } as any;
     await controller.refresh(
       { id: 'user', organisationId: 'org', email: '', role: undefined as any },
-      { refreshToken: 'token' },
+      res,
     );
     expect(service.refreshTokens).toHaveBeenCalled();
   });

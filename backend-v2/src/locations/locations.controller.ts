@@ -17,6 +17,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { UpdateLocationEmployeesDto } from './dto/update-location-employees.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('locations')
@@ -28,7 +29,15 @@ export class LocationsController {
     return this.locationsService.findAll(user.organisationId);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Get(':id')
+  async findOne(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.locationsService.findOne(user.organisationId, id);
+  }
+
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   @Post()
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -37,7 +46,7 @@ export class LocationsController {
     return this.locationsService.create(user.organisationId, dto);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   @Patch(':id')
   async update(
     @CurrentUser() user: AuthenticatedUser,
@@ -47,7 +56,17 @@ export class LocationsController {
     return this.locationsService.update(user.organisationId, id, dto);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Patch(':id/employees')
+  async updateEmployees(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateLocationEmployeesDto,
+  ) {
+    return this.locationsService.update(user.organisationId, id, dto);
+  }
+
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   @Delete(':id')
   async remove(
     @CurrentUser() user: AuthenticatedUser,

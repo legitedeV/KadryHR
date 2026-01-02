@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Employee, RequestItem, Shift, apiGetEmployees, apiGetRequests, apiGetShifts } from "@/lib/api";
+import {
+  EmployeeRecord,
+  PaginatedResponse,
+  RequestItem,
+  Shift,
+  apiGetRequests,
+  apiGetShifts,
+  apiListEmployees,
+} from "@/lib/api";
 
 interface DashboardData {
   shifts: Shift[];
-  employees: Employee[];
+  employees: PaginatedResponse<EmployeeRecord>;
   requests: RequestItem[];
 }
 
@@ -35,12 +43,10 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([
       apiGetShifts(range.from, range.to),
-      apiGetEmployees(),
+      apiListEmployees({ take: 50 }),
       apiGetRequests(),
     ])
-      .then(([shifts, employees, requests]) =>
-        setData({ shifts, employees, requests })
-      )
+      .then(([shifts, employees, requests]) => setData({ shifts, employees, requests }))
       .catch((err) => {
         console.error(err);
         setError("Nie udało się pobrać danych do dashboardu");
@@ -69,6 +75,8 @@ export default function DashboardPage() {
   const todaysShifts = shifts.filter((s) => s.date === todaysDate);
   const unassigned = shifts.filter((s) => s.status === "UNASSIGNED");
   const pendingRequests = requests.filter((r) => r.status === "PENDING");
+  const employeeCount = employees.total;
+  const activeCount = employeeCount;
 
   const totalHoursWeek = shifts.reduce((sum, s) => {
     const startParts = parseTimeLabel(s.start);
@@ -99,7 +107,7 @@ export default function DashboardPage() {
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Łącznie pracowników:{" "}
           <span className="font-medium text-slate-800 dark:text-slate-100">
-            {employees.length}
+            {employeeCount}
           </span>
         </p>
       </div>
@@ -149,11 +157,10 @@ export default function DashboardPage() {
             Zespół
           </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-            {employees.length}
+            {employeeCount}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {employees.filter((e) => e.active).length} aktywnych,{" "}
-            {employees.filter((e) => !e.active).length} nieaktywnych
+            {activeCount} aktywnych, 0 nieaktywnych
           </p>
         </div>
       </div>
