@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
+import { QueryAvailabilityDto } from './dto/query-availability.dto';
 
 @Injectable()
 export class AvailabilityService {
@@ -35,12 +36,36 @@ export class AvailabilityService {
     });
   }
 
-  findAll(organisationId: string, employeeId?: string) {
+  findAll(organisationId: string, query: QueryAvailabilityDto) {
+    const dateFilter: { gte?: Date; lte?: Date } = {};
+    if (query.from) {
+      const from = new Date(query.from);
+      from.setUTCHours(0, 0, 0, 0);
+      dateFilter.gte = from;
+    }
+    if (query.to) {
+      const to = new Date(query.to);
+      to.setUTCHours(23, 59, 59, 999);
+      dateFilter.lte = to;
+    }
+
+    const where: Parameters<
+      typeof this.prisma.availability.findMany
+    >[0]['where'] = {
+      organisationId,
+      employeeId: query.employeeId,
+    };
+
+    if (query.from || query.to) {
+      where.AND = [
+        {
+          OR: [{ date: dateFilter }, { weekday: { not: null } }],
+        },
+      ];
+    }
+
     return this.prisma.availability.findMany({
-      where: {
-        organisationId,
-        employeeId,
-      },
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }

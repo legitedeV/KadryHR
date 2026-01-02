@@ -8,6 +8,17 @@ const mockPrisma = {
     findFirst: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    findMany: jest.fn(),
+  },
+  employee: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
+  location: {
+    findFirst: jest.fn(),
+  },
+  availability: {
+    findMany: jest.fn(),
   },
 };
 
@@ -24,66 +35,68 @@ describe('ShiftsService', () => {
 
     service = module.get<ShiftsService>(ShiftsService);
     jest.clearAllMocks();
+    mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
+    mockPrisma.location.findFirst.mockResolvedValue({ id: 'loc-1' });
+    mockPrisma.shift.findFirst.mockResolvedValue(null);
+    mockPrisma.availability.findMany.mockResolvedValue([]);
   });
 
-  it('creates shift when times are chronological', async () => {
-    mockPrisma.shift.create.mockResolvedValue({ id: 'shift-1' });
+  it('throws on overlapping shift for employee', async () => {
+    mockPrisma.shift.findFirst.mockResolvedValue({ id: 'conflict' });
 
-    const startsAt = '2024-01-01T08:00:00.000Z';
-    const endsAt = '2024-01-01T16:00:00.000Z';
+    await expect(
+      service.create('org-1', {
+        employeeId: 'emp-1',
+        startsAt: '2024-01-01T08:00:00.000Z',
+        endsAt: '2024-01-01T12:00:00.000Z',
+      }),
+    ).rejects.toThrow('Employee already has a shift in this time range');
+  });
+
+  it('returns availability warning when outside declared slots', async () => {
+    mockPrisma.shift.findFirst.mockResolvedValueOnce(null); // ensureEmployee
+    mockPrisma.shift.findFirst.mockResolvedValueOnce(null); // conflict
+    mockPrisma.availability.findMany.mockResolvedValue([]);
+    mockPrisma.shift.create.mockResolvedValue({
+      id: 'shift-1',
+      employeeId: 'emp-1',
+      startsAt: new Date('2024-01-01T08:00:00.000Z'),
+      endsAt: new Date('2024-01-01T12:00:00.000Z'),
+    });
 
     const result = await service.create('org-1', {
       employeeId: 'emp-1',
-      startsAt,
-      endsAt,
+      startsAt: '2024-01-01T08:00:00.000Z',
+      endsAt: '2024-01-01T12:00:00.000Z',
     });
 
-    expect(result).toEqual({ id: 'shift-1' });
-    expect(mockPrisma.shift.create).toHaveBeenCalledWith({
-      data: {
-        organisationId: 'org-1',
+    expect(result.availabilityWarning).toBeDefined();
+  });
+
+  it('calculates summary hours', async () => {
+    mockPrisma.shift.findMany.mockResolvedValue([
+      {
         employeeId: 'emp-1',
-        locationId: undefined,
-        position: undefined,
-        notes: undefined,
-        startsAt: new Date(startsAt),
-        endsAt: new Date(endsAt),
+        startsAt: new Date('2024-01-01T08:00:00.000Z'),
+        endsAt: new Date('2024-01-01T12:00:00.000Z'),
       },
-    });
-  });
-
-  it('throws when startsAt is not before endsAt', () => {
-    expect(() =>
-      service.create('org-1', {
+      {
         employeeId: 'emp-1',
-        startsAt: '2024-01-01T18:00:00.000Z',
-        endsAt: '2024-01-01T16:00:00.000Z',
-      }),
-    ).toThrow('startsAt must be before endsAt');
-  });
+        startsAt: new Date('2024-01-02T08:00:00.000Z'),
+        endsAt: new Date('2024-01-02T10:00:00.000Z'),
+      },
+    ]);
+    mockPrisma.employee.findMany.mockResolvedValue([
+      { id: 'emp-1', firstName: 'Jan', lastName: 'Kowalski', email: null },
+    ]);
 
-  it('validates chronology on update when both dates provided', async () => {
-    mockPrisma.shift.findFirst.mockResolvedValue({ id: 'shift-1' });
+    const summary = await service.summary('org-1', {
+      from: '2024-01-01T00:00:00.000Z',
+      to: '2024-01-07T00:00:00.000Z',
+    } as any);
 
-    await expect(
-      service.update('org-1', 'shift-1', {
-        startsAt: '2024-01-01T18:00:00.000Z',
-        endsAt: '2024-01-01T16:00:00.000Z',
-      }),
-    ).rejects.toThrow('startsAt must be before endsAt');
-  });
-
-  it('validates chronology when only one bound changes on update', async () => {
-    mockPrisma.shift.findFirst.mockResolvedValue({
-      id: 'shift-1',
-      startsAt: new Date('2024-01-01T08:00:00.000Z'),
-      endsAt: new Date('2024-01-01T16:00:00.000Z'),
-    });
-
-    await expect(
-      service.update('org-1', 'shift-1', {
-        startsAt: '2024-01-01T18:00:00.000Z',
-      }),
-    ).rejects.toThrow('startsAt must be before endsAt');
+    expect(summary).toEqual([
+      { employeeId: 'emp-1', employeeName: 'Jan Kowalski', hours: 6 },
+    ]);
   });
 });

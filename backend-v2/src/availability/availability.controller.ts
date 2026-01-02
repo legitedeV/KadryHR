@@ -18,6 +18,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
+import { QueryAvailabilityDto } from './dto/query-availability.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('availability')
@@ -27,9 +28,9 @@ export class AvailabilityController {
   @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('employeeId') employeeId?: string,
+    @Query() query: QueryAvailabilityDto,
   ) {
-    return this.availabilityService.findAll(user.organisationId, employeeId);
+    return this.availabilityService.findAll(user.organisationId, query);
   }
 
   @Roles(Role.OWNER, Role.MANAGER)
