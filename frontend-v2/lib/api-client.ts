@@ -21,6 +21,10 @@ class ApiClient {
     }
   }
 
+  async refreshSession(options?: { suppressToast?: boolean }) {
+    return this.refreshTokens(options);
+  }
+
   hydrateFromStorage() {
     if (typeof window === "undefined") return;
     if (!this.tokens) {
@@ -58,11 +62,12 @@ class ApiClient {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers,
+      credentials: init.credentials ?? "include",
     });
 
-    if (response.status === 401 && auth && retry && this.tokens?.refreshToken) {
+    if (response.status === 401 && auth && retry) {
       const refreshed = await this.refreshTokens({ suppressToast });
-      if (refreshed) {
+      if (refreshed?.tokens) {
         return this.request<T>(path, { ...options, retry: false });
       }
     }
@@ -87,33 +92,41 @@ class ApiClient {
   }
 
   private async refreshTokens(options?: { suppressToast?: boolean }) {
-    if (!this.tokens?.refreshToken) return null;
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
 
-    const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: this.tokens.refreshToken }),
-    });
+      if (!response.ok) {
+        this.setTokens(null);
+        if (!options?.suppressToast) {
+          pushToast({
+            title: "Sesja wygasła",
+            description: "Zaloguj się ponownie, aby kontynuować.",
+            variant: "warning",
+          });
+        }
+        return null;
+      }
 
-    if (!response.ok) {
+      const data = await response.json();
+      const tokens: AuthTokens = {
+        accessToken: data.accessToken,
+      };
+      this.setTokens(tokens);
+      return { tokens, user: data.user };
+    } catch {
       this.setTokens(null);
       if (!options?.suppressToast) {
         pushToast({
-          title: "Sesja wygasła",
-          description: "Zaloguj się ponownie, aby kontynuować.",
-          variant: "warning",
+          title: "Błąd sieci",
+          description: "Nie udało się odświeżyć sesji.",
+          variant: "error",
         });
       }
       return null;
     }
-
-    const data = await response.json();
-    const tokens: AuthTokens = {
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-    };
-    this.setTokens(tokens);
-    return tokens;
   }
 
   private async safeErrorMessage(res: Response): Promise<string | null> {

@@ -1,16 +1,22 @@
 import { apiClient, API_BASE_URL } from "./api-client";
-import { clearAuthTokens, getAuthTokens } from "./auth";
+import { clearAuthTokens } from "./auth";
 import { pushToast } from "./toast";
 
 export { API_BASE_URL };
 
-export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE";
+export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
+
+export interface OrganisationSummary {
+  id: string;
+  name: string;
+}
 
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  organisation: OrganisationSummary;
 }
 
 export interface Shift {
@@ -65,18 +71,13 @@ export async function apiLogin(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 
-  const user = data?.user ?? {};
-  const tokens = { accessToken: data.accessToken, refreshToken: data.refreshToken };
+  const user = mapUser(data?.user);
+  const tokens = { accessToken: data.accessToken };
   apiClient.setTokens(tokens);
 
   return {
     ...tokens,
-    user: {
-      id: user.id,
-      email: user.email,
-      role: isUserRole(user.role) ? user.role : "EMPLOYEE",
-      name: formatUserName(user),
-    },
+    user,
   };
 }
 
@@ -86,11 +87,17 @@ export async function apiGetMe(): Promise<User> {
     suppressToast: true,
   });
 
-  return {
-    ...data,
-    role: isUserRole(data.role) ? data.role : "EMPLOYEE",
-    name: formatUserName(data),
-  } as User;
+  return mapUser(data);
+}
+
+export async function apiLogout() {
+  apiClient.hydrateFromStorage();
+  await apiClient.request(`${AUTH_PREFIX}/logout`, {
+    method: "POST",
+    suppressToast: true,
+  });
+  apiClient.setTokens(null);
+  clearAuthTokens();
 }
 
 export async function apiGetShifts(from: string, to: string): Promise<Shift[]> {
@@ -183,7 +190,6 @@ interface AvailabilityResponse {
 
 interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
   user: UserResponse;
 }
 
@@ -193,6 +199,7 @@ interface UserResponse {
   role: string;
   firstName?: string | null;
   lastName?: string | null;
+  organisation: OrganisationSummary;
 }
 
 interface ShiftResponse {
@@ -264,7 +271,7 @@ function formatUserName(
 }
 
 function isUserRole(value: unknown): value is UserRole {
-  return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE";
+  return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE" || value === "ADMIN";
 }
 
 function inferRequestType(item: AvailabilityResponse): RequestType {
@@ -275,17 +282,12 @@ function inferRequestType(item: AvailabilityResponse): RequestType {
   return REQUEST_TYPES.SHIFT_GIVE;
 }
 
-export function ensureSessionOrRedirect(callback: () => void) {
-  const tokens = getAuthTokens();
-  if (!tokens) {
-    clearAuthTokens();
-    pushToast({
-      title: "Zaloguj się ponownie",
-      description: "Twoja sesja wygasła.",
-      variant: "warning",
-    });
-    callback();
-  } else {
-    apiClient.setTokens(tokens, false);
-  }
+export function mapUser(user: UserResponse): User {
+  return {
+    id: user.id,
+    email: user.email,
+    role: isUserRole(user.role) ? user.role : "EMPLOYEE",
+    name: formatUserName(user),
+    organisation: user.organisation,
+  } as User;
 }
