@@ -62,7 +62,17 @@ export class AuditLogInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(async (result) => {
         const after =
-          metadata.captureBody && result === undefined ? request.body : result;
+          result !== undefined
+            ? result
+            : metadata.captureBody
+              ? request.body
+              : undefined;
+
+        const resolvedEntityId =
+          entityId ??
+          (after && typeof after === 'object' && after !== null
+            ? (after as { id?: string }).id
+            : undefined);
 
         try {
           await this.auditService.log({
@@ -70,18 +80,14 @@ export class AuditLogInterceptor implements NestInterceptor {
             actorUserId: user.id,
             action: metadata.action,
             entityType: metadata.entityType,
-            entityId:
-              entityId ??
-              (after && typeof after === 'object' && 'id' in (after as any)
-                ? (after as any).id
-                : undefined),
+            entityId: resolvedEntityId,
             before,
             after,
             ip,
             userAgent,
           });
         } catch {
-          // Audyt nie może blokować głównego flow — ignorujemy błędy logowania.
+          // Audit should not block the main flow — ignore logging errors.
         }
       }),
     );
