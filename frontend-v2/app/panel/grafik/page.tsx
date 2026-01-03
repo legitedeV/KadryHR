@@ -15,7 +15,7 @@ import {
   apiListLocations,
   apiUpdateShift,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { usePermissions } from "@/lib/use-permissions";
 import { pushToast } from "@/lib/toast";
 
 type ShiftModalState = {
@@ -25,7 +25,6 @@ type ShiftModalState = {
   employeeId?: string;
 };
 
-const manageableRoles = ["OWNER", "MANAGER", "ADMIN"] as const;
 const weekDayLabels = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nd"];
 
 function startOfWeek(date: Date) {
@@ -98,8 +97,8 @@ function formatLocationName(shift: ShiftRecord, locations: LocationRecord[]) {
 }
 
 export default function GrafikPage() {
-  const { user } = useAuth();
-  const canManage = user ? manageableRoles.includes(user.role as (typeof manageableRoles)[number]) : false;
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission("RCP_EDIT");
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);

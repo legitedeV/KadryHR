@@ -13,8 +13,8 @@ import {
 import { Role } from '@prisma/client';
 import { ShiftsService } from './shifts.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -23,8 +23,9 @@ import { EmployeesService } from '../employees/employees.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
+import { Permission } from '../auth/permissions';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @UseInterceptors(AuditLogInterceptor)
 @Controller('shifts')
 export class ShiftsController {
@@ -69,7 +70,7 @@ export class ShiftsController {
     return this.shiftsService.summary(user.organisationId, query);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions(Permission.RCP_EDIT)
   @Post()
   @AuditLog({
     action: 'SHIFT_CREATE',
@@ -83,7 +84,7 @@ export class ShiftsController {
     return this.shiftsService.create(user.organisationId, dto);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions(Permission.RCP_EDIT)
   @Patch(':id')
   @AuditLog({
     action: 'SHIFT_UPDATE',
@@ -100,7 +101,7 @@ export class ShiftsController {
     return this.shiftsService.update(user.organisationId, id, dto);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions(Permission.RCP_EDIT)
   @Delete(':id')
   @AuditLog({
     action: 'SHIFT_DELETE',

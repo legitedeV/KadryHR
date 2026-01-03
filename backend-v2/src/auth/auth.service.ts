@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import type { AuthenticatedUser } from './types/authenticated-user.type';
 import type { StringValue } from 'ms';
 import { Response } from 'express';
+import { getPermissionsForRole } from './permissions';
 
 @Injectable()
 export class AuthService {
@@ -41,6 +42,7 @@ export class AuthService {
       email: user.email,
       organisationId: user.organisationId,
       role: user.role,
+      permissions: getPermissionsForRole(user.role),
     };
   }
 
@@ -67,7 +69,10 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    return {
+      ...user,
+      permissions: getPermissionsForRole(user.role),
+    };
   }
 
   private async validateUser(email: string, password: string) {

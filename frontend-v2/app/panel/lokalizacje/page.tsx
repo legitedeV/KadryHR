@@ -11,16 +11,12 @@ import {
   apiListLocations,
   apiUpdateLocation,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { usePermissions } from "@/lib/use-permissions";
 import { pushToast } from "@/lib/toast";
 
-const manageableRoles = ["OWNER", "MANAGER", "ADMIN"] as const;
-
 export default function LokalizacjePage() {
-  const { user } = useAuth();
-  const canManage = user
-    ? manageableRoles.includes(user.role as (typeof manageableRoles)[number])
-    : false;
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission("RCP_EDIT");
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [search, setSearch] = useState("");
