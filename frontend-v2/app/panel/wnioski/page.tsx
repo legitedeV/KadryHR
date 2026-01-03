@@ -5,8 +5,13 @@ import {
   RequestItem,
   RequestStatus,
   RequestType,
+  LeaveTypeRecord,
+  LEAVE_TYPES,
   apiCreateLeaveRequest,
   apiListLeaveRequests,
+  apiListLeaveTypes,
+  apiCreateLeaveType,
+  apiUpdateLeaveType,
   apiUpdateLeaveStatus,
 } from "@/lib/api";
 import { formatDateRange } from "@/lib/date-range";
@@ -14,6 +19,7 @@ import { usePermissions } from "@/lib/use-permissions";
 
 export default function WnioskiPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -24,29 +30,61 @@ export default function WnioskiPage() {
   const defaultDate = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<{
     type: RequestType;
+    leaveTypeId?: string;
     startDate: string;
     endDate: string;
     reason: string;
     attachmentUrl: string;
   }>({
     type: "PAID_LEAVE",
+    leaveTypeId: undefined,
     startDate: defaultDate,
     endDate: defaultDate,
     reason: "",
     attachmentUrl: "",
   });
+  const [newLeaveType, setNewLeaveType] = useState<{
+    name: string;
+    code: RequestType;
+    isPaid: boolean;
+    color: string;
+  }>({
+    name: "",
+    code: "OTHER",
+    isPaid: true,
+    color: "#0ea5e9",
+  });
+  const [savingLeaveType, setSavingLeaveType] = useState(false);
 
   useEffect(() => {
-    apiListLeaveRequests({ take: 100 })
-      .then((response) => {
-        setRequests(response.data);
-        if (response.data.length > 0) setSelectedId(response.data[0].id);
-      })
-      .catch((err) => {
+    const load = async () => {
+      try {
+        const [typesRes, requestsRes] = await Promise.all([
+          apiListLeaveTypes(),
+          apiListLeaveRequests({ take: 100 }),
+        ]);
+        setLeaveTypes(typesRes);
+        setRequests(requestsRes.data);
+        if (typesRes.length > 0) {
+          const firstActive = typesRes.find((t) => t.isActive);
+          if (firstActive) {
+            setForm((prev) => ({
+              ...prev,
+              type: (firstActive.code as RequestType) ?? prev.type,
+              leaveTypeId: firstActive.id,
+            }));
+          }
+        }
+        if (requestsRes.data.length > 0)
+          setSelectedId(requestsRes.data[0].id);
+      } catch (err) {
         console.error(err);
         setError("Nie udało się pobrać wniosków");
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const selected = useMemo(
@@ -68,6 +106,7 @@ export default function WnioskiPage() {
     try {
       const created = await apiCreateLeaveRequest({
         type: form.type,
+        leaveTypeId: form.leaveTypeId,
         startDate: new Date(form.startDate).toISOString(),
         endDate: new Date(form.endDate).toISOString(),
         reason: form.reason || undefined,
@@ -104,6 +143,32 @@ export default function WnioskiPage() {
     }
   };
 
+  const handleCreateLeaveType = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingLeaveType(true);
+    setError(null);
+    try {
+      const created = await apiCreateLeaveType(newLeaveType);
+      setLeaveTypes((prev) => [...prev, created]);
+      setNewLeaveType({ name: "", code: "OTHER", isPaid: true, color: "#0ea5e9" });
+    } catch (err) {
+      console.error(err);
+      setError("Nie udało się dodać typu urlopu");
+    } finally {
+      setSavingLeaveType(false);
+    }
+  };
+
+  const toggleLeaveType = async (id: string, isActive: boolean) => {
+    try {
+      const updated = await apiUpdateLeaveType(id, { isActive: !isActive });
+      setLeaveTypes((prev) => prev.map((lt) => (lt.id === id ? updated : lt)));
+    } catch (err) {
+      console.error(err);
+      setError("Nie udało się zaktualizować typu urlopu");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -124,14 +189,38 @@ export default function WnioskiPage() {
               Typ wniosku
             </label>
             <select
-              value={form.type}
-              onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as RequestType }))}
+              value={form.leaveTypeId || form.type}
+              onChange={(e) => {
+                const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                if (selected) {
+                  setForm((prev) => ({
+                    ...prev,
+                    leaveTypeId: selected.id,
+                    type: (selected.code as RequestType) ?? prev.type,
+                  }));
+                } else {
+                  setForm((prev) => ({
+                    ...prev,
+                    leaveTypeId: undefined,
+                    type: e.target.value as RequestType,
+                  }));
+                }
+              }}
               className="input"
             >
-              <option value="PAID_LEAVE">Urlop wypoczynkowy</option>
-              <option value="SICK">Chorobowe</option>
-              <option value="UNPAID">Urlop bezpłatny</option>
-              <option value="OTHER">Inne</option>
+              {leaveTypes
+                .filter((lt) => lt.isActive)
+                .map((lt) => (
+                  <option key={lt.id} value={lt.id}>
+                    {lt.name}
+                  </option>
+                ))}
+              {leaveTypes.length === 0 &&
+                Object.keys(LEAVE_TYPES).map((code) => (
+                  <option key={code} value={code}>
+                    {mapRequestType(code as RequestType)}
+                  </option>
+                ))}
             </select>
           </div>
           <div className="space-y-1">
@@ -187,6 +276,137 @@ export default function WnioskiPage() {
         </form>
       </div>
 
+      {canApprove && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+                Typy urlopów
+              </p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                Lista i konfiguracja typów absencji w organizacji
+              </p>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4 text-xs">
+            <form onSubmit={handleCreateLeaveType} className="space-y-2">
+              <div className="space-y-1">
+                <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+                  Nazwa
+                </label>
+                <input
+                  className="input"
+                  value={newLeaveType.name}
+                  onChange={(e) => setNewLeaveType((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Np. Opieka nad dzieckiem"
+                  required
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  className="input"
+                  value={newLeaveType.code}
+                  onChange={(e) =>
+                    setNewLeaveType((prev) => ({ ...prev, code: e.target.value as RequestType }))
+                  }
+                >
+                  {Object.keys(LEAVE_TYPES).map((code) => (
+                    <option key={code} value={code}>
+                      {mapRequestType(code as RequestType)}
+                    </option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={newLeaveType.isPaid}
+                    onChange={(e) =>
+                      setNewLeaveType((prev) => ({ ...prev, isPaid: e.target.checked }))
+                    }
+                  />
+                  Płatny
+                </label>
+                <input
+                  type="color"
+                  className="w-12 h-9 border rounded-md"
+                  value={newLeaveType.color}
+                  onChange={(e) => setNewLeaveType((prev) => ({ ...prev, color: e.target.value }))}
+                  title="Kolor znacznika"
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn-primary px-4 py-2 rounded-lg"
+                disabled={savingLeaveType}
+              >
+                {savingLeaveType ? "Zapisywanie..." : "Dodaj typ"}
+              </button>
+            </form>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-xs">
+                <thead>
+                  <tr className="text-left text-slate-500 dark:text-slate-400">
+                    <th className="px-2 py-1">Nazwa</th>
+                    <th className="px-2 py-1">Kod</th>
+                    <th className="px-2 py-1">Status</th>
+                    <th className="px-2 py-1">Akcje</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {leaveTypes.map((lt) => (
+                    <tr key={lt.id}>
+                      <td className="px-2 py-1">
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className="w-3 h-3 rounded-full border"
+                            style={{ backgroundColor: lt.color ?? undefined }}
+                          />
+                          {lt.name}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1 text-slate-600 dark:text-slate-300">
+                        {lt.code ?? "OTHER"}
+                      </td>
+                      <td className="px-2 py-1">
+                        {lt.isActive ? (
+                          <span className="badge bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800">
+                            aktywny
+                          </span>
+                        ) : (
+                          <span className="badge bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700">
+                            nieaktywny
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-2 py-1">
+                        <button
+                          type="button"
+                          className="underline text-xs"
+                          onClick={() => toggleLeaveType(lt.id, lt.isActive)}
+                        >
+                          {lt.isActive ? "Dezaktywuj" : "Aktywuj"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {leaveTypes.length === 0 && (
+                    <tr>
+                      <td
+                        className="px-2 py-2 text-slate-500 dark:text-slate-400"
+                        colSpan={4}
+                      >
+                        Brak skonfigurowanych typów. Dodaj pierwszy typ urlopu.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading && (
         <p className="text-sm text-slate-600 dark:text-slate-300">
           Ładowanie wniosków...
@@ -235,7 +455,7 @@ export default function WnioskiPage() {
                       {r.employeeName}
                     </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                      {mapRequestType(r.type)}
+                      {mapRequestType(r.type, r.leaveType?.name)}
                     </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                       {formatDateRange(r.startDate, r.endDate)}
@@ -274,7 +494,7 @@ export default function WnioskiPage() {
                     Szczegóły wniosku
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
-                    {mapRequestType(selected.type)}
+                     {mapRequestType(selected.type, selected.leaveType?.name)}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -346,7 +566,8 @@ export default function WnioskiPage() {
   );
 }
 
-function mapRequestType(type: RequestItem["type"]) {
+function mapRequestType(type: RequestItem["type"], customName?: string | null) {
+  if (customName) return customName;
   switch (type) {
     case "PAID_LEAVE":
       return "Urlop wypoczynkowy";

@@ -7,16 +7,20 @@ import {
   ShiftPayload,
   ShiftRecord,
   ShiftSummaryItem,
+  RequestType,
+  RequestItem,
   apiCreateShift,
   apiDeleteShift,
   apiGetShiftSummary,
   apiGetShifts,
   apiListEmployees,
   apiListLocations,
+  apiListLeaveRequests,
   apiUpdateShift,
 } from "@/lib/api";
 import { usePermissions } from "@/lib/use-permissions";
 import { pushToast } from "@/lib/toast";
+import { formatDateRange } from "@/lib/date-range";
 
 type ShiftModalState = {
   mode: "create" | "edit";
@@ -60,6 +64,12 @@ function isSameDay(iso: string, day: Date) {
   );
 }
 
+function leaveCoversDay(request: RequestItem, day: Date) {
+  const start = new Date(request.startDate);
+  const end = new Date(request.endDate);
+  return start.getTime() <= day.getTime() && end.getTime() >= day.getTime();
+}
+
 function combineDateWithTime(dateStr: string, timeStr: string) {
   return new Date(`${dateStr}T${timeStr}:00.000Z`).toISOString();
 }
@@ -96,6 +106,20 @@ function formatLocationName(shift: ShiftRecord, locations: LocationRecord[]) {
   return loc?.name ?? shift.location?.name ?? "Lokalizacja";
 }
 
+function mapLeaveLabel(type: RequestType, name?: string | null) {
+  if (name) return name;
+  switch (type) {
+    case "PAID_LEAVE":
+      return "Urlop";
+    case "SICK":
+      return "Chorobowe";
+    case "UNPAID":
+      return "Bez płatności";
+    default:
+      return "Absencja";
+  }
+}
+
 export default function GrafikPage() {
   const { hasPermission } = usePermissions();
   const canManage = hasPermission("RCP_EDIT");
@@ -103,6 +127,7 @@ export default function GrafikPage() {
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<RequestItem[]>([]);
   const [summary, setSummary] = useState<ShiftSummaryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +167,7 @@ export default function GrafikPage() {
     setLoading(true);
     setError(null);
     try {
-      const [data, summaryRes] = await Promise.all([
+      const [data, summaryRes, leavesRes] = await Promise.all([
         apiGetShifts({
           from: range.from,
           to: range.to,
@@ -155,9 +180,17 @@ export default function GrafikPage() {
           employeeId: filters.employeeId || undefined,
           locationId: filters.locationId || undefined,
         }),
+        apiListLeaveRequests({
+          status: "APPROVED",
+          from: range.from,
+          to: range.to,
+          employeeId: filters.employeeId || undefined,
+          take: 200,
+        }),
       ]);
       setShifts(data);
       setSummary(summaryRes);
+      setLeaveRequests(leavesRes.data);
     } catch (err) {
       console.error(err);
       setError("Nie udało się pobrać grafiku z backendu");
@@ -444,6 +477,24 @@ export default function GrafikPage() {
                           }}
                         >
                           <div className="flex flex-col gap-2">
+                            {leaveRequests
+                              .filter((lr) => lr.employeeId === employee.id && leaveCoversDay(lr, day))
+                              .map((lr) => (
+                                <span
+                                  key={lr.id}
+                                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                                  title={lr.reason ?? undefined}
+                                >
+                                  <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{
+                                      backgroundColor: lr.leaveType?.color ?? "#94a3b8",
+                                    }}
+                                  />
+                                  {mapLeaveLabel(lr.type, lr.leaveType?.name)} ·{" "}
+                                  {formatDateRange(lr.startDate, lr.endDate)}
+                                </span>
+                              ))}
                             {cellShifts.map((shift) => (
                               <div
                                 key={shift.id}

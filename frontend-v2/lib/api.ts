@@ -154,11 +154,24 @@ export type RequestType = (typeof LEAVE_TYPES)[keyof typeof LEAVE_TYPES];
 
 export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
+export interface LeaveTypeRecord {
+  id: string;
+  organisationId: string;
+  name: string;
+  code?: RequestType | null;
+  isPaid: boolean;
+  color?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface RequestItem {
   id: string;
   employeeId: string;
   employeeName: string;
   type: RequestType;
+  leaveType?: LeaveTypeRecord | null;
   status: RequestStatus;
   startDate: string;
   endDate: string;
@@ -454,6 +467,41 @@ export interface LeaveRequestQuery {
   skip?: number;
 }
 
+export async function apiListLeaveTypes(): Promise<LeaveTypeRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<LeaveTypeRecord[]>(`/leave-types`);
+}
+
+export async function apiCreateLeaveType(payload: {
+  name: string;
+  code?: RequestType;
+  isPaid?: boolean;
+  color?: string;
+}): Promise<LeaveTypeRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<LeaveTypeRecord>(`/leave-types`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateLeaveType(
+  id: string,
+  payload: Partial<{
+    name: string;
+    code?: RequestType;
+    isPaid?: boolean;
+    color?: string;
+    isActive?: boolean;
+  }>,
+): Promise<LeaveTypeRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<LeaveTypeRecord>(`/leave-types/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiListLeaveRequests(
   params: LeaveRequestQuery = {},
 ): Promise<PaginatedResponse<RequestItem>> {
@@ -480,6 +528,7 @@ export async function apiListLeaveRequests(
 
 export async function apiCreateLeaveRequest(payload: {
   type: RequestType;
+  leaveTypeId?: string;
   startDate: string;
   endDate: string;
   reason?: string;
@@ -710,6 +759,7 @@ interface LeaveRequestResponse {
   id: string;
   organisationId: string;
   employeeId: string;
+  leaveTypeId?: string | null;
   type: RequestType;
   status: RequestStatus;
   startDate: string;
@@ -725,6 +775,15 @@ interface LeaveRequestResponse {
     firstName?: string | null;
     lastName?: string | null;
     email?: string | null;
+  } | null;
+  leaveType?: {
+    id: string;
+    organisationId: string;
+    name: string;
+    code?: RequestType | null;
+    isPaid: boolean;
+    color?: string | null;
+    isActive: boolean;
   } | null;
 }
 
@@ -804,6 +863,17 @@ function mapLeaveRequest(request: LeaveRequestResponse): RequestItem {
     employeeId: request.employeeId,
     employeeName: formatUserName(request.employee) || "Pracownik",
     type: request.type,
+    leaveType: request.leaveType
+      ? {
+          id: request.leaveType.id,
+          organisationId: request.leaveType.organisationId,
+          name: request.leaveType.name,
+          code: request.leaveType.code ?? undefined,
+          isPaid: request.leaveType.isPaid,
+          color: request.leaveType.color ?? undefined,
+          isActive: request.leaveType.isActive,
+        }
+      : undefined,
     status: request.status,
     startDate: request.startDate,
     endDate: request.endDate,
