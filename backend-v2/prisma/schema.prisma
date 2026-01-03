@@ -23,7 +23,7 @@ enum Weekday {
   SUNDAY
 }
 
-enum LeaveType {
+enum LeaveCategory {
   PAID_LEAVE
   SICK
   UNPAID
@@ -78,6 +78,7 @@ model Organisation {
   description String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  preventShiftOnApprovedLeave Boolean @default(false)
 
   users       User[]
   employees   Employee[]
@@ -86,6 +87,7 @@ model Organisation {
   shifts      Shift[]
   availability Availability[]
   leaveRequests LeaveRequest[]
+  leaveTypes  LeaveType[]
   auditLogs   AuditLog[]
   notifications Notification[]
   notificationPreferences NotificationPreference[]
@@ -217,7 +219,8 @@ model LeaveRequest {
   employeeId       String
   createdByUserId  String
   approvedByUserId String?
-  type             LeaveType
+  type             LeaveCategory
+  leaveTypeId      String?
   status           LeaveStatus @default(PENDING)
   startDate        DateTime
   endDate          DateTime
@@ -232,11 +235,30 @@ model LeaveRequest {
   employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   createdBy    User         @relation("LeaveRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
   approvedBy   User?        @relation("LeaveRequestApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  leaveType    LeaveType?   @relation(fields: [leaveTypeId], references: [id], onDelete: SetNull)
 
   @@index([organisationId])
   @@index([employeeId])
   @@index([status])
   @@index([startDate, endDate])
+}
+
+model LeaveType {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  code           LeaveCategory?
+  isPaid         Boolean  @default(true)
+  color          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  leaveRequests LeaveRequest[]
+
+  @@unique([organisationId, name])
+  @@index([organisationId])
 }
 
 model AuditLog {

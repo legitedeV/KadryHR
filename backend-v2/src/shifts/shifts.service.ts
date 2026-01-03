@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { NotificationType, type Prisma } from '@prisma/client';
+import { LeaveStatus, NotificationType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
@@ -332,6 +332,29 @@ export class ShiftsService {
       throw new BadRequestException(
         'Employee already has a shift in this time range',
       );
+    }
+
+    const org = await this.prisma.organisation.findUnique({
+      where: { id: organisationId },
+      select: { preventShiftOnApprovedLeave: true },
+    });
+
+    if (org?.preventShiftOnApprovedLeave) {
+      const leaveConflict = await this.prisma.leaveRequest.findFirst({
+        where: {
+          organisationId,
+          employeeId,
+          status: LeaveStatus.APPROVED,
+          startDate: { lte: endsAt },
+          endDate: { gte: startsAt },
+        },
+      });
+
+      if (leaveConflict) {
+        throw new BadRequestException(
+          'Pracownik ma zaakceptowany wniosek urlopowy w tym terminie',
+        );
+      }
     }
   }
 

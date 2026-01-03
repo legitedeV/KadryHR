@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   LeaveStatus,
-  LeaveType,
+  LeaveCategory,
   NotificationType,
   Prisma,
   Role,
@@ -16,6 +16,7 @@ import { QueryLeaveRequestsDto } from './dto/query-leave-requests.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 type ScopeOptions = {
   restrictToEmployeeId?: string;
@@ -26,6 +27,7 @@ export class LeaveRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(
@@ -48,18 +50,32 @@ export class LeaveRequestsService {
       options,
     );
 
+    const leaveType = dto.leaveTypeId
+      ? await this.ensureLeaveType(organisationId, dto.leaveTypeId)
+      : null;
+
     const created = await this.prisma.leaveRequest.create({
       data: {
         organisationId,
         employeeId,
         createdByUserId: options.userId,
-        type: dto.type,
+        type: leaveType?.code ?? dto.type,
+        leaveTypeId: leaveType?.id ?? null,
         startDate,
         endDate,
         reason: dto.reason ?? null,
         attachmentUrl: dto.attachmentUrl ?? null,
       },
       include: leaveRelations,
+    });
+
+    await this.auditService.log({
+      organisationId,
+      actorUserId: options.userId,
+      action: 'leave.create',
+      entityType: 'LeaveRequest',
+      entityId: created.id,
+      after: created,
     });
 
     return created;
@@ -144,16 +160,33 @@ export class LeaveRequestsService {
       );
     }
 
+    const leaveType = dto.leaveTypeId
+      ? await this.ensureLeaveType(organisationId, dto.leaveTypeId)
+      : null;
+
     const updated = await this.prisma.leaveRequest.update({
       where: { id },
       data: {
-        type: dto.type ?? existing.type,
+        type: leaveType?.code ?? dto.type ?? existing.type,
+        leaveTypeId:
+          leaveType?.id ??
+          (dto.leaveTypeId === null ? null : existing.leaveTypeId ?? null),
         startDate: nextStart,
         endDate: nextEnd,
         reason: dto.reason ?? existing.reason,
         attachmentUrl: dto.attachmentUrl ?? existing.attachmentUrl,
       },
       include: leaveRelations,
+    });
+
+    await this.auditService.log({
+      organisationId,
+      actorUserId: options?.userId ?? existing.createdByUserId,
+      action: 'leave.update',
+      entityType: 'LeaveRequest',
+      entityId: id,
+      before: existing,
+      after: updated,
     });
 
     return updated;
@@ -164,6 +197,7 @@ export class LeaveRequestsService {
     id: string,
     dto: { status: LeaveStatus; rejectionReason?: string },
     approverUserId: string,
+    options?: ScopeOptions,
   ) {
     const existing = await this.prisma.leaveRequest.findFirst({
       where: { id, organisationId },
@@ -172,6 +206,15 @@ export class LeaveRequestsService {
     if (!existing) {
       throw new NotFoundException('Leave request not found');
     }
+
+    if (
+      options?.restrictToEmployeeId &&
+      existing.employeeId !== options.restrictToEmployeeId
+    ) {
+      throw new UnauthorizedException();
+    }
+
+    this.ensureStatusTransition(existing.status, dto.status);
 
     const status = dto.status;
     const data: Prisma.LeaveRequestUncheckedUpdateInput = {
@@ -195,6 +238,16 @@ export class LeaveRequestsService {
       where: { id },
       data,
       include: leaveRelations,
+    });
+
+    await this.auditService.log({
+      organisationId,
+      actorUserId: approverUserId,
+      action: 'leave.status_change',
+      entityType: 'LeaveRequest',
+      entityId: id,
+      before: existing,
+      after: updated,
     });
 
     await this.notifyStatusChange(updated, organisationId, status);
@@ -228,6 +281,10 @@ export class LeaveRequestsService {
 
     if (query.type) {
       where.type = query.type;
+    }
+
+    if (query.leaveTypeId) {
+      where.leaveTypeId = query.leaveTypeId;
     }
 
     if (query.from) {
@@ -289,6 +346,36 @@ export class LeaveRequestsService {
     });
   }
 
+  private async ensureLeaveType(organisationId: string, leaveTypeId: string) {
+    const leaveType = await this.prisma.leaveType.findFirst({
+      where: { id: leaveTypeId, organisationId, isActive: true },
+    });
+    if (!leaveType) {
+      throw new BadRequestException('Leave type not found');
+    }
+    return leaveType;
+  }
+
+  private ensureStatusTransition(current: LeaveStatus, next: LeaveStatus) {
+    const allowed: Record<LeaveStatus, LeaveStatus[]> = {
+      [LeaveStatus.PENDING]: [
+        LeaveStatus.APPROVED,
+        LeaveStatus.REJECTED,
+        LeaveStatus.CANCELLED,
+      ],
+      [LeaveStatus.APPROVED]: [LeaveStatus.CANCELLED],
+      [LeaveStatus.REJECTED]: [],
+      [LeaveStatus.CANCELLED]: [],
+    };
+
+    const allowedNext = allowed[current] ?? [];
+    if (!allowedNext.includes(next)) {
+      throw new BadRequestException(
+        `Status cannot transition from ${current} to ${next}`,
+      );
+    }
+  }
+
   private async notifyStatusChange(
     request: Prisma.LeaveRequestGetPayload<{ include: typeof leaveRelations }>,
     organisationId: string,
@@ -336,4 +423,5 @@ const leaveRelations: Prisma.LeaveRequestInclude = {
   createdBy: {
     select: { id: true, firstName: true, lastName: true, email: true },
   },
+  leaveType: true,
 };

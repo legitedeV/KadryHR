@@ -6,15 +6,19 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { LeaveType } from '@prisma/client';
+import { LeaveCategory } from '@prisma/client';
 
 export class CreateLeaveRequestDto {
   @IsOptional()
   @IsUUID('4')
   employeeId?: string;
 
-  @IsEnum(LeaveType)
-  type!: LeaveType;
+  @IsEnum(LeaveCategory)
+  type!: LeaveCategory;
+
+  @IsOptional()
+  @IsUUID('4')
+  leaveTypeId?: string;
 
   @IsDateString()
   startDate!: string;

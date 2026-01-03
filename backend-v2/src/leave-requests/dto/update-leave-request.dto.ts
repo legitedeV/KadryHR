@@ -4,13 +4,18 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  IsUUID,
 } from 'class-validator';
-import { LeaveType } from '@prisma/client';
+import { LeaveCategory } from '@prisma/client';
 
 export class UpdateLeaveRequestDto {
   @IsOptional()
-  @IsEnum(LeaveType)
-  type?: LeaveType;
+  @IsEnum(LeaveCategory)
+  type?: LeaveCategory;
+
+  @IsOptional()
+  @IsUUID('4')
+  leaveTypeId?: string;
 
   @IsOptional()
   @IsDateString()

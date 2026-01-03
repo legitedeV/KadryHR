@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { LeaveStatus, Role } from '@prisma/client';
 import { LeaveRequestsService } from './leave-requests.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -99,7 +99,7 @@ export class LeaveRequestsController {
       if (!employee) {
         throw new NotFoundException('Employee profile not found');
       }
-      scope = { restrictToEmployeeId: employee.id };
+      scope = { restrictToEmployeeId: employee.id, userId: user.id };
     }
 
     return this.leaveRequestsService.update(
@@ -110,13 +110,36 @@ export class LeaveRequestsController {
     );
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id/status')
   async updateStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: UpdateLeaveStatusDto,
   ) {
+    if (
+      user.role === Role.EMPLOYEE &&
+      dto.status === LeaveStatus.CANCELLED
+    ) {
+      const employee = await this.leaveRequestsService.findEmployeeForUser(
+        user.organisationId,
+        user.id,
+      );
+      if (!employee) {
+        throw new NotFoundException('Employee profile not found');
+      }
+      return this.leaveRequestsService.updateStatus(
+        user.organisationId,
+        id,
+        dto,
+        user.id,
+        { restrictToEmployeeId: employee.id },
+      );
+    }
+
+    if (![Role.OWNER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
+      throw new NotFoundException('Not authorised');
+    }
+
     return this.leaveRequestsService.updateStatus(
       user.organisationId,
       id,
