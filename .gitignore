@@ -15,6 +15,9 @@ frontend/.env
 !docs/repo-audit.md
 !docs/feature-parity-matrix.md
 !docs/leave-testing.md
+!backend-v2/docs/BACKEND_V2_ARCHITECTURE.md
+!backend-v2/docs/FEATURE_GAP_ANALYSIS.md
+!backend-v2/docs/RUNTIME_DEPLOYMENT.md
 
 .env
 backend/.env
