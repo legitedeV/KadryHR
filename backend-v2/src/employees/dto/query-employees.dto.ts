@@ -1,11 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 /**
  * Query DTO dla listy pracowników:
@@ -32,6 +26,19 @@ export class QueryEmployeesDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['firstName', 'lastName', 'email', 'createdAt', 'position'])
+  sortBy?: 'firstName' | 'lastName' | 'email' | 'createdAt' | 'position';
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
 
   /**
    * Format: "<field>-<direction>", np. "createdAt-desc"

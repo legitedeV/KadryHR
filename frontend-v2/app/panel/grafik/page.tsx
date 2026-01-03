@@ -154,6 +154,7 @@ export default function GrafikPage() {
           from: range.from,
           to: range.to,
           employeeId: filters.employeeId || undefined,
+          locationId: filters.locationId || undefined,
         }),
       ]);
       setShifts(data);

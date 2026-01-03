@@ -223,10 +223,12 @@ export async function apiGetShiftSummary(params: {
   from: string;
   to: string;
   employeeId?: string;
+  locationId?: string;
 }): Promise<ShiftSummaryItem[]> {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams({ from: params.from, to: params.to });
   if (params.employeeId) search.set("employeeId", params.employeeId);
+  if (params.locationId) search.set("locationId", params.locationId);
   return apiClient.request<ShiftSummaryItem[]>(`${SHIFTS_PREFIX}/summary?${search.toString()}`);
 }
 

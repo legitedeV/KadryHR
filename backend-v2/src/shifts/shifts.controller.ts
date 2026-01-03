@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -18,6 +19,7 @@ import { UpdateShiftDto } from './dto/update-shift.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { EmployeesService } from '../employees/employees.service';
+import { QueryShiftsDto } from './dto/query-shifts.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shifts')
@@ -33,7 +35,10 @@ export class ShiftsController {
    * - EMPLOYEE: tylko swoje zmiany
    */
   @Get()
-  async findAll(@CurrentUser() user: AuthenticatedUser) {
+  async findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: QueryShiftsDto,
+  ) {
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.employeesService.findByUser(
         user.organisationId,
@@ -44,13 +49,20 @@ export class ShiftsController {
         return [];
       }
 
-      return this.shiftsService.findForEmployee(
-        user.organisationId,
-        employee.id,
-      );
+      return this.shiftsService.findForEmployee(user.organisationId, query, {
+        employeeId: employee.id,
+      });
     }
 
-    return this.shiftsService.findAll(user.organisationId);
+    return this.shiftsService.findAll(user.organisationId, query);
+  }
+
+  @Get('summary')
+  async getSummary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: QueryShiftsDto,
+  ) {
+    return this.shiftsService.summary(user.organisationId, query);
   }
 
   @Roles(Role.OWNER, Role.MANAGER)

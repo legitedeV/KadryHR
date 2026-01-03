@@ -21,9 +21,7 @@ import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('availability')
 export class AvailabilityController {
-  constructor(
-    private readonly availabilityService: AvailabilityService,
-  ) {}
+  constructor(private readonly availabilityService: AvailabilityService) {}
 
   @Get()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
@@ -47,11 +45,7 @@ export class AvailabilityController {
     @Param('id') id: string,
     @Body() dto: UpdateAvailabilityDto,
   ) {
-    return this.availabilityService.update(
-      user.organisationId,
-      id,
-      dto,
-    );
+    return this.availabilityService.update(user.organisationId, id, dto);
   }
 
   @Roles(Role.OWNER, Role.MANAGER)
@@ -60,9 +54,6 @@ export class AvailabilityController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
-    return this.availabilityService.remove(
-      user.organisationId,
-      id,
-    );
+    return this.availabilityService.remove(user.organisationId, id);
   }
 }
