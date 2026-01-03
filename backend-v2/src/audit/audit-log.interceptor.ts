@@ -55,9 +55,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     const before =
       metadata.fetchBefore && entityId
         ? await this.fetchBefore(metadata.entityType, user.organisationId, entityId)
-        : metadata.captureBody
-          ? request.body
-          : undefined;
+        : undefined;
 
     return next.handle().pipe(
       tap(async (result) => {
