@@ -30,12 +30,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl" suppressHydrationWarning>
-      <head>
+      <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50">
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {themeBootstrap}
         </Script>
-      </head>
-      <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50">
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
         </ToastProvider>
