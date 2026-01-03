@@ -62,8 +62,10 @@ export interface AvailabilityRecord {
   notes?: string | null;
 }
 
-export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT";
+export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT" | "SCHEDULE_PUBLISHED" | "SWAP_STATUS" | "CUSTOM";
 export type NotificationChannel = "IN_APP" | "EMAIL";
+export type NotificationCampaignStatus = "DRAFT" | "SENDING" | "SENT" | "FAILED";
+export type NotificationRecipientStatus = "PENDING" | "DELIVERED_IN_APP" | "EMAIL_SENT" | "EMAIL_FAILED" | "SKIPPED";
 
 export interface NotificationItem {
   id: string;
@@ -80,6 +82,65 @@ export interface NotificationPreference {
   type: NotificationType;
   inApp: boolean;
   email: boolean;
+}
+
+export interface AudienceFilter {
+  all?: boolean;
+  roles?: UserRole[];
+  locationIds?: string[];
+  employeeIds?: string[];
+}
+
+export interface NotificationCampaign {
+  id: string;
+  organisationId: string;
+  createdByUserId: string;
+  title: string;
+  body?: string | null;
+  type: NotificationType;
+  audienceFilter?: AudienceFilter | null;
+  channels: NotificationChannel[];
+  status: NotificationCampaignStatus;
+  sentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email: string;
+  };
+  _count?: {
+    recipients: number;
+  };
+}
+
+export interface NotificationRecipient {
+  id: string;
+  campaignId: string;
+  userId: string;
+  deliveredInAppAt?: string | null;
+  emailAttemptId?: string | null;
+  status: NotificationRecipientStatus;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email: string;
+  };
+}
+
+export interface CampaignDetails extends NotificationCampaign {
+  recipients: NotificationRecipient[];
+  stats: {
+    total: number;
+    deliveredInApp: number;
+    emailSent: number;
+    emailFailed: number;
+    skipped: number;
+  };
 }
 
 export const LEAVE_TYPES = {
@@ -541,6 +602,59 @@ export async function apiSendTestNotification(): Promise<NotificationItem | null
     { method: "POST" },
   );
   return response ? mapNotification(response) : null;
+}
+
+// Campaign API functions
+export async function apiCreateCampaign(data: {
+  title: string;
+  body?: string;
+  type?: NotificationType;
+  channels: NotificationChannel[];
+  audienceFilter: AudienceFilter;
+}): Promise<NotificationCampaign> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<NotificationCampaign>(`${NOTIFICATIONS_PREFIX}/campaigns`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiSendCampaign(campaignId: string): Promise<{ success: boolean; recipientCount: number }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean; recipientCount: number }>(
+    `${NOTIFICATIONS_PREFIX}/campaigns/${campaignId}/send`,
+    { method: "POST" },
+  );
+}
+
+export async function apiListCampaigns(params: {
+  skip?: number;
+  take?: number;
+  status?: NotificationCampaignStatus;
+} = {}): Promise<{
+  data: NotificationCampaign[];
+  total: number;
+  skip: number;
+  take: number;
+}> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.skip !== undefined) search.set("skip", String(params.skip));
+  if (params.take !== undefined) search.set("take", String(params.take));
+  if (params.status) search.set("status", params.status);
+
+  const query = search.toString();
+  return apiClient.request<{
+    data: NotificationCampaign[];
+    total: number;
+    skip: number;
+    take: number;
+  }>(`${NOTIFICATIONS_PREFIX}/campaigns${query ? `?${query}` : ""}`);
+}
+
+export async function apiGetCampaignDetails(campaignId: string): Promise<CampaignDetails> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<CampaignDetails>(`${NOTIFICATIONS_PREFIX}/campaigns/${campaignId}`);
 }
 
 interface LoginResponse {
