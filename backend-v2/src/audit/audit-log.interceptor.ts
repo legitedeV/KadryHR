@@ -60,10 +60,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         ? request.params[metadata.entityIdParam]
         : undefined;
 
-    const ip =
-      request.ip ||
-      (Array.isArray(request.ips) && request.ips.length ? request.ips[0] : '') ||
-      request.socket?.remoteAddress;
+    const ip = this.resolveIp(request);
     const userAgent =
       (request.headers?.['user-agent'] as string | undefined) ?? undefined;
 
@@ -82,10 +79,7 @@ export class AuditLogInterceptor implements NestInterceptor {
               : undefined;
 
         const resolvedEntityId =
-          entityId ??
-          (after && typeof after === 'object' && after !== null
-            ? (after as { id?: string }).id
-            : undefined);
+          entityId ?? this.extractEntityId(after);
 
         try {
           await this.auditService.log({
@@ -112,5 +106,25 @@ export class AuditLogInterceptor implements NestInterceptor {
   private fetchBefore(entityType: string, organisationId: string, id: string) {
     const fetcher = this.beforeFetchers[entityType];
     return fetcher ? fetcher(organisationId, id) : undefined;
+  }
+
+  private resolveIp(request: RequestWithUser) {
+    if (request.ip) return request.ip;
+    if (Array.isArray(request.ips) && request.ips.length) return request.ips[0];
+    return request.socket?.remoteAddress;
+  }
+
+  private extractEntityId(value: unknown): string | undefined {
+    if (
+      value &&
+      typeof value === 'object' &&
+      'id' in (value as Record<string, unknown>)
+    ) {
+      const candidate = (value as Record<string, unknown>).id;
+      if (typeof candidate === 'string') {
+        return candidate;
+      }
+    }
+    return undefined;
   }
 }
