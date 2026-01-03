@@ -80,13 +80,13 @@ describe('LeaveRequestsService', () => {
     mockPrisma.employee.findFirst.mockResolvedValueOnce({ id: 'emp-self' });
 
     await service.create(
-        'org-1',
-        {
-          employeeId: 'emp-self',
-          type: LeaveCategory.SICK,
-          startDate: '2024-02-01T00:00:00.000Z',
-          endDate: '2024-02-02T00:00:00.000Z',
-        },
+      'org-1',
+      {
+        employeeId: 'emp-self',
+        type: LeaveCategory.SICK,
+        startDate: '2024-02-01T00:00:00.000Z',
+        endDate: '2024-02-02T00:00:00.000Z',
+      },
       { userId: 'user-1', role: Role.EMPLOYEE },
     );
 
