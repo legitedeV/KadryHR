@@ -27,22 +27,20 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
--- Organisation
 CREATE TABLE IF NOT EXISTS "Organisation" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "name" TEXT NOT NULL,
   "description" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- User
 CREATE TABLE IF NOT EXISTS "User" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "email" TEXT NOT NULL UNIQUE,
   "passwordHash" TEXT NOT NULL,
   "role" "Role" NOT NULL,
-  "organisationId" UUID NOT NULL,
+  "organisationId" TEXT NOT NULL,
   "firstName" TEXT,
   "lastName" TEXT,
   "refreshTokenHash" TEXT,
@@ -52,11 +50,10 @@ CREATE TABLE IF NOT EXISTS "User" (
 );
 CREATE INDEX IF NOT EXISTS "User_organisationId_idx" ON "User"("organisationId");
 
--- Employee
 CREATE TABLE IF NOT EXISTS "Employee" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "organisationId" UUID NOT NULL,
-  "userId" UUID UNIQUE,
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "organisationId" TEXT NOT NULL,
+  "userId" TEXT UNIQUE,
   "firstName" TEXT NOT NULL,
   "lastName" TEXT NOT NULL,
   "email" TEXT,
@@ -69,10 +66,9 @@ CREATE TABLE IF NOT EXISTS "Employee" (
 );
 CREATE INDEX IF NOT EXISTS "Employee_organisationId_idx" ON "Employee"("organisationId");
 
--- Location
 CREATE TABLE IF NOT EXISTS "Location" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "organisationId" UUID NOT NULL,
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "organisationId" TEXT NOT NULL,
   "name" TEXT NOT NULL,
   "address" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -81,12 +77,11 @@ CREATE TABLE IF NOT EXISTS "Location" (
 );
 CREATE INDEX IF NOT EXISTS "Location_organisationId_idx" ON "Location"("organisationId");
 
--- LocationAssignment
 CREATE TABLE IF NOT EXISTS "LocationAssignment" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "organisationId" UUID NOT NULL,
-  "employeeId" UUID NOT NULL,
-  "locationId" UUID NOT NULL,
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "organisationId" TEXT NOT NULL,
+  "employeeId" TEXT NOT NULL,
+  "locationId" TEXT NOT NULL,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "LocationAssignment_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "Organisation"("id") ON DELETE CASCADE,
   CONSTRAINT "LocationAssignment_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE,
@@ -97,12 +92,11 @@ CREATE INDEX IF NOT EXISTS "LocationAssignment_organisationId_idx" ON "LocationA
 CREATE INDEX IF NOT EXISTS "LocationAssignment_employeeId_idx" ON "LocationAssignment"("employeeId");
 CREATE INDEX IF NOT EXISTS "LocationAssignment_locationId_idx" ON "LocationAssignment"("locationId");
 
--- Shift
 CREATE TABLE IF NOT EXISTS "Shift" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "organisationId" UUID NOT NULL,
-  "employeeId" UUID NOT NULL,
-  "locationId" UUID,
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "organisationId" TEXT NOT NULL,
+  "employeeId" TEXT NOT NULL,
+  "locationId" TEXT,
   "position" TEXT,
   "notes" TEXT,
   "startsAt" TIMESTAMP(3) NOT NULL,
@@ -117,11 +111,10 @@ CREATE INDEX IF NOT EXISTS "Shift_organisationId_idx" ON "Shift"("organisationId
 CREATE INDEX IF NOT EXISTS "Shift_employeeId_idx" ON "Shift"("employeeId");
 CREATE INDEX IF NOT EXISTS "Shift_locationId_idx" ON "Shift"("locationId");
 
--- Availability
 CREATE TABLE IF NOT EXISTS "Availability" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "organisationId" UUID NOT NULL,
-  "employeeId" UUID NOT NULL,
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "organisationId" TEXT NOT NULL,
+  "employeeId" TEXT NOT NULL,
   "date" TIMESTAMP(3),
   "weekday" "Weekday",
   "startMinutes" INTEGER NOT NULL,
@@ -135,13 +128,12 @@ CREATE TABLE IF NOT EXISTS "Availability" (
 CREATE INDEX IF NOT EXISTS "Availability_organisationId_idx" ON "Availability"("organisationId");
 CREATE INDEX IF NOT EXISTS "Availability_employeeId_idx" ON "Availability"("employeeId");
 
--- LeaveRequest
 CREATE TABLE IF NOT EXISTS "LeaveRequest" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "organisationId" UUID NOT NULL,
-  "employeeId" UUID NOT NULL,
-  "createdByUserId" UUID NOT NULL,
-  "approvedByUserId" UUID,
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "organisationId" TEXT NOT NULL,
+  "employeeId" TEXT NOT NULL,
+  "createdByUserId" TEXT NOT NULL,
+  "approvedByUserId" TEXT,
   "type" "LeaveType" NOT NULL,
   "status" "LeaveStatus" NOT NULL DEFAULT 'PENDING',
   "startDate" TIMESTAMP(3) NOT NULL,
