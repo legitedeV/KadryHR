@@ -40,6 +40,26 @@ class EnvironmentVariables {
   @IsOptional()
   @IsNumber()
   DATABASE_RETRY_DELAY_MS?: number;
+
+  @IsOptional()
+  @IsString()
+  SMTP_HOST?: string;
+
+  @IsOptional()
+  @IsNumber()
+  SMTP_PORT?: number;
+
+  @IsOptional()
+  @IsString()
+  SMTP_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_PASS?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_FROM?: string;
 }
 
 export const validateEnv = (config: Record<string, unknown>) => {

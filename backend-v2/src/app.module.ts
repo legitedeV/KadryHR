@@ -10,6 +10,7 @@ import { LocationsModule } from './locations/locations.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
     ShiftsModule,
     AvailabilityModule,
     LeaveRequestsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
