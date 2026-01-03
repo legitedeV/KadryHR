@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/lib/auth-context";
 
+// Inline script so it can run before hydration and set the theme class without a network roundtrip.
 const themeBootstrap = `(() => {
   try {
     const KEY = 'kadryhr_theme';
@@ -29,6 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // Theme is applied pre-hydration; suppress the initial class mismatch warning.
     <html lang="pl" suppressHydrationWarning>
       <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50">
         <Script id="theme-bootstrap" strategy="beforeInteractive">
