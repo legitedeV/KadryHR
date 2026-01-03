@@ -57,11 +57,19 @@ export class LeaveRequestsController {
         user.organisationId,
         user.id,
       );
+<<<<<<< HEAD
 
       return this.leaveRequestsService.findOne(user.organisationId, id, {
         employeeId: employee.id,
         actorUserId: user.id,
         actorRole: user.role,
+=======
+      if (!employee) {
+        throw new NotFoundException('Employee profile not found');
+      }
+      return this.leaveRequestsService.findOne(user.organisationId, id, {
+        restrictToEmployeeId: employee.id,
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
       });
     }
 
@@ -76,6 +84,7 @@ export class LeaveRequestsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateLeaveRequestDto,
   ) {
+<<<<<<< HEAD
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
@@ -90,6 +99,12 @@ export class LeaveRequestsController {
     }
 
     return this.leaveRequestsService.create(user.organisationId, dto.employeeId, dto);
+=======
+    return this.leaveRequestsService.create(user.organisationId, dto, {
+      userId: user.id,
+      role: user.role,
+    });
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
   }
 
   @Patch(':id')
@@ -111,10 +126,19 @@ export class LeaveRequestsController {
       });
     }
 
+<<<<<<< HEAD
     return this.leaveRequestsService.update(user.organisationId, id, dto, {
       actorUserId: user.id,
       actorRole: user.role,
     });
+=======
+    return this.leaveRequestsService.update(
+      user.organisationId,
+      id,
+      dto,
+      scope,
+    );
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
   }
 
   @Post(':id/status')

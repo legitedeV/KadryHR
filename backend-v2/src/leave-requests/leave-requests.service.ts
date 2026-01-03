@@ -4,12 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+<<<<<<< HEAD
 import { Prisma, Role } from '@prisma/client';
+=======
+import {
+  LeaveStatus,
+  LeaveType,
+  NotificationType,
+  Prisma,
+  Role,
+} from '@prisma/client';
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
+<<<<<<< HEAD
 import { UpdateLeaveRequestStatusDto } from './dto/update-leave-request-status.dto';
 import { FindLeaveRequestsQueryDto } from './dto/find-leave-requests-query.dto';
+=======
+import { NotificationsService } from '../notifications/notifications.service';
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
 
 type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
@@ -116,11 +130,49 @@ function extractDates(dto: {
 
 @Injectable()
 export class LeaveRequestsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
+<<<<<<< HEAD
   async findEmployeeForUser(organisationId: string, userId: string) {
     const employee = await this.prisma.employee.findFirst({
       where: { organisationId, userId },
+=======
+  async create(
+    organisationId: string,
+    dto: CreateLeaveRequestDto,
+    options: { userId: string; role: Role },
+  ) {
+    const startDate = new Date(dto.startDate);
+    const endDate = new Date(dto.endDate);
+
+    if (startDate.getTime() > endDate.getTime()) {
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
+    }
+
+    const employeeId = await this.resolveEmployeeId(
+      organisationId,
+      dto.employeeId,
+      options,
+    );
+
+    const created = await this.prisma.leaveRequest.create({
+      data: {
+        organisationId,
+        employeeId,
+        createdByUserId: options.userId,
+        type: dto.type,
+        startDate,
+        endDate,
+        reason: dto.reason ?? null,
+        attachmentUrl: dto.attachmentUrl ?? null,
+      },
+      include: leaveRelations,
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
     });
 
     if (!employee) {
@@ -205,8 +257,16 @@ export class LeaveRequestsService {
     } as any);
   }
 
+<<<<<<< HEAD
   async findOne(organisationId: string, id: string, scope?: AccessScope) {
     const where: any = { id, organisationId };
+=======
+  async findOne(organisationId: string, id: string, options?: ScopeOptions) {
+    const request = await this.prisma.leaveRequest.findFirst({
+      where: this.buildWhere(organisationId, {}, options, id),
+      include: leaveRelations,
+    });
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
 
     const item = await this.prisma.leaveRequest.findFirst({
       where,
@@ -262,6 +322,7 @@ export class LeaveRequestsService {
       else if (LEAVE_FIELDS.has('comment')) data.comment = reason ?? null;
     }
 
+<<<<<<< HEAD
     // leave type
     if (dto.leaveTypeId) {
       if (LEAVE_FIELDS.has('leaveTypeId')) data.leaveTypeId = dto.leaveTypeId;
@@ -270,13 +331,38 @@ export class LeaveRequestsService {
       const type = dto.type ?? dto.leaveType ?? null;
       if (LEAVE_FIELDS.has('type')) data.type = type;
       else if (LEAVE_FIELDS.has('leaveType')) data.leaveType = type;
+=======
+    const nextStart = dto.startDate
+      ? new Date(dto.startDate)
+      : existing.startDate;
+    const nextEnd = dto.endDate ? new Date(dto.endDate) : existing.endDate;
+
+    if (nextStart.getTime() > nextEnd.getTime()) {
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
     }
 
     return this.prisma.leaveRequest.update({
       where: { id },
+<<<<<<< HEAD
       data: data as any,
       include: this.buildInclude(),
     } as any);
+=======
+      data: {
+        type: dto.type ?? existing.type,
+        startDate: nextStart,
+        endDate: nextEnd,
+        reason: dto.reason ?? existing.reason,
+        attachmentUrl: dto.attachmentUrl ?? existing.attachmentUrl,
+      },
+      include: leaveRelations,
+    });
+
+    return updated;
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
   }
 
   async updateStatus(
@@ -292,8 +378,18 @@ export class LeaveRequestsService {
       throw new BadRequestException('Only PENDING requests can change status');
     }
 
+<<<<<<< HEAD
     const actorRole = scope?.actorRole;
     const actorUserId = scope?.actorUserId;
+=======
+    const status = dto.status;
+    const data: Prisma.LeaveRequestUncheckedUpdateInput = {
+      status,
+      approvedByUserId: approverUserId,
+      decisionAt: new Date(),
+      rejectionReason: dto.rejectionReason ?? null,
+    };
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
 
     if (dto.status === 'APPROVED' || dto.status === 'REJECTED') {
       if (actorRole !== Role.OWNER && actorRole !== Role.MANAGER) {
@@ -334,9 +430,19 @@ export class LeaveRequestsService {
 
     return this.prisma.leaveRequest.update({
       where: { id },
+<<<<<<< HEAD
       data: data as any,
       include: this.buildInclude(),
     } as any);
+=======
+      data,
+      include: leaveRelations,
+    });
+
+    await this.notifyStatusChange(updated, organisationId, status);
+
+    return updated;
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
   }
 
   private buildInclude() {
@@ -356,4 +462,55 @@ export class LeaveRequestsService {
     if (LEAVE_FIELDS.has('createdAt')) return { createdAt: 'desc' };
     return undefined;
   }
+
+  private async notifyStatusChange(
+    request: Prisma.LeaveRequestGetPayload<{ include: typeof leaveRelations }>,
+    organisationId: string,
+    status: LeaveStatus,
+  ) {
+    const employeeUserId = request.employee?.userId;
+    if (!employeeUserId) {
+      return;
+    }
+
+    const statusLabel =
+      status === LeaveStatus.APPROVED
+        ? 'zatwierdzony'
+        : status === LeaveStatus.REJECTED
+          ? 'odrzucony'
+          : 'zaktualizowany';
+
+    await this.notificationsService.createNotification({
+      organisationId,
+      userId: employeeUserId,
+      type: NotificationType.LEAVE_STATUS,
+      title: `Status wniosku: ${status}`,
+      body: `Twój wniosek został ${statusLabel}.`,
+      data: {
+        leaveRequestId: request.id,
+        status,
+      },
+    });
+  }
 }
+<<<<<<< HEAD
+=======
+
+const leaveRelations: Prisma.LeaveRequestInclude = {
+  employee: {
+    select: {
+      id: true,
+      userId: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  },
+  approvedBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  createdBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+};
+>>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a

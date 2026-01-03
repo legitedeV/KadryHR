@@ -13,6 +13,17 @@ export interface AppConfig {
     maxRetries: number;
     retryDelayMs: number;
   };
+  email: {
+    host: string;
+    port: number;
+    user: string;
+    pass: string;
+    from: string;
+  };
+  redis: {
+    host: string;
+    port: number;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -30,5 +41,16 @@ export const configuration = (): AppConfig => ({
     url: process.env.DATABASE_URL ?? '',
     maxRetries: Number(process.env.DATABASE_MAX_RETRIES ?? 5),
     retryDelayMs: Number(process.env.DATABASE_RETRY_DELAY_MS ?? 2000),
+  },
+  email: {
+    host: process.env.SMTP_HOST ?? '',
+    port: Number(process.env.SMTP_PORT ?? 0),
+    user: process.env.SMTP_USER ?? '',
+    pass: process.env.SMTP_PASS ?? '',
+    from: process.env.SMTP_FROM ?? '',
+  },
+  redis: {
+    host: process.env.REDIS_HOST ?? 'localhost',
+    port: Number(process.env.REDIS_PORT ?? 6379),
   },
 });

@@ -37,6 +37,41 @@ enum LeaveStatus {
   CANCELLED
 }
 
+enum NotificationType {
+  TEST
+  LEAVE_STATUS
+  SHIFT_ASSIGNMENT
+  SCHEDULE_PUBLISHED
+  SWAP_STATUS
+  CUSTOM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum NotificationDeliveryStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum NotificationCampaignStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
+enum NotificationRecipientStatus {
+  PENDING
+  DELIVERED_IN_APP
+  EMAIL_SENT
+  EMAIL_FAILED
+  SKIPPED
+}
+
 model Organisation {
   id          String      @id @default(uuid())
   name        String
@@ -52,6 +87,9 @@ model Organisation {
   availability Availability[]
   leaveRequests LeaveRequest[]
   auditLogs   AuditLog[]
+  notifications Notification[]
+  notificationPreferences NotificationPreference[]
+  notificationCampaigns NotificationCampaign[]
 }
 
 model User {
@@ -71,6 +109,10 @@ model User {
   leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
   leaveRequestsApproved LeaveRequest[] @relation("LeaveRequestApprovedBy")
   auditLogs  AuditLog[]
+  notifications Notification[]
+  notificationPreferences NotificationPreference[]
+  createdCampaigns NotificationCampaign[]
+  campaignRecipients NotificationRecipient[]
 
   @@index([organisationId])
 }
@@ -216,4 +258,96 @@ model AuditLog {
   @@index([organisationId])
   @@index([actorUserId])
   @@index([entityType, entityId])
+}
+
+model Notification {
+  id              String                @id @default(uuid())
+  organisationId  String
+  userId          String
+  type            NotificationType
+  title           String
+  body            String?
+  data            Json?
+  channels        NotificationChannel[] @default([IN_APP])
+  readAt          DateTime?
+  createdAt       DateTime              @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryAttempts NotificationDeliveryAttempt[]
+
+  @@index([organisationId, userId])
+  @@index([userId, readAt])
+}
+
+model NotificationPreference {
+  id              String            @id @default(uuid())
+  organisationId  String
+  userId          String
+  type            NotificationType
+  inApp           Boolean           @default(true)
+  email           Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([organisationId])
+}
+
+model NotificationDeliveryAttempt {
+  id             String                     @id @default(uuid())
+  notificationId String
+  channel        NotificationChannel
+  status         NotificationDeliveryStatus
+  errorMessage   String?
+  createdAt      DateTime                   @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+}
+
+model NotificationCampaign {
+  id              String                      @id @default(uuid())
+  organisationId  String
+  createdByUserId String
+  title           String
+  body            String?
+  type            NotificationType            @default(CUSTOM)
+  audienceFilter  Json?
+  channels        NotificationChannel[]       @default([IN_APP])
+  status          NotificationCampaignStatus  @default(DRAFT)
+  sentAt          DateTime?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  recipients   NotificationRecipient[]
+
+  @@index([organisationId])
+  @@index([createdByUserId])
+  @@index([status])
+}
+
+model NotificationRecipient {
+  id                String                       @id @default(uuid())
+  campaignId        String
+  userId            String
+  deliveredInAppAt  DateTime?
+  emailAttemptId    String?
+  status            NotificationRecipientStatus  @default(PENDING)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  campaign NotificationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@index([status])
 }

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LeaveRequestsService } from './leave-requests.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LeaveStatus, LeaveType, Role } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const mockPrisma = {
   leaveRequest: {
@@ -16,6 +17,10 @@ const mockPrisma = {
   },
 };
 
+const mockNotifications = {
+  createNotification: jest.fn(),
+};
+
 describe('LeaveRequestsService', () => {
   let service: LeaveRequestsService;
 
@@ -24,12 +29,14 @@ describe('LeaveRequestsService', () => {
       providers: [
         LeaveRequestsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
     service = module.get(LeaveRequestsService);
     jest.clearAllMocks();
     mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
+    mockNotifications.createNotification.mockResolvedValue(null);
     mockPrisma.leaveRequest.findFirst.mockResolvedValue({
       id: 'lr-1',
       organisationId: 'org-1',
@@ -80,6 +87,7 @@ describe('LeaveRequestsService', () => {
     mockPrisma.leaveRequest.update.mockResolvedValue({
       id: 'lr-1',
       status: LeaveStatus.APPROVED,
+      employee: { userId: 'user-emp' },
     });
 
     await service.updateStatus(
@@ -95,6 +103,13 @@ describe('LeaveRequestsService', () => {
           status: LeaveStatus.APPROVED,
           approvedByUserId: 'approver-1',
         }),
+      }),
+    );
+    expect(mockNotifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organisationId: 'org-1',
+        userId: 'user-emp',
+        type: expect.any(String),
       }),
     );
   });

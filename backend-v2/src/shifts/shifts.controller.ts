@@ -115,4 +115,41 @@ export class ShiftsController {
   ) {
     return this.shiftsService.remove(user.organisationId, id);
   }
+
+  /**
+   * Publish schedule - notify affected employees about their shifts
+   */
+  @RequirePermissions(Permission.RCP_EDIT)
+  @Post('publish-schedule')
+  @AuditLog({
+    action: 'SCHEDULE_PUBLISH',
+    entityType: 'schedule',
+    captureBody: true,
+  })
+  async publishSchedule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      employeeIds: string[];
+      dateRange?: { from: string; to: string };
+    },
+  ) {
+    const dateRange = body.dateRange
+      ? {
+          from: new Date(body.dateRange.from),
+          to: new Date(body.dateRange.to),
+        }
+      : undefined;
+
+    await this.shiftsService.notifySchedulePublished(
+      user.organisationId,
+      body.employeeIds,
+      dateRange,
+    );
+
+    return {
+      success: true,
+      notified: body.employeeIds.length,
+    };
+  }
 }

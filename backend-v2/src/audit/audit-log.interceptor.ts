@@ -12,6 +12,7 @@ import { AuditService } from './audit.service';
 import { AUDIT_LOG_METADATA, AuditLogOptions } from './audit-log.decorator';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
@@ -61,15 +62,19 @@ export class AuditLogInterceptor implements NestInterceptor {
         : undefined;
 
     const ip = this.resolveIp(request);
-    const userAgent =
-      (request.headers?.['user-agent'] as string | undefined) ?? undefined;
+    const userAgent = request.headers?.['user-agent'] ?? undefined;
 
     const before =
       metadata.fetchBefore && entityId
-        ? await this.fetchBefore(metadata.entityType, user.organisationId, entityId)
+        ? await this.fetchBefore(
+            metadata.entityType,
+            user.organisationId,
+            entityId,
+          )
         : undefined;
 
     return next.handle().pipe(
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       tap(async (result) => {
         let after: unknown;
         if (result !== undefined) {
@@ -78,8 +83,7 @@ export class AuditLogInterceptor implements NestInterceptor {
           after = request.body;
         }
 
-        const resolvedEntityId =
-          entityId ?? this.extractEntityId(after);
+        const resolvedEntityId = entityId ?? this.extractEntityId(after);
 
         try {
           await this.auditService.log({
@@ -88,8 +92,8 @@ export class AuditLogInterceptor implements NestInterceptor {
             action: metadata.action,
             entityType: metadata.entityType,
             entityId: resolvedEntityId,
-            before,
-            after,
+            before: (before as Prisma.InputJsonValue) ?? null,
+            after: (after as Prisma.InputJsonValue) ?? null,
             ip,
             userAgent,
           });

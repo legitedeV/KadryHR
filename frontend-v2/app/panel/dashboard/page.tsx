@@ -328,10 +328,3 @@ function timeLabel(iso: string) {
     .toString()
     .padStart(2, "0")}`;
 }
-
-function formatEmployeeName(shift: ShiftRecord) {
-  const first = shift.employee?.firstName ?? "";
-  const last = shift.employee?.lastName ?? "";
-  const name = `${first} ${last}`.trim();
-  return name || "Pracownik";
-}
