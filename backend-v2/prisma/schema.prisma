@@ -51,6 +51,7 @@ model Organisation {
   shifts      Shift[]
   availability Availability[]
   leaveRequests LeaveRequest[]
+  auditLogs   AuditLog[]
 }
 
 model User {
@@ -69,6 +70,7 @@ model User {
   employee     Employee?
   leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
   leaveRequestsApproved LeaveRequest[] @relation("LeaveRequestApprovedBy")
+  auditLogs  AuditLog[]
 
   @@index([organisationId])
 }
@@ -193,4 +195,25 @@ model LeaveRequest {
   @@index([employeeId])
   @@index([status])
   @@index([startDate, endDate])
+}
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  organisationId  String
+  actorUserId     String
+  action          String
+  entityType      String
+  entityId        String?
+  before          Json?
+  after           Json?
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  actor        User         @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
 }

@@ -3,9 +3,10 @@ import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmployeesModule } from '../employees/employees.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, EmployeesModule],
+  imports: [PrismaModule, EmployeesModule, AuditModule],
   controllers: [ShiftsController],
   providers: [ShiftsService],
   exports: [ShiftsService],

@@ -20,6 +20,11 @@ const navItems: { href: string; label: string; roles?: UserRole[] }[] = [
     label: "Lokalizacje",
     roles: ["OWNER", "MANAGER", "ADMIN"],
   },
+  {
+    href: "/panel/audit",
+    label: "Audit",
+    roles: ["OWNER", "MANAGER", "ADMIN"],
+  },
   { href: "/panel/wnioski", label: "Wnioski" },
   { href: "/panel/profil", label: "Profil" },
 ];
@@ -31,6 +36,7 @@ const titleByPath: Record<string, string> = {
   "/panel/wnioski": "Wnioski",
   "/panel/profil": "Profil użytkownika",
   "/panel/dashboard": "Dashboard",
+  "/panel/audit": "Audit",
 };
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
