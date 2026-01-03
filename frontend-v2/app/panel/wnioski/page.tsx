@@ -70,10 +70,16 @@ export default function WnioskiPage() {
           if (firstActive) {
             setForm((prev) => ({
               ...prev,
-              type: normalizeLeaveCode(firstActive.code ?? prev.type),
+              type: ensureValidRequestType(firstActive.code ?? prev.type),
               leaveTypeId: firstActive.id,
             }));
           }
+        } else {
+          setForm((prev) => ({
+            ...prev,
+            leaveTypeId: undefined,
+            type: ensureValidRequestType(prev.type),
+          }));
         }
         if (requestsRes.data.length > 0)
           setSelectedId(requestsRes.data[0].id);
@@ -196,13 +202,13 @@ export default function WnioskiPage() {
                   setForm((prev) => ({
                     ...prev,
                     leaveTypeId: selected.id,
-                    type: normalizeLeaveCode(selected.code ?? prev.type),
+                    type: ensureValidRequestType(selected.code ?? prev.type),
                   }));
                 } else {
                   setForm((prev) => ({
                     ...prev,
                     leaveTypeId: undefined,
-                    type: normalizeLeaveCode(e.target.value),
+                    type: ensureValidRequestType(e.target.value),
                   }));
                 }
               }}
@@ -309,7 +315,7 @@ export default function WnioskiPage() {
                   onChange={(e) =>
                     setNewLeaveType((prev) => ({
                       ...prev,
-                      code: normalizeLeaveCode(e.target.value),
+                      code: ensureValidRequestType(e.target.value),
                     }))
                   }
                 >
@@ -585,7 +591,7 @@ function mapRequestType(type: RequestItem["type"], customName?: string | null) {
   }
 }
 
-function normalizeLeaveCode(code?: string | null): RequestType {
+function ensureValidRequestType(code?: string | null): RequestType {
   const validCodes = Object.keys(LEAVE_TYPES) as RequestType[];
   return validCodes.includes(code as RequestType) ? (code as RequestType) : "OTHER";
 }
