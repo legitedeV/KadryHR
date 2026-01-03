@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -20,8 +21,11 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { EmployeesService } from '../employees/employees.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
+import { AuditLog } from '../audit/audit-log.decorator';
+import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(AuditLogInterceptor)
 @Controller('shifts')
 export class ShiftsController {
   constructor(
@@ -67,6 +71,11 @@ export class ShiftsController {
 
   @Roles(Role.OWNER, Role.MANAGER)
   @Post()
+  @AuditLog({
+    action: 'SHIFT_CREATE',
+    entityType: 'shift',
+    captureBody: true,
+  })
   async create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateShiftDto,
@@ -76,6 +85,13 @@ export class ShiftsController {
 
   @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id')
+  @AuditLog({
+    action: 'SHIFT_UPDATE',
+    entityType: 'shift',
+    entityIdParam: 'id',
+    fetchBefore: true,
+    captureBody: true,
+  })
   async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -86,6 +102,12 @@ export class ShiftsController {
 
   @Roles(Role.OWNER, Role.MANAGER)
   @Delete(':id')
+  @AuditLog({
+    action: 'SHIFT_DELETE',
+    entityType: 'shift',
+    entityIdParam: 'id',
+    fetchBefore: true,
+  })
   async remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,

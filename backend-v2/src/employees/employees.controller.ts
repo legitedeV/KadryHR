@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -19,8 +20,11 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
+import { AuditLog } from '../audit/audit-log.decorator';
+import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(AuditLogInterceptor)
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
@@ -74,6 +78,11 @@ export class EmployeesController {
    */
   @Roles(Role.OWNER, Role.MANAGER)
   @Post()
+  @AuditLog({
+    action: 'EMPLOYEE_CREATE',
+    entityType: 'employee',
+    captureBody: true,
+  })
   async create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateEmployeeDto,
@@ -86,6 +95,13 @@ export class EmployeesController {
    */
   @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id')
+  @AuditLog({
+    action: 'EMPLOYEE_UPDATE',
+    entityType: 'employee',
+    entityIdParam: 'id',
+    fetchBefore: true,
+    captureBody: true,
+  })
   async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -99,6 +115,12 @@ export class EmployeesController {
    */
   @Roles(Role.OWNER, Role.MANAGER)
   @Delete(':id')
+  @AuditLog({
+    action: 'EMPLOYEE_DELETE',
+    entityType: 'employee',
+    entityIdParam: 'id',
+    fetchBefore: true,
+  })
   async remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
