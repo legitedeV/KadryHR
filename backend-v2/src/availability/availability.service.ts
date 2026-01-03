@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -11,18 +15,23 @@ export class AvailabilityService {
   findAll(organisationId: string) {
     return this.prisma.availability.findMany({
       where: { organisationId },
-      orderBy: [
-        { date: 'asc' },
-        { weekday: 'asc' },
-        { startMinutes: 'asc' },
-      ],
+      orderBy: [{ date: 'asc' }, { weekday: 'asc' }, { startMinutes: 'asc' }],
     });
   }
 
   /**
    * Tworzenie rekordu dostępności.
    */
-  create(organisationId: string, dto: any) {
+  async create(organisationId: string, dto: any) {
+    if (
+      typeof dto.startMinutes === 'number' &&
+      typeof dto.endMinutes === 'number' &&
+      dto.endMinutes <= dto.startMinutes
+    ) {
+      throw new BadRequestException(
+        'endMinutes must be greater than startMinutes',
+      );
+    }
     return this.prisma.availability.create({
       data: {
         organisationId,

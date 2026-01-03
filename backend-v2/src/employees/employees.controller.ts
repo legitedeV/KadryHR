@@ -43,10 +43,10 @@ export class EmployeesController {
 
       if (!employee) {
         return {
-          items: [],
+          data: [],
           total: 0,
-          page: query.page ?? 1,
-          pageSize: query.pageSize ?? 20,
+          skip: 0,
+          take: query.take ?? query.pageSize ?? 20,
         };
       }
 

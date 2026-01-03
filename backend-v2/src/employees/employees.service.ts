@@ -28,19 +28,14 @@ export class EmployeesService {
     query: QueryEmployeesDto,
     options?: { restrictToEmployeeId?: string },
   ) {
-    const {
-      page = 1,
-      pageSize = 20,
-      q,
-      sort = 'createdAt-desc',
-      locationId,
-      // status zostawiamy na później; nie opieramy się na polu isActive w schemacie
-      // bo nie mamy tu 100% pewności co do migracji
-      // status,
-    } = query;
-
-    const take = Math.min(pageSize, 100);
-    const skip = (page - 1) * take;
+    const take = Math.min(query.take ?? query.pageSize ?? 20, 100);
+    const page =
+      query.page ??
+      (query.skip !== undefined
+        ? Math.floor(query.skip / Math.max(take, 1)) + 1
+        : 1);
+    const skip = query.skip ?? (page - 1) * take;
+    const term = (query.search ?? query.q ?? '').trim();
 
     const where: Prisma.EmployeeWhereInput = {
       organisationId,
@@ -50,8 +45,7 @@ export class EmployeesService {
       where.id = options.restrictToEmployeeId;
     }
 
-    if (q && q.trim()) {
-      const term = q.trim();
+    if (term) {
       where.OR = [
         { firstName: { contains: term, mode: 'insensitive' } },
         { lastName: { contains: term, mode: 'insensitive' } },
@@ -60,38 +54,47 @@ export class EmployeesService {
       ];
     }
 
-    if (locationId) {
-      // Filtr: pracownik ma przynajmniej jedną zmianę w tej lokalizacji.
-      where.shifts = {
-        some: { locationId },
-      };
+    if (query.locationId) {
+      const existingAnd = Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : [];
+
+      where.AND = [
+        ...existingAnd,
+        {
+          OR: [
+            { locations: { some: { locationId: query.locationId } } },
+            { shifts: { some: { locationId: query.locationId } } },
+          ],
+        },
+      ];
     }
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.employee.findMany({
         where,
-        orderBy: buildEmployeeOrder(sort),
+        orderBy: buildEmployeeOrder(query),
         skip,
         take,
         include: {
-          organisation: {
-            select: { id: true, name: true },
-          },
-          shifts: {
-            take: 1,
-            orderBy: { startsAt: 'desc' },
-            include: { location: true },
-          },
+          locations: { include: { location: true } },
         },
       }),
       this.prisma.employee.count({ where }),
     ]);
 
+    const mapped = items.map((item) => ({
+      ...item,
+      locations: (item.locations ?? []).map((entry) => entry.location),
+    }));
+
     return {
-      items,
+      data: mapped,
       total,
-      page,
-      pageSize: take,
+      skip,
+      take,
     };
   }
 
@@ -180,11 +183,17 @@ export class EmployeesService {
 }
 
 function buildEmployeeOrder(
-  sort: string,
+  sort: QueryEmployeesDto,
 ): Prisma.EmployeeOrderByWithRelationInput {
-  const [fieldRaw, directionRaw] = sort.split('-');
-  const direction: Prisma.SortOrder =
-    directionRaw === 'asc' ? 'asc' : 'desc';
+  if (sort.sortBy) {
+    return {
+      [sort.sortBy]: sort.sortOrder ?? 'asc',
+    } as Prisma.EmployeeOrderByWithRelationInput;
+  }
+
+  const legacy = sort.sort ?? 'createdAt-desc';
+  const [fieldRaw, directionRaw] = legacy.split('-');
+  const direction: Prisma.SortOrder = directionRaw === 'asc' ? 'asc' : 'desc';
 
   const allowed: (keyof Prisma.EmployeeOrderByWithRelationInput)[] = [
     'firstName',
@@ -192,6 +201,7 @@ function buildEmployeeOrder(
     'email',
     'createdAt',
     'updatedAt',
+    'position',
   ];
 
   if (!fieldRaw || !allowed.includes(fieldRaw as any)) {

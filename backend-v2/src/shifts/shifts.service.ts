@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { QueryShiftsDto } from './dto/query-shifts.dto';
 
 @Injectable()
 export class ShiftsService {
@@ -8,9 +14,9 @@ export class ShiftsService {
   /**
    * Wszystkie zmiany w organizacji (dla OWNER/MANAGER).
    */
-  findAll(organisationId: string) {
+  findAll(organisationId: string, query: QueryShiftsDto) {
     return this.prisma.shift.findMany({
-      where: { organisationId },
+      where: this.buildWhere(organisationId, query),
       orderBy: { startsAt: 'asc' },
       include: {
         employee: true,
@@ -22,9 +28,16 @@ export class ShiftsService {
   /**
    * Zmiany dla konkretnego pracownika (EMPLOYEE view).
    */
-  findForEmployee(organisationId: string, employeeId: string) {
+  findForEmployee(
+    organisationId: string,
+    query: QueryShiftsDto,
+    options: { employeeId: string },
+  ) {
     return this.prisma.shift.findMany({
-      where: { organisationId, employeeId },
+      where: this.buildWhere(organisationId, {
+        ...query,
+        employeeId: options.employeeId,
+      }),
       orderBy: { startsAt: 'asc' },
       include: {
         employee: true,
@@ -36,18 +49,46 @@ export class ShiftsService {
   /**
    * Tworzenie zmiany.
    */
-  create(organisationId: string, dto: any) {
-    return this.prisma.shift.create({
+  async create(organisationId: string, dto: any) {
+    const startsAt = new Date(dto.startsAt);
+    const endsAt = new Date(dto.endsAt);
+
+    if (!(startsAt.getTime() < endsAt.getTime())) {
+      throw new BadRequestException('Shift start must be before end');
+    }
+
+    await this.ensureEmployee(organisationId, dto.employeeId);
+    if (dto.locationId) {
+      await this.ensureLocation(organisationId, dto.locationId);
+    }
+
+    await this.ensureNoConflict(
+      organisationId,
+      dto.employeeId,
+      startsAt,
+      endsAt,
+    );
+
+    const availabilityWarning = await this.computeAvailabilityWarning(
+      organisationId,
+      dto.employeeId,
+      startsAt,
+      endsAt,
+    );
+
+    const created = await this.prisma.shift.create({
       data: {
         organisationId,
         employeeId: dto.employeeId,
         locationId: dto.locationId ?? null,
         position: dto.position ?? null,
         notes: dto.notes ?? null,
-        startsAt: dto.startsAt,
-        endsAt: dto.endsAt,
+        startsAt,
+        endsAt,
       },
     });
+
+    return { ...created, availabilityWarning };
   }
 
   /**
@@ -62,18 +103,50 @@ export class ShiftsService {
       throw new NotFoundException('Shift not found');
     }
 
-    return this.prisma.shift.update({
+    const nextEmployeeId = dto.employeeId ?? existing.employeeId;
+    const nextLocationId =
+      dto.locationId !== undefined ? dto.locationId : existing.locationId;
+    const nextStartsAt = dto.startsAt
+      ? new Date(dto.startsAt)
+      : existing.startsAt;
+    const nextEndsAt = dto.endsAt ? new Date(dto.endsAt) : existing.endsAt;
+
+    if (!(nextStartsAt.getTime() < nextEndsAt.getTime())) {
+      throw new BadRequestException('Shift start must be before end');
+    }
+
+    await this.ensureEmployee(organisationId, nextEmployeeId);
+    if (nextLocationId) {
+      await this.ensureLocation(organisationId, nextLocationId);
+    }
+    await this.ensureNoConflict(
+      organisationId,
+      nextEmployeeId,
+      nextStartsAt,
+      nextEndsAt,
+      id,
+    );
+
+    const availabilityWarning = await this.computeAvailabilityWarning(
+      organisationId,
+      nextEmployeeId,
+      nextStartsAt,
+      nextEndsAt,
+    );
+
+    const updated = await this.prisma.shift.update({
       where: { id },
       data: {
-        employeeId: dto.employeeId ?? existing.employeeId,
-        locationId:
-          dto.locationId !== undefined ? dto.locationId : existing.locationId,
+        employeeId: nextEmployeeId,
+        locationId: nextLocationId,
         position: dto.position ?? existing.position,
         notes: dto.notes ?? existing.notes,
-        startsAt: dto.startsAt ?? existing.startsAt,
-        endsAt: dto.endsAt ?? existing.endsAt,
+        startsAt: nextStartsAt,
+        endsAt: nextEndsAt,
       },
     });
+
+    return { ...updated, availabilityWarning };
   }
 
   /**
@@ -93,5 +166,190 @@ export class ShiftsService {
     });
 
     return { success: true };
+  }
+
+  async summary(organisationId: string, query: QueryShiftsDto) {
+    const where = this.buildWhere(organisationId, query);
+    const shifts = await this.prisma.shift.findMany({
+      where,
+      select: {
+        employeeId: true,
+        startsAt: true,
+        endsAt: true,
+      },
+    });
+
+    const employeeIds = Array.from(
+      new Set(
+        shifts
+          .map((shift) => shift.employeeId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+
+    const employees = employeeIds.length
+      ? await this.prisma.employee.findMany({
+          where: { organisationId, id: { in: employeeIds } },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+      : [];
+
+    const nameMap = new Map(
+      employees.map((emp) => [
+        emp.id,
+        `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim() ||
+          emp.email ||
+          'Pracownik',
+      ]),
+    );
+
+    const totals = new Map<
+      string,
+      { employeeId: string; employeeName: string; hours: number }
+    >();
+
+    for (const shift of shifts) {
+      if (!shift.employeeId) continue;
+      const current = totals.get(shift.employeeId) ?? {
+        employeeId: shift.employeeId,
+        employeeName: nameMap.get(shift.employeeId) ?? 'Pracownik',
+        hours: 0,
+      };
+
+      const diff =
+        (new Date(shift.endsAt).getTime() -
+          new Date(shift.startsAt).getTime()) /
+        (1000 * 60 * 60);
+      current.hours += Math.max(diff, 0);
+      totals.set(shift.employeeId, current);
+    }
+
+    return Array.from(totals.values()).map((item) => ({
+      ...item,
+      hours: Math.round((item.hours + Number.EPSILON) * 100) / 100,
+    }));
+  }
+
+  private buildWhere(
+    organisationId: string,
+    query: QueryShiftsDto,
+  ): Prisma.ShiftWhereInput {
+    const where: Prisma.ShiftWhereInput = {
+      organisationId,
+    };
+
+    if (query.employeeId) {
+      where.employeeId = query.employeeId;
+    }
+    if (query.locationId) {
+      where.locationId = query.locationId;
+    }
+    if (query.from) {
+      where.endsAt = { gte: new Date(query.from) };
+    }
+    if (query.to) {
+      where.startsAt = { lte: new Date(query.to) };
+    }
+
+    return where;
+  }
+
+  private async ensureEmployee(organisationId: string, employeeId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+    });
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+    return employee;
+  }
+
+  private async ensureLocation(organisationId: string, locationId: string) {
+    const location = await this.prisma.location.findFirst({
+      where: { id: locationId, organisationId },
+    });
+    if (!location) {
+      throw new NotFoundException('Location not found');
+    }
+    return location;
+  }
+
+  private async ensureNoConflict(
+    organisationId: string,
+    employeeId: string,
+    startsAt: Date,
+    endsAt: Date,
+    ignoreShiftId?: string,
+  ) {
+    const conflict = await this.prisma.shift.findFirst({
+      where: {
+        organisationId,
+        employeeId,
+        id: ignoreShiftId ? { not: ignoreShiftId } : undefined,
+        startsAt: { lt: endsAt },
+        endsAt: { gt: startsAt },
+      },
+    });
+
+    if (conflict) {
+      throw new BadRequestException(
+        'Employee already has a shift in this time range',
+      );
+    }
+  }
+
+  private async computeAvailabilityWarning(
+    organisationId: string,
+    employeeId: string,
+    startsAt: Date,
+    endsAt: Date,
+  ) {
+    const availability = await this.prisma.availability.findMany({
+      where: { organisationId, employeeId },
+    });
+
+    if (!availability.length) {
+      return 'Brak zadeklarowanej dostępności pracownika dla tego terminu.';
+    }
+
+    const shiftDateIso = startsAt.toISOString().slice(0, 10);
+    const shiftWeekday = startsAt.getUTCDay(); // 0-6
+    const startMinutes = startsAt.getUTCHours() * 60 + startsAt.getUTCMinutes();
+    const endMinutes = endsAt.getUTCHours() * 60 + endsAt.getUTCMinutes();
+
+    const weekdayMap: Record<number, string> = {
+      0: 'SUNDAY',
+      1: 'MONDAY',
+      2: 'TUESDAY',
+      3: 'WEDNESDAY',
+      4: 'THURSDAY',
+      5: 'FRIDAY',
+      6: 'SATURDAY',
+    };
+
+    const matching = availability.filter((slot) => {
+      if (slot.date) {
+        return slot.date.toISOString().slice(0, 10) === shiftDateIso;
+      }
+      if (slot.weekday) {
+        return slot.weekday === weekdayMap[shiftWeekday];
+      }
+      return false;
+    });
+
+    if (!matching.length) {
+      return 'Pracownik nie zadeklarował dostępności w tym dniu.';
+    }
+
+    const covered = matching.some(
+      (slot) =>
+        slot.startMinutes <= startMinutes && slot.endMinutes >= endMinutes,
+    );
+
+    if (!covered) {
+      return 'Godziny zmiany wykraczają poza dostępność pracownika.';
+    }
+
+    return null;
   }
 }
