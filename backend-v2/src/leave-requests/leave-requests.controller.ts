@@ -1,8 +1,8 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -10,16 +10,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { LeaveRequestsService } from './leave-requests.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
-import { QueryLeaveRequestsDto } from './dto/query-leave-requests.dto';
+import { LeaveRequestsService } from './leave-requests.service';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
-import { UpdateLeaveStatusDto } from './dto/update-leave-status.dto';
-import { Roles } from '../common/decorators/roles.decorator';
+import { UpdateLeaveRequestStatusDto } from './dto/update-leave-request-status.dto';
+import { FindLeaveRequestsQueryDto } from './dto/find-leave-requests-query.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('leave-requests')
@@ -29,45 +28,47 @@ export class LeaveRequestsController {
   @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
-    @Query() query: QueryLeaveRequestsDto,
+    @Query() query: FindLeaveRequestsQueryDto,
   ) {
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
         user.id,
       );
-      if (!employee) {
-        throw new NotFoundException('Employee profile not found');
-      }
+
       return this.leaveRequestsService.findAll(user.organisationId, query, {
-        restrictToEmployeeId: employee.id,
+        employeeId: employee.id,
+        actorUserId: user.id,
+        actorRole: user.role,
       });
     }
 
-    return this.leaveRequestsService.findAll(user.organisationId, query);
+    // OWNER / MANAGER
+    return this.leaveRequestsService.findAll(user.organisationId, query, {
+      actorUserId: user.id,
+      actorRole: user.role,
+    });
   }
 
   @Get(':id')
-  async findOne(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string,
-  ) {
+  async findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
         user.id,
       );
-      if (!employee) {
-        throw new NotFoundException('Employee profile not found');
-      }
-      return this.leaveRequestsService.findOne(
-        user.organisationId,
-        id,
-        { restrictToEmployeeId: employee.id },
-      );
+
+      return this.leaveRequestsService.findOne(user.organisationId, id, {
+        employeeId: employee.id,
+        actorUserId: user.id,
+        actorRole: user.role,
+      });
     }
 
-    return this.leaveRequestsService.findOne(user.organisationId, id);
+    return this.leaveRequestsService.findOne(user.organisationId, id, {
+      actorUserId: user.id,
+      actorRole: user.role,
+    });
   }
 
   @Post()
@@ -75,14 +76,20 @@ export class LeaveRequestsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateLeaveRequestDto,
   ) {
-    return this.leaveRequestsService.create(
-      user.organisationId,
-      dto,
-      {
-        userId: user.id,
-        role: user.role,
-      },
-    );
+    if (user.role === Role.EMPLOYEE) {
+      const employee = await this.leaveRequestsService.findEmployeeForUser(
+        user.organisationId,
+        user.id,
+      );
+      return this.leaveRequestsService.create(user.organisationId, employee.id, dto);
+    }
+
+    // OWNER / MANAGER can create for an employee (employeeId required)
+    if (!dto.employeeId) {
+      throw new BadRequestException('employeeId is required for manager/owner creation');
+    }
+
+    return this.leaveRequestsService.create(user.organisationId, dto.employeeId, dto);
   }
 
   @Patch(':id')
@@ -91,38 +98,53 @@ export class LeaveRequestsController {
     @Param('id') id: string,
     @Body() dto: UpdateLeaveRequestDto,
   ) {
-    let scope:
-      | {
-          restrictToEmployeeId: string;
-        }
-      | undefined;
-
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
         user.id,
       );
-      if (!employee) {
-        throw new NotFoundException('Employee profile not found');
-      }
-      scope = { restrictToEmployeeId: employee.id };
+
+      return this.leaveRequestsService.update(user.organisationId, id, dto, {
+        employeeId: employee.id,
+        actorUserId: user.id,
+        actorRole: user.role,
+      });
     }
 
-    return this.leaveRequestsService.update(user.organisationId, id, dto, scope);
+    return this.leaveRequestsService.update(user.organisationId, id, dto, {
+      actorUserId: user.id,
+      actorRole: user.role,
+    });
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
-  @Patch(':id/status')
+  @Post(':id/status')
   async updateStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: UpdateLeaveStatusDto,
+    @Body() dto: UpdateLeaveRequestStatusDto,
   ) {
-    return this.leaveRequestsService.updateStatus(
-      user.organisationId,
-      id,
-      dto,
-      user.id,
-    );
+    if (user.role === Role.EMPLOYEE) {
+      const employee = await this.leaveRequestsService.findEmployeeForUser(
+        user.organisationId,
+        user.id,
+      );
+
+      // employee is only allowed to cancel
+      if (dto.status !== 'CANCELLED') {
+        throw new BadRequestException('Employees can only cancel leave requests');
+      }
+
+      return this.leaveRequestsService.updateStatus(user.organisationId, id, dto, {
+        employeeId: employee.id,
+        actorUserId: user.id,
+        actorRole: user.role,
+      });
+    }
+
+    // OWNER / MANAGER can approve/reject (and optionally cancel)
+    return this.leaveRequestsService.updateStatus(user.organisationId, id, dto, {
+      actorUserId: user.id,
+      actorRole: user.role,
+    });
   }
 }
