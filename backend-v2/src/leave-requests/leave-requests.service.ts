@@ -26,6 +26,8 @@ type AccessScope = {
   actorRole?: Role;
 };
 
+export const ELEVATED_ROLES: Role[] = [Role.OWNER, Role.MANAGER, Role.ADMIN];
+
 const LEAVE_INCLUDE = {
   employee: true,
   leaveType: true,
@@ -234,9 +236,7 @@ export class LeaveRequestsService {
     if (
       dto.status !== LeaveStatus.CANCELLED &&
       scope?.actorRole &&
-      !([Role.OWNER, Role.MANAGER, Role.ADMIN] as Role[]).includes(
-        scope.actorRole,
-      )
+      !ELEVATED_ROLES.includes(scope.actorRole)
     ) {
       throw new ForbiddenException('Only managers/owners can approve/reject');
     }

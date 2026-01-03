@@ -12,7 +12,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LeaveStatus, Role } from '@prisma/client';
-import { LeaveRequestsService } from './leave-requests.service';
+import {
+  ELEVATED_ROLES,
+  LeaveRequestsService,
+} from './leave-requests.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -157,9 +160,7 @@ export class LeaveRequestsController {
       );
     }
 
-    const elevatedRoles: Role[] = [Role.OWNER, Role.MANAGER, Role.ADMIN];
-
-    if (!elevatedRoles.includes(user.role)) {
+    if (!ELEVATED_ROLES.includes(user.role)) {
       throw new ForbiddenException('Brak uprawnień do zmiany statusu wniosku');
     }
 
