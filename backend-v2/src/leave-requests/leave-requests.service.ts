@@ -169,7 +169,7 @@ export class LeaveRequestsService {
       throw new BadRequestException('Only PENDING requests can be updated');
     }
 
-    const data: Prisma.LeaveRequestUpdateInput = {};
+    const data: Prisma.LeaveRequestUncheckedUpdateInput = {};
 
     if (dto.startsAt || dto.startDate || dto.endsAt || dto.endDate) {
       const { startDate, endDate } = this.resolveDates(dto);
@@ -234,14 +234,16 @@ export class LeaveRequestsService {
     if (
       dto.status !== LeaveStatus.CANCELLED &&
       scope?.actorRole &&
-      ![Role.OWNER, Role.MANAGER, Role.ADMIN].includes(scope.actorRole)
+      !([Role.OWNER, Role.MANAGER, Role.ADMIN] as Role[]).includes(
+        scope.actorRole,
+      )
     ) {
       throw new ForbiddenException('Only managers/owners can approve/reject');
     }
 
     this.ensureStatusTransition(existing.status, dto.status);
 
-    const data: Prisma.LeaveRequestUpdateInput = {
+    const data: Prisma.LeaveRequestUncheckedUpdateInput = {
       status: dto.status,
       approvedByUserId:
         dto.status === LeaveStatus.CANCELLED ? null : approverUserId,

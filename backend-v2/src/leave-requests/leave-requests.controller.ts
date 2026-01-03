@@ -39,7 +39,7 @@ export class LeaveRequestsController {
       );
 
       return this.leaveRequestsService.findAll(user.organisationId, query, {
-        employeeId: employee.id,
+        restrictToEmployeeId: employee.id,
         actorUserId: user.id,
         actorRole: user.role,
       });
@@ -61,7 +61,7 @@ export class LeaveRequestsController {
       );
 
       return this.leaveRequestsService.findOne(user.organisationId, id, {
-        employeeId: employee.id,
+        restrictToEmployeeId: employee.id,
         actorUserId: user.id,
         actorRole: user.role,
       });
@@ -157,7 +157,9 @@ export class LeaveRequestsController {
       );
     }
 
-    if (![Role.OWNER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
+    const elevatedRoles: Role[] = [Role.OWNER, Role.MANAGER, Role.ADMIN];
+
+    if (!elevatedRoles.includes(user.role)) {
       throw new ForbiddenException('Brak uprawnień do zmiany statusu wniosku');
     }
 
