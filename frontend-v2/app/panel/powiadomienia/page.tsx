@@ -327,7 +327,6 @@ export default function NotificationsPage() {
               })}
             </div>
           </div>
-        </div>
       )}
 
       {activeTab === "preferences" && (

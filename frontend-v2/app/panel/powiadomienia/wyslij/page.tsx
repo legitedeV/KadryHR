@@ -75,7 +75,7 @@ export default function CampaignComposerPage() {
           apiListEmployees(),
         ]);
         setLocations(locs);
-        setEmployees(emps);
+        setEmployees(emps.data);
       } catch (err) {
         console.error("Failed to load options:", err);
       } finally {
