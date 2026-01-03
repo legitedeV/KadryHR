@@ -10,6 +10,7 @@ Statusy odnoszą się do rzeczywistego kodu (backend-v2 + frontend-v2). Dokument
 ## Macierz funkcjonalna (backend + frontend)
 | Feature area | Status | Backend coverage (Prisma + endpoints) | Frontend coverage (routes) | Acceptance criteria / gap notes |
 | --- | --- | --- | --- | --- |
+| Landing / Marketing site | DONE | N/A (static marketing) | `/`, `/cennik`, `/o-nas`, `/kontakt` styled with Tailwind/global CSS | Landing renders with KadryHR layout in `npm run dev` and `npm run build && npm start`; deploy behind nginx per `docs/deploy-frontend-nginx.md`. |
 | Auth & role access | CURRENT | Models: `User`, `Organisation`, enum `Role`. Endpoints: `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`, `GET/POST/PATCH /users` (RBAC). | `/login`, `/panel` guard, `/panel/profil` (refresh/logout). | User can log in, refresh token, and access panel; roles enforced server-side for user mutations. |
 | Organisations & tenancy | CURRENT | Models: `Organisation`. Endpoints: `GET /organisations/me`, `PATCH /organisations/me`. All other controllers scope by `organisationId`. | Org name shown in dashboards; no dedicated org edit UI (gap noted). | Tenant scoping active on queries; owner/manager can update org metadata. |
 | Employees & locations | CURRENT | Models: `Employee`, `Location`, `LocationAssignment`. Endpoints: `GET/POST/PATCH/DELETE /employees`, `GET /employees/:id`, `GET/POST/PATCH/DELETE /locations`, `PATCH /locations/:id/employees`. | `/panel/pracownicy` (CRUD + search/sort/pagination), `/panel/lokalizacje` (CRUD + employee assignment). | Creating/updating/deleting employees and locations persists via API and reflects in lists. |
@@ -22,6 +23,10 @@ Statusy odnoszą się do rzeczywistego kodu (backend-v2 + frontend-v2). Dokument
 | Employee mobile / PWA | GAP | API w pełni web; brak offline/push. | Panel responsywny, ale brak manifestu/service worker i widgetu RCP. | DONE gdy panel jest instalowalny (PWA), działa offline retry i ma mobilny clock/schedule/leave flow. |
 
 Kryteria w kolumnie "Acceptance criteria / gap notes" traktuj jako scenariusze testowe (manual/e2e) do potwierdzenia przy zmianie statusu na **DONE**.
+
+### How to test (landing)
+- Uruchom lokalnie: `cd frontend-v2 && npm run dev` lub `npm run build && npm start` – strona `/` ma być w pełni ostylowana (Tailwind, global CSS).
+- Instrukcja deploy + snippet nginx: zob. [`docs/deploy-frontend-nginx.md`](./deploy-frontend-nginx.md).
 
 ## Backend endpoint inventory (obecne)
 - **auth**: `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`

@@ -2,12 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-  NotificationCampaign,
-  NotificationCampaignStatus,
-  apiListCampaigns,
-} from "@/lib/api";
-import { pushToast } from "@/lib/toast";
+import { NotificationCampaign, NotificationCampaignStatus, apiListCampaigns } from "@/lib/api";
 import { usePermissions } from "@/lib/use-permissions";
 
 const STATUS_LABELS: Record<NotificationCampaignStatus, string> = {

@@ -201,7 +201,7 @@ export default function CampaignComposerPage() {
 
   const handleSendConfirm = async () => {
     // Ensure draft is created first
-    let campaignId = draftCampaignId;
+    const campaignId = draftCampaignId;
     if (!campaignId) {
       await createDraft();
       // Note: createDraft sets draftCampaignId state, but we need to wait for that
