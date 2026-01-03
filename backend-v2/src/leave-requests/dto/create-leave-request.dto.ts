@@ -1,17 +1,24 @@
-import {
-  IsDateString,
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUUID,
-  MaxLength,
-} from 'class-validator';
+import { IsISO8601, IsOptional, IsString, MaxLength } from 'class-validator';
 import { LeaveCategory } from '@prisma/client';
 
 export class CreateLeaveRequestDto {
+  /**
+   * Preferred fields (consistent with shifts):
+   */
   @IsOptional()
-  @IsUUID('4')
-  employeeId?: string;
+  @IsISO8601()
+  startsAt?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  endsAt?: string;
+
+  /**
+   * Backward-compatible aliases (your current DTO used these):
+   */
+  @IsOptional()
+  @IsISO8601()
+  startDate?: string;
 
   @IsEnum(LeaveCategory)
   type!: LeaveCategory;
@@ -20,19 +27,31 @@ export class CreateLeaveRequestDto {
   @IsUUID('4')
   leaveTypeId?: string;
 
-  @IsDateString()
-  startDate!: string;
-
-  @IsDateString()
-  endDate!: string;
+  @IsOptional()
+  @IsString()
+  type?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  leaveType?: string;
+
+  /**
+   * Reason/notes
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(1024)
   reason?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(1024)
-  attachmentUrl?: string;
+  notes?: string;
+
+  /**
+   * Optional: manager/owner can create for a specific employee
+   */
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
 }
