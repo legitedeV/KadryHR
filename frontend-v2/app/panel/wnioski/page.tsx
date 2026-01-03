@@ -189,7 +189,7 @@ export default function WnioskiPage() {
               Typ wniosku
             </label>
             <select
-              value={form.leaveTypeId || form.type}
+              value={leaveTypes.length > 0 ? form.leaveTypeId ?? "" : form.type}
               onChange={(e) => {
                 const selected = leaveTypes.find((lt) => lt.id === e.target.value);
                 if (selected) {

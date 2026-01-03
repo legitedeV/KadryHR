@@ -168,9 +168,7 @@ export class LeaveRequestsService {
       where: { id },
       data: {
         type: leaveType?.code ?? dto.type ?? existing.type,
-        leaveTypeId:
-          leaveType?.id ??
-          (dto.leaveTypeId === null ? null : existing.leaveTypeId ?? null),
+        leaveTypeId: leaveType?.id ?? dto.leaveTypeId ?? existing.leaveTypeId ?? null,
         startDate: nextStart,
         endDate: nextEnd,
         reason: dto.reason ?? existing.reason,

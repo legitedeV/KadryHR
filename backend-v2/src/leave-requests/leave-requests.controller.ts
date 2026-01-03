@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -137,7 +138,7 @@ export class LeaveRequestsController {
     }
 
     if (![Role.OWNER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
-      throw new NotFoundException('Not authorised');
+      throw new ForbiddenException('Brak uprawnień do zmiany statusu wniosku');
     }
 
     return this.leaveRequestsService.updateStatus(
