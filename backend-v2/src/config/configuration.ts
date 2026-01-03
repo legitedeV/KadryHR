@@ -20,6 +20,10 @@ export interface AppConfig {
     pass: string;
     from: string;
   };
+  redis: {
+    host: string;
+    port: number;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -44,5 +48,9 @@ export const configuration = (): AppConfig => ({
     user: process.env.SMTP_USER ?? '',
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.SMTP_FROM ?? '',
+  },
+  redis: {
+    host: process.env.REDIS_HOST ?? 'localhost',
+    port: Number(process.env.REDIS_PORT ?? 6379),
   },
 });
