@@ -10,6 +10,7 @@ import {
   apiGetShifts,
   apiListEmployees,
 } from "@/lib/api";
+import { formatDateRange } from "@/lib/date-range";
 
 interface DashboardData {
   shifts: ShiftRecord[];
@@ -239,13 +240,14 @@ export default function DashboardPage() {
                     oczekuje
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                  {new Date(r.date).toLocaleDateString("pl-PL")} · {r.details}
-                </p>
-              </div>
-            ))}
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    {formatDateRange(r.startDate, r.endDate)}
+                    {r.reason ? ` · ${r.reason}` : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
       </div>
     </div>
   );
@@ -253,14 +255,14 @@ export default function DashboardPage() {
 
 function mapRequestType(type: RequestItem["type"]) {
   switch (type) {
-    case "VACATION":
-      return "Urlop";
+    case "PAID_LEAVE":
+      return "Urlop wypoczynkowy";
     case "SICK":
       return "Chorobowe";
-    case "SHIFT_GIVE":
-      return "Oddanie zmiany";
-    case "SHIFT_SWAP":
-      return "Zamiana zmiany";
+    case "UNPAID":
+      return "Urlop bezpłatny";
+    case "OTHER":
+      return "Inne";
     default:
       return type;
   }
