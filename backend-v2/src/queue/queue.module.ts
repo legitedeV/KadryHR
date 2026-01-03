@@ -13,7 +13,7 @@ import { QueueService } from './queue.service';
       useFactory: (configService: ConfigService<AppConfig, true>) => {
         const host = configService.get('redis.host', { infer: true });
         const port = configService.get('redis.port', { infer: true });
-        
+
         return {
           connection: {
             host,

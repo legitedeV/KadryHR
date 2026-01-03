@@ -55,8 +55,14 @@ export class CampaignService {
     dto: CreateCampaignDto,
   ) {
     // Only MANAGER and OWNER can create campaigns
-    if (userRole !== Role.MANAGER && userRole !== Role.OWNER && userRole !== Role.ADMIN) {
-      throw new ForbiddenException('Only managers and owners can create campaigns');
+    if (
+      userRole !== Role.MANAGER &&
+      userRole !== Role.OWNER &&
+      userRole !== Role.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only managers and owners can create campaigns',
+      );
     }
 
     // Validate channels
@@ -101,8 +107,14 @@ export class CampaignService {
     campaignId: string,
   ) {
     // Only MANAGER and OWNER can send campaigns
-    if (userRole !== Role.MANAGER && userRole !== Role.OWNER && userRole !== Role.ADMIN) {
-      throw new ForbiddenException('Only managers and owners can send campaigns');
+    if (
+      userRole !== Role.MANAGER &&
+      userRole !== Role.OWNER &&
+      userRole !== Role.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only managers and owners can send campaigns',
+      );
     }
 
     const campaign = await this.prisma.notificationCampaign.findFirst({
@@ -215,8 +227,14 @@ export class CampaignService {
     dto: ListCampaignsDto,
   ) {
     // Only MANAGER and OWNER can list campaigns
-    if (userRole !== Role.MANAGER && userRole !== Role.OWNER && userRole !== Role.ADMIN) {
-      throw new ForbiddenException('Only managers and owners can view campaigns');
+    if (
+      userRole !== Role.MANAGER &&
+      userRole !== Role.OWNER &&
+      userRole !== Role.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only managers and owners can view campaigns',
+      );
     }
 
     const take = Math.min(dto.take ?? 20, 100);
@@ -269,8 +287,14 @@ export class CampaignService {
     campaignId: string,
   ) {
     // Only MANAGER and OWNER can view campaign details
-    if (userRole !== Role.MANAGER && userRole !== Role.OWNER && userRole !== Role.ADMIN) {
-      throw new ForbiddenException('Only managers and owners can view campaign details');
+    if (
+      userRole !== Role.MANAGER &&
+      userRole !== Role.OWNER &&
+      userRole !== Role.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only managers and owners can view campaign details',
+      );
     }
 
     const campaign = await this.prisma.notificationCampaign.findFirst({
@@ -310,8 +334,9 @@ export class CampaignService {
     const stats = {
       total: campaign.recipients.length,
       deliveredInApp: campaign.recipients.filter(
-        (r) => r.status === NotificationRecipientStatus.DELIVERED_IN_APP ||
-               r.status === NotificationRecipientStatus.EMAIL_SENT,
+        (r) =>
+          r.status === NotificationRecipientStatus.DELIVERED_IN_APP ||
+          r.status === NotificationRecipientStatus.EMAIL_SENT,
       ).length,
       emailSent: campaign.recipients.filter(
         (r) => r.status === NotificationRecipientStatus.EMAIL_SENT,

@@ -12,6 +12,7 @@ export type EmailSendResult = {
 @Injectable()
 export class EmailAdapter {
   private readonly logger = new Logger(EmailAdapter.name);
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private readonly transporter: nodemailer.Transporter | null;
   private readonly fromAddress: string | null;
 
@@ -33,7 +34,9 @@ export class EmailAdapter {
     } else {
       this.transporter = null;
       this.fromAddress = null;
-      this.logger.warn('Email adapter not configured - skipping email delivery');
+      this.logger.warn(
+        'Email adapter not configured - skipping email delivery',
+      );
     }
   }
 

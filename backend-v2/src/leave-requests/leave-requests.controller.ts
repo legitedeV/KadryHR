@@ -60,11 +60,9 @@ export class LeaveRequestsController {
       if (!employee) {
         throw new NotFoundException('Employee profile not found');
       }
-      return this.leaveRequestsService.findOne(
-        user.organisationId,
-        id,
-        { restrictToEmployeeId: employee.id },
-      );
+      return this.leaveRequestsService.findOne(user.organisationId, id, {
+        restrictToEmployeeId: employee.id,
+      });
     }
 
     return this.leaveRequestsService.findOne(user.organisationId, id);
@@ -75,14 +73,10 @@ export class LeaveRequestsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateLeaveRequestDto,
   ) {
-    return this.leaveRequestsService.create(
-      user.organisationId,
-      dto,
-      {
-        userId: user.id,
-        role: user.role,
-      },
-    );
+    return this.leaveRequestsService.create(user.organisationId, dto, {
+      userId: user.id,
+      role: user.role,
+    });
   }
 
   @Patch(':id')
@@ -108,7 +102,12 @@ export class LeaveRequestsController {
       scope = { restrictToEmployeeId: employee.id };
     }
 
-    return this.leaveRequestsService.update(user.organisationId, id, dto, scope);
+    return this.leaveRequestsService.update(
+      user.organisationId,
+      id,
+      dto,
+      scope,
+    );
   }
 
   @Roles(Role.OWNER, Role.MANAGER)

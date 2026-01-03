@@ -68,7 +68,9 @@ describe('NotificationsService - Preference Filtering', () => {
     const userId = 'user-123';
 
     it('should use default preferences (inApp=true, email=false) when no preference exists', async () => {
-      mockPrismaService.notificationPreference.findFirst.mockResolvedValue(null);
+      mockPrismaService.notificationPreference.findFirst.mockResolvedValue(
+        null,
+      );
       mockPrismaService.notification.create.mockResolvedValue({
         id: 'notif-1',
         organisationId,
@@ -347,7 +349,9 @@ describe('NotificationsService - Preference Filtering', () => {
         }),
       });
       // Preferences should not be checked when explicit channels provided
-      expect(mockPrismaService.notificationPreference.findFirst).not.toHaveBeenCalled();
+      expect(
+        mockPrismaService.notificationPreference.findFirst,
+      ).not.toHaveBeenCalled();
     });
   });
 });

@@ -62,15 +62,19 @@ export class AuditLogInterceptor implements NestInterceptor {
         : undefined;
 
     const ip = this.resolveIp(request);
-    const userAgent =
-      (request.headers?.['user-agent'] as string | undefined) ?? undefined;
+    const userAgent = request.headers?.['user-agent'] ?? undefined;
 
     const before =
       metadata.fetchBefore && entityId
-        ? await this.fetchBefore(metadata.entityType, user.organisationId, entityId)
+        ? await this.fetchBefore(
+            metadata.entityType,
+            user.organisationId,
+            entityId,
+          )
         : undefined;
 
     return next.handle().pipe(
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       tap(async (result) => {
         let after: unknown;
         if (result !== undefined) {
@@ -79,8 +83,7 @@ export class AuditLogInterceptor implements NestInterceptor {
           after = request.body;
         }
 
-        const resolvedEntityId =
-          entityId ?? this.extractEntityId(after);
+        const resolvedEntityId = entityId ?? this.extractEntityId(after);
 
         try {
           await this.auditService.log({

@@ -60,11 +60,7 @@ describe('CampaignService - Audience Resolution', () => {
     const organisationId = 'org-123';
 
     it('should return all users when filter.all is true', async () => {
-      const mockUsers = [
-        { id: 'user-1' },
-        { id: 'user-2' },
-        { id: 'user-3' },
-      ];
+      const mockUsers = [{ id: 'user-1' }, { id: 'user-2' }, { id: 'user-3' }];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -81,10 +77,7 @@ describe('CampaignService - Audience Resolution', () => {
     });
 
     it('should filter users by roles', async () => {
-      const mockUsers = [
-        { id: 'manager-1' },
-        { id: 'manager-2' },
-      ];
+      const mockUsers = [{ id: 'manager-1' }, { id: 'manager-2' }];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -103,10 +96,7 @@ describe('CampaignService - Audience Resolution', () => {
     });
 
     it('should filter users by multiple roles', async () => {
-      const mockUsers = [
-        { id: 'manager-1' },
-        { id: 'owner-1' },
-      ];
+      const mockUsers = [{ id: 'manager-1' }, { id: 'owner-1' }];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -125,10 +115,7 @@ describe('CampaignService - Audience Resolution', () => {
     });
 
     it('should filter users by location', async () => {
-      const mockUsers = [
-        { id: 'user-1' },
-        { id: 'user-2' },
-      ];
+      const mockUsers = [{ id: 'user-1' }, { id: 'user-2' }];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -153,9 +140,7 @@ describe('CampaignService - Audience Resolution', () => {
     });
 
     it('should filter users by employee IDs', async () => {
-      const mockUsers = [
-        { id: 'user-1' },
-      ];
+      const mockUsers = [{ id: 'user-1' }];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -176,9 +161,7 @@ describe('CampaignService - Audience Resolution', () => {
     });
 
     it('should combine role and location filters', async () => {
-      const mockUsers = [
-        { id: 'employee-1' },
-      ];
+      const mockUsers = [{ id: 'employee-1' }];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 

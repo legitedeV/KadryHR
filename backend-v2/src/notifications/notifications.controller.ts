@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CampaignService } from './campaign.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -59,10 +69,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  markRead(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string,
-  ) {
+  markRead(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.notificationsService.markAsRead(
       user.organisationId,
       user.id,

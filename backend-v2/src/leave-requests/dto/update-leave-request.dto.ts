@@ -1,4 +1,10 @@
-import { IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { LeaveType } from '@prisma/client';
 
 export class UpdateLeaveRequestDto {

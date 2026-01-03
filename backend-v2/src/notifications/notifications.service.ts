@@ -191,7 +191,7 @@ export class NotificationsService {
 
   async createNotification(input: CreateNotificationInput) {
     // If channels are explicitly provided (e.g., from campaign), use them
-    let channels: NotificationChannel[] = input.channels ?? [];
+    const channels: NotificationChannel[] = input.channels ?? [];
 
     // Otherwise, check user preferences
     if (channels.length === 0) {
@@ -249,12 +249,23 @@ export class NotificationsService {
   }
 
   private async attemptEmailDelivery(
-    notification: { id: string; userId: string; title: string; body?: string | null; organisationId?: string },
+    notification: {
+      id: string;
+      userId: string;
+      title: string;
+      body?: string | null;
+      organisationId?: string;
+    },
     input: Pick<CreateNotificationInput, 'emailSubject' | 'organisationId'>,
   ) {
     const user = await this.prisma.user.findUnique({
       where: { id: notification.userId },
-      select: { email: true, firstName: true, lastName: true, organisationId: true },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+        organisationId: true,
+      },
     });
 
     if (!user?.email) {
@@ -270,14 +281,15 @@ export class NotificationsService {
     }
 
     // Create initial delivery attempt record
-    const deliveryAttempt = await this.prisma.notificationDeliveryAttempt.create({
-      data: {
-        notificationId: notification.id,
-        channel: NotificationChannel.EMAIL,
-        status: NotificationDeliveryStatus.SKIPPED,
-        errorMessage: 'Pending delivery',
-      },
-    });
+    const deliveryAttempt =
+      await this.prisma.notificationDeliveryAttempt.create({
+        data: {
+          notificationId: notification.id,
+          channel: NotificationChannel.EMAIL,
+          status: NotificationDeliveryStatus.SKIPPED,
+          errorMessage: 'Pending delivery',
+        },
+      });
 
     // Try to add to queue first
     if (this.queueService.isQueueAvailable()) {
