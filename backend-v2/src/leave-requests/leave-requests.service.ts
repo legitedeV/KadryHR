@@ -4,11 +4,12 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LeaveStatus, LeaveType, Prisma, Role } from '@prisma/client';
+import { LeaveStatus, LeaveType, NotificationType, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryLeaveRequestsDto } from './dto/query-leave-requests.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type ScopeOptions = {
   restrictToEmployeeId?: string;
@@ -16,7 +17,10 @@ type ScopeOptions = {
 
 @Injectable()
 export class LeaveRequestsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(
     organisationId: string,
@@ -162,7 +166,7 @@ export class LeaveRequestsService {
     }
 
     const status = dto.status;
-    const data: Prisma.LeaveRequestUpdateInput = {
+    const data: Prisma.LeaveRequestUncheckedUpdateInput = {
       status,
       approvedByUserId: approverUserId,
       decisionAt: new Date(),
@@ -184,6 +188,8 @@ export class LeaveRequestsService {
       data,
       include: leaveRelations,
     });
+
+    await this.notifyStatusChange(updated, organisationId, status);
 
     return updated;
   }
@@ -274,10 +280,42 @@ export class LeaveRequestsService {
       where: { organisationId, userId },
     });
   }
+
+  private async notifyStatusChange(
+    request: Prisma.LeaveRequestGetPayload<{ include: typeof leaveRelations }>,
+    organisationId: string,
+    status: LeaveStatus,
+  ) {
+    const employeeUserId = request.employee?.userId;
+    if (!employeeUserId) {
+      return;
+    }
+
+    const statusLabel =
+      status === LeaveStatus.APPROVED
+        ? 'zatwierdzony'
+        : status === LeaveStatus.REJECTED
+          ? 'odrzucony'
+          : 'zaktualizowany';
+
+    await this.notificationsService.createNotification({
+      organisationId,
+      userId: employeeUserId,
+      type: NotificationType.LEAVE_STATUS,
+      title: `Status wniosku: ${status}`,
+      body: `Twój wniosek został ${statusLabel}.`,
+      data: {
+        leaveRequestId: request.id,
+        status,
+      },
+    });
+  }
 }
 
 const leaveRelations: Prisma.LeaveRequestInclude = {
-  employee: { select: { id: true, firstName: true, lastName: true, email: true } },
+  employee: {
+    select: { id: true, userId: true, firstName: true, lastName: true, email: true },
+  },
   approvedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
   createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
 };

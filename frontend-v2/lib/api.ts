@@ -62,6 +62,26 @@ export interface AvailabilityRecord {
   notes?: string | null;
 }
 
+export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT";
+export type NotificationChannel = "IN_APP" | "EMAIL";
+
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body?: string | null;
+  data?: Record<string, unknown> | null;
+  channels: NotificationChannel[];
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface NotificationPreference {
+  type: NotificationType;
+  inApp: boolean;
+  email: boolean;
+}
+
 export const LEAVE_TYPES = {
   PAID_LEAVE: "PAID_LEAVE",
   SICK: "SICK",
@@ -153,6 +173,7 @@ const EMPLOYEES_PREFIX = "/employees";
 const LOCATIONS_PREFIX = "/locations";
 const AVAILABILITY_PREFIX = "/availability";
 const LEAVE_PREFIX = "/leave-requests";
+const NOTIFICATIONS_PREFIX = "/notifications";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -448,6 +469,80 @@ export async function apiGetRequests(): Promise<RequestItem[]> {
   return response.data;
 }
 
+export async function apiListNotifications(params: {
+  take?: number;
+  skip?: number;
+  unreadOnly?: boolean;
+} = {}) {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.take) search.set("take", String(params.take));
+  if (params.skip) search.set("skip", String(params.skip));
+  if (params.unreadOnly) search.set("unreadOnly", String(params.unreadOnly));
+
+  const query = search.toString();
+  const response = await apiClient.request<{
+    data: NotificationResponse[];
+    total: number;
+    skip: number;
+    take: number;
+    unreadCount: number;
+  }>(`${NOTIFICATIONS_PREFIX}${query ? `?${query}` : ""}`);
+
+  return {
+    ...response,
+    data: response.data.map(mapNotification),
+  };
+}
+
+export async function apiMarkNotificationRead(id: string): Promise<NotificationItem> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<NotificationResponse>(
+    `${NOTIFICATIONS_PREFIX}/${id}/read`,
+    {
+      method: "PATCH",
+    },
+  );
+  return mapNotification(response);
+}
+
+export async function apiMarkAllNotificationsRead() {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ updated: number }>(`${NOTIFICATIONS_PREFIX}/mark-all-read`, {
+    method: "PATCH",
+  });
+}
+
+export async function apiGetNotificationPreferences(): Promise<NotificationPreference[]> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<NotificationPreference[]>(`${NOTIFICATIONS_PREFIX}/preferences`);
+  return response;
+}
+
+export async function apiUpdateNotificationPreferences(
+  preferences: NotificationPreference[],
+): Promise<NotificationPreference[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<NotificationPreference[]>(`${NOTIFICATIONS_PREFIX}/preferences`, {
+    method: "PUT",
+    body: JSON.stringify({ preferences }),
+  });
+}
+
+export async function apiGetUnreadNotificationCount(): Promise<{ count: number }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ count: number }>(`${NOTIFICATIONS_PREFIX}/unread-count`);
+}
+
+export async function apiSendTestNotification(): Promise<NotificationItem | null> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<NotificationResponse | null>(
+    `${NOTIFICATIONS_PREFIX}/test`,
+    { method: "POST" },
+  );
+  return response ? mapNotification(response) : null;
+}
+
 interface LoginResponse {
   accessToken: string;
   user: UserResponse;
@@ -517,6 +612,19 @@ interface LeaveRequestResponse {
     lastName?: string | null;
     email?: string | null;
   } | null;
+}
+
+interface NotificationResponse {
+  id: string;
+  organisationId: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body?: string | null;
+  data?: Record<string, unknown> | null;
+  channels: NotificationChannel[];
+  readAt?: string | null;
+  createdAt: string;
 }
 
 function formatUserName(
@@ -591,5 +699,18 @@ function mapLeaveRequest(request: LeaveRequestResponse): RequestItem {
     decisionAt: request.decisionAt ?? undefined,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
+  };
+}
+
+function mapNotification(notification: NotificationResponse): NotificationItem {
+  return {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    body: notification.body ?? undefined,
+    data: notification.data ?? undefined,
+    channels: notification.channels ?? [],
+    readAt: notification.readAt ?? undefined,
+    createdAt: notification.createdAt,
   };
 }

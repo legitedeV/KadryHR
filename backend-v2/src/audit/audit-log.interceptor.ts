@@ -12,6 +12,7 @@ import { AuditService } from './audit.service';
 import { AUDIT_LOG_METADATA, AuditLogOptions } from './audit-log.decorator';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
@@ -88,8 +89,8 @@ export class AuditLogInterceptor implements NestInterceptor {
             action: metadata.action,
             entityType: metadata.entityType,
             entityId: resolvedEntityId,
-            before,
-            after,
+            before: (before as Prisma.InputJsonValue) ?? null,
+            after: (after as Prisma.InputJsonValue) ?? null,
             ip,
             userAgent,
           });
