@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -16,7 +17,6 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
-import { LeaveRequestsService } from './leave-requests.service';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import { UpdateLeaveRequestStatusDto } from './dto/update-leave-request-status.dto';
@@ -83,7 +83,11 @@ export class LeaveRequestsController {
         user.organisationId,
         user.id,
       );
-      return this.leaveRequestsService.create(user.organisationId, employee.id, dto);
+      return this.leaveRequestsService.create(
+        user.organisationId,
+        { ...dto, employeeId: employee.id },
+        { userId: user.id, role: user.role },
+      );
     }
 
     // OWNER / MANAGER can create for an employee (employeeId required)
@@ -91,7 +95,10 @@ export class LeaveRequestsController {
       throw new BadRequestException('employeeId is required for manager/owner creation');
     }
 
-    return this.leaveRequestsService.create(user.organisationId, dto.employeeId, dto);
+    return this.leaveRequestsService.create(user.organisationId, dto, {
+      userId: user.id,
+      role: user.role,
+    });
   }
 
   @Patch(':id')
@@ -100,6 +107,12 @@ export class LeaveRequestsController {
     @Param('id') id: string,
     @Body() dto: UpdateLeaveRequestDto,
   ) {
+    const scope = {
+      actorUserId: user.id,
+      actorRole: user.role,
+      restrictToEmployeeId: undefined as string | undefined,
+    };
+
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
@@ -108,13 +121,10 @@ export class LeaveRequestsController {
       if (!employee) {
         throw new NotFoundException('Employee profile not found');
       }
-      scope = { restrictToEmployeeId: employee.id, userId: user.id };
+      scope.restrictToEmployeeId = employee.id;
     }
 
-    return this.leaveRequestsService.update(user.organisationId, id, dto, {
-      actorUserId: user.id,
-      actorRole: user.role,
-    });
+    return this.leaveRequestsService.update(user.organisationId, id, dto, scope);
   }
 
   @Patch(':id/status')
@@ -139,7 +149,11 @@ export class LeaveRequestsController {
         id,
         dto,
         user.id,
-        { restrictToEmployeeId: employee.id },
+        {
+          restrictToEmployeeId: employee.id,
+          actorRole: user.role,
+          actorUserId: user.id,
+        },
       );
     }
 
@@ -152,6 +166,7 @@ export class LeaveRequestsController {
       id,
       dto,
       user.id,
+      { actorRole: user.role, actorUserId: user.id },
     );
   }
 }

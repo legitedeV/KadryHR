@@ -1,4 +1,11 @@
-import { IsISO8601, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { LeaveCategory } from '@prisma/client';
 
 export class UpdateLeaveRequestDto {
@@ -9,8 +16,6 @@ export class UpdateLeaveRequestDto {
   @IsOptional()
   @IsUUID('4')
   leaveTypeId?: string;
-
-export class UpdateLeaveRequestDto {
   @IsOptional()
   @IsISO8601()
   startsAt?: string;
@@ -27,14 +32,6 @@ export class UpdateLeaveRequestDto {
   @IsOptional()
   @IsISO8601()
   endDate?: string;
-
-  @IsOptional()
-  @IsString()
-  leaveTypeId?: string;
-
-  @IsOptional()
-  @IsString()
-  type?: string;
 
   @IsOptional()
   @IsString()
