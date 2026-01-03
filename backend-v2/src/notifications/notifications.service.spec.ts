@@ -26,6 +26,7 @@ const mockPrisma = {
   },
   notificationDeliveryAttempt: {
     create: jest.fn(),
+    update: jest.fn(),
   },
   user: {
     findUnique: jest.fn(),
@@ -67,7 +68,13 @@ describe('NotificationsService', () => {
       title: 'Test',
       channels: [NotificationChannel.IN_APP],
     });
-    mockPrisma.notificationDeliveryAttempt.create.mockResolvedValue({});
+    mockPrisma.notificationDeliveryAttempt.create.mockResolvedValue({
+      id: 'attempt-1',
+    });
+    mockPrisma.notificationDeliveryAttempt.update.mockResolvedValue({
+      id: 'attempt-1',
+      status: NotificationDeliveryStatus.SENT,
+    });
     (mockEmail.sendEmail as jest.Mock).mockResolvedValue({ success: true });
     (mockQueue.addEmailDeliveryJob as jest.Mock).mockResolvedValue(true);
     (mockQueue.isQueueAvailable as jest.Mock).mockReturnValue(false);
@@ -125,10 +132,12 @@ describe('NotificationsService', () => {
         }),
       }),
     );
-    expect(mockPrisma.notificationDeliveryAttempt.create).toHaveBeenCalledWith(
+    // Check that delivery attempt was created (initial status is SKIPPED/pending)
+    expect(mockPrisma.notificationDeliveryAttempt.create).toHaveBeenCalled();
+    // Check that delivery attempt was updated to SENT after email was sent
+    expect(mockPrisma.notificationDeliveryAttempt.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          channel: NotificationChannel.EMAIL,
           status: NotificationDeliveryStatus.SENT,
         }),
       }),
