@@ -130,14 +130,14 @@ export default function CampaignComposerPage() {
     );
   };
 
-  const createDraft = async () => {
+  const createDraft = async (): Promise<string | null> => {
     if (!title.trim()) {
       pushToast({
         title: "Błąd",
         description: "Tytuł jest wymagany.",
         variant: "error",
       });
-      return;
+      return null;
     }
 
     if (channels.length === 0) {
@@ -146,7 +146,7 @@ export default function CampaignComposerPage() {
         description: "Wybierz przynajmniej jeden kanał.",
         variant: "error",
       });
-      return;
+      return null;
     }
 
     const audienceFilter: AudienceFilter = audienceAll
@@ -168,7 +168,7 @@ export default function CampaignComposerPage() {
         description: "Wybierz przynajmniej jedną opcję targetowania lub zaznacz 'Wszyscy'.",
         variant: "error",
       });
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -187,6 +187,7 @@ export default function CampaignComposerPage() {
         description: "Szkic kampanii został utworzony.",
         variant: "success",
       });
+      return campaign.id;
     } catch (err) {
       console.error(err);
       pushToast({
@@ -194,6 +195,7 @@ export default function CampaignComposerPage() {
         description: "Nie udało się utworzyć szkicu kampanii.",
         variant: "error",
       });
+      return null;
     } finally {
       setLoading(false);
     }
@@ -201,13 +203,12 @@ export default function CampaignComposerPage() {
 
   const handleSendConfirm = async () => {
     // Ensure draft is created first
-    const campaignId = draftCampaignId;
+    let campaignId = draftCampaignId;
     if (!campaignId) {
-      await createDraft();
-      // Note: createDraft sets draftCampaignId state, but we need to wait for that
-      // In practice, users should click "Zapisz szkic" before sending
-      // This is a fallback to create if they skip that step
-      return; // Exit and let user try again after draft is created
+      campaignId = await createDraft();
+      if (!campaignId) {
+        return; // validation or API failure
+      }
     }
 
     setSending(true);
