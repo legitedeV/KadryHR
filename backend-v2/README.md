@@ -3,8 +3,8 @@
 NestJS + Prisma backend focused on multi-tenant scheduling/HR primitives (organisations, users, employees, locations, shifts, availability).
 
 ### Current modules
-- Stable: auth (JWT access/refresh), roles (OWNER/MANAGER/EMPLOYEE), organisations, users, employees, locations, shifts, availability (basic range validation).
-- Missing/next: time tracking/clock-in, leave/absence workflows, notifications, reporting, payroll exports (see gap analysis).
+- Stable: auth (JWT access/refresh), roles (OWNER/MANAGER/EMPLOYEE), organisations, users, employees, locations, shifts, availability (basic range validation), leave requests (types + approvals).
+- Missing/next: time tracking/clock-in, notifications, reporting, payroll exports (see gap analysis).
 
 ### Run locally
 1) Install dependencies: `npm install`

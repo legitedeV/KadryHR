@@ -23,6 +23,20 @@ enum Weekday {
   SUNDAY
 }
 
+enum LeaveType {
+  PAID_LEAVE
+  SICK
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model Organisation {
   id          String      @id @default(uuid())
   name        String
@@ -36,6 +50,7 @@ model Organisation {
   locationAssignments LocationAssignment[]
   shifts      Shift[]
   availability Availability[]
+  leaveRequests LeaveRequest[]
 }
 
 model User {
@@ -52,6 +67,8 @@ model User {
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   employee     Employee?
+  leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
+  leaveRequestsApproved LeaveRequest[] @relation("LeaveRequestApprovedBy")
 
   @@index([organisationId])
 }
@@ -73,6 +90,7 @@ model Employee {
   shifts       Shift[]
   availability Availability[]
   locations    LocationAssignment[]
+  leaveRequests LeaveRequest[]
 
   @@index([organisationId])
 }
@@ -147,4 +165,32 @@ model Availability {
 
   @@index([organisationId])
   @@index([employeeId])
+}
+
+model LeaveRequest {
+  id               String      @id @default(uuid())
+  organisationId   String
+  employeeId       String
+  createdByUserId  String
+  approvedByUserId String?
+  type             LeaveType
+  status           LeaveStatus @default(PENDING)
+  startDate        DateTime
+  endDate          DateTime
+  reason           String?
+  rejectionReason  String?
+  attachmentUrl    String?
+  decisionAt       DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("LeaveRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  approvedBy   User?        @relation("LeaveRequestApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate, endDate])
 }

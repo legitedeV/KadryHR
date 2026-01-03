@@ -1,0 +1,101 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { LeaveRequestsService } from './leave-requests.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { LeaveStatus, LeaveType, Role } from '@prisma/client';
+
+const mockPrisma = {
+  leaveRequest: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
+  },
+  employee: {
+    findFirst: jest.fn(),
+  },
+};
+
+describe('LeaveRequestsService', () => {
+  let service: LeaveRequestsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        LeaveRequestsService,
+        { provide: PrismaService, useValue: mockPrisma },
+      ],
+    }).compile();
+
+    service = module.get(LeaveRequestsService);
+    jest.clearAllMocks();
+    mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
+    mockPrisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'lr-1',
+      organisationId: 'org-1',
+      status: LeaveStatus.PENDING,
+      startDate: new Date('2024-01-01T00:00:00.000Z'),
+      endDate: new Date('2024-01-02T00:00:00.000Z'),
+      type: LeaveType.PAID_LEAVE,
+    });
+  });
+
+  it('rejects leave when startDate is after endDate', async () => {
+    await expect(
+      service.create(
+        'org-1',
+        {
+          employeeId: 'emp-1',
+          type: LeaveType.PAID_LEAVE,
+          startDate: '2024-02-02T00:00:00.000Z',
+          endDate: '2024-02-01T00:00:00.000Z',
+        },
+        { userId: 'user-1', role: Role.MANAGER },
+      ),
+    ).rejects.toThrow('startDate must be before or equal to endDate');
+  });
+
+  it('enforces employee scope for self-service users', async () => {
+    mockPrisma.employee.findFirst.mockResolvedValueOnce({ id: 'emp-self' });
+
+    await service.create(
+      'org-1',
+      {
+        employeeId: 'emp-self',
+        type: LeaveType.SICK,
+        startDate: '2024-02-01T00:00:00.000Z',
+        endDate: '2024-02-02T00:00:00.000Z',
+      },
+      { userId: 'user-1', role: Role.EMPLOYEE },
+    );
+
+    expect(mockPrisma.leaveRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ employeeId: 'emp-self' }),
+      }),
+    );
+  });
+
+  it('sets approval metadata when status changes', async () => {
+    mockPrisma.leaveRequest.update.mockResolvedValue({
+      id: 'lr-1',
+      status: LeaveStatus.APPROVED,
+    });
+
+    await service.updateStatus(
+      'org-1',
+      'lr-1',
+      { status: LeaveStatus.APPROVED },
+      'approver-1',
+    );
+
+    expect(mockPrisma.leaveRequest.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: LeaveStatus.APPROVED,
+          approvedByUserId: 'approver-1',
+        }),
+      }),
+    );
+  });
+});

@@ -9,6 +9,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { LocationsModule } from './locations/locations.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { AvailabilityModule } from './availability/availability.module';
+import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AvailabilityModule } from './availability/availability.module';
     LocationsModule,
     ShiftsModule,
     AvailabilityModule,
+    LeaveRequestsModule,
   ],
 })
 export class AppModule {}

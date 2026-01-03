@@ -56,24 +56,31 @@ export interface AvailabilityRecord {
   notes?: string | null;
 }
 
-export const REQUEST_TYPES = {
-  VACATION: "VACATION",
+export const LEAVE_TYPES = {
+  PAID_LEAVE: "PAID_LEAVE",
   SICK: "SICK",
-  SHIFT_GIVE: "SHIFT_GIVE",
-  SHIFT_SWAP: "SHIFT_SWAP",
+  UNPAID: "UNPAID",
+  OTHER: "OTHER",
 } as const;
 
-export type RequestType = (typeof REQUEST_TYPES)[keyof typeof REQUEST_TYPES];
+export type RequestType = (typeof LEAVE_TYPES)[keyof typeof LEAVE_TYPES];
 
-export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
 export interface RequestItem {
   id: string;
+  employeeId: string;
   employeeName: string;
   type: RequestType;
   status: RequestStatus;
-  date: string;
-  details: string;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+  rejectionReason?: string | null;
+  attachmentUrl?: string | null;
+  decisionAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -139,6 +146,7 @@ const SHIFTS_PREFIX = "/shifts";
 const EMPLOYEES_PREFIX = "/employees";
 const LOCATIONS_PREFIX = "/locations";
 const AVAILABILITY_PREFIX = "/availability";
+const LEAVE_PREFIX = "/leave-requests";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -348,55 +356,90 @@ export async function apiDeleteLocation(id: string) {
   await apiClient.request(`${LOCATIONS_PREFIX}/${id}`, { method: "DELETE" });
 }
 
-export async function apiGetRequests(): Promise<RequestItem[]> {
-  apiClient.hydrateFromStorage();
-  const [availabilityRes, employees] = await Promise.all([
-    apiClient.request<AvailabilityResponse[]>(`${AVAILABILITY_PREFIX}`, {
-      suppressToast: true,
-    }),
-    apiListEmployees({ take: 200, skip: 0 }),
-  ]);
-
-  const byEmployee = new Map(
-    employees.data.map((e) => [e.id, `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || e.email || "Pracownik"]),
-  );
-
-  return availabilityRes.map((item) => {
-    const date = item.date
-      ? new Date(item.date)
-      : item.weekday
-      ? nextWeekday(item.weekday)
-      : new Date();
-    const note = (item.notes ?? "").toLowerCase();
-    const details = `${minutesToLabel(item.startMinutes)}–${minutesToLabel(
-      item.endMinutes,
-    )}${item.notes ? ` · ${item.notes}` : ""}`;
-    const status: RequestStatus = note.includes("zatwierd") // zatwierdzone
-      ? "APPROVED"
-      : note.includes("odrzuc")
-      ? "REJECTED"
-      : "PENDING";
-
-    return {
-      id: item.id,
-      employeeName: byEmployee.get(item.employeeId) ?? "Pracownik",
-      type: inferRequestType(item),
-      status,
-      date: date.toISOString(),
-      details,
-    };
-  });
+export interface LeaveRequestQuery {
+  status?: RequestStatus;
+  type?: RequestType;
+  from?: string;
+  to?: string;
+  employeeId?: string;
+  take?: number;
+  skip?: number;
 }
 
-interface AvailabilityResponse {
-  id: string;
-  organisationId: string;
-  employeeId: string;
-  date: string | null;
-  weekday: string | null;
-  startMinutes: number;
-  endMinutes: number;
-  notes?: string | null;
+export async function apiListLeaveRequests(
+  params: LeaveRequestQuery = {},
+): Promise<PaginatedResponse<RequestItem>> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.status) search.set("status", params.status);
+  if (params.type) search.set("type", params.type);
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  if (params.employeeId) search.set("employeeId", params.employeeId);
+  if (params.take) search.set("take", String(params.take));
+  if (params.skip) search.set("skip", String(params.skip));
+
+  const query = search.toString();
+  const response = await apiClient.request<PaginatedResponse<LeaveRequestResponse>>(
+    `${LEAVE_PREFIX}${query ? `?${query}` : ""}`,
+  );
+
+  return {
+    ...response,
+    data: response.data.map(mapLeaveRequest),
+  };
+}
+
+export async function apiCreateLeaveRequest(payload: {
+  type: RequestType;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  attachmentUrl?: string;
+  employeeId?: string;
+}): Promise<RequestItem> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LeaveRequestResponse>(`${LEAVE_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return mapLeaveRequest(response);
+}
+
+export async function apiUpdateLeaveRequest(
+  id: string,
+  payload: Partial<{
+    type: RequestType;
+    startDate: string;
+    endDate: string;
+    reason?: string;
+    attachmentUrl?: string;
+  }>,
+): Promise<RequestItem> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LeaveRequestResponse>(`${LEAVE_PREFIX}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return mapLeaveRequest(response);
+}
+
+export async function apiUpdateLeaveStatus(
+  id: string,
+  status: RequestStatus,
+  rejectionReason?: string,
+): Promise<RequestItem> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<LeaveRequestResponse>(`${LEAVE_PREFIX}/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, rejectionReason }),
+  });
+  return mapLeaveRequest(response);
+}
+
+export async function apiGetRequests(): Promise<RequestItem[]> {
+  const response = await apiListLeaveRequests({ take: 50, skip: 0 });
+  return response.data;
 }
 
 interface LoginResponse {
@@ -447,30 +490,26 @@ interface LocationResponse {
   updatedAt: string;
 }
 
-function minutesToLabel(total: number) {
-  const h = Math.floor(total / 60)
-    .toString()
-    .padStart(2, "0");
-  const m = (total % 60).toString().padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function nextWeekday(weekday: string) {
-  const map: Record<string, number> = {
-    MONDAY: 1,
-    TUESDAY: 2,
-    WEDNESDAY: 3,
-    THURSDAY: 4,
-    FRIDAY: 5,
-    SATURDAY: 6,
-    SUNDAY: 0,
-  };
-  const target = map[weekday] ?? 0;
-  const today = new Date();
-  const date = new Date(today);
-  const diff = (target + 7 - today.getDay()) % 7 || 7;
-  date.setDate(today.getDate() + diff);
-  return date;
+interface LeaveRequestResponse {
+  id: string;
+  organisationId: string;
+  employeeId: string;
+  type: RequestType;
+  status: RequestStatus;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+  rejectionReason?: string | null;
+  attachmentUrl?: string | null;
+  decisionAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  employee?: {
+    id?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  } | null;
 }
 
 function formatUserName(
@@ -492,14 +531,6 @@ function formatUserName(
 
 function isUserRole(value: unknown): value is UserRole {
   return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE" || value === "ADMIN";
-}
-
-function inferRequestType(item: AvailabilityResponse): RequestType {
-  const note = (item.notes ?? "").toLowerCase();
-  if (note.includes("chorob")) return REQUEST_TYPES.SICK;
-  if (note.includes("urlop")) return REQUEST_TYPES.VACATION;
-  if (item.weekday) return REQUEST_TYPES.SHIFT_SWAP;
-  return REQUEST_TYPES.SHIFT_GIVE;
 }
 
 export function mapUser(user: UserResponse): User {
@@ -534,5 +565,23 @@ function mapLocation(location: LocationResponse): LocationRecord {
     employees: (location.employees ?? []).map(mapEmployee),
     createdAt: location.createdAt,
     updatedAt: location.updatedAt,
+  };
+}
+
+function mapLeaveRequest(request: LeaveRequestResponse): RequestItem {
+  return {
+    id: request.id,
+    employeeId: request.employeeId,
+    employeeName: formatUserName(request.employee) || "Pracownik",
+    type: request.type,
+    status: request.status,
+    startDate: request.startDate,
+    endDate: request.endDate,
+    reason: request.reason ?? undefined,
+    rejectionReason: request.rejectionReason ?? undefined,
+    attachmentUrl: request.attachmentUrl ?? undefined,
+    decisionAt: request.decisionAt ?? undefined,
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
   };
 }

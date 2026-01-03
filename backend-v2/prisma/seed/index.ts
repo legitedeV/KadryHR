@@ -1,4 +1,10 @@
-import { PrismaClient, Role, Weekday } from '@prisma/client';
+import {
+  LeaveStatus,
+  LeaveType,
+  PrismaClient,
+  Role,
+  Weekday,
+} from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcrypt';
 
@@ -53,6 +59,14 @@ async function main() {
       lastName: 'Owner',
     },
   });
+
+  const owner = await prisma.user.findFirst({
+    where: { email: 'owner@seed.local' },
+  });
+
+  if (!owner) {
+    throw new Error('Owner user not created during seed');
+  }
 
   // 3) EMPLOYEES
   await prisma.employee.createMany({
@@ -165,6 +179,34 @@ async function main() {
         weekday: Weekday.WEDNESDAY,
         startMinutes: 12 * 60,
         endMinutes: 20 * 60,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // 7) LEAVE REQUESTS (nowe workflow urlopowe)
+  await prisma.leaveRequest.createMany({
+    data: [
+      {
+        organisationId: organisation.id,
+        employeeId: ethan.id,
+        createdByUserId: owner.id,
+        type: LeaveType.PAID_LEAVE,
+        status: LeaveStatus.PENDING,
+        startDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        reason: 'Planowany urlop wypoczynkowy',
+      },
+      {
+        organisationId: organisation.id,
+        employeeId: mia.id,
+        createdByUserId: owner.id,
+        type: LeaveType.SICK,
+        status: LeaveStatus.APPROVED,
+        startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+        reason: 'Zwolnienie lekarskie',
+        decisionAt: new Date(),
       },
     ],
     skipDuplicates: true,

@@ -1,19 +1,46 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { RequestItem, apiGetRequests } from "@/lib/api";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  RequestItem,
+  RequestStatus,
+  RequestType,
+  apiCreateLeaveRequest,
+  apiListLeaveRequests,
+  apiUpdateLeaveStatus,
+} from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { formatDateRange } from "@/lib/date-range";
 
 export default function WnioskiPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const { user } = useAuth();
+
+  const defaultDate = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState<{
+    type: RequestType;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    attachmentUrl: string;
+  }>({
+    type: "PAID_LEAVE",
+    startDate: defaultDate,
+    endDate: defaultDate,
+    reason: "",
+    attachmentUrl: "",
+  });
 
   useEffect(() => {
-    apiGetRequests()
-      .then((items) => {
-        setRequests(items);
-        if (items.length > 0) setSelectedId(items[0].id);
+    apiListLeaveRequests({ take: 100 })
+      .then((response) => {
+        setRequests(response.data);
+        if (response.data.length > 0) setSelectedId(response.data[0].id);
       })
       .catch((err) => {
         console.error(err);
@@ -27,6 +54,57 @@ export default function WnioskiPage() {
     [requests, selectedId]
   );
 
+  const canApprove =
+    user?.role === "OWNER" || user?.role === "MANAGER" || user?.role === "ADMIN";
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (new Date(form.startDate) > new Date(form.endDate)) {
+      setError("Data zakończenia nie może być wcześniejsza niż początek.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const created = await apiCreateLeaveRequest({
+        type: form.type,
+        startDate: new Date(form.startDate).toISOString(),
+        endDate: new Date(form.endDate).toISOString(),
+        reason: form.reason || undefined,
+        attachmentUrl: form.attachmentUrl || undefined,
+      });
+      setRequests((prev) => [created, ...prev]);
+      setSelectedId(created.id);
+      setForm((prev) => ({
+        ...prev,
+        reason: "",
+        attachmentUrl: "",
+      }));
+    } catch (err) {
+      console.error(err);
+      setError("Nie udało się wysłać wniosku");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleStatusChange = async (status: RequestStatus) => {
+    if (!selected) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      const updated = await apiUpdateLeaveStatus(selected.id, status);
+      setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      setSelectedId(updated.id);
+    } catch (err) {
+      console.error(err);
+      setError("Nie udało się zaktualizować statusu");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -35,9 +113,79 @@ export default function WnioskiPage() {
             Wnioski
           </p>
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-            Lista wniosków pracowników
+            Lista wniosków urlopowych i absencyjnych
           </p>
         </div>
+      </div>
+
+      <div className="card p-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+              Typ wniosku
+            </label>
+            <select
+              value={form.type}
+              onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as RequestType }))}
+              className="input"
+            >
+              <option value="PAID_LEAVE">Urlop wypoczynkowy</option>
+              <option value="SICK">Chorobowe</option>
+              <option value="UNPAID">Urlop bezpłatny</option>
+              <option value="OTHER">Inne</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+              Początek
+            </label>
+            <input
+              type="date"
+              value={form.startDate}
+              onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
+              className="input"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+              Koniec
+            </label>
+            <input
+              type="date"
+              value={form.endDate}
+              onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
+              className="input"
+            />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+              Powód (opcjonalnie)
+            </label>
+            <input
+              type="text"
+              value={form.reason}
+              onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+              placeholder="Krótki opis lub link do załącznika"
+              className="input"
+            />
+          </div>
+          <div className="md:col-span-5 flex items-center justify-end gap-3">
+            <input
+              type="url"
+              value={form.attachmentUrl}
+              onChange={(e) => setForm((prev) => ({ ...prev, attachmentUrl: e.target.value }))}
+              placeholder="Link do załącznika (opcjonalnie)"
+              className="input flex-1"
+            />
+            <button
+              type="submit"
+              className="btn-primary px-4 py-2 rounded-xl text-xs"
+              disabled={submitting}
+            >
+              {submitting ? "Zapisywanie..." : "Wyślij wniosek"}
+            </button>
+          </div>
+        </form>
       </div>
 
       {loading && (
@@ -66,7 +214,7 @@ export default function WnioskiPage() {
                     Typ
                   </th>
                   <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                    Data
+                    Okres
                   </th>
                   <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
                     Status
@@ -91,7 +239,7 @@ export default function WnioskiPage() {
                       {mapRequestType(r.type)}
                     </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                      {new Date(r.date).toLocaleDateString("pl-PL")}
+                      {formatDateRange(r.startDate, r.endDate)}
                     </td>
                     <td className="px-3 py-2">
                       <span className={statusBadgeClass(r.status)}>
@@ -138,8 +286,7 @@ export default function WnioskiPage() {
                     </span>
                   </p>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Data:{" "}
-                    {new Date(selected.date).toLocaleDateString("pl-PL")}
+                    Okres: {formatDateRange(selected.startDate, selected.endDate)}
                   </p>
                   <p className="text-slate-600 dark:text-slate-300">
                     Status:{" "}
@@ -153,9 +300,44 @@ export default function WnioskiPage() {
                     Szczegóły / powód
                   </p>
                   <p className="mt-1 text-slate-700 dark:text-slate-200">
-                    {selected.details}
+                    {selected.reason || "Brak dodatkowych informacji."}
                   </p>
+                  {selected.attachmentUrl && (
+                    <a
+                      className="text-xs text-brand-600 underline"
+                      href={selected.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Załącznik
+                    </a>
+                  )}
+                  {selected.rejectionReason && (
+                    <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+                      Powód odrzucenia: {selected.rejectionReason}
+                    </p>
+                  )}
                 </div>
+                {canApprove && selected.status === "PENDING" && (
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      className="btn-primary px-3 py-1.5 rounded-lg text-xs"
+                      onClick={() => handleStatusChange("APPROVED")}
+                      disabled={actionLoading}
+                    >
+                      Zatwierdź
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 rounded-lg text-xs border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-100 dark:bg-rose-950/50"
+                      onClick={() => handleStatusChange("REJECTED")}
+                      disabled={actionLoading}
+                    >
+                      Odrzuć
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -167,14 +349,14 @@ export default function WnioskiPage() {
 
 function mapRequestType(type: RequestItem["type"]) {
   switch (type) {
-    case "VACATION":
-      return "Urlop";
+    case "PAID_LEAVE":
+      return "Urlop wypoczynkowy";
     case "SICK":
       return "Chorobowe";
-    case "SHIFT_GIVE":
-      return "Oddanie zmiany";
-    case "SHIFT_SWAP":
-      return "Zamiana zmiany";
+    case "UNPAID":
+      return "Urlop bezpłatny";
+    case "OTHER":
+      return "Inne";
     default:
       return type;
   }
@@ -188,6 +370,8 @@ function mapStatus(status: RequestItem["status"]) {
       return "zaakceptowany";
     case "REJECTED":
       return "odrzucony";
+    case "CANCELLED":
+      return "anulowany";
     default:
       return status;
   }
@@ -211,6 +395,11 @@ function statusBadgeClass(status: RequestItem["status"]) {
       return (
         base +
         " bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:border-rose-800"
+      );
+    case "CANCELLED":
+      return (
+        base +
+        " bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
       );
     default:
       return base;

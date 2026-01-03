@@ -13,6 +13,7 @@ frontend/.env
 *.txt
 # allow checked-in audit/reporting notes
 !docs/repo-audit.md
+!docs/feature-parity-matrix.md
 
 .env
 backend/.env
