@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   NotificationChannel,
@@ -9,6 +9,10 @@ import {
   UserRole,
   apiCreateCampaign,
   apiSendCampaign,
+  apiListLocations,
+  apiListEmployees,
+  LocationRecord,
+  EmployeeRecord,
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 import { usePermissions } from "@/lib/use-permissions";
@@ -49,8 +53,38 @@ export default function CampaignComposerPage() {
   // Audience filter
   const [audienceAll, setAudienceAll] = useState(true);
   const [audienceRoles, setAudienceRoles] = useState<UserRole[]>([]);
+  const [audienceLocationIds, setAudienceLocationIds] = useState<string[]>([]);
+  const [audienceEmployeeIds, setAudienceEmployeeIds] = useState<string[]>([]);
+
+  // Available options
+  const [locations, setLocations] = useState<LocationRecord[]>([]);
+  const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
 
   const canManage = hasPermission("EMPLOYEE_MANAGE"); // Managers and owners have this permission
+
+  // Load locations and employees
+  useEffect(() => {
+    if (!canManage) return;
+
+    const loadOptions = async () => {
+      setLoadingOptions(true);
+      try {
+        const [locs, emps] = await Promise.all([
+          apiListLocations(),
+          apiListEmployees(),
+        ]);
+        setLocations(locs);
+        setEmployees(emps);
+      } catch (err) {
+        console.error("Failed to load options:", err);
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+
+    loadOptions();
+  }, [canManage]);
 
   if (!canManage) {
     return (
@@ -80,6 +114,22 @@ export default function CampaignComposerPage() {
     );
   };
 
+  const handleLocationToggle = (locationId: string) => {
+    setAudienceLocationIds((prev) =>
+      prev.includes(locationId)
+        ? prev.filter((id) => id !== locationId)
+        : [...prev, locationId]
+    );
+  };
+
+  const handleEmployeeToggle = (employeeId: string) => {
+    setAudienceEmployeeIds((prev) =>
+      prev.includes(employeeId)
+        ? prev.filter((id) => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
   const createDraft = async () => {
     if (!title.trim()) {
       pushToast({
@@ -101,12 +151,21 @@ export default function CampaignComposerPage() {
 
     const audienceFilter: AudienceFilter = audienceAll
       ? { all: true }
-      : { roles: audienceRoles.length > 0 ? audienceRoles : undefined };
+      : {
+          roles: audienceRoles.length > 0 ? audienceRoles : undefined,
+          locationIds: audienceLocationIds.length > 0 ? audienceLocationIds : undefined,
+          employeeIds: audienceEmployeeIds.length > 0 ? audienceEmployeeIds : undefined,
+        };
 
-    if (!audienceAll && (!audienceFilter.roles || audienceFilter.roles.length === 0)) {
+    if (
+      !audienceAll &&
+      !audienceFilter.roles?.length &&
+      !audienceFilter.locationIds?.length &&
+      !audienceFilter.employeeIds?.length
+    ) {
       pushToast({
         title: "Błąd",
-        description: "Wybierz przynajmniej jedną rolę lub zaznacz 'Wszyscy'.",
+        description: "Wybierz przynajmniej jedną opcję targetowania lub zaznacz 'Wszyscy'.",
         variant: "error",
       });
       return;
@@ -268,6 +327,8 @@ export default function CampaignComposerPage() {
                     setAudienceAll(e.target.checked);
                     if (e.target.checked) {
                       setAudienceRoles([]);
+                      setAudienceLocationIds([]);
+                      setAudienceEmployeeIds([]);
                     }
                   }}
                 />
@@ -294,6 +355,61 @@ export default function CampaignComposerPage() {
                       </label>
                     ))}
                   </div>
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 mt-4">
+                    Wybierz lokalizacje:
+                  </p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {loadingOptions ? (
+                      <p className="text-xs text-slate-500">Ładowanie...</p>
+                    ) : locations.length === 0 ? (
+                      <p className="text-xs text-slate-500">Brak lokalizacji</p>
+                    ) : (
+                      locations.map((location) => (
+                        <label
+                          key={location.id}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={audienceLocationIds.includes(location.id)}
+                            onChange={() => handleLocationToggle(location.id)}
+                          />
+                          <span className="text-sm">{location.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 mt-4">
+                    Wybierz pracowników:
+                  </p>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {loadingOptions ? (
+                      <p className="text-xs text-slate-500">Ładowanie...</p>
+                    ) : employees.length === 0 ? (
+                      <p className="text-xs text-slate-500">Brak pracowników</p>
+                    ) : (
+                      employees.map((employee) => {
+                        const empName = `${employee.firstName || ""} ${employee.lastName || ""}`.trim();
+                        return (
+                          <label
+                            key={employee.id}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={audienceEmployeeIds.includes(employee.id)}
+                              onChange={() => handleEmployeeToggle(employee.id)}
+                            />
+                            <span className="text-sm">
+                              {empName || employee.email || "Bez nazwy"}
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -315,7 +431,7 @@ export default function CampaignComposerPage() {
                     {body}
                   </p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   {channels.map((ch) => (
                     <span
                       key={ch}
@@ -324,6 +440,20 @@ export default function CampaignComposerPage() {
                       {ch}
                     </span>
                   ))}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                  <p>
+                    <strong>Odbiorcy:</strong>{" "}
+                    {audienceAll
+                      ? "Wszyscy w organizacji"
+                      : [
+                          audienceRoles.length > 0 && `Role: ${audienceRoles.length}`,
+                          audienceLocationIds.length > 0 && `Lokalizacje: ${audienceLocationIds.length}`,
+                          audienceEmployeeIds.length > 0 && `Pracownicy: ${audienceEmployeeIds.length}`,
+                        ]
+                          .filter(Boolean)
+                          .join(", ") || "Brak filtrów"}
+                  </p>
                 </div>
               </div>
             </div>
