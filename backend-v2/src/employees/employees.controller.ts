@@ -13,8 +13,8 @@ import {
 import { Role } from '@prisma/client';
 import { EmployeesService } from './employees.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -22,8 +22,9 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
+import { Permission } from '../auth/permissions';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @UseInterceptors(AuditLogInterceptor)
 @Controller('employees')
 export class EmployeesController {
@@ -76,7 +77,7 @@ export class EmployeesController {
   /**
    * Tworzenie pracownika – tylko OWNER/MANAGER.
    */
-  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
   @Post()
   @AuditLog({
     action: 'EMPLOYEE_CREATE',
@@ -93,7 +94,7 @@ export class EmployeesController {
   /**
    * Aktualizacja pracownika – tylko OWNER/MANAGER.
    */
-  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
   @Patch(':id')
   @AuditLog({
     action: 'EMPLOYEE_UPDATE',
@@ -113,7 +114,7 @@ export class EmployeesController {
   /**
    * Usunięcie pracownika – tylko OWNER/MANAGER.
    */
-  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
   @Delete(':id')
   @AuditLog({
     action: 'EMPLOYEE_DELETE',

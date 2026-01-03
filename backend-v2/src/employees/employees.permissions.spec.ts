@@ -10,23 +10,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 
-describe('EmployeesController audit logging (integration)', () => {
+describe('EmployeesController permissions (integration)', () => {
   let app: INestApplication;
-  let auditService: { log: jest.Mock };
   let employeesService: { create: jest.Mock };
 
   beforeEach(async () => {
-    auditService = { log: jest.fn().mockResolvedValue({ id: 'audit-1' }) };
     employeesService = {
-      create: jest.fn().mockResolvedValue({ id: 'emp-1', firstName: 'Jan' }),
+      create: jest.fn(),
     };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [EmployeesController],
       providers: [
         AuditLogInterceptor,
+        PermissionsGuard,
         { provide: EmployeesService, useValue: employeesService },
-        { provide: AuditService, useValue: auditService },
+        { provide: AuditService, useValue: { log: jest.fn() } },
         {
           provide: PrismaService,
           useValue: {
@@ -44,15 +43,13 @@ describe('EmployeesController audit logging (integration)', () => {
           req.user = {
             id: 'user-1',
             organisationId: 'org-1',
-            email: 'owner@example.com',
-            role: Role.OWNER,
+            email: 'emp@example.com',
+            role: Role.EMPLOYEE,
             permissions: [],
           };
           return true;
         },
       })
-      .overrideGuard(PermissionsGuard)
-      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -63,23 +60,12 @@ describe('EmployeesController audit logging (integration)', () => {
     await app.close();
   });
 
-  it('logs audit entry when creating an employee', async () => {
+  it('rejects creation without required permission', async () => {
     await request(app.getHttpServer())
       .post('/employees')
       .send({ firstName: 'Jan', lastName: 'Kowalski' })
-      .expect(201);
+      .expect(403);
 
-    expect(employeesService.create).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({ firstName: 'Jan' }),
-    );
-    expect(auditService.log).toHaveBeenCalledWith(
-      expect.objectContaining({
-        organisationId: 'org-1',
-        actorUserId: 'user-1',
-        action: 'EMPLOYEE_CREATE',
-        entityType: 'employee',
-      }),
-    );
+    expect(employeesService.create).not.toHaveBeenCalled();
   });
 });

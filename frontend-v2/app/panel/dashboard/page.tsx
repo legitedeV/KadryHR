@@ -11,6 +11,9 @@ import {
   apiListEmployees,
 } from "@/lib/api";
 import { formatDateRange } from "@/lib/date-range";
+import { usePermissions } from "@/lib/use-permissions";
+
+const EMPLOYEE_FALLBACK_LABEL = "Pracownik";
 
 interface DashboardData {
   shifts: ShiftRecord[];
@@ -35,11 +38,19 @@ function getWeekRange() {
   };
 }
 
+function formatEmployeeName(shift: ShiftRecord) {
+  const name = `${shift.employee?.firstName ?? ""} ${shift.employee?.lastName ?? ""}`.trim();
+  if (name) return name;
+  return shift.employeeId || EMPLOYEE_FALLBACK_LABEL;
+}
+
 export default function DashboardPage() {
+  const { hasPermission } = usePermissions();
   const [range] = useState(getWeekRange);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const canExportReports = hasPermission("REPORT_EXPORT");
 
   useEffect(() => {
     Promise.all([
@@ -86,6 +97,29 @@ export default function DashboardPage() {
     return sum + Math.max(duration, 0);
   }, 0);
 
+  const handleExport = () => {
+    const rows = shifts.map((shift) => {
+      const durationHours =
+        (new Date(shift.endsAt).getTime() - new Date(shift.startsAt).getTime()) /
+        (1000 * 60 * 60);
+      const employeeName = formatEmployeeName(shift);
+      return [
+        employeeName || EMPLOYEE_FALLBACK_LABEL,
+        shift.startsAt,
+        shift.endsAt,
+        durationHours.toFixed(2),
+      ].join(";");
+    });
+    const csv = ["Pracownik;Początek;Koniec;Godziny", ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `raport-${range.from}-${range.to}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -97,12 +131,22 @@ export default function DashboardPage() {
             Zakres: {range.label}
           </p>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Łącznie pracowników:{" "}
-          <span className="font-medium text-slate-800 dark:text-slate-100">
-            {employeeCount}
-          </span>
-        </p>
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <p>
+            Łącznie pracowników:{" "}
+            <span className="font-medium text-slate-800 dark:text-slate-100">
+              {employeeCount}
+            </span>
+          </p>
+          {canExportReports && (
+            <button
+              onClick={handleExport}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700"
+            >
+              Eksportuj raport (CSV)
+            </button>
+          )}
+        </div>
       </div>
 
       {/* stat cards */}

@@ -4,6 +4,11 @@ import { clearAuthTokens } from "./auth";
 export { API_BASE_URL };
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
+export type Permission =
+  | "EMPLOYEE_MANAGE"
+  | "RCP_EDIT"
+  | "LEAVE_APPROVE"
+  | "REPORT_EXPORT";
 
 export interface OrganisationSummary {
   id: string;
@@ -16,6 +21,7 @@ export interface User {
   name: string;
   role: UserRole;
   organisation: OrganisationSummary;
+  permissions: Permission[];
 }
 
 export interface ShiftRecord {
@@ -454,6 +460,7 @@ interface UserResponse {
   firstName?: string | null;
   lastName?: string | null;
   organisation: OrganisationSummary;
+  permissions?: Permission[];
 }
 
 interface ShiftResponse {
@@ -540,6 +547,7 @@ export function mapUser(user: UserResponse): User {
     role: isUserRole(user.role) ? user.role : "EMPLOYEE",
     name: formatUserName(user),
     organisation: user.organisation,
+    permissions: Array.isArray(user.permissions) ? user.permissions : [],
   } as User;
 }
 

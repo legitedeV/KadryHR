@@ -9,8 +9,8 @@ import {
   apiListLeaveRequests,
   apiUpdateLeaveStatus,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 import { formatDateRange } from "@/lib/date-range";
+import { usePermissions } from "@/lib/use-permissions";
 
 export default function WnioskiPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -19,7 +19,7 @@ export default function WnioskiPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
 
   const defaultDate = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<{
@@ -54,8 +54,7 @@ export default function WnioskiPage() {
     [requests, selectedId]
   );
 
-  const canApprove =
-    user?.role === "OWNER" || user?.role === "MANAGER" || user?.role === "ADMIN";
+  const canApprove = hasPermission("LEAVE_APPROVE");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

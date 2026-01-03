@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import type { AuthenticatedUser } from '../types/authenticated-user.type';
 import { PrismaService } from '../../prisma/prisma.service';
+import { getPermissionsForRole } from '../permissions';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -34,6 +35,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    return {
+      ...user,
+      permissions: getPermissionsForRole(user.role),
+    };
   }
 }

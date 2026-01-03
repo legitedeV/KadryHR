@@ -12,19 +12,16 @@ import {
   apiListLocations,
   apiUpdateEmployee,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { usePermissions } from "@/lib/use-permissions";
 import { pushToast } from "@/lib/toast";
 
 const PAGE_SIZE = 10;
-const manageableRoles = ["OWNER", "MANAGER", "ADMIN"] as const;
 
 type SortableColumn = "firstName" | "lastName" | "email" | "createdAt";
 
 export default function PracownicyPage() {
-  const { user } = useAuth();
-  const canManage = user
-    ? manageableRoles.includes(user.role as (typeof manageableRoles)[number])
-    : false;
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission("EMPLOYEE_MANAGE");
   const [employees, setEmployees] = useState<PaginatedResponse<EmployeeRecord> | null>(null);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [loading, setLoading] = useState(true);

@@ -5,25 +5,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
-import type { UserRole } from "@/lib/api";
+import type { Permission } from "@/lib/api";
+import { usePermissions } from "@/lib/use-permissions";
 
-const navItems: { href: string; label: string; roles?: UserRole[] }[] = [
+const navItems: { href: string; label: string; permissions?: Permission[] }[] = [
   { href: "/panel/dashboard", label: "Dashboard" },
   { href: "/panel/grafik", label: "Grafik" },
   {
     href: "/panel/pracownicy",
     label: "Pracownicy",
-    roles: ["OWNER", "MANAGER", "ADMIN"],
+    permissions: ["EMPLOYEE_MANAGE"],
   },
   {
     href: "/panel/lokalizacje",
     label: "Lokalizacje",
-    roles: ["OWNER", "MANAGER", "ADMIN"],
+    permissions: ["RCP_EDIT"],
   },
   {
     href: "/panel/audit",
     label: "Audit",
-    roles: ["OWNER", "MANAGER", "ADMIN"],
+    permissions: ["EMPLOYEE_MANAGE"],
   },
   { href: "/panel/wnioski", label: "Wnioski" },
   { href: "/panel/profil", label: "Profil" },
@@ -43,8 +44,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  const { hasAnyPermission } = usePermissions();
   const allowedNav = navItems.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role)),
+    (item) => !item.permissions || hasAnyPermission(item.permissions),
   );
 
   useEffect(() => {
@@ -98,9 +100,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   <span>{item.label}</span>
-                  {item.roles && (
+                  {item.permissions && (
                     <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300">
-                      Admin
+                      Wymaga uprawnień
                     </span>
                   )}
                 </Link>
