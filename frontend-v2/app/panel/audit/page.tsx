@@ -5,8 +5,8 @@ export default function AuditPage() {
         Audit log
       </h1>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-        Podgląd audytu działań użytkowników pojawi się tutaj. Widok jest
-        obecnie tylko do odczytu.
+        A read-only audit log preview will appear here to review user actions
+        across the organisation.
       </p>
     </div>
   );

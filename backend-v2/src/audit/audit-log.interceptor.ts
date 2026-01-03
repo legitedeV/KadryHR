@@ -2,6 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -14,6 +15,20 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(AuditLogInterceptor.name);
+
+  private readonly beforeFetchers: Record<
+    string,
+    (organisationId: string, id: string) => Promise<unknown>
+  > = {
+    employee: (organisationId, id) =>
+      this.prisma.employee.findFirst({ where: { id, organisationId } }),
+    shift: (organisationId, id) =>
+      this.prisma.shift.findFirst({ where: { id, organisationId } }),
+    availability: (organisationId, id) =>
+      this.prisma.availability.findFirst({ where: { id, organisationId } }),
+  };
+
   constructor(
     private readonly reflector: Reflector,
     private readonly auditService: AuditService,
@@ -48,7 +63,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     const ip =
       request.ip ||
       (Array.isArray(request.ips) && request.ips.length ? request.ips[0] : '') ||
-      (request.socket as any)?.remoteAddress;
+      request.socket?.remoteAddress;
     const userAgent =
       (request.headers?.['user-agent'] as string | undefined) ?? undefined;
 
@@ -84,32 +99,18 @@ export class AuditLogInterceptor implements NestInterceptor {
             ip,
             userAgent,
           });
-        } catch {
-          // Audit should not block the main flow — ignore logging errors.
+        } catch (error) {
+          // Audit should not block the main flow — record and continue.
+          this.logger.warn(
+            `Audit logging skipped (${metadata.action}): ${(error as Error).message}`,
+          );
         }
       }),
     );
   }
 
   private fetchBefore(entityType: string, organisationId: string, id: string) {
-    if (entityType === 'employee') {
-      return this.prisma.employee.findFirst({
-        where: { id, organisationId },
-      });
-    }
-
-    if (entityType === 'shift') {
-      return this.prisma.shift.findFirst({
-        where: { id, organisationId },
-      });
-    }
-
-    if (entityType === 'availability') {
-      return this.prisma.availability.findFirst({
-        where: { id, organisationId },
-      });
-    }
-
-    return undefined;
+    const fetcher = this.beforeFetchers[entityType];
+    return fetcher ? fetcher(organisationId, id) : undefined;
   }
 }
