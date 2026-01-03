@@ -12,6 +12,8 @@ export type EmailSendResult = {
 @Injectable()
 export class EmailAdapter {
   private readonly logger = new Logger(EmailAdapter.name);
+  // TypeScript strict mode issue with nodemailer.Transporter type definition
+  // This is a known limitation - the type acts as 'any' in union types
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private readonly transporter: nodemailer.Transporter | null;
   private readonly fromAddress: string | null;

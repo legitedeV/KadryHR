@@ -147,7 +147,18 @@ export class CampaignService {
       );
 
       if (recipientUserIds.length === 0) {
-        throw new BadRequestException('No recipients found for this audience');
+        const filterSummary = audienceFilter?.all
+          ? 'all users'
+          : [
+              audienceFilter?.roles?.length ? `roles: ${audienceFilter.roles.join(', ')}` : '',
+              audienceFilter?.locationIds?.length ? `locations: ${audienceFilter.locationIds.length} selected` : '',
+              audienceFilter?.employeeIds?.length ? `employees: ${audienceFilter.employeeIds.length} selected` : '',
+            ]
+              .filter(Boolean)
+              .join(', ');
+        throw new BadRequestException(
+          `No recipients found for this audience (${filterSummary || 'no filters specified'})`,
+        );
       }
 
       // Create recipient records

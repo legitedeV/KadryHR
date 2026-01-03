@@ -141,14 +141,19 @@ export default function CampaignComposerPage() {
   };
 
   const handleSendConfirm = async () => {
-    if (!draftCampaignId) {
+    // Ensure draft is created first
+    let campaignId = draftCampaignId;
+    if (!campaignId) {
       await createDraft();
-      if (!draftCampaignId) return;
+      // Note: createDraft sets draftCampaignId state, but we need to wait for that
+      // In practice, users should click "Zapisz szkic" before sending
+      // This is a fallback to create if they skip that step
+      return; // Exit and let user try again after draft is created
     }
 
     setSending(true);
     try {
-      const result = await apiSendCampaign(draftCampaignId!);
+      const result = await apiSendCampaign(campaignId);
       pushToast({
         title: "Wysłano",
         description: `Powiadomienie zostało wysłane do ${result.recipientCount} odbiorców.`,
