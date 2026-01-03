@@ -6,7 +6,8 @@ import {
 } from '@prisma/client';
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmailAdapter } from './email.adapter';
+import { EmailAdapter } from '../email/email.adapter';
+import { QueueService } from '../queue/queue.service';
 
 const mockPrisma = {
   $transaction: jest.fn(),
@@ -35,6 +36,11 @@ const mockEmail: Partial<EmailAdapter> = {
   sendEmail: jest.fn(),
 };
 
+const mockQueue: Partial<QueueService> = {
+  addEmailDeliveryJob: jest.fn(),
+  isQueueAvailable: jest.fn(),
+};
+
 describe('NotificationsService', () => {
   let service: NotificationsService;
 
@@ -44,6 +50,7 @@ describe('NotificationsService', () => {
         NotificationsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: EmailAdapter, useValue: mockEmail },
+        { provide: QueueService, useValue: mockQueue },
       ],
     }).compile();
 
@@ -62,6 +69,8 @@ describe('NotificationsService', () => {
     });
     mockPrisma.notificationDeliveryAttempt.create.mockResolvedValue({});
     (mockEmail.sendEmail as jest.Mock).mockResolvedValue({ success: true });
+    (mockQueue.addEmailDeliveryJob as jest.Mock).mockResolvedValue(true);
+    (mockQueue.isQueueAvailable as jest.Mock).mockReturnValue(false);
     mockPrisma.user.findUnique.mockResolvedValue({ email: 'demo@example.com' });
     mockPrisma.$transaction.mockImplementation(async (operations: any[]) =>
       Promise.all(operations),

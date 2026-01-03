@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { EmailDeliveryJob } from './queue.service';
-import { EmailAdapter } from '../notifications/email.adapter';
+import { EmailAdapter } from '../email/email.adapter';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationDeliveryStatus } from '@prisma/client';
 

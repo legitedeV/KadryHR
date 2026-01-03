@@ -6,7 +6,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmailAdapter } from './email.adapter';
+import { EmailAdapter } from '../email/email.adapter';
 import { QueueService } from '../queue/queue.service';
 
 const AVAILABLE_TYPES: NotificationType[] = [
