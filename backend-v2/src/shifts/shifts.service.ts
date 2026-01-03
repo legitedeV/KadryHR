@@ -354,7 +354,7 @@ export class ShiftsService {
 
       if (leaveConflict) {
         throw new BadRequestException(
-          'Pracownik ma zaakceptowany wniosek urlopowy w tym terminie',
+          'Employee has an approved leave request during this time period',
         );
       }
     }

@@ -50,10 +50,9 @@ export class LeaveRequestsService {
       options,
     );
 
-    const leaveType =
-      dto.leaveTypeId !== undefined
-        ? await this.ensureLeaveType(organisationId, dto.leaveTypeId)
-        : null;
+    const leaveType = dto.leaveTypeId
+      ? await this.ensureLeaveType(organisationId, dto.leaveTypeId)
+      : null;
 
     const created = await this.prisma.leaveRequest.create({
       data: {
@@ -161,10 +160,9 @@ export class LeaveRequestsService {
       );
     }
 
-    const leaveType =
-      dto.leaveTypeId !== undefined
-        ? await this.ensureLeaveType(organisationId, dto.leaveTypeId)
-        : null;
+    const leaveType = dto.leaveTypeId
+      ? await this.ensureLeaveType(organisationId, dto.leaveTypeId)
+      : null;
 
     const updated = await this.prisma.leaveRequest.update({
       where: { id },
@@ -347,9 +345,6 @@ export class LeaveRequestsService {
   }
 
   private async ensureLeaveType(organisationId: string, leaveTypeId: string) {
-    if (!leaveTypeId) {
-      throw new BadRequestException('leaveTypeId is required');
-    }
     const leaveType = await this.prisma.leaveType.findFirst({
       where: { id: leaveTypeId, organisationId, isActive: true },
     });
