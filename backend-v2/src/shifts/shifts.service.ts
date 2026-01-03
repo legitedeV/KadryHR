@@ -115,6 +115,10 @@ export class ShiftsService {
   }
 
   async summary(organisationId: string, query: QueryShiftsDto) {
+    if (!query?.from || !query?.to) {
+      return [];
+    }
+
     const where: Prisma.ShiftWhereInput = {
       organisationId,
     };
