@@ -1,13 +1,50 @@
-# Feature Parity Matrix — KadryHR vs Kadromierz vs GIR Staff
+# Feature Parity Matrix — KadryHR (source of truth)
 
-| Feature Area | KadryHR current | Kadromierz | GIR Staff | Gap | Implementation plan | Backend items | Frontend items | Acceptance tests |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Time & Attendance (RCP) | Missing clock events, no geofence/device rules | Clock-in/out with PIN/QR, location/device control, tardiness flags | Mobile-first clocking, offline queue, GPS verification | Full module absent | Add attendance events, device/location allowlists, audit log, offline queue | Prisma models for time events & audit, endpoints for start/stop/break, fraud flags, RBAC; notifications hooks | Mobile-ready clock widget with QR/PIN, break buttons, offline cache + sync banner, admin settings | Clock in/out works online/offline; break tracked; events rejected outside geofence; audit record created |
-| Scheduling (Grafik) | Basic shift CRUD, no templates/swaps/conflict rules | Templates, recurring patterns, compliance warnings, swap approvals | Self-service swap/claim, multi-location views | Templates, recurrence, swaps, compliance validation missing | Add shift templates, copy week, rules engine, swap marketplace with approvals | Prisma models for templates/swaps, validation service (rest periods/overlaps), swap endpoints & audit | UI for templates, copy week, conflict warnings, employee swap/claim flow with approvals | Creating template applies to week; swap request changes assignee after approval; compliance warnings shown on violation |
-| Absences / Leave | Not implemented; requests page uses availability proxy | Full leave types, approvals, balances, calendar block | Request/approve leave, attachments, mobile view | No real leave workflow, no balances | Implement leave requests workflow first (this delivery), balances later | LeaveRequest model, CRUD + approval endpoints, balance scaffolding, notifications | Leave list/create/approve UI, calendar overlay, employee self-service | Employee submits leave, manager approves/rejects with note, status reflected on list |
-| Notifications | None | Email/app alerts for shifts/requests | Mobile push + inbox | No notification infra | Add notification service + preferences | Notification tables, triggers for shifts/requests, email adapter stub | In-app inbox, per-type settings, badge counters | Trigger sends in-app record; preference toggles respected |
-| Reports & Exports | Missing | Attendance/absence/overtime exports | CSV/XLS schedule/attendance exports | Reporting/export absent | Add reporting endpoints and CSV/XLS exports | Aggregation endpoints (attendance, absences), export profiles, payroll-ready formatter | Reports UI with filters/date range, download buttons | Export generates CSV/XLS matching filter; totals match on-screen data |
-| Integrations (Payroll) | None | Payroll exports (PL vendors) | Import/export staff data | No integration layer | Define export profile abstraction + one working profile | Export profile model/service, mapper for payroll fields, webhook hooks | Settings UI to configure profile and run export | Running export produces valid file and audit entry |
-| Employee Mobile / PWA | Responsive panel, no PWA install or mobile RCP | Mobile apps + push | Mobile-first app with clock/schedule/leave | Missing mobile-first flows/offline | Make panel PWA-capable, offline hints, compact nav | Add manifest/service worker, offline cache policy | Mobile nav for schedule/clock/leave, install prompt, skeletons | PWA installable; core flows usable on mobile viewport/offline retry |
+Legend:
+- **CURRENT** – istnieje w repo i jest używane.
+- **GAP** – brak lub istotne braki pokrycia (brakuje kluczowego modelu/endpointu/ekranu, flow zablokowane).
+- **IN_PROGRESS** – rozwijane w bieżącym sprincie.
+- **DONE** – spełnia akceptację i ma testy/regresję.
+Statusy odnoszą się do rzeczywistego kodu (backend-v2 + frontend-v2). Dokument prowadzony w PL; nazwy techniczne (statusy, endpointy, widget) pozostają w EN dla jednoznaczności.
 
-**Legend:** current = state of this repo (Jan 2026) based on `/docs/repo-audit.md` and code scan; competitor columns reflect marketed capabilities from Kadromierz.pl and GIR Staff materials. This matrix is the single source of truth for parity tracking.
+## Macierz funkcjonalna (backend + frontend)
+| Feature area | Status | Backend coverage (Prisma + endpoints) | Frontend coverage (routes) | Acceptance criteria / gap notes |
+| --- | --- | --- | --- | --- |
+| Auth & role access | CURRENT | Models: `User`, `Organisation`, enum `Role`. Endpoints: `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`, `GET/POST/PATCH /users` (RBAC). | `/login`, `/panel` guard, `/panel/profil` (refresh/logout). | User can log in, refresh token, and access panel; roles enforced server-side for user mutations. |
+| Organisations & tenancy | CURRENT | Models: `Organisation`. Endpoints: `GET /organisations/me`, `PATCH /organisations/me`. All other controllers scope by `organisationId`. | Org name shown in dashboards; no dedicated org edit UI (gap noted). | Tenant scoping active on queries; owner/manager can update org metadata. |
+| Employees & locations | CURRENT | Models: `Employee`, `Location`, `LocationAssignment`. Endpoints: `GET/POST/PATCH/DELETE /employees`, `GET /employees/:id`, `GET/POST/PATCH/DELETE /locations`, `PATCH /locations/:id/employees`. | `/panel/pracownicy` (CRUD + search/sort/pagination), `/panel/lokalizacje` (CRUD + employee assignment). | Creating/updating/deleting employees and locations persists via API and reflects in lists. |
+| Scheduling (shifts + availability) | CURRENT (basic) | Models: `Shift`, `Availability`. Endpoints: `GET /shifts`, `GET /shifts/summary`, `POST /shifts`, `PATCH/DELETE /shifts/:id`; `GET/POST/PATCH/DELETE /availability`. | `/panel/grafik` (week grid uses `/shifts` + summary), `/panel/dashboard` widgets. | Shifts read/write succeed and summary returns hours; availability returned per employee. Gaps: no templates/recurrence/conflict engine. |
+| Leave requests | CURRENT (basic) | Model: `LeaveRequest` + enums `LeaveType`, `LeaveStatus`. Endpoints: `GET /leave-requests`, `GET /leave-requests/:id`, `POST /leave-requests`, `PATCH /leave-requests/:id`, `PATCH /leave-requests/:id/status`. | `/panel/wnioski` list/create/approve with status changes; role guard for approvals. | Employee can submit request, manager can approve/reject, status updates visible. Gap: no balances/attachments storage. |
+| Time & Attendance (RCP/clock events) | GAP | Brak modeli czasu pracy/zdarzeń, brak kontrolera (tylko grafiki/wnioski). | Brak UI do rejestracji wejść/wyjść. | DONE gdy istnieją modele zdarzeń, endpointy start/stop/przerwa z regułami geofence/urządzenie, log audytowy oraz UI widget do odbijania. |
+| Notifications | GAP | Brak tabel/serwisów powiadomień; brak webhooków/triggerów. | Brak inbox/banerów powiadomień. | DONE gdy istnieje centrum powiadomień (preferencje, badge) i backend wysyła wpisy dla zmian grafiku/wniosków. |
+| Reports & Exports | GAP | Brak agregujących endpointów/formatterów CSV/XLS. | Brak widoków raportów/eksportów. | DONE gdy dostępne raporty (grafik/absencje) z eksportem CSV/XLS zgodnym z filtrem. |
+| Payroll / external integrations | GAP | Brak warstwy integracji/export profiles. | Brak UI do konfiguracji integracji. | DONE gdy profil eksportu płac działa i zapisuje audyt. |
+| Employee mobile / PWA | GAP | API w pełni web; brak offline/push. | Panel responsywny, ale brak manifestu/service worker i widgetu RCP. | DONE gdy panel jest instalowalny (PWA), działa offline retry i ma mobilny clock/schedule/leave flow. |
+
+Kryteria w kolumnie "Acceptance criteria / gap notes" traktuj jako scenariusze testowe (manual/e2e) do potwierdzenia przy zmianie statusu na **DONE**.
+
+## Backend endpoint inventory (obecne)
+- **auth**: `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
+- **users**: `GET /users`, `POST /users`, `PATCH /users/:id`
+- **organisations**: `GET /organisations/me`, `PATCH /organisations/me`
+- **employees**: `GET /employees`, `GET /employees/:id`, `POST /employees`, `PATCH /employees/:id`, `DELETE /employees/:id`
+- **locations**: `GET /locations`, `GET /locations/:id`, `POST /locations`, `PATCH /locations/:id`, `PATCH /locations/:id/employees`, `DELETE /locations/:id`
+- **shifts**: `GET /shifts`, `GET /shifts/summary`, `POST /shifts`, `PATCH /shifts/:id`, `DELETE /shifts/:id`
+- **availability**: `GET /availability`, `POST /availability`, `PATCH /availability/:id`, `DELETE /availability/:id`
+- **leave-requests**: `GET /leave-requests`, `GET /leave-requests/:id`, `POST /leave-requests`, `PATCH /leave-requests/:id`, `PATCH /leave-requests/:id/status`
+
+## Prisma model inventory
+Enums: `Role`, `Weekday`, `LeaveType`, `LeaveStatus`.  
+Models: `Organisation`, `User`, `Employee`, `Location`, `LocationAssignment`, `Shift`, `Availability`, `LeaveRequest`.
+
+## Frontend route inventory (Next.js app router)
+- Public marketing: `/` (home), `/cennik`, `/o-nas`, `/kontakt`.
+- Auth: `/login`.
+- Panel shell: `/panel` (redirect to dashboard), `/panel/dashboard`.
+- HR modules: `/panel/pracownicy`, `/panel/lokalizacje`, `/panel/grafik`, `/panel/wnioski`, `/panel/profil`.
+
+## Zasady utrzymania macierzy
+1. Aktualizuj status w tabeli po każdej zmianie modeli Prisma, endpointów lub routów UI — **CURRENT** gdy funkcja jest dostępna w produkcyjnym flow (może mieć opisane braki). **DONE** po spełnieniu kryteriów akceptacji i zarejestrowanej regresji/testów.
+2. Po dodaniu/zmianie kontrolera lub strony dopisz go w odpowiedniej sekcji inventory (backend/frontend) i dopisz model, jeśli został dodany w `prisma/schema.prisma`.
+3. W PR dodaj krótką notkę z jakich plików pochodzi zmiana (kontroler/route/model) i upewnij się, że tabela akceptacji odzwierciedla aktualny stan.
+4. Przy oznaczeniu **DONE** dodaj link do testu automatycznego (np. `backend-v2/src/...spec.ts`) lub odnotuj manualny case w kolumnie Acceptance, aby regresja była odnajdywalna.
