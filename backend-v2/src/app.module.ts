@@ -11,6 +11,7 @@ import { ShiftsModule } from './shifts/shifts.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { LeaveTypesModule } from './leave-types/leave-types.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ShiftsModule,
     AvailabilityModule,
     LeaveRequestsModule,
+    LeaveTypesModule,
     NotificationsModule,
   ],
 })

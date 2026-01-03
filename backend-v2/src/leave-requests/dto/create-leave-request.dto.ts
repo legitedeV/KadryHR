@@ -1,16 +1,5 @@
-<<<<<<< HEAD
 import { IsISO8601, IsOptional, IsString, MaxLength } from 'class-validator';
-=======
-import {
-  IsDateString,
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUUID,
-  MaxLength,
-} from 'class-validator';
-import { LeaveType } from '@prisma/client';
->>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
+import { LeaveCategory } from '@prisma/client';
 
 export class CreateLeaveRequestDto {
   /**
@@ -31,15 +20,11 @@ export class CreateLeaveRequestDto {
   @IsISO8601()
   startDate?: string;
 
-  @IsOptional()
-  @IsISO8601()
-  endDate?: string;
+  @IsEnum(LeaveCategory)
+  type!: LeaveCategory;
 
-  /**
-   * Leave type - support either id or string type.
-   */
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   leaveTypeId?: string;
 
   @IsOptional()

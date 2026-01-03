@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -9,7 +10,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { LeaveStatus, Role } from '@prisma/client';
+import { LeaveRequestsService } from './leave-requests.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -57,19 +59,11 @@ export class LeaveRequestsController {
         user.organisationId,
         user.id,
       );
-<<<<<<< HEAD
 
       return this.leaveRequestsService.findOne(user.organisationId, id, {
         employeeId: employee.id,
         actorUserId: user.id,
         actorRole: user.role,
-=======
-      if (!employee) {
-        throw new NotFoundException('Employee profile not found');
-      }
-      return this.leaveRequestsService.findOne(user.organisationId, id, {
-        restrictToEmployeeId: employee.id,
->>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
       });
     }
 
@@ -84,7 +78,6 @@ export class LeaveRequestsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateLeaveRequestDto,
   ) {
-<<<<<<< HEAD
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
@@ -99,12 +92,6 @@ export class LeaveRequestsController {
     }
 
     return this.leaveRequestsService.create(user.organisationId, dto.employeeId, dto);
-=======
-    return this.leaveRequestsService.create(user.organisationId, dto, {
-      userId: user.id,
-      role: user.role,
-    });
->>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
   }
 
   @Patch(':id')
@@ -118,57 +105,53 @@ export class LeaveRequestsController {
         user.organisationId,
         user.id,
       );
-
-      return this.leaveRequestsService.update(user.organisationId, id, dto, {
-        employeeId: employee.id,
-        actorUserId: user.id,
-        actorRole: user.role,
-      });
+      if (!employee) {
+        throw new NotFoundException('Employee profile not found');
+      }
+      scope = { restrictToEmployeeId: employee.id, userId: user.id };
     }
 
-<<<<<<< HEAD
     return this.leaveRequestsService.update(user.organisationId, id, dto, {
       actorUserId: user.id,
       actorRole: user.role,
     });
-=======
-    return this.leaveRequestsService.update(
-      user.organisationId,
-      id,
-      dto,
-      scope,
-    );
->>>>>>> 5a624e43de8bfe415675dcdf7a3b0199d8b33b9a
   }
 
-  @Post(':id/status')
+  @Patch(':id/status')
   async updateStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: UpdateLeaveRequestStatusDto,
   ) {
-    if (user.role === Role.EMPLOYEE) {
+    if (
+      user.role === Role.EMPLOYEE &&
+      dto.status === LeaveStatus.CANCELLED
+    ) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
         user.id,
       );
-
-      // employee is only allowed to cancel
-      if (dto.status !== 'CANCELLED') {
-        throw new BadRequestException('Employees can only cancel leave requests');
+      if (!employee) {
+        throw new NotFoundException('Employee profile not found');
       }
-
-      return this.leaveRequestsService.updateStatus(user.organisationId, id, dto, {
-        employeeId: employee.id,
-        actorUserId: user.id,
-        actorRole: user.role,
-      });
+      return this.leaveRequestsService.updateStatus(
+        user.organisationId,
+        id,
+        dto,
+        user.id,
+        { restrictToEmployeeId: employee.id },
+      );
     }
 
-    // OWNER / MANAGER can approve/reject (and optionally cancel)
-    return this.leaveRequestsService.updateStatus(user.organisationId, id, dto, {
-      actorUserId: user.id,
-      actorRole: user.role,
-    });
+    if (![Role.OWNER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
+      throw new ForbiddenException('Brak uprawnień do zmiany statusu wniosku');
+    }
+
+    return this.leaveRequestsService.updateStatus(
+      user.organisationId,
+      id,
+      dto,
+      user.id,
+    );
   }
 }

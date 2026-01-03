@@ -1,6 +1,6 @@
 import {
   LeaveStatus,
-  LeaveType,
+  LeaveCategory,
   PrismaClient,
   Role,
   Weekday,
@@ -43,6 +43,7 @@ async function main() {
       id: 'seed-organisation',
       name: 'Seed Organisation',
       description: 'Demo organisation for development and testing.',
+      preventShiftOnApprovedLeave: true,
     },
   });
 
@@ -125,6 +126,38 @@ async function main() {
     orderBy: { createdAt: 'asc' },
   });
 
+  // 5) LEAVE TYPES
+  await prisma.leaveType.createMany({
+    data: [
+      {
+        organisationId: organisation.id,
+        name: 'Urlop wypoczynkowy',
+        code: LeaveCategory.PAID_LEAVE,
+        isPaid: true,
+        color: '#22c55e',
+      },
+      {
+        organisationId: organisation.id,
+        name: 'Chorobowe',
+        code: LeaveCategory.SICK,
+        isPaid: true,
+        color: '#0ea5e9',
+      },
+      {
+        organisationId: organisation.id,
+        name: 'Urlop bezpłatny',
+        code: LeaveCategory.UNPAID,
+        isPaid: false,
+        color: '#f97316',
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  const leaveTypes = await prisma.leaveType.findMany({
+    where: { organisationId: organisation.id },
+  });
+
   // 5) SHIFTS (przykładowe zmiany)
   await prisma.shift.createMany({
     data: [
@@ -191,7 +224,10 @@ async function main() {
         organisationId: organisation.id,
         employeeId: ethan.id,
         createdByUserId: owner.id,
-        type: LeaveType.PAID_LEAVE,
+        type: LeaveCategory.PAID_LEAVE,
+        leaveTypeId:
+          leaveTypes.find((lt) => lt.code === LeaveCategory.PAID_LEAVE)?.id ??
+          null,
         status: LeaveStatus.PENDING,
         startDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
@@ -201,7 +237,9 @@ async function main() {
         organisationId: organisation.id,
         employeeId: mia.id,
         createdByUserId: owner.id,
-        type: LeaveType.SICK,
+        type: LeaveCategory.SICK,
+        leaveTypeId:
+          leaveTypes.find((lt) => lt.code === LeaveCategory.SICK)?.id ?? null,
         status: LeaveStatus.APPROVED,
         startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         endDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),

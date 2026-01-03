@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LeaveRequestsService } from './leave-requests.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { LeaveStatus, LeaveType, Role } from '@prisma/client';
+import { LeaveStatus, LeaveCategory, Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 const mockPrisma = {
   leaveRequest: {
@@ -15,10 +16,17 @@ const mockPrisma = {
   employee: {
     findFirst: jest.fn(),
   },
+  leaveType: {
+    findFirst: jest.fn(),
+  },
 };
 
 const mockNotifications = {
   createNotification: jest.fn(),
+};
+
+const mockAudit = {
+  log: jest.fn(),
 };
 
 describe('LeaveRequestsService', () => {
@@ -30,6 +38,7 @@ describe('LeaveRequestsService', () => {
         LeaveRequestsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: NotificationsService, useValue: mockNotifications },
+        { provide: AuditService, useValue: mockAudit },
       ],
     }).compile();
 
@@ -37,13 +46,18 @@ describe('LeaveRequestsService', () => {
     jest.clearAllMocks();
     mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
     mockNotifications.createNotification.mockResolvedValue(null);
+    mockPrisma.leaveRequest.create.mockResolvedValue({
+      id: 'lr-new',
+      organisationId: 'org-1',
+      employeeId: 'emp-1',
+    });
     mockPrisma.leaveRequest.findFirst.mockResolvedValue({
       id: 'lr-1',
       organisationId: 'org-1',
       status: LeaveStatus.PENDING,
       startDate: new Date('2024-01-01T00:00:00.000Z'),
       endDate: new Date('2024-01-02T00:00:00.000Z'),
-      type: LeaveType.PAID_LEAVE,
+      type: LeaveCategory.PAID_LEAVE,
     });
   });
 
@@ -53,7 +67,7 @@ describe('LeaveRequestsService', () => {
         'org-1',
         {
           employeeId: 'emp-1',
-          type: LeaveType.PAID_LEAVE,
+          type: LeaveCategory.PAID_LEAVE,
           startDate: '2024-02-02T00:00:00.000Z',
           endDate: '2024-02-01T00:00:00.000Z',
         },
@@ -69,7 +83,7 @@ describe('LeaveRequestsService', () => {
       'org-1',
       {
         employeeId: 'emp-self',
-        type: LeaveType.SICK,
+        type: LeaveCategory.SICK,
         startDate: '2024-02-01T00:00:00.000Z',
         endDate: '2024-02-02T00:00:00.000Z',
       },

@@ -8,7 +8,7 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import { LeaveStatus, LeaveType } from '@prisma/client';
+import { LeaveStatus, LeaveCategory } from '@prisma/client';
 
 export class QueryLeaveRequestsDto {
   @IsOptional()
@@ -20,8 +20,12 @@ export class QueryLeaveRequestsDto {
   status?: LeaveStatus;
 
   @IsOptional()
-  @IsEnum(LeaveType)
-  type?: LeaveType;
+  @IsEnum(LeaveCategory)
+  type?: LeaveCategory;
+
+  @IsOptional()
+  @IsUUID('4')
+  leaveTypeId?: string;
 
   @IsOptional()
   @IsDateString()
