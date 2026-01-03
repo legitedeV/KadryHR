@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   NotificationItem,
   NotificationPreference,
@@ -8,12 +9,12 @@ import {
   apiListNotifications,
   apiMarkAllNotificationsRead,
   apiMarkNotificationRead,
-  apiSendTestNotification,
   apiGetNotificationPreferences,
   apiUpdateNotificationPreferences,
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 import { useNotificationsState } from "@/lib/notifications-context";
+import { usePermissions } from "@/lib/use-permissions";
 
 const TYPE_COPY: Record<NotificationType, { label: string; description: string }> = {
   TEST: { label: "Testowe", description: "Szybkie sprawdzenie działania powiadomień." },
@@ -25,6 +26,18 @@ const TYPE_COPY: Record<NotificationType, { label: string; description: string }
     label: "Grafik / zmiany",
     description: "Powiadomienia związane ze zmianami w grafiku.",
   },
+  SCHEDULE_PUBLISHED: {
+    label: "Opublikowany grafik",
+    description: "Powiadomienia o nowym grafiku.",
+  },
+  SWAP_STATUS: {
+    label: "Status zamiany",
+    description: "Powiadomienia o zmianach w zamianach.",
+  },
+  CUSTOM: {
+    label: "Niestandardowe",
+    description: "Powiadomienia niestandardowe.",
+  },
 };
 
 function formatDate(value?: string | null) {
@@ -32,13 +45,20 @@ function formatDate(value?: string | null) {
   return new Date(value).toLocaleString("pl-PL");
 }
 
+type Tab = "inbox" | "preferences";
+
 export default function NotificationsPage() {
+  const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const [activeTab, setActiveTab] = useState<Tab>("inbox");
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { setUnreadCount, refreshUnread } = useNotificationsState();
+
+  const canManage = hasPermission("EMPLOYEE_MANAGE");
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
@@ -144,28 +164,6 @@ export default function NotificationsPage() {
     }
   };
 
-  const sendTest = async () => {
-    try {
-      const created = await apiSendTestNotification();
-      if (created) {
-        setNotifications((prev) => [created, ...prev]);
-        await refreshUnread();
-      }
-      pushToast({
-        title: "Wysłano",
-        description: "Powiadomienie testowe zostało dodane.",
-        variant: "success",
-      });
-    } catch (err) {
-      console.error(err);
-      pushToast({
-        title: "Błąd",
-        description: "Nie udało się utworzyć powiadomienia testowego.",
-        variant: "error",
-      });
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -174,29 +172,62 @@ export default function NotificationsPage() {
             Powiadomienia
           </p>
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-            Inbox i preferencje powiadomień
+            Centrum powiadomień
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Nieprzeczytane: <span className="font-semibold text-slate-900 dark:text-slate-100">{unread}</span>
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
+          {canManage && (
+            <>
+              <button
+                onClick={() => router.push("/panel/powiadomienia/wyslij")}
+                className="btn-primary px-3 py-2 rounded-xl"
+              >
+                Wyślij powiadomienie
+              </button>
+              <button
+                onClick={() => router.push("/panel/powiadomienia/historia")}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+              >
+                Historia
+              </button>
+            </>
+          )}
           <button
             className="rounded-xl border border-slate-200 px-3 py-2 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
-            onClick={sendTest}
-            type="button"
-          >
-            Wyślij testowe
-          </button>
-          <button
-            className="btn-primary px-3 py-2 rounded-xl disabled:opacity-60"
             onClick={markAllRead}
             type="button"
             disabled={notifications.length === 0}
           >
-            Oznacz wszystkie jako przeczytane
+            Oznacz wszystkie
           </button>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
+        <button
+          onClick={() => setActiveTab("inbox")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "inbox"
+              ? "border-brand-500 text-brand-600 dark:text-brand-400"
+              : "border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          }`}
+        >
+          Inbox
+        </button>
+        <button
+          onClick={() => setActiveTab("preferences")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "preferences"
+              ? "border-brand-500 text-brand-600 dark:text-brand-400"
+              : "border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          }`}
+        >
+          Preferencje
+        </button>
       </div>
 
       {error && (
@@ -205,21 +236,20 @@ export default function NotificationsPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-3">
-          <div className="card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                  Inbox
-                </p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                  Ostatnie powiadomienia
-                </p>
-              </div>
-              <span className="text-[11px] rounded-full border border-slate-200 px-2 py-1 text-slate-600 dark:border-slate-800 dark:text-slate-300">
-                Łącznie: {notifications.length}
-              </span>
+      {activeTab === "inbox" && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
+                Inbox
+              </p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                Ostatnie powiadomienia
+              </p>
+            </div>
+            <span className="text-[11px] rounded-full border border-slate-200 px-2 py-1 text-slate-600 dark:border-slate-800 dark:text-slate-300">
+              Łącznie: {notifications.length}
+            </span>
             </div>
 
             {loading && (
@@ -298,43 +328,44 @@ export default function NotificationsPage() {
             </div>
           </div>
         </div>
+      )}
 
-        <div className="space-y-3">
-          <div className="card p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                  Preferencje
-                </p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                  Kanały dostarczania
-                </p>
-              </div>
-              <button
-                onClick={savePreferences}
-                type="button"
-                className="btn-primary px-3 py-2 rounded-xl text-xs disabled:opacity-60"
-                disabled={savingPrefs}
-              >
-                {savingPrefs ? "Zapisywanie..." : "Zapisz"}
-              </button>
+      {activeTab === "preferences" && (
+        <div className="card p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
+                Preferencje
+              </p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                Kanały dostarczania
+              </p>
             </div>
+            <button
+              onClick={savePreferences}
+              type="button"
+              className="btn-primary px-3 py-2 rounded-xl text-xs disabled:opacity-60"
+              disabled={savingPrefs}
+            >
+              {savingPrefs ? "Zapisywanie..." : "Zapisz"}
+            </button>
+          </div>
 
-            <div className="space-y-3">
-              {preferences.map((pref) => {
-                const meta = TYPE_COPY[pref.type] ?? { label: pref.type, description: "" };
-                return (
-                  <div
-                    key={pref.type}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                          {meta.label}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {meta.description}
+          <div className="space-y-3">
+            {preferences.map((pref) => {
+              const meta = TYPE_COPY[pref.type] ?? { label: pref.type, description: "" };
+              return (
+                <div
+                  key={pref.type}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                        {meta.label}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {meta.description}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 text-[11px]">
@@ -361,8 +392,7 @@ export default function NotificationsPage() {
               })}
             </div>
           </div>
-        </div>
+        )}
       </div>
-    </div>
-  );
-}
+    );
+  }

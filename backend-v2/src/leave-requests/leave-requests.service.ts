@@ -4,7 +4,13 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LeaveStatus, LeaveType, NotificationType, Prisma, Role } from '@prisma/client';
+import {
+  LeaveStatus,
+  LeaveType,
+  NotificationType,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryLeaveRequestsDto } from './dto/query-leave-requests.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
@@ -31,7 +37,9 @@ export class LeaveRequestsService {
     const endDate = new Date(dto.endDate);
 
     if (startDate.getTime() > endDate.getTime()) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
     }
 
     const employeeId = await this.resolveEmployeeId(
@@ -45,7 +53,7 @@ export class LeaveRequestsService {
         organisationId,
         employeeId,
         createdByUserId: options.userId,
-        type: dto.type as LeaveType,
+        type: dto.type,
         startDate,
         endDate,
         reason: dto.reason ?? null,
@@ -87,11 +95,7 @@ export class LeaveRequestsService {
     };
   }
 
-  async findOne(
-    organisationId: string,
-    id: string,
-    options?: ScopeOptions,
-  ) {
+  async findOne(organisationId: string, id: string, options?: ScopeOptions) {
     const request = await this.prisma.leaveRequest.findFirst({
       where: this.buildWhere(organisationId, {}, options, id),
       include: leaveRelations,
@@ -129,17 +133,21 @@ export class LeaveRequestsService {
       throw new BadRequestException('Only pending requests can be edited');
     }
 
-    const nextStart = dto.startDate ? new Date(dto.startDate) : existing.startDate;
+    const nextStart = dto.startDate
+      ? new Date(dto.startDate)
+      : existing.startDate;
     const nextEnd = dto.endDate ? new Date(dto.endDate) : existing.endDate;
 
     if (nextStart.getTime() > nextEnd.getTime()) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
     }
 
     const updated = await this.prisma.leaveRequest.update({
       where: { id },
       data: {
-        type: (dto.type as LeaveType | undefined) ?? existing.type,
+        type: dto.type ?? existing.type,
         startDate: nextStart,
         endDate: nextEnd,
         reason: dto.reason ?? existing.reason,
@@ -314,8 +322,18 @@ export class LeaveRequestsService {
 
 const leaveRelations: Prisma.LeaveRequestInclude = {
   employee: {
-    select: { id: true, userId: true, firstName: true, lastName: true, email: true },
+    select: {
+      id: true,
+      userId: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
   },
-  approvedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
-  createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+  approvedBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  createdBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
 };

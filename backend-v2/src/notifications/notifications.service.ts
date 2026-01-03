@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import {
   NotificationChannel,
   NotificationDeliveryStatus,
@@ -7,11 +7,15 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailAdapter } from './email.adapter';
+import { QueueService } from '../queue/queue.service';
 
 const AVAILABLE_TYPES: NotificationType[] = [
   NotificationType.TEST,
   NotificationType.LEAVE_STATUS,
   NotificationType.SHIFT_ASSIGNMENT,
+  NotificationType.SCHEDULE_PUBLISHED,
+  NotificationType.SWAP_STATUS,
+  NotificationType.CUSTOM,
 ];
 
 type PreferenceInput = {
@@ -27,14 +31,18 @@ type CreateNotificationInput = {
   title: string;
   body?: string;
   data?: Prisma.InputJsonValue;
+  channels?: NotificationChannel[];
   emailSubject?: string;
 };
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailAdapter: EmailAdapter,
+    private readonly queueService: QueueService,
   ) {}
 
   async list(
@@ -182,23 +190,28 @@ export class NotificationsService {
   }
 
   async createNotification(input: CreateNotificationInput) {
-    const preference = await this.prisma.notificationPreference.findFirst({
-      where: {
-        organisationId: input.organisationId,
-        userId: input.userId,
-        type: input.type,
-      },
-    });
+    // If channels are explicitly provided (e.g., from campaign), use them
+    const channels: NotificationChannel[] = input.channels ?? [];
 
-    const deliverInApp = preference?.inApp ?? true;
-    const deliverEmail = preference?.email ?? false;
-    const channels: NotificationChannel[] = [];
+    // Otherwise, check user preferences
+    if (channels.length === 0) {
+      const preference = await this.prisma.notificationPreference.findFirst({
+        where: {
+          organisationId: input.organisationId,
+          userId: input.userId,
+          type: input.type,
+        },
+      });
 
-    if (deliverInApp) {
-      channels.push(NotificationChannel.IN_APP);
-    }
-    if (deliverEmail) {
-      channels.push(NotificationChannel.EMAIL);
+      const deliverInApp = preference?.inApp ?? true;
+      const deliverEmail = preference?.email ?? false;
+
+      if (deliverInApp) {
+        channels.push(NotificationChannel.IN_APP);
+      }
+      if (deliverEmail) {
+        channels.push(NotificationChannel.EMAIL);
+      }
     }
 
     if (channels.length === 0) {
@@ -236,42 +249,94 @@ export class NotificationsService {
   }
 
   private async attemptEmailDelivery(
-    notification: { id: string; userId: string; title: string; body?: string | null },
-    input: Pick<CreateNotificationInput, 'emailSubject'>,
+    notification: {
+      id: string;
+      userId: string;
+      title: string;
+      body?: string | null;
+      organisationId?: string;
+    },
+    input: Pick<CreateNotificationInput, 'emailSubject' | 'organisationId'>,
   ) {
     const user = await this.prisma.user.findUnique({
       where: { id: notification.userId },
-      select: { email: true, firstName: true, lastName: true },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+        organisationId: true,
+      },
     });
 
-    let status: NotificationDeliveryStatus = NotificationDeliveryStatus.SKIPPED;
-    let errorMessage: string | null = null;
+    if (!user?.email) {
+      await this.prisma.notificationDeliveryAttempt.create({
+        data: {
+          notificationId: notification.id,
+          channel: NotificationChannel.EMAIL,
+          status: NotificationDeliveryStatus.SKIPPED,
+          errorMessage: 'User email missing',
+        },
+      });
+      return;
+    }
 
-    if (user?.email) {
-      const result = await this.emailAdapter.sendEmail({
+    // Create initial delivery attempt record
+    const deliveryAttempt =
+      await this.prisma.notificationDeliveryAttempt.create({
+        data: {
+          notificationId: notification.id,
+          channel: NotificationChannel.EMAIL,
+          status: NotificationDeliveryStatus.SKIPPED,
+          errorMessage: 'Pending delivery',
+        },
+      });
+
+    // Try to add to queue first
+    if (this.queueService.isQueueAvailable()) {
+      const queued = await this.queueService.addEmailDeliveryJob({
+        notificationId: notification.id,
         to: user.email,
         subject: input.emailSubject ?? notification.title,
         text: notification.body ?? notification.title,
+        organisationId: input.organisationId,
+        userId: notification.userId,
       });
 
-      if (result.success) {
-        status = NotificationDeliveryStatus.SENT;
-      } else if (result.skipped) {
-        status = NotificationDeliveryStatus.SKIPPED;
-        errorMessage = result.error ?? null;
-      } else {
-        status = NotificationDeliveryStatus.FAILED;
-        errorMessage = result.error ?? 'Email delivery failed';
+      if (queued) {
+        this.logger.log(
+          `Email delivery job queued for notification ${notification.id}`,
+        );
+        return;
       }
-    } else {
-      status = NotificationDeliveryStatus.SKIPPED;
-      errorMessage = 'User email missing';
     }
 
-    await this.prisma.notificationDeliveryAttempt.create({
+    // Fallback to synchronous delivery if queue is not available
+    this.logger.warn(
+      `Queue not available, sending email synchronously for notification ${notification.id}`,
+    );
+
+    const result = await this.emailAdapter.sendEmail({
+      to: user.email,
+      subject: input.emailSubject ?? notification.title,
+      text: notification.body ?? notification.title,
+    });
+
+    let status: NotificationDeliveryStatus;
+    let errorMessage: string | null = null;
+
+    if (result.success) {
+      status = NotificationDeliveryStatus.SENT;
+    } else if (result.skipped) {
+      status = NotificationDeliveryStatus.SKIPPED;
+      errorMessage = result.error ?? null;
+    } else {
+      status = NotificationDeliveryStatus.FAILED;
+      errorMessage = result.error ?? 'Email delivery failed';
+    }
+
+    await this.prisma.notificationDeliveryAttempt.update({
+      where: { id: deliveryAttempt.id },
       data: {
-        notificationId: notification.id,
-        channel: NotificationChannel.EMAIL,
         status,
         errorMessage,
       },

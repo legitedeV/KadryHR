@@ -77,7 +77,11 @@ describe('NotificationsService', () => {
     const result = await service.list('org-1', 'user-1', { take: 10, skip: 0 });
 
     expect(result).toEqual(
-      expect.objectContaining({ total: 1, unreadCount: 1, data: [{ id: '1' }] }),
+      expect.objectContaining({
+        total: 1,
+        unreadCount: 1,
+        data: [{ id: '1' }],
+      }),
     );
     expect(mockPrisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

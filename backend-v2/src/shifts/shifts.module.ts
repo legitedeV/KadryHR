@@ -4,9 +4,10 @@ import { ShiftsService } from './shifts.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmployeesModule } from '../employees/employees.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, EmployeesModule, AuditModule],
+  imports: [PrismaModule, EmployeesModule, AuditModule, NotificationsModule],
   controllers: [ShiftsController],
   providers: [ShiftsService],
   exports: [ShiftsService],

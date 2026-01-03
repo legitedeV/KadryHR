@@ -3,13 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { NotificationType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 
 @Injectable()
 export class ShiftsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Wszystkie zmiany w organizacji (dla OWNER/MANAGER).
@@ -86,7 +90,20 @@ export class ShiftsService {
         startsAt,
         endsAt,
       },
+      include: {
+        employee: {
+          select: { userId: true, firstName: true, lastName: true },
+        },
+      },
     });
+
+    // Notify employee about new shift assignment
+    await this.notifyShiftAssignment(
+      organisationId,
+      created.employee?.userId,
+      created,
+      'assigned',
+    );
 
     return { ...created, availabilityWarning };
   }
@@ -144,7 +161,27 @@ export class ShiftsService {
         startsAt: nextStartsAt,
         endsAt: nextEndsAt,
       },
+      include: {
+        employee: {
+          select: { userId: true, firstName: true, lastName: true },
+        },
+      },
     });
+
+    // Notify if employee changed or time changed significantly
+    const employeeChanged = nextEmployeeId !== existing.employeeId;
+    const timeChanged =
+      nextStartsAt.getTime() !== existing.startsAt.getTime() ||
+      nextEndsAt.getTime() !== existing.endsAt.getTime();
+
+    if (employeeChanged || timeChanged) {
+      await this.notifyShiftAssignment(
+        organisationId,
+        updated.employee?.userId,
+        updated,
+        'updated',
+      );
+    }
 
     return { ...updated, availabilityWarning };
   }
@@ -351,5 +388,115 @@ export class ShiftsService {
     }
 
     return null;
+  }
+
+  /**
+   * Notify employee about shift assignment/update
+   */
+  private async notifyShiftAssignment(
+    organisationId: string,
+    userId: string | null | undefined,
+    shift: {
+      id: string;
+      startsAt: Date;
+      endsAt: Date;
+      position?: string | null;
+      employee?: {
+        firstName: string | null;
+        lastName: string | null;
+      } | null;
+    },
+    action: 'assigned' | 'updated',
+  ) {
+    if (!userId) {
+      return; // Employee doesn't have a user account
+    }
+
+    const actionLabel = action === 'assigned' ? 'przypisana' : 'zaktualizowana';
+    const dateStr = shift.startsAt.toLocaleDateString('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const timeStr = `${shift.startsAt.toLocaleTimeString('pl-PL', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })} - ${shift.endsAt.toLocaleTimeString('pl-PL', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`;
+
+    const title = `Zmiana ${actionLabel}`;
+    const body = shift.position
+      ? `Zmiana (${shift.position}) w dniu ${dateStr}, godz. ${timeStr}`
+      : `Zmiana w dniu ${dateStr}, godz. ${timeStr}`;
+
+    await this.notificationsService.createNotification({
+      organisationId,
+      userId,
+      type: NotificationType.SHIFT_ASSIGNMENT,
+      title,
+      body,
+      data: {
+        shiftId: shift.id,
+        action,
+        startsAt: shift.startsAt.toISOString(),
+        endsAt: shift.endsAt.toISOString(),
+      },
+      emailSubject: title,
+    });
+  }
+
+  /**
+   * Notify multiple employees about schedule publication (bulk shifts)
+   */
+  async notifySchedulePublished(
+    organisationId: string,
+    employeeIds: string[],
+    dateRange?: { from: Date; to: Date },
+  ) {
+    // Get user IDs for the employees
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        id: { in: employeeIds },
+        organisationId,
+        userId: { not: null },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    const userIds = employees
+      .map((e) => e.userId)
+      .filter((uid): uid is string => uid !== null);
+
+    if (userIds.length === 0) {
+      return;
+    }
+
+    const dateRangeStr = dateRange
+      ? `${dateRange.from.toLocaleDateString('pl-PL')} - ${dateRange.to.toLocaleDateString('pl-PL')}`
+      : 'najbliższy okres';
+
+    // Send notification to each employee
+    for (const userId of userIds) {
+      await this.notificationsService.createNotification({
+        organisationId,
+        userId,
+        type: NotificationType.SCHEDULE_PUBLISHED,
+        title: 'Opublikowano grafik',
+        body: `Nowy grafik został opublikowany na okres: ${dateRangeStr}. Sprawdź swoje zmiany.`,
+        data: {
+          dateRange: dateRange
+            ? {
+                from: dateRange.from.toISOString(),
+                to: dateRange.to.toISOString(),
+              }
+            : null,
+        },
+        emailSubject: 'Opublikowano nowy grafik',
+      });
+    }
   }
 }
