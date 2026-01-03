@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
@@ -11,7 +11,15 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 const locationInclude = {
   employees: {
     include: {
-      employee: { include: { locations: { include: { location: true } } } },
+      employee: {
+        include: {
+          locations: {
+            include: {
+              location: true,
+            },
+          },
+        },
+      },
     },
   },
 } satisfies Prisma.LocationInclude;
@@ -26,6 +34,7 @@ export class LocationsService {
 
   async create(organisationId: string, dto: CreateLocationDto) {
     const { employeeIds = [] as string[], ...data } = dto;
+
     const validEmployeeIds = employeeIds.length
       ? await this.validateEmployeeIds(organisationId, employeeIds)
       : [];
@@ -90,6 +99,7 @@ export class LocationsService {
     }
 
     const { employeeIds, ...data } = dto;
+
     const validEmployeeIds = employeeIds?.length
       ? await this.validateEmployeeIds(organisationId, employeeIds)
       : undefined;
@@ -122,7 +132,10 @@ export class LocationsService {
       throw new NotFoundException('Location not found');
     }
 
-    await this.prisma.location.delete({ where: { id: locationId } });
+    await this.prisma.location.delete({
+      where: { id: locationId },
+    });
+
     return { success: true };
   }
 
@@ -141,8 +154,12 @@ export class LocationsService {
     employeeIds: string[],
   ) {
     const uniqueIds = Array.from(new Set(employeeIds));
+
     const found = await this.prisma.employee.findMany({
-      where: { organisationId, id: { in: uniqueIds } },
+      where: {
+        organisationId,
+        id: { in: uniqueIds },
+      },
       select: { id: true },
     });
 
@@ -156,7 +173,7 @@ export class LocationsService {
   }
 
   private async setLocationEmployees(
-    tx: PrismaClient,
+    tx: Prisma.TransactionClient,
     organisationId: string,
     locationId: string,
     employeeIds: string[],
@@ -165,14 +182,19 @@ export class LocationsService {
       where: {
         organisationId,
         locationId,
-        NOT: { employeeId: { in: employeeIds } },
+        NOT: {
+          employeeId: { in: employeeIds },
+        },
       },
     });
 
     if (!employeeIds.length) return;
 
     const existing = await tx.locationAssignment.findMany({
-      where: { organisationId, locationId },
+      where: {
+        organisationId,
+        locationId,
+      },
       select: { employeeId: true },
     });
 

@@ -1,64 +1,46 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
-
-type PrismaDbClient = PrismaClient | Prisma.TransactionClient; // <- DODAJ TO
-
-const DEFAULT_TAKE = 20;
-
-type EmployeeWithLocations = Prisma.EmployeeGetPayload<{
-  include: { locations: { include: { location: true } } };
-}>;
 
 @Injectable()
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(organisationId: string, dto: CreateEmployeeDto) {
-    const { locationIds = [] as string[], ...data } = dto;
-    const validLocationIds = locationIds.length
-      ? await this.validateLocationIds(organisationId, locationIds)
-      : [];
-
-    const created = await this.prisma.$transaction(async (tx) => {
-      const employee = await tx.employee.create({
-        data: {
-          ...data,
-          organisationId,
-        },
-      });
-
-      if (locationIds.length) {
-        await this.setEmployeeLocations(
-          tx,
-          organisationId,
-          employee.id,
-          validLocationIds,
-        );
-      }
-
-      return employee;
+  /**
+   * Mapuje użytkownika (User) na powiązanego Employee w danej organizacji.
+   */
+  findByUser(organisationId: string, userId: string) {
+    return this.prisma.employee.findFirst({
+      where: {
+        organisationId,
+        userId,
+      },
     });
-
-    return this.findOne(organisationId, created.id);
   }
 
+  /**
+   * Lista pracowników – z paginacją, wyszukiwaniem, sortowaniem.
+   * Dla EMPLOYEE można ograniczyć widok do jednego employee (options.restrictToEmployeeId).
+   */
   async findAll(
     organisationId: string,
     query: QueryEmployeesDto,
     options?: { restrictToEmployeeId?: string },
   ) {
-    const take = query.take ?? DEFAULT_TAKE;
-    const skip = query.skip ?? 0;
-    const sortBy = query.sortBy ?? 'createdAt';
-    const sortOrder = query.sortOrder ?? 'desc';
+    const {
+      page = 1,
+      pageSize = 20,
+      q,
+      sort = 'createdAt-desc',
+      locationId,
+      // status zostawiamy na później; nie opieramy się na polu isActive w schemacie
+      // bo nie mamy tu 100% pewności co do migracji
+      // status,
+    } = query;
+
+    const take = Math.min(pageSize, 100);
+    const skip = (page - 1) * take;
 
     const where: Prisma.EmployeeWhereInput = {
       organisationId,
@@ -68,60 +50,95 @@ export class EmployeesService {
       where.id = options.restrictToEmployeeId;
     }
 
-    if (query.search?.trim()) {
-      const term = query.search.trim();
+    if (q && q.trim()) {
+      const term = q.trim();
       where.OR = [
         { firstName: { contains: term, mode: 'insensitive' } },
         { lastName: { contains: term, mode: 'insensitive' } },
         { email: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
       ];
     }
 
-    const [employees, total] = await this.prisma.$transaction([
+    if (locationId) {
+      // Filtr: pracownik ma przynajmniej jedną zmianę w tej lokalizacji.
+      where.shifts = {
+        some: { locationId },
+      };
+    }
+
+    const [items, total] = await this.prisma.$transaction([
       this.prisma.employee.findMany({
         where,
+        orderBy: buildEmployeeOrder(sort),
         skip,
         take,
-        orderBy: {
-          [sortBy]: sortOrder,
-        } as Prisma.EmployeeOrderByWithRelationInput,
-        include: { locations: { include: { location: true } } },
+        include: {
+          organisation: {
+            select: { id: true, name: true },
+          },
+          shifts: {
+            take: 1,
+            orderBy: { startsAt: 'desc' },
+            include: { location: true },
+          },
+        },
       }),
       this.prisma.employee.count({ where }),
     ]);
 
     return {
-      data: employees.map((employee) => this.mapEmployee(employee)),
+      items,
       total,
-      skip,
-      take,
+      page,
+      pageSize: take,
     };
   }
 
+  /**
+   * Utworzenie pracownika w organizacji.
+   */
+  create(organisationId: string, dto: any) {
+    return this.prisma.employee.create({
+      data: {
+        organisationId,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email ?? null,
+        phone: dto.phone ?? null,
+        position: dto.position ?? null,
+      },
+    });
+  }
+
+  /**
+   * Pojedynczy pracownik (z kontrolą org).
+   */
   async findOne(organisationId: string, employeeId: string) {
     const employee = await this.prisma.employee.findFirst({
       where: { id: employeeId, organisationId },
-      include: { locations: { include: { location: true } } },
+      include: {
+        organisation: {
+          select: { id: true, name: true },
+        },
+        shifts: {
+          orderBy: { startsAt: 'desc' },
+          include: { location: true },
+        },
+      },
     });
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
     }
 
-    return this.mapEmployee(employee);
+    return employee;
   }
 
-  async findByUser(organisationId: string, userId: string) {
-    return this.prisma.employee.findFirst({
-      where: { organisationId, userId },
-    });
-  }
-
-  async update(
-    organisationId: string,
-    employeeId: string,
-    dto: UpdateEmployeeDto,
-  ) {
+  /**
+   * Aktualizacja pracownika z kontrolą organisationId.
+   */
+  async update(organisationId: string, employeeId: string, dto: any) {
     const existing = await this.prisma.employee.findFirst({
       where: { id: employeeId, organisationId },
     });
@@ -130,30 +147,21 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
 
-    const { locationIds, ...data } = dto;
-    const validLocationIds = locationIds?.length
-      ? await this.validateLocationIds(organisationId, locationIds)
-      : undefined;
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.employee.update({
-        where: { id: employeeId },
-        data,
-      });
-
-      if (validLocationIds) {
-        await this.setEmployeeLocations(
-          tx,
-          organisationId,
-          employeeId,
-          validLocationIds,
-        );
-      }
+    return this.prisma.employee.update({
+      where: { id: employeeId },
+      data: {
+        firstName: dto.firstName ?? existing.firstName,
+        lastName: dto.lastName ?? existing.lastName,
+        email: dto.email ?? existing.email,
+        phone: dto.phone ?? existing.phone,
+        position: dto.position ?? existing.position,
+      },
     });
-
-    return this.findOne(organisationId, employeeId);
   }
 
+  /**
+   * Usunięcie pracownika z kontrolą organisationId.
+   */
   async remove(organisationId: string, employeeId: string) {
     const existing = await this.prisma.employee.findFirst({
       where: { id: employeeId, organisationId },
@@ -163,69 +171,34 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
 
-    await this.prisma.employee.delete({ where: { id: employeeId } });
+    await this.prisma.employee.delete({
+      where: { id: employeeId },
+    });
 
     return { success: true };
   }
+}
 
-  private mapEmployee(employee: EmployeeWithLocations) {
-    return {
-      ...employee,
-      locations: employee.locations.map(({ location }) => location),
-    };
+function buildEmployeeOrder(
+  sort: string,
+): Prisma.EmployeeOrderByWithRelationInput {
+  const [fieldRaw, directionRaw] = sort.split('-');
+  const direction: Prisma.SortOrder =
+    directionRaw === 'asc' ? 'asc' : 'desc';
+
+  const allowed: (keyof Prisma.EmployeeOrderByWithRelationInput)[] = [
+    'firstName',
+    'lastName',
+    'email',
+    'createdAt',
+    'updatedAt',
+  ];
+
+  if (!fieldRaw || !allowed.includes(fieldRaw as any)) {
+    return { createdAt: 'desc' };
   }
 
-  private async validateLocationIds(
-    organisationId: string,
-    locationIds: string[],
-  ) {
-    const uniqueIds = Array.from(new Set(locationIds));
-    const found = await this.prisma.location.findMany({
-      where: { organisationId, id: { in: uniqueIds } },
-      select: { id: true },
-    });
-
-    if (found.length !== uniqueIds.length) {
-      throw new BadRequestException(
-        'One or more locations not found for organisation',
-      );
-    }
-
-    return uniqueIds;
-  }
-
-  private async setEmployeeLocations(
-    tx: PrismaClient,
-    organisationId: string,
-    employeeId: string,
-    locationIds: string[],
-  ) {
-    await tx.locationAssignment.deleteMany({
-      where: {
-        organisationId,
-        employeeId,
-        NOT: { locationId: { in: locationIds } },
-      },
-    });
-
-    if (!locationIds.length) return;
-
-    const existing = await tx.locationAssignment.findMany({
-      where: { organisationId, employeeId },
-      select: { locationId: true },
-    });
-
-    const existingIds = new Set(existing.map((l) => l.locationId));
-    const toCreate = locationIds.filter((id) => !existingIds.has(id));
-
-    if (toCreate.length) {
-      await tx.locationAssignment.createMany({
-        data: toCreate.map((locationId) => ({
-          organisationId,
-          employeeId,
-          locationId,
-        })),
-      });
-    }
-  }
+  return {
+    [fieldRaw]: direction,
+  } as Prisma.EmployeeOrderByWithRelationInput;
 }

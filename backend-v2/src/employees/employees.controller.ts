@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -10,11 +9,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { EmployeesService } from './employees.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -26,6 +25,11 @@ import { QueryEmployeesDto } from './dto/query-employees.dto';
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
+  /**
+   * Lista pracowników.
+   * - OWNER/MANAGER: pełna lista z paginacją.
+   * - EMPLOYEE: widzi tylko siebie (jeżeli ma powiązany rekord Employee).
+   */
   @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
@@ -39,10 +43,10 @@ export class EmployeesController {
 
       if (!employee) {
         return {
-          data: [],
+          items: [],
           total: 0,
-          skip: query.skip ?? 0,
-          take: query.take ?? 20,
+          page: query.page ?? 1,
+          pageSize: query.pageSize ?? 20,
         };
       }
 
@@ -54,25 +58,21 @@ export class EmployeesController {
     return this.employeesService.findAll(user.organisationId, query);
   }
 
+  /**
+   * Szczegóły pojedynczego pracownika.
+   */
   @Get(':id')
   async findOne(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
-    if (user.role === Role.EMPLOYEE) {
-      const employee = await this.employeesService.findByUser(
-        user.organisationId,
-        user.id,
-      );
-      if (!employee || employee.id !== id) {
-        throw new ForbiddenException('You can only view your own profile');
-      }
-    }
-
     return this.employeesService.findOne(user.organisationId, id);
   }
 
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  /**
+   * Tworzenie pracownika – tylko OWNER/MANAGER.
+   */
+  @Roles(Role.OWNER, Role.MANAGER)
   @Post()
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -81,28 +81,28 @@ export class EmployeesController {
     return this.employeesService.create(user.organisationId, dto);
   }
 
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  /**
+   * Aktualizacja pracownika – tylko OWNER/MANAGER.
+   */
+  @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id')
   async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: UpdateEmployeeDto,
   ) {
-    if (user.role === Role.EMPLOYEE) {
-      throw new ForbiddenException('Insufficient permissions');
-    }
     return this.employeesService.update(user.organisationId, id, dto);
   }
 
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  /**
+   * Usunięcie pracownika – tylko OWNER/MANAGER.
+   */
+  @Roles(Role.OWNER, Role.MANAGER)
   @Delete(':id')
   async remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
-    if (user.role === Role.EMPLOYEE) {
-      throw new ForbiddenException('Insufficient permissions');
-    }
     return this.employeesService.remove(user.organisationId, id);
   }
 }

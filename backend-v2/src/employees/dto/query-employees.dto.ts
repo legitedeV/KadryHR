@@ -1,27 +1,63 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsOptional, IsString } from 'class-validator';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
-type EmployeeSortField =
-  | 'firstName'
-  | 'lastName'
-  | 'email'
-  | 'createdAt'
-  | 'position';
+/**
+ * Query DTO dla listy pracowników:
+ * - stronicowanie (page / pageSize)
+ * - wyszukiwanie (q)
+ * - sortowanie (sort: "createdAt-desc" itd.)
+ * - filtr po lokalizacji / statusie
+ *
+ * Dodatkowo zostawiamy skip/take jako legacy, żeby nic się nie wywaliło.
+ */
+export class QueryEmployeesDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
 
-type SortOrder = 'asc' | 'desc';
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
 
-export class QueryEmployeesDto extends PaginationDto {
   @IsOptional()
   @IsString()
-  search?: string;
+  q?: string;
+
+  /**
+   * Format: "<field>-<direction>", np. "createdAt-desc"
+   */
+  @IsOptional()
+  @IsString()
+  sort?: string;
 
   @IsOptional()
-  @IsIn(['firstName', 'lastName', 'email', 'createdAt', 'position'])
-  sortBy?: EmployeeSortField;
+  @IsString()
+  locationId?: string;
 
   @IsOptional()
-  @Type(() => String)
-  @IsIn(['asc', 'desc'])
-  sortOrder?: SortOrder;
+  @IsIn(['active', 'inactive', 'all'])
+  status?: 'active' | 'inactive' | 'all';
+
+  // Legacy – żeby nic, co przypadkiem używa skip/take, się nie wywaliło.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  take?: number;
 }

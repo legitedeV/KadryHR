@@ -1,115 +1,88 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAvailabilityDto } from './dto/create-availability.dto';
-import { UpdateAvailabilityDto } from './dto/update-availability.dto';
-import { QueryAvailabilityDto } from './dto/query-availability.dto';
 
 @Injectable()
 export class AvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private validateRange(startMinutes: number, endMinutes: number) {
-    if (startMinutes >= endMinutes) {
-      throw new BadRequestException(
-        'startMinutes must be less than endMinutes',
-      );
-    }
+  /**
+   * Lista dostępności w ramach organizacji.
+   */
+  findAll(organisationId: string) {
+    return this.prisma.availability.findMany({
+      where: { organisationId },
+      orderBy: [
+        { date: 'asc' },
+        { weekday: 'asc' },
+        { startMinutes: 'asc' },
+      ],
+    });
   }
 
-  async create(organisationId: string, dto: CreateAvailabilityDto) {
-    this.validateRange(dto.startMinutes, dto.endMinutes);
-
+  /**
+   * Tworzenie rekordu dostępności.
+   */
+  create(organisationId: string, dto: any) {
     return this.prisma.availability.create({
       data: {
         organisationId,
         employeeId: dto.employeeId,
-        date: dto.date ? new Date(dto.date) : undefined,
-        weekday: dto.weekday,
+        date: dto.date ?? null,
+        weekday: dto.weekday ?? null,
         startMinutes: dto.startMinutes,
         endMinutes: dto.endMinutes,
-        notes: dto.notes,
+        notes: dto.notes ?? null,
       },
     });
   }
 
-  findAll(organisationId: string, query: QueryAvailabilityDto) {
-    const dateFilter: { gte?: Date; lte?: Date } = {};
-    if (query.from) {
-      const from = new Date(query.from);
-      from.setUTCHours(0, 0, 0, 0);
-      dateFilter.gte = from;
-    }
-    if (query.to) {
-      const to = new Date(query.to);
-      to.setUTCHours(23, 59, 59, 999);
-      dateFilter.lte = to;
-    }
-
-    const where: Parameters<
-      typeof this.prisma.availability.findMany
-    >[0]['where'] = {
-      organisationId,
-      employeeId: query.employeeId,
-    };
-
-    if (query.from || query.to) {
-      where.AND = [
-        {
-          OR: [{ date: dateFilter }, { weekday: { not: null } }],
-        },
-      ];
-    }
-
-    return this.prisma.availability.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async update(
-    organisationId: string,
-    availabilityId: string,
-    dto: UpdateAvailabilityDto,
-  ) {
+  /**
+   * Aktualizacja rekordu dostępności z kontrolą organizacji.
+   */
+  async update(organisationId: string, id: string, dto: any) {
     const existing = await this.prisma.availability.findFirst({
-      where: { id: availabilityId, organisationId },
+      where: { id, organisationId },
     });
 
     if (!existing) {
       throw new NotFoundException('Availability not found');
-    }
-
-    if (dto.startMinutes != null && dto.endMinutes != null) {
-      this.validateRange(dto.startMinutes, dto.endMinutes);
     }
 
     return this.prisma.availability.update({
-      where: { id: availabilityId },
+      where: { id },
       data: {
-        employeeId: dto.employeeId,
-        date: dto.date ? new Date(dto.date) : undefined,
-        weekday: dto.weekday,
-        startMinutes: dto.startMinutes,
-        endMinutes: dto.endMinutes,
-        notes: dto.notes,
+        employeeId: dto.employeeId ?? existing.employeeId,
+        date: dto.date ?? existing.date,
+        weekday: dto.weekday ?? existing.weekday,
+        startMinutes:
+          typeof dto.startMinutes === 'number'
+            ? dto.startMinutes
+            : existing.startMinutes,
+        endMinutes:
+          typeof dto.endMinutes === 'number'
+            ? dto.endMinutes
+            : existing.endMinutes,
+        notes: dto.notes ?? existing.notes,
       },
     });
   }
 
-  async remove(organisationId: string, availabilityId: string) {
+  /**
+   * Usunięcie rekordu dostępności w ramach organizacji.
+   */
+  async remove(organisationId: string, id: string) {
     const existing = await this.prisma.availability.findFirst({
-      where: { id: availabilityId, organisationId },
+      where: { id, organisationId },
     });
 
     if (!existing) {
       throw new NotFoundException('Availability not found');
     }
 
-    await this.prisma.availability.delete({ where: { id: availabilityId } });
+    await this.prisma.availability.delete({
+      where: { id },
+    });
+
     return { success: true };
   }
 }

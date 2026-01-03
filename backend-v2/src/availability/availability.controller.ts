@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AvailabilityService } from './availability.service';
@@ -18,19 +17,18 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
-import { QueryAvailabilityDto } from './dto/query-availability.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('availability')
 export class AvailabilityController {
-  constructor(private readonly availabilityService: AvailabilityService) {}
+  constructor(
+    private readonly availabilityService: AvailabilityService,
+  ) {}
 
   @Get()
-  async findAll(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query() query: QueryAvailabilityDto,
-  ) {
-    return this.availabilityService.findAll(user.organisationId, query);
+  async findAll(@CurrentUser() user: AuthenticatedUser) {
+    // prosto: wszystko z danej organizacji, bez query paramów
+    return this.availabilityService.findAll(user.organisationId);
   }
 
   @Roles(Role.OWNER, Role.MANAGER)
@@ -49,7 +47,11 @@ export class AvailabilityController {
     @Param('id') id: string,
     @Body() dto: UpdateAvailabilityDto,
   ) {
-    return this.availabilityService.update(user.organisationId, id, dto);
+    return this.availabilityService.update(
+      user.organisationId,
+      id,
+      dto,
+    );
   }
 
   @Roles(Role.OWNER, Role.MANAGER)
@@ -58,6 +60,9 @@ export class AvailabilityController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
-    return this.availabilityService.remove(user.organisationId, id);
+    return this.availabilityService.remove(
+      user.organisationId,
+      id,
+    );
   }
 }

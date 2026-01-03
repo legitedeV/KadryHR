@@ -6,19 +6,17 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { ShiftsService } from './shifts.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
-import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { EmployeesService } from '../employees/employees.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,49 +27,33 @@ export class ShiftsController {
     private readonly employeesService: EmployeesService,
   ) {}
 
+  /**
+   * Lista zmian:
+   * - OWNER/MANAGER: wszystkie w organizacji
+   * - EMPLOYEE: tylko swoje zmiany
+   */
   @Get()
-  async findAll(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query() query: QueryShiftsDto,
-  ) {
+  async findAll(@CurrentUser() user: AuthenticatedUser) {
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.employeesService.findByUser(
         user.organisationId,
         user.id,
       );
+
       if (!employee) {
         return [];
       }
-      return this.shiftsService.findAll(user.organisationId, query, {
-        restrictEmployeeId: employee.id,
-      });
-    }
 
-    return this.shiftsService.findAll(user.organisationId, query);
-  }
-
-  @Get('summary')
-  async summary(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query() query: QueryShiftsDto,
-  ) {
-    if (user.role === Role.EMPLOYEE) {
-      const employee = await this.employeesService.findByUser(
+      return this.shiftsService.findForEmployee(
         user.organisationId,
-        user.id,
+        employee.id,
       );
-      if (!employee) {
-        return [];
-      }
-      return this.shiftsService.summary(user.organisationId, query, {
-        restrictEmployeeId: employee.id,
-      });
     }
 
-    return this.shiftsService.summary(user.organisationId, query);
+    return this.shiftsService.findAll(user.organisationId);
   }
 
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Post()
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -80,7 +62,7 @@ export class ShiftsController {
     return this.shiftsService.create(user.organisationId, dto);
   }
 
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id')
   async update(
     @CurrentUser() user: AuthenticatedUser,
@@ -90,7 +72,7 @@ export class ShiftsController {
     return this.shiftsService.update(user.organisationId, id, dto);
   }
 
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Delete(':id')
   async remove(
     @CurrentUser() user: AuthenticatedUser,
