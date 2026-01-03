@@ -71,12 +71,12 @@ export class AuditLogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap(async (result) => {
-        const after =
-          result !== undefined
-            ? result
-            : metadata.captureBody
-              ? request.body
-              : undefined;
+        let after: unknown;
+        if (result !== undefined) {
+          after = result;
+        } else if (metadata.captureBody) {
+          after = request.body;
+        }
 
         const resolvedEntityId =
           entityId ?? this.extractEntityId(after);
@@ -94,7 +94,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             userAgent,
           });
         } catch (error) {
-          // Audit should not block the main flow — record and continue.
+          // Audit logging failures are non-blocking; warn and continue.
           this.logger.warn(
             `Audit logging skipped (${metadata.action}): ${(error as Error).message}`,
           );
@@ -110,7 +110,6 @@ export class AuditLogInterceptor implements NestInterceptor {
 
   private resolveIp(request: RequestWithUser) {
     if (request.ip) return request.ip;
-    if (Array.isArray(request.ips) && request.ips.length) return request.ips[0];
     return request.socket?.remoteAddress;
   }
 

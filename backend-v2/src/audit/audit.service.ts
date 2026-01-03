@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -18,10 +18,15 @@ export interface AuditLogEntryInput {
 
 @Injectable()
 export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async log(entry: AuditLogEntryInput) {
     if (!entry.organisationId || !entry.actorUserId) {
+      this.logger.warn(
+        `Audit entry skipped due to missing organisationId or actorUserId for action ${entry.action}`,
+      );
       return null;
     }
 
