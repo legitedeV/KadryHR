@@ -70,7 +70,7 @@ export default function WnioskiPage() {
           if (firstActive) {
             setForm((prev) => ({
               ...prev,
-              type: (firstActive.code as RequestType) ?? prev.type,
+              type: normalizeLeaveCode(firstActive.code ?? prev.type),
               leaveTypeId: firstActive.id,
             }));
           }
@@ -196,13 +196,13 @@ export default function WnioskiPage() {
                   setForm((prev) => ({
                     ...prev,
                     leaveTypeId: selected.id,
-                    type: (selected.code as RequestType) ?? prev.type,
+                    type: normalizeLeaveCode(selected.code ?? prev.type),
                   }));
                 } else {
                   setForm((prev) => ({
                     ...prev,
                     leaveTypeId: undefined,
-                    type: e.target.value as RequestType,
+                    type: normalizeLeaveCode(e.target.value),
                   }));
                 }
               }}
@@ -307,7 +307,10 @@ export default function WnioskiPage() {
                   className="input"
                   value={newLeaveType.code}
                   onChange={(e) =>
-                    setNewLeaveType((prev) => ({ ...prev, code: e.target.value as RequestType }))
+                    setNewLeaveType((prev) => ({
+                      ...prev,
+                      code: normalizeLeaveCode(e.target.value),
+                    }))
                   }
                 >
                   {Object.keys(LEAVE_TYPES).map((code) => (
@@ -580,6 +583,11 @@ function mapRequestType(type: RequestItem["type"], customName?: string | null) {
     default:
       return type;
   }
+}
+
+function normalizeLeaveCode(code?: string | null): RequestType {
+  const validCodes = Object.keys(LEAVE_TYPES) as RequestType[];
+  return validCodes.includes(code as RequestType) ? (code as RequestType) : "OTHER";
 }
 
 function mapStatus(status: RequestItem["status"]) {

@@ -351,7 +351,9 @@ export class LeaveRequestsService {
       where: { id: leaveTypeId, organisationId, isActive: true },
     });
     if (!leaveType) {
-      throw new BadRequestException('Leave type not found');
+      throw new BadRequestException(
+        'Wybrany typ urlopu jest niedostępny w tej organizacji',
+      );
     }
     return leaveType;
   }
@@ -371,7 +373,7 @@ export class LeaveRequestsService {
     const allowedNext = allowed[current] ?? [];
     if (!allowedNext.includes(next)) {
       throw new BadRequestException(
-        `Status cannot transition from ${current} to ${next}`,
+        `Zmiana statusu z ${current} na ${next} jest niedozwolona`,
       );
     }
   }
