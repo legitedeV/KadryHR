@@ -13,6 +13,8 @@ import {
 import { formatDateRange } from "@/lib/date-range";
 import { usePermissions } from "@/lib/use-permissions";
 
+const EMPLOYEE_FALLBACK_LABEL = "Pracownik";
+
 interface DashboardData {
   shifts: ShiftRecord[];
   employees: PaginatedResponse<EmployeeRecord>;
@@ -34,6 +36,12 @@ function getWeekRange() {
       "pl-PL"
     )}`,
   };
+}
+
+function formatEmployeeName(shift: ShiftRecord) {
+  const name = `${shift.employee?.firstName ?? ""} ${shift.employee?.lastName ?? ""}`.trim();
+  if (name) return name;
+  return shift.employeeId || EMPLOYEE_FALLBACK_LABEL;
 }
 
 export default function DashboardPage() {
@@ -94,11 +102,9 @@ export default function DashboardPage() {
       const durationHours =
         (new Date(shift.endsAt).getTime() - new Date(shift.startsAt).getTime()) /
         (1000 * 60 * 60);
-      const employeeName = shift.employee?.firstName
-        ? `${shift.employee.firstName ?? ""} ${shift.employee.lastName ?? ""}`.trim()
-        : shift.employeeId;
+      const employeeName = formatEmployeeName(shift);
       return [
-        employeeName || "Pracownik",
+        employeeName || EMPLOYEE_FALLBACK_LABEL,
         shift.startsAt,
         shift.endsAt,
         durationHours.toFixed(2),
