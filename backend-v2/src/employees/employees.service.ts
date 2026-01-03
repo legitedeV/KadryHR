@@ -9,6 +9,8 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 
+type PrismaDbClient = PrismaClient | Prisma.TransactionClient; // <- DODAJ TO
+
 const DEFAULT_TAKE = 20;
 
 type EmployeeWithLocations = Prisma.EmployeeGetPayload<{

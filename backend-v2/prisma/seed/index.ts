@@ -2,20 +2,34 @@ import { PrismaClient, Role, Weekday } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcrypt';
 
+/**
+ * Seed korzysta z tego samego mechanizmu połączenia co aplikacja:
+ * Prisma 7 + adapter PrismaPg + DATABASE_URL z .env
+ */
+
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL is required to run the seed.');
+  throw new Error(
+    'DATABASE_URL is required to run the seed. Ustaw ją w backend-v2/.env'
+  );
 }
 
+// POPRAWNE użycie PrismaPg – przekazujemy obiekt z connectionString,
+// a nie sam string (inaczej dostajesz błąd z "in" operator / password).
+const adapter = new PrismaPg({
+  connectionString: databaseUrl,
+});
+
 const prisma = new PrismaClient({
-  adapter: new PrismaPg(databaseUrl),
+  adapter,
 });
 
 async function main() {
   const seedPassword = 'ChangeMe123!';
   const passwordHash = await bcrypt.hash(seedPassword, 10);
 
+  // 1) ORGANISATION
   const organisation = await prisma.organisation.upsert({
     where: { id: 'seed-organisation' },
     update: {},
@@ -26,6 +40,7 @@ async function main() {
     },
   });
 
+  // 2) OWNER USER
   await prisma.user.upsert({
     where: { email: 'owner@seed.local' },
     update: {},
@@ -39,6 +54,7 @@ async function main() {
     },
   });
 
+  // 3) EMPLOYEES
   await prisma.employee.createMany({
     data: [
       {
@@ -70,8 +86,10 @@ async function main() {
     where: { organisationId: organisation.id },
     orderBy: { createdAt: 'asc' },
   });
+
   const [ethan, mia, sofia] = employees;
 
+  // 4) LOCATIONS
   await prisma.location.createMany({
     data: [
       {
@@ -93,6 +111,7 @@ async function main() {
     orderBy: { createdAt: 'asc' },
   });
 
+  // 5) SHIFTS (przykładowe zmiany)
   await prisma.shift.createMany({
     data: [
       {
@@ -123,6 +142,7 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // 6) AVAILABILITY (dyspozycyjność — baza pod panel wniosków)
   await prisma.availability.createMany({
     data: [
       {
@@ -150,7 +170,10 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log('Seed completed. Owner credentials: owner@seed.local /', seedPassword);
+  console.log(
+    'Seed completed. Owner credentials: owner@seed.local /',
+    seedPassword,
+  );
 }
 
 main()
