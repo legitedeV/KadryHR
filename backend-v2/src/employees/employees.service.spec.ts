@@ -74,7 +74,9 @@ describe('EmployeesService', () => {
 
     const result = await service.findAll('org-1', query);
 
-    expect(prisma.employee.findMany).toHaveBeenCalledWith(
+    const findManyArgs = prisma.employee.findMany.mock.calls[0]?.[0];
+
+    expect(findManyArgs).toEqual(
       expect.objectContaining({
         where: expect.objectContaining({ organisationId: 'org-1' }),
         skip: 0,
