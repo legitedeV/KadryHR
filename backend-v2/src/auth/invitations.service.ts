@@ -18,6 +18,7 @@ interface InvitationContext {
   employeeId: string;
   invitedEmail: string;
   invitedByUserId: string;
+  action?: 'issue' | 'resend';
 }
 
 @Injectable()
@@ -57,7 +58,9 @@ export class InvitationsService {
     });
 
     if (!invitation) {
-      throw new BadRequestException('Zaproszenie jest nieprawidłowe lub wygasło');
+      throw new BadRequestException(
+        'Zaproszenie jest nieprawidłowe lub wygasło',
+      );
     }
 
     return {
@@ -71,10 +74,14 @@ export class InvitationsService {
     };
   }
 
-  private async ensureUser(organisationId: string, email: string, names?: {
-    firstName?: string | null;
-    lastName?: string | null;
-  }) {
+  private async ensureUser(
+    organisationId: string,
+    email: string,
+    names?: {
+      firstName?: string | null;
+      lastName?: string | null;
+    },
+  ) {
     const existing = await this.prisma.user.findUnique({ where: { email } });
 
     if (existing) {
@@ -105,11 +112,29 @@ export class InvitationsService {
         id: context.employeeId,
         organisationId: context.organisationId,
       },
-      include: { organisation: true },
+      include: {
+        organisation: true,
+        user: true,
+        invitations: {
+          where: { status: InvitationStatus.ACCEPTED },
+          take: 1,
+        },
+      },
     });
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
+    }
+
+    const targetEmail = employee.email ?? context.invitedEmail;
+    if (!targetEmail) {
+      throw new BadRequestException(
+        'Pracownik nie ma przypisanego adresu e-mail',
+      );
+    }
+
+    if (employee.invitations.length > 0) {
+      throw new BadRequestException('Pracownik ma już aktywne konto');
     }
 
     const recentPending = await this.prisma.employeeInvitation.findFirst({
@@ -139,7 +164,7 @@ export class InvitationsService {
       },
     });
 
-    const user = await this.ensureUser(context.organisationId, employee.email ?? context.invitedEmail, {
+    const user = await this.ensureUser(context.organisationId, targetEmail, {
       firstName: employee.firstName,
       lastName: employee.lastName,
     });
@@ -157,7 +182,7 @@ export class InvitationsService {
         data: {
           organisationId: employee.organisationId,
           employeeId: employee.id,
-          invitedEmail: context.invitedEmail,
+          invitedEmail: targetEmail,
           tokenHash,
           expiresAt,
         },
@@ -169,6 +194,23 @@ export class InvitationsService {
           data: { userId: user.id },
         });
       }
+
+      await tx.auditLog.create({
+        data: {
+          organisationId: employee.organisationId,
+          actorUserId: context.invitedByUserId,
+          action:
+            context.action === 'resend'
+              ? 'employee.invitation_resent'
+              : 'employee.invitation_issued',
+          entityType: 'employee',
+          entityId: employee.id,
+          after: {
+            invitedEmail: targetEmail,
+            expiresAt,
+          },
+        },
+      });
     });
 
     const invitationLink = this.buildInvitationLink(token);
@@ -177,13 +219,14 @@ export class InvitationsService {
       organisationName: employee.organisation.name,
       invitationLink,
       inviteeName: `${employee.firstName} ${employee.lastName}`.trim(),
-      inviterName: inviter?.firstName || inviter?.lastName
-        ? `${inviter?.firstName ?? ''} ${inviter?.lastName ?? ''}`.trim()
-        : null,
+      inviterName:
+        inviter?.firstName || inviter?.lastName
+          ? `${inviter?.firstName ?? ''} ${inviter?.lastName ?? ''}`.trim()
+          : null,
     });
 
     await this.queueService.addEmailDeliveryJob({
-      to: context.invitedEmail,
+      to: targetEmail,
       subject,
       text: `Twoje konto w KadryHR zostało utworzone. Ustaw hasło: ${invitationLink}`,
       html,
@@ -213,13 +256,19 @@ export class InvitationsService {
     });
 
     if (!invitation) {
-      throw new BadRequestException('Zaproszenie jest nieprawidłowe lub wygasło');
+      throw new BadRequestException(
+        'Zaproszenie jest nieprawidłowe lub wygasło',
+      );
     }
 
-    const user = await this.ensureUser(invitation.organisationId, invitation.invitedEmail, {
-      firstName: invitation.employee.firstName,
-      lastName: invitation.employee.lastName,
-    });
+    const user = await this.ensureUser(
+      invitation.organisationId,
+      invitation.invitedEmail,
+      {
+        firstName: invitation.employee.firstName,
+        lastName: invitation.employee.lastName,
+      },
+    );
 
     await this.prisma.$transaction(async (tx) => {
       await tx.employeeInvitation.update({
@@ -283,8 +332,10 @@ export class InvitationsService {
           <tr>
             <td style="font-size:14px;line-height:22px;padding-bottom:16px;">
               ${params.inviteeName ? `${params.inviteeName}, ` : ''}zapraszamy do organizacji <strong>${params.organisationName}</strong> w KadryHR.${
-      params.inviterName ? ` Zaproszenie wysłał(a): ${params.inviterName}.` : ''
-    }
+                params.inviterName
+                  ? ` Zaproszenie wysłał(a): ${params.inviterName}.`
+                  : ''
+              }
             </td>
           </tr>
           <tr>

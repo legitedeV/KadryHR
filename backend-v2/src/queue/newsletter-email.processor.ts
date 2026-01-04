@@ -15,7 +15,12 @@ export class NewsletterEmailProcessor extends WorkerHost {
   async process(job: Job<NewsletterEmailJob>): Promise<void> {
     const { to, subject, text, html } = job.data;
 
-    const result = await this.emailAdapter.sendEmail({ to, subject, text, html });
+    const result = await this.emailAdapter.sendEmail({
+      to,
+      subject,
+      text,
+      html,
+    });
 
     if (!result.success && !result.skipped) {
       this.logger.error(`Newsletter email failed for ${to}: ${result.error}`);
