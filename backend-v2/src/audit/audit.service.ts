@@ -4,14 +4,23 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export type AuditLogAction = string;
 
+// Minimal JSON-like structure to avoid Prisma error-type unions in linting
+type AuditJson =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: AuditJson }
+  | AuditJson[];
+
 export interface AuditLogEntryInput {
   organisationId: string;
   actorUserId: string;
   action: AuditLogAction;
   entityType: string;
   entityId?: string | null;
-  before?: Prisma.InputJsonValue | null;
-  after?: Prisma.InputJsonValue | null;
+  before?: AuditJson;
+  after?: AuditJson;
   ip?: string | null;
   userAgent?: string | null;
 }

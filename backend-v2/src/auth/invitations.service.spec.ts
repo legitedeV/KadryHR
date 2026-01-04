@@ -15,14 +15,21 @@ const prismaMock = {
   $transaction: jest.fn(),
 };
 
-const queueMock = { addEmailDeliveryJob: jest.fn() } as unknown as QueueService;
-const configMock = { get: jest.fn(() => 'https://frontend.test') } as unknown as ConfigService;
+const queueMock = {
+  addEmailDeliveryJob: jest.fn(),
+};
+const configMock = {
+  get: jest.fn(() => 'https://frontend.test'),
+} as unknown as ConfigService;
 const authMock = {} as unknown as AuthService;
 
 function setupService() {
   prismaMock.$transaction.mockImplementation(async (cb: any) => {
     const tx = {
-      employeeInvitation: { updateMany: jest.fn(), create: jest.fn((args: any) => args) },
+      employeeInvitation: {
+        updateMany: jest.fn(),
+        create: jest.fn((args: any) => args),
+      },
       employee: { update: jest.fn() },
       auditLog: { create: jest.fn() },
     };
@@ -61,8 +68,11 @@ describe('InvitationsService', () => {
     });
     prismaMock.employeeInvitation.findFirst.mockResolvedValue(null);
     prismaMock.user.findUnique.mockResolvedValue(null);
-    prismaMock.user.create.mockResolvedValue({ id: 'user-1', role: Role.EMPLOYEE });
-    (queueMock.addEmailDeliveryJob as jest.Mock).mockResolvedValue(true);
+    prismaMock.user.create.mockResolvedValue({
+      id: 'user-1',
+      role: Role.EMPLOYEE,
+    });
+    queueMock.addEmailDeliveryJob.mockResolvedValue(true);
 
     const result = await service.issueInvitation({
       organisationId: 'org-1',

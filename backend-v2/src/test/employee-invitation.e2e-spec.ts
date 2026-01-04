@@ -55,7 +55,9 @@ describe('Employee Invitations (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.employeeInvitation.deleteMany({ where: { employee: { organisationId } } });
+    await prisma.employeeInvitation.deleteMany({
+      where: { employee: { organisationId } },
+    });
     await prisma.employee.deleteMany({ where: { organisationId } });
     await prisma.user.deleteMany({ where: { organisationId } });
     await prisma.organisation.delete({ where: { id: organisationId } });
@@ -66,7 +68,11 @@ describe('Employee Invitations (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/employees')
       .set('Authorization', `Bearer ${managerToken}`)
-      .send({ firstName: 'Nowy', lastName: 'Pracownik', email: 'nowy@example.com' })
+      .send({
+        firstName: 'Nowy',
+        lastName: 'Pracownik',
+        email: 'nowy@example.com',
+      })
       .expect(201);
 
     expect(res.body.invitationSent).toBe(true);
@@ -79,18 +85,26 @@ describe('Employee Invitations (e2e)', () => {
   });
 
   it('resends invitation for pending employee', async () => {
-    const firstInvite = await prisma.employeeInvitation.findFirst({ where: { employeeId } });
+    const firstInvite = await prisma.employeeInvitation.findFirst({
+      where: { employeeId },
+    });
 
     await request(app.getHttpServer())
       .post(`/employees/${employeeId}/resend-invitation`)
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    const pending = await prisma.employeeInvitation.findMany({ where: { employeeId } });
+    const pending = await prisma.employeeInvitation.findMany({
+      where: { employeeId },
+    });
     expect(pending.length).toBeGreaterThanOrEqual(1);
-    const revoked = pending.find((i) => i.status === InvitationStatus.REVOKED && i.id === firstInvite?.id);
+    const revoked = pending.find(
+      (i) => i.status === InvitationStatus.REVOKED && i.id === firstInvite?.id,
+    );
     expect(revoked).toBeTruthy();
-    const latestPending = pending.find((i) => i.status === InvitationStatus.PENDING);
+    const latestPending = pending.find(
+      (i) => i.status === InvitationStatus.PENDING,
+    );
     expect(latestPending).toBeTruthy();
   });
 

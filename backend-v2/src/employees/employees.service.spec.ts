@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { NotFoundException } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { PrismaService } from '../prisma/prisma.service';

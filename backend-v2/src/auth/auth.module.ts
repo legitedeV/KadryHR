@@ -40,12 +40,7 @@ import { AuditModule } from '../audit/audit.module';
     AuditModule,
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    JwtRefreshStrategy,
-    InvitationsService,
-  ],
+  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, InvitationsService],
   exports: [AuthService, InvitationsService],
 })
 export class AuthModule {}
