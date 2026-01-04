@@ -27,6 +27,10 @@ export class CreateLeaveRequestDto {
   @IsISO8601()
   startDate?: string;
 
+  @IsOptional()
+  @IsISO8601()
+  endDate?: string;
+
   @IsEnum(LeaveCategory)
   type!: LeaveCategory;
 
@@ -50,6 +54,11 @@ export class CreateLeaveRequestDto {
   @IsString()
   @MaxLength(1024)
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  attachmentUrl?: string;
 
   /**
    * Optional: manager/owner can create for a specific employee

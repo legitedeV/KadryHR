@@ -17,3 +17,4 @@
 - Status transitions allowed: `PENDING -> APPROVED/REJECTED/CANCELLED`, `APPROVED -> CANCELLED`; others rejected with error.
 - Leave creation must be scoped to organisation and employee; employees can only see their own requests.
 - Leave type references must belong to the same organisation and be active; otherwise creation/update should fail.
+- Backend contract for create/update: `type` + (`startDate`/`endDate` or `startsAt`/`endsAt`) are required, `leaveTypeId` is validated against the organisation, and optional `attachmentUrl`/`reason` fields are persisted. Query params support `skip`/`take` pagination plus filters `from`/`to`/`status`/`type`/`employeeId`.

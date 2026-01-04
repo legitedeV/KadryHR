@@ -103,6 +103,28 @@ describe('LeaveRequestsService', () => {
     );
   });
 
+  it('persists attachment URL when provided', async () => {
+    await service.create(
+      'org-1',
+      {
+        employeeId: 'emp-1',
+        type: LeaveCategory.PAID_LEAVE,
+        startDate: '2024-02-01T00:00:00.000Z',
+        endDate: '2024-02-02T00:00:00.000Z',
+        attachmentUrl: 'https://example.com/file.pdf',
+      },
+      { userId: 'user-1', role: Role.MANAGER },
+    );
+
+    expect(mockPrisma.leaveRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          attachmentUrl: 'https://example.com/file.pdf',
+        }),
+      }),
+    );
+  });
+
   it('sets approval metadata when status changes', async () => {
     mockPrisma.leaveRequest.update.mockResolvedValue({
       id: 'lr-1',

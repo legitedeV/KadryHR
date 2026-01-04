@@ -165,6 +165,7 @@ export class LeaveRequestsService {
         startDate,
         endDate,
         reason: dto.reason ?? dto.notes ?? null,
+        attachmentUrl: dto.attachmentUrl ?? null,
       },
       include: LEAVE_INCLUDE,
     });
@@ -212,6 +213,10 @@ export class LeaveRequestsService {
 
     if (dto.reason !== undefined || dto.notes !== undefined) {
       data.reason = dto.reason ?? dto.notes ?? null;
+    }
+
+    if (dto.attachmentUrl !== undefined) {
+      data.attachmentUrl = dto.attachmentUrl ?? null;
     }
 
     const updated = await this.prisma.leaveRequest.update({
