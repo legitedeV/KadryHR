@@ -25,7 +25,7 @@ export default function NewsletterConfirmPage() {
           body: JSON.stringify({ token }),
         });
         setStatus("success");
-      } catch (err) {
+  } catch {
         setError("Link wygasł lub jest nieprawidłowy. Zapisz się ponownie.");
         setStatus("error");
       }

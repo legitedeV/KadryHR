@@ -7,10 +7,16 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from './types/authenticated-user.type';
 import type { Response } from 'express';
 import { RegisterDto } from './dto/register.dto';
+import { InvitationsService } from './invitations.service';
+import { AcceptInvitationDto } from './dto/accept-invitation.dto';
+import { ValidateInvitationDto } from './dto/validate-invitation.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly invitationsService: InvitationsService,
+  ) {}
 
   @Post('login')
   async login(
@@ -26,6 +32,24 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.register(registerDto, res);
+  }
+
+  @Post('invitations/accept')
+  async acceptInvitation(
+    @Body() dto: AcceptInvitationDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.invitationsService.acceptInvitation(
+      dto.token,
+      dto.password,
+      res,
+      { phone: dto.phone, acceptTerms: dto.acceptTerms },
+    );
+  }
+
+  @Post('invitations/validate')
+  async validateInvitation(@Body() dto: ValidateInvitationDto) {
+    return this.invitationsService.validateInvitation(dto.token);
   }
 
   @UseGuards(JwtRefreshGuard)

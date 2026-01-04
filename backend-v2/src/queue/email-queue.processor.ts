@@ -21,7 +21,7 @@ export class EmailQueueProcessor extends WorkerHost {
     const { notificationId, to, subject, text, html } = job.data;
 
     this.logger.log(
-      `Processing email delivery job for notification ${notificationId}`,
+      `Processing email delivery job for ${notificationId ?? 'ad-hoc email'}`,
     );
 
     const result = await this.emailAdapter.sendEmail({
@@ -55,14 +55,16 @@ export class EmailQueueProcessor extends WorkerHost {
     }
 
     // Update delivery attempt record
-    await this.prisma.notificationDeliveryAttempt.updateMany({
-      where: {
-        notificationId,
-      },
-      data: {
-        status,
-        errorMessage,
-      },
-    });
+    if (notificationId) {
+      await this.prisma.notificationDeliveryAttempt.updateMany({
+        where: {
+          notificationId,
+        },
+        data: {
+          status,
+          errorMessage,
+        },
+      });
+    }
   }
 }

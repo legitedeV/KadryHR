@@ -8,6 +8,8 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { StringValue } from 'ms';
+import { QueueModule } from '../queue/queue.module';
+import { InvitationsService } from './invitations.service';
 
 @Module({
   imports: [
@@ -32,9 +34,16 @@ import type { StringValue } from 'ms';
         };
       },
     }),
+    QueueModule,
+    ConfigModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtRefreshStrategy,
+    InvitationsService,
+  ],
+  exports: [AuthService, InvitationsService],
 })
 export class AuthModule {}

@@ -25,7 +25,7 @@ export default function NewsletterUnsubscribePage() {
           body: JSON.stringify({ token }),
         });
         setStatus("success");
-      } catch (err) {
+  } catch {
         setError("Link jest nieprawidłowy lub wygasł.");
         setStatus("error");
       }

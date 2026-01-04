@@ -11,6 +11,7 @@ import {
   apiListEmployees,
   apiListLocations,
   apiUpdateEmployee,
+  apiResendInvitation,
 } from "@/lib/api";
 import { usePermissions } from "@/lib/use-permissions";
 import { pushToast } from "@/lib/toast";
@@ -37,6 +38,7 @@ export default function PracownicyPage() {
   const [showDeleteId, setShowDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
@@ -86,8 +88,16 @@ export default function PracownicyPage() {
         await apiUpdateEmployee(editing.id, payload);
         pushToast({ title: "Zaktualizowano pracownika", variant: "success" });
       } else {
-        await apiCreateEmployee(payload);
-        pushToast({ title: "Dodano pracownika", variant: "success" });
+        const res = await apiCreateEmployee(payload);
+        pushToast({
+          title: "Dodano pracownika",
+          description: res.invitationSent
+            ? `Wysłano zaproszenie na ${payload.email}`
+            : payload.email
+              ? res.invitationError || "Zaproszenie nie zostało wysłane"
+              : undefined,
+          variant: res.invitationSent ? "success" : payload.email ? "warning" : "success",
+        });
       }
       setShowForm(false);
       setEditing(null);
@@ -146,6 +156,28 @@ export default function PracownicyPage() {
   const startEdit = (employee: EmployeeRecord) => {
     setEditing(employee);
     setShowForm(true);
+  };
+
+  const resendInvitation = async (employee: EmployeeRecord) => {
+    if (!employee.email) return;
+    setResendingId(employee.id);
+    try {
+      await apiResendInvitation(employee.id);
+      pushToast({
+        title: "Zaproszenie wysłane",
+        description: `Nowe zaproszenie wysłano na ${employee.email}`,
+        variant: "success",
+      });
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się wysłać zaproszenia",
+        variant: "error",
+      });
+    } finally {
+      setResendingId(null);
+    }
   };
 
   const toggleSort = (column: SortableColumn) => {
@@ -260,6 +292,15 @@ export default function PracownicyPage() {
                         >
                           Edytuj
                         </button>
+                        {e.email && (
+                          <button
+                            onClick={() => resendInvitation(e)}
+                            disabled={resendingId === e.id}
+                            className="rounded-lg border border-brand-200 px-3 py-1 text-brand-700 hover:bg-brand-50 disabled:opacity-60 dark:border-brand-800 dark:text-brand-200 dark:hover:bg-brand-950"
+                          >
+                            {resendingId === e.id ? "Wysyłanie..." : "Wyślij ponownie"}
+                          </button>
+                        )}
                         <button
                           onClick={() => setShowDeleteId(e.id)}
                           className="rounded-lg border border-rose-200 px-3 py-1 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:text-rose-200 dark:hover:bg-rose-950"

@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 export interface EmailDeliveryJob {
-  notificationId: string;
+  notificationId?: string;
   to: string;
   subject: string;
   text: string;
