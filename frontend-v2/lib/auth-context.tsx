@@ -2,7 +2,14 @@
 
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { apiClient } from "./api-client";
-import { apiGetMe, apiLogin, apiLogout, mapUser, User } from "./api";
+import {
+  apiGetMe,
+  apiLogin,
+  apiLogout,
+  apiRegisterOwner,
+  mapUser,
+  User,
+} from "./api";
 import { clearAuthTokens, getAuthTokens } from "./auth";
 import { pushToast } from "./toast";
 
@@ -10,6 +17,9 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User | null>;
+  register: (
+    payload: Parameters<typeof apiRegisterOwner>[0],
+  ) => Promise<User | null>;
   logout: () => Promise<void>;
   refresh: () => Promise<User | null>;
 }
@@ -56,6 +66,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const register = async (
+    payload: Parameters<typeof apiRegisterOwner>[0],
+  ): Promise<User | null> => {
+    try {
+      const user = await apiRegisterOwner(payload);
+      setUser(user);
+      return user;
+    } catch (error) {
+      clearAuthTokens();
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await apiLogout();
@@ -65,15 +90,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-    const refresh = async () => {
-      try {
-        const profile = await apiGetMe();
-        setUser(profile);
-        return profile;
-      } catch {
-        clearAuthTokens();
-        setUser(null);
-        pushToast({
+  const refresh = async () => {
+    try {
+      const profile = await apiGetMe();
+      setUser(profile);
+      return profile;
+    } catch {
+      clearAuthTokens();
+      setUser(null);
+      pushToast({
         title: "Sesja wygasła",
         description: "Zaloguj się ponownie.",
         variant: "warning",
@@ -83,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ user, loading, login, logout, refresh }),
+    () => ({ user, loading, login, register, logout, refresh }),
     [user, loading],
   );
 

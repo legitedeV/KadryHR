@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmailAdapter } from './email.adapter';
+import { EmailAdapter } from '../email/email.adapter';
 import { QueueService } from '../queue/queue.service';
 import { NotificationType, NotificationChannel } from '@prisma/client';
 

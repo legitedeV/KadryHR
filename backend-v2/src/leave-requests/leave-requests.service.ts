@@ -62,6 +62,11 @@ export class LeaveRequestsService {
   ) {
     const where: Prisma.LeaveRequestWhereInput = { organisationId };
 
+    const take = Math.max(query.pageSize ?? query.take ?? 20, 1);
+    const skipCandidate =
+      query.skip ?? (query.page ? (query.page - 1) * take : 0);
+    const skip = Math.max(skipCandidate ?? 0, 0);
+
     if (scope?.restrictToEmployeeId) {
       where.employeeId = scope.restrictToEmployeeId;
     } else if (query.employeeId) {
@@ -70,6 +75,14 @@ export class LeaveRequestsService {
 
     if (query.status) {
       where.status = query.status;
+    }
+
+    if (query.type) {
+      where.type = query.type;
+    }
+
+    if (query.leaveTypeId) {
+      where.leaveTypeId = query.leaveTypeId;
     }
 
     if (query.from || query.to) {
@@ -82,11 +95,18 @@ export class LeaveRequestsService {
       }
     }
 
-    return this.prisma.leaveRequest.findMany({
-      where,
-      orderBy: { startDate: 'desc' },
-      include: LEAVE_INCLUDE,
-    });
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.leaveRequest.findMany({
+        where,
+        orderBy: { startDate: 'desc' },
+        include: LEAVE_INCLUDE,
+        skip,
+        take,
+      }),
+      this.prisma.leaveRequest.count({ where }),
+    ]);
+
+    return { data, total, skip, take };
   }
 
   async findOne(organisationId: string, id: string, scope?: AccessScope) {
@@ -103,7 +123,9 @@ export class LeaveRequestsService {
       scope?.restrictToEmployeeId &&
       item.employeeId !== scope.restrictToEmployeeId
     ) {
-      throw new ForbiddenException('You can only access your own leave requests');
+      throw new ForbiddenException(
+        'You can only access your own leave requests',
+      );
     }
 
     return item;
@@ -139,7 +161,7 @@ export class LeaveRequestsService {
         employeeId: targetEmployeeId,
         createdByUserId: options.userId,
         leaveTypeId: dto.leaveTypeId ?? null,
-        type: dto.type as LeaveCategory,
+        type: dto.type,
         startDate,
         endDate,
         reason: dto.reason ?? dto.notes ?? null,
@@ -180,7 +202,7 @@ export class LeaveRequestsService {
     }
 
     if (dto.type !== undefined) {
-      data.type = dto.type as LeaveCategory;
+      data.type = dto.type;
     }
 
     if (dto.leaveTypeId) {
@@ -293,7 +315,9 @@ export class LeaveRequestsService {
     }
 
     if (startDate.getTime() > endDate.getTime()) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
     }
 
     return { startDate, endDate };

@@ -266,6 +266,25 @@ export async function apiLogin(email: string, password: string) {
   };
 }
 
+export async function apiRegisterOwner(payload: {
+  organisationName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}) {
+  const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/register`, {
+    method: "POST",
+    auth: false,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const user = mapUser(data?.user);
+  apiClient.setTokens({ accessToken: data.accessToken });
+  return user;
+}
+
 export async function apiGetMe(): Promise<User> {
   apiClient.hydrateFromStorage();
   const data = await apiClient.request<UserResponse>(`${AUTH_PREFIX}/me`, {
@@ -649,6 +668,14 @@ export async function apiSendTestNotification(): Promise<NotificationItem | null
     { method: "POST" },
   );
   return response ? mapNotification(response) : null;
+}
+
+export async function apiSendTestEmail(to: string) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`/email/test`, {
+    method: "POST",
+    body: JSON.stringify({ to }),
+  });
 }
 
 // Campaign API functions

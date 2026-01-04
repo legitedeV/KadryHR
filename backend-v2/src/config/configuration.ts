@@ -16,9 +16,11 @@ export interface AppConfig {
   email: {
     host: string;
     port: number;
+    secure: boolean;
     user: string;
     pass: string;
     from: string;
+    enabled: boolean;
   };
   redis: {
     host: string;
@@ -45,9 +47,11 @@ export const configuration = (): AppConfig => ({
   email: {
     host: process.env.SMTP_HOST ?? '',
     port: Number(process.env.SMTP_PORT ?? 0),
+    secure: (process.env.SMTP_SECURE ?? 'false') === 'true',
     user: process.env.SMTP_USER ?? '',
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.SMTP_FROM ?? '',
+    enabled: (process.env.EMAIL_ENABLED ?? 'true') !== 'false',
   },
   redis: {
     host: process.env.REDIS_HOST ?? 'localhost',

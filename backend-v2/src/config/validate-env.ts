@@ -60,6 +60,14 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   SMTP_FROM?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_SECURE?: string;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_ENABLED?: string;
 }
 
 export const validateEnv = (config: Record<string, unknown>) => {

@@ -19,6 +19,7 @@ const mockPrisma = {
   leaveType: {
     findFirst: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
 
 const mockNotifications = {
@@ -46,6 +47,11 @@ describe('LeaveRequestsService', () => {
     jest.clearAllMocks();
     mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
     mockNotifications.createNotification.mockResolvedValue(null);
+    mockPrisma.leaveRequest.findMany.mockResolvedValue([]);
+    mockPrisma.leaveRequest.count.mockResolvedValue(0);
+    mockPrisma.$transaction.mockImplementation(async (operations) =>
+      Promise.all(operations),
+    );
     mockPrisma.leaveRequest.create.mockResolvedValue({
       id: 'lr-new',
       organisationId: 'org-1',
@@ -125,6 +131,23 @@ describe('LeaveRequestsService', () => {
         userId: 'user-emp',
         type: expect.any(String),
       }),
+    );
+  });
+
+  it('applies default pagination when skip/take are missing', async () => {
+    const result = await service.findAll('org-1', {} as any);
+
+    expect(mockPrisma.leaveRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 20 }),
+    );
+    expect(result).toEqual({ data: [], total: 0, skip: 0, take: 20 });
+  });
+
+  it('accepts explicit take/skip values', async () => {
+    await service.findAll('org-1', { take: 5, skip: 10 } as any);
+
+    expect(mockPrisma.leaveRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 10, take: 5 }),
     );
   });
 });

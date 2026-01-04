@@ -17,29 +17,43 @@ export class EmailAdapter {
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private readonly transporter: nodemailer.Transporter | null;
   private readonly fromAddress: string | null;
+  private readonly enabled: boolean;
 
   constructor(private readonly configService: ConfigService<AppConfig, true>) {
+    this.enabled = this.configService.get('email.enabled', { infer: true });
+
     const host = this.configService.get('email.host', { infer: true });
     const port = this.configService.get('email.port', { infer: true });
     const user = this.configService.get('email.user', { infer: true });
     const pass = this.configService.get('email.pass', { infer: true });
     const from = this.configService.get('email.from', { infer: true });
+    const secure = this.configService.get('email.secure', { infer: true });
 
-    if (host && port && user && pass && from) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-      this.fromAddress = from;
-    } else {
+    const missingConfig = [host, port, user, pass, from].some((val) => !val);
+
+    if (!this.enabled) {
+      this.transporter = null;
+      this.fromAddress = null;
+      this.logger.warn('[EmailAdapter] Email disabled: EMAIL_ENABLED=false');
+      return;
+    }
+
+    if (missingConfig) {
       this.transporter = null;
       this.fromAddress = null;
       this.logger.warn(
-        'Email adapter not configured - skipping email delivery',
+        '[EmailAdapter] Email disabled: missing SMTP configuration (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM)',
       );
+      return;
     }
+
+    this.transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+    });
+    this.fromAddress = from;
   }
 
   async sendEmail(options: {
@@ -71,5 +85,13 @@ export class EmailAdapter {
       this.logger.error(`Failed to send email: ${message}`);
       return { success: false, error: message };
     }
+  }
+
+  async sendTestEmail(to: string): Promise<EmailSendResult> {
+    return this.sendEmail({
+      to,
+      subject: 'KadryHR – Test email',
+      text: 'This is a test email from KadryHR production environment.',
+    });
   }
 }
