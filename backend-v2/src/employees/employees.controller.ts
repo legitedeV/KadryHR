@@ -10,6 +10,7 @@ import {
   Query,
   UseInterceptors,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { EmployeesService } from './employees.service';
@@ -108,6 +109,7 @@ export class EmployeesController {
           employeeId: employee.id,
           invitedEmail: dto.email,
           invitedByUserId: user.id,
+          action: 'issue',
         });
         invitationSent = true;
       } catch (error) {
@@ -132,6 +134,7 @@ export class EmployeesController {
     entityType: 'employee',
     entityIdParam: 'id',
   })
+  @HttpCode(200)
   async resendInvitation(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -150,6 +153,7 @@ export class EmployeesController {
       employeeId: id,
       invitedEmail: employee.email,
       invitedByUserId: user.id,
+      action: 'resend',
     });
 
     return { success: true };

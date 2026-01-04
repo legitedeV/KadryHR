@@ -5,6 +5,7 @@ Każdy PR powinien dopisać krótką pozycję do listy poniżej. Format wpisu: `
 ## [Unreleased]
 
 - (tu dopisujemy elementy z PR przed wydaniem)
+- [#PR] 2026-01-12 Fix employee invitation + resend flow, add missing Organisation.preventShiftOnApprovedLeave migration, harden error handling (type:fix, area:auth/employees)
 
 ## 2026-01-04
 

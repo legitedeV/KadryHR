@@ -92,7 +92,7 @@ export default function PracownicyPage() {
         pushToast({
           title: "Dodano pracownika",
           description: res.invitationSent
-            ? `Wysłano zaproszenie na ${payload.email}`
+            ? "Zaproszenie zostało wysłane"
             : payload.email
               ? res.invitationError || "Zaproszenie nie zostało wysłane"
               : undefined,
@@ -172,7 +172,9 @@ export default function PracownicyPage() {
       console.error(err);
       pushToast({
         title: "Błąd",
-        description: "Nie udało się wysłać zaproszenia",
+        description:
+          (err as Error)?.message ||
+          "Nie udało się wysłać zaproszenia",
         variant: "error",
       });
     } finally {
