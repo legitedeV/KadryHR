@@ -2,9 +2,10 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  TooManyRequestsException,
   NotFoundException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { NewsletterSubscriptionStatus, Prisma } from '@prisma/client';
 import { randomBytes, createHash } from 'crypto';
@@ -107,8 +108,9 @@ export class NewsletterService {
     });
 
     if (recentTokens >= 3) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         'Poczekaj chwilę przed ponownym zamówieniem linku potwierdzającego.',
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
