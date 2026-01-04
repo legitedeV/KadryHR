@@ -4,12 +4,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { QueueService } from '../queue/queue.service';
 type Role = string;
 
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: Partial<Record<keyof PrismaService, jest.Mock>>;
   let jwtService: Partial<Record<keyof JwtService, jest.Mock>>;
+  let queueService: { addEmailDeliveryJob: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -24,12 +26,17 @@ describe('AuthService', () => {
       employee: {
         create: jest.fn(),
       },
+      auditLog: {
+        create: jest.fn(),
+      },
       $transaction: jest.fn(),
     } as unknown as Partial<Record<keyof PrismaService, jest.Mock>>;
 
     jwtService = {
       signAsync: jest.fn().mockResolvedValue('token'),
     };
+
+    queueService = { addEmailDeliveryJob: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -42,6 +49,7 @@ describe('AuthService', () => {
             get: jest.fn().mockReturnValue('secret'),
           },
         },
+        { provide: QueueService, useValue: queueService },
       ],
     }).compile();
 
@@ -52,6 +60,7 @@ describe('AuthService', () => {
           organisation: { create: prisma.organisation.create },
           user: { create: prisma.user.create },
           employee: { create: prisma.employee.create },
+          auditLog: { create: prisma.auditLog.create },
         });
       }
       return Array.isArray(cb) ? Promise.all(cb) : cb;
@@ -114,6 +123,7 @@ describe('AuthService', () => {
     });
     prisma.employee.create = jest.fn().mockResolvedValue({});
     prisma.user.update = jest.fn();
+    queueService.addEmailDeliveryJob = jest.fn();
 
     const res = { cookie: jest.fn(), clearCookie: jest.fn() } as any;
 
@@ -137,5 +147,6 @@ describe('AuthService', () => {
     expect(prisma.employee.create).toHaveBeenCalled();
     expect(result.accessToken).toBeDefined();
     expect(res.cookie).toHaveBeenCalled();
+    expect(queueService.addEmailDeliveryJob).toHaveBeenCalled();
   });
 });
