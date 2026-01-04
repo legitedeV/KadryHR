@@ -28,7 +28,7 @@ export function NewsletterSignup() {
         body: JSON.stringify({ email, name: name || undefined, marketingConsent: consent }),
       });
       setSuccess(true);
-    } catch (error) {
+    } catch {
       pushToast({
         title: "Nie udało się zapisać",
         description: "Spróbuj ponownie za chwilę.",
@@ -51,7 +51,7 @@ export function NewsletterSignup() {
       </div>
       {success ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
-          Sprawdź skrzynkę – wysłaliśmy link potwierdzający. Wiadomość mogła trafić do folderu "Oferty" lub "Spam".
+          Sprawdź skrzynkę – wysłaliśmy link potwierdzający. Wiadomość mogła trafić do folderu &quot;Oferty&quot; lub &quot;Spam&quot;.
         </div>
       ) : (
         <form className="space-y-4" onSubmit={handleSubmit}>
