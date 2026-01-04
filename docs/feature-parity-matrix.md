@@ -7,6 +7,8 @@ Legend:
 - **DONE** – spełnia akceptację i ma testy/regresję.
 Statusy odnoszą się do rzeczywistego kodu (backend-v2 + frontend-v2). Dokument prowadzony w PL; nazwy techniczne (statusy, endpointy, widget) pozostają w EN dla jednoznaczności.
 
+Proces: każda istotna zmiana funkcjonalna powinna być połączona z GitHub Issue, uzupełnić `docs/CHANGELOG.md` i respektować Prompt Contract V2 (E2E, testy, docs, audit, RBAC, orgId).
+
 ## Macierz funkcjonalna (backend + frontend)
 | Feature area | Status | Backend coverage (Prisma + endpoints) | Frontend coverage (routes) | Acceptance criteria / gap notes |
 | --- | --- | --- | --- | --- |
