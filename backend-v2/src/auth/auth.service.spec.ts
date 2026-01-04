@@ -16,7 +16,15 @@ describe('AuthService', () => {
       user: {
         findUnique: jest.fn(),
         update: jest.fn(),
+        create: jest.fn(),
       },
+      organisation: {
+        create: jest.fn(),
+      },
+      employee: {
+        create: jest.fn(),
+      },
+      $transaction: jest.fn(),
     } as unknown as Partial<Record<keyof PrismaService, jest.Mock>>;
 
     jwtService = {
@@ -38,6 +46,16 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
+    prisma.$transaction = jest.fn(async (cb: any) => {
+      if (typeof cb === 'function') {
+        return cb({
+          organisation: { create: prisma.organisation.create },
+          user: { create: prisma.user.create },
+          employee: { create: prisma.employee.create },
+        });
+      }
+      return Array.isArray(cb) ? Promise.all(cb) : cb;
+    });
   });
 
   it('returns tokens on successful login', async () => {
@@ -71,5 +89,53 @@ describe('AuthService', () => {
         clearCookie: jest.fn(),
       } as any),
     ).rejects.toThrow();
+  });
+
+  it('registers a new organisation owner', async () => {
+    prisma.user.findUnique = jest.fn();
+    prisma.organisation.create = jest
+      .fn()
+      .mockResolvedValue({ id: 'org-1', name: 'Org' });
+    prisma.user.create = jest.fn().mockResolvedValue({
+      id: 'user-1',
+      email: 'new@example.com',
+      role: 'OWNER' as Role,
+      organisationId: 'org-1',
+    });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 'user-1',
+      email: 'new@example.com',
+      role: 'OWNER' as Role,
+      organisationId: 'org-1',
+      organisation: { id: 'org-1', name: 'Org' },
+      firstName: 'Jan',
+      lastName: 'Kowalski',
+    });
+    prisma.employee.create = jest.fn().mockResolvedValue({});
+    prisma.user.update = jest.fn();
+
+    const res = { cookie: jest.fn(), clearCookie: jest.fn() } as any;
+
+    const result = await service.register(
+      {
+        organisationName: 'Org',
+        firstName: 'Jan',
+        lastName: 'Kowalski',
+        email: 'new@example.com',
+        password: 'password123',
+      },
+      res,
+    );
+
+    expect(prisma.organisation.create).toHaveBeenCalled();
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: 'OWNER' }),
+      }),
+    );
+    expect(prisma.employee.create).toHaveBeenCalled();
+    expect(result.accessToken).toBeDefined();
+    expect(res.cookie).toHaveBeenCalled();
   });
 });

@@ -14,9 +14,11 @@ describe('EmailAdapter', () => {
           const config: Record<string, any> = {
             'email.host': 'smtp.example.com',
             'email.port': 587,
+            'email.secure': false,
             'email.user': 'test@example.com',
             'email.pass': 'password123',
             'email.from': 'noreply@example.com',
+            'email.enabled': true,
           };
           return config[key];
         }),
@@ -39,7 +41,9 @@ describe('EmailAdapter', () => {
 
     it('should send email successfully with configured transporter', async () => {
       // Mock the transporter's sendMail method
-      const sendMailMock = jest.fn().mockResolvedValue({ messageId: 'test-id' });
+      const sendMailMock = jest
+        .fn()
+        .mockResolvedValue({ messageId: 'test-id' });
       (adapter as any).transporter = { sendMail: sendMailMock };
 
       const result = await adapter.sendEmail({

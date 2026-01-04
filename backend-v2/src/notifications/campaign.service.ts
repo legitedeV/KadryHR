@@ -150,9 +150,15 @@ export class CampaignService {
         const filterSummary = audienceFilter?.all
           ? 'all users'
           : [
-              audienceFilter?.roles?.length ? `roles: ${audienceFilter.roles.join(', ')}` : '',
-              audienceFilter?.locationIds?.length ? `locations: ${audienceFilter.locationIds.length} selected` : '',
-              audienceFilter?.employeeIds?.length ? `employees: ${audienceFilter.employeeIds.length} selected` : '',
+              audienceFilter?.roles?.length
+                ? `roles: ${audienceFilter.roles.join(', ')}`
+                : '',
+              audienceFilter?.locationIds?.length
+                ? `locations: ${audienceFilter.locationIds.length} selected`
+                : '',
+              audienceFilter?.employeeIds?.length
+                ? `employees: ${audienceFilter.employeeIds.length} selected`
+                : '',
             ]
               .filter(Boolean)
               .join(', ');

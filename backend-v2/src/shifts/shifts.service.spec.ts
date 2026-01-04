@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ShiftsService } from './shifts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const mockPrisma = {
   shift: {
@@ -20,6 +21,13 @@ const mockPrisma = {
   availability: {
     findMany: jest.fn(),
   },
+  organisation: {
+    findUnique: jest.fn(),
+  },
+};
+
+const mockNotifications = {
+  createNotification: jest.fn(),
 };
 
 describe('ShiftsService', () => {
@@ -30,15 +38,20 @@ describe('ShiftsService', () => {
       providers: [
         ShiftsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
     service = module.get<ShiftsService>(ShiftsService);
     jest.clearAllMocks();
+    mockNotifications.createNotification.mockResolvedValue(null);
     mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
     mockPrisma.location.findFirst.mockResolvedValue({ id: 'loc-1' });
     mockPrisma.shift.findFirst.mockResolvedValue(null);
     mockPrisma.availability.findMany.mockResolvedValue([]);
+    mockPrisma.organisation.findUnique.mockResolvedValue({
+      preventShiftOnApprovedLeave: false,
+    });
   });
 
   it('throws on overlapping shift for employee', async () => {

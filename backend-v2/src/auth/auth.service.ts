@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -7,6 +11,8 @@ import type { AuthenticatedUser } from './types/authenticated-user.type';
 import type { StringValue } from 'ms';
 import { Response } from 'express';
 import { getPermissionsForRole } from './permissions';
+import { RegisterDto } from './dto/register.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -143,6 +149,71 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refreshTokenHash },
+    });
+
+    this.attachRefreshTokenCookie(res, refreshToken, refreshTokenTtl);
+
+    return {
+      accessToken,
+      user: await this.buildSafeUser(user.id),
+    };
+  }
+
+  async register(dto: RegisterDto, res: Response) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Użytkownik z tym e-mailem już istnieje');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    const { organisation, user } = await this.prisma.$transaction(
+      async (tx) => {
+        const organisation = await tx.organisation.create({
+          data: {
+            name: dto.organisationName,
+          },
+        });
+
+        const user = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash,
+            role: Role.OWNER,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            organisationId: organisation.id,
+          },
+        });
+
+        await tx.employee.create({
+          data: {
+            organisationId: organisation.id,
+            userId: user.id,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            email: dto.email,
+          },
+        });
+
+        return { organisation, user };
+      },
+    );
+
+    const payload = this.buildUserPayload({
+      ...user,
+      organisationId: organisation.id,
+    });
+    const { accessToken, refreshToken, refreshTokenTtl } =
+      await this.signTokens(payload);
+
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshTokenHash, organisationId: organisation.id },
     });
 
     this.attachRefreshTokenCookie(res, refreshToken, refreshTokenTtl);

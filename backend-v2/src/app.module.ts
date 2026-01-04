@@ -12,6 +12,7 @@ import { AvailabilityModule } from './availability/availability.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { LeaveTypesModule } from './leave-types/leave-types.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LeaveTypesModule } from './leave-types/leave-types.module';
     LeaveRequestsModule,
     LeaveTypesModule,
     NotificationsModule,
+    EmailModule,
   ],
 })
 export class AppModule {}

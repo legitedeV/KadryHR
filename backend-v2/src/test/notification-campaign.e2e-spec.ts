@@ -8,7 +8,7 @@ import { Role, NotificationType, NotificationChannel } from '@prisma/client';
 
 /**
  * E2E Test: Notification Campaign Flow
- * 
+ *
  * Tests the complete flow:
  * 1. Manager creates a campaign with targeted audience
  * 2. Manager sends the campaign

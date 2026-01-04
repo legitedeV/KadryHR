@@ -121,6 +121,14 @@ function LoginForm() {
         </form>
 
         <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
+          Nie masz konta? {" "}
+          <Link href="/register" className="underline underline-offset-2">
+            Zarejestruj się
+          </Link>
+          .
+        </p>
+
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
           Wróć na{" "}
           <Link href="/" className="underline underline-offset-2">
             stronę startową
