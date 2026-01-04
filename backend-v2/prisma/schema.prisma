@@ -72,6 +72,13 @@ enum NotificationRecipientStatus {
   SKIPPED
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
 enum NewsletterSubscriptionStatus {
   PENDING_CONFIRMATION
   ACTIVE
@@ -410,4 +417,26 @@ model NewsletterToken {
 
   @@index([subscriberId])
   @@index([tokenHash, type])
+}
+
+model EmployeeInvitation {
+  id              String           @id @default(uuid())
+  organisationId  String
+  employeeId      String
+  invitedEmail    String
+  tokenHash       String
+  status          InvitationStatus @default(PENDING)
+  expiresAt       DateTime         @default(dbgenerated("now() + interval '24 hours'"))
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([tokenHash])
+  @@index([status])
 }

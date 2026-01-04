@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -23,12 +24,16 @@ import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 import { Permission } from '../auth/permissions';
+import { InvitationsService } from '../auth/invitations.service';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @UseInterceptors(AuditLogInterceptor)
 @Controller('employees')
 export class EmployeesController {
-  constructor(private readonly employeesService: EmployeesService) {}
+  constructor(
+    private readonly employeesService: EmployeesService,
+    private readonly invitationsService: InvitationsService,
+  ) {}
 
   /**
    * Lista pracowników.
@@ -88,7 +93,54 @@ export class EmployeesController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateEmployeeDto,
   ) {
-    return this.employeesService.create(user.organisationId, dto);
+    const employee = await this.employeesService.create(
+      user.organisationId,
+      dto,
+    );
+
+    if (dto.email) {
+      await this.invitationsService.issueInvitation({
+        organisationId: user.organisationId,
+        employeeId: employee.id,
+        invitedEmail: dto.email,
+        invitedByUserId: user.id,
+      });
+    }
+
+    return {
+      employee,
+      invitationSent: Boolean(dto.email),
+    };
+  }
+
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
+  @Post(':id/resend-invitation')
+  @AuditLog({
+    action: 'EMPLOYEE_INVITATION_RESEND',
+    entityType: 'employee',
+    entityIdParam: 'id',
+  })
+  async resendInvitation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    const employee = await this.employeesService.findOne(
+      user.organisationId,
+      id,
+    );
+
+    if (!employee.email) {
+      throw new BadRequestException('Brak adresu e-mail pracownika');
+    }
+
+    await this.invitationsService.issueInvitation({
+      organisationId: user.organisationId,
+      employeeId: id,
+      invitedEmail: employee.email,
+      invitedByUserId: user.id,
+    });
+
+    return { success: true };
   }
 
   /**
