@@ -24,7 +24,10 @@ describe('AuthController', () => {
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: service },
-        { provide: InvitationsService, useValue: { acceptInvitation: jest.fn() } },
+        {
+          provide: InvitationsService,
+          useValue: { acceptInvitation: jest.fn() },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
