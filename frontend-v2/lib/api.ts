@@ -30,7 +30,12 @@ export interface ShiftRecord {
   notes?: string | null;
   startsAt: string;
   endsAt: string;
-  employee?: { id?: string; firstName?: string | null; lastName?: string | null };
+  employee?: {
+    id?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    avatarUrl?: string | null;
+  };
   location?: { id?: string; name?: string | null };
   availabilityWarning?: string | null;
 }
@@ -198,6 +203,7 @@ export interface EmployeeRecord {
   id: string;
   firstName: string;
   lastName: string;
+  avatarUrl?: string | null;
   email?: string | null;
   phone?: string | null;
   position?: string | null;
@@ -752,7 +758,12 @@ interface ShiftResponse {
   locationId?: string | null;
   position?: string | null;
   notes?: string | null;
-  employee?: { id?: string; firstName?: string | null; lastName?: string | null };
+  employee?: {
+    id?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    avatarUrl?: string | null;
+  };
   location?: { id?: string; name?: string | null };
   startsAt: string;
   endsAt: string;
@@ -763,6 +774,7 @@ interface EmployeeResponse {
   id: string;
   firstName?: string | null;
   lastName?: string | null;
+  avatarUrl?: string | null;
   email?: string | null;
   phone?: string | null;
   position?: string | null;
@@ -862,6 +874,7 @@ function mapEmployee(employee: EmployeeResponse): EmployeeRecord {
     id: employee.id,
     firstName: employee.firstName ?? "",
     lastName: employee.lastName ?? "",
+    avatarUrl: employee.avatarUrl ?? undefined,
     email: employee.email ?? undefined,
     phone: employee.phone ?? undefined,
     position: employee.position ?? undefined,
