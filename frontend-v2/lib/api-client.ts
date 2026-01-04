@@ -2,7 +2,7 @@ import { AuthTokens, clearAuthTokens, getAuthTokens, saveAuthTokens } from "./au
 import { pushToast } from "./toast";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 type RequestOptions = RequestInit & {
   auth?: boolean;

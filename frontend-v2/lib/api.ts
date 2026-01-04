@@ -1,7 +1,5 @@
-import { apiClient, API_BASE_URL } from "./api-client";
+import { apiClient } from "./api-client";
 import { clearAuthTokens } from "./auth";
-
-export { API_BASE_URL };
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
 export type Permission =
