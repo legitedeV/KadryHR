@@ -9,7 +9,12 @@ import type { Permission, User } from "@/lib/api";
 import { usePermissions } from "@/lib/use-permissions";
 import { NotificationsProvider, useNotificationsState } from "@/lib/notifications-context";
 
-type NavItem = { href: string; label: string; permissions?: Permission[] };
+type NavItem = {
+  href: string;
+  label: string;
+  permissions?: Permission[];
+  ownerOnly?: boolean;
+};
 
 const navItems: NavItem[] = [
   { href: "/panel/dashboard", label: "Dashboard" },
@@ -31,6 +36,11 @@ const navItems: NavItem[] = [
   },
   { href: "/panel/wnioski", label: "Wnioski" },
   { href: "/panel/powiadomienia", label: "Powiadomienia" },
+  {
+    href: "/panel/newsletter-subscribers",
+    label: "Subskrybenci newslettera",
+    ownerOnly: true,
+  },
   { href: "/panel/profil", label: "Profil" },
 ];
 
@@ -43,6 +53,7 @@ const titleByPath: Record<string, string> = {
   "/panel/dashboard": "Dashboard",
   "/panel/audit": "Audit",
   "/panel/powiadomienia": "Powiadomienia",
+  "/panel/newsletter-subscribers": "Subskrybenci newslettera",
 };
 
 function PanelShell({
@@ -169,7 +180,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
   const { hasAnyPermission } = usePermissions();
   const allowedNav = navItems.filter(
-    (item) => !item.permissions || hasAnyPermission(item.permissions),
+    (item) =>
+      (!item.permissions || hasAnyPermission(item.permissions)) &&
+      (!item.ownerOnly || user?.role === "OWNER"),
   );
 
   useEffect(() => {
