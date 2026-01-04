@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { AuditLog, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -9,7 +9,7 @@ export interface AuditLogPayload {
   organisationId?: string | null;
   actorUserId?: string | null;
   action: string;
-  entityType?: string | null;
+  entityType: string;
   entityId?: string | null;
   before?: unknown;
   after?: unknown;
@@ -65,31 +65,31 @@ export class AuditService {
    * Główna metoda – zapis pojedynczego wpisu audytowego.
    * Używana przez interceptor i inne moduły.
    */
-  async record(payload: AuditLogPayload): Promise<void> {
+  async record(payload: AuditLogPayload): Promise<AuditLog | null> {
     const { organisationId, actorUserId } = payload;
 
     if (!organisationId || !actorUserId) {
       this.logger.warn(
         `Audit entry skipped due to missing organisationId or actorUserId for action ${payload.action}`,
       );
-      return;
+      return null;
     }
 
     try {
-      await this.prisma.auditLog.create({
+      return await this.prisma.auditLog.create({
         data: {
           organisationId,
           actorUserId,
           action: payload.action,
-          entityType: payload.entityType ?? null,
+          entityType: payload.entityType,
           entityId: payload.entityId ?? null,
           before:
             typeof payload.before === 'undefined'
-              ? null
+              ? Prisma.DbNull // explicitly persist DB null when omitted
               : toAuditJson(payload.before),
           after:
             typeof payload.after === 'undefined'
-              ? null
+              ? Prisma.DbNull // explicitly persist DB null when omitted
               : toAuditJson(payload.after),
           ip: payload.ip ?? null,
           userAgent: payload.userAgent ?? null,
@@ -102,6 +102,7 @@ export class AuditService {
         `Failed to write audit log for action ${payload.action}`,
         (err as Error)?.stack ?? String(err),
       );
+      return null;
     }
   }
 
@@ -109,14 +110,14 @@ export class AuditService {
    * Alias, żeby zachować kompatybilność – inne miejsca
    * mogą wołać `log(...)` zamiast `record(...)`.
    */
-  async log(payload: AuditLogPayload): Promise<void> {
+  async log(payload: AuditLogPayload): Promise<AuditLog | null> {
     return this.record(payload);
   }
 
   /**
    * Drugi alias – gdyby jakieś testy / stare miejsca wołały `create(...)`.
    */
-  async create(payload: AuditLogPayload): Promise<void> {
+  async create(payload: AuditLogPayload): Promise<AuditLog | null> {
     return this.record(payload);
   }
 }
