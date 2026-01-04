@@ -113,8 +113,10 @@ export class InvitationsService {
         organisationId: context.organisationId,
       },
       include: {
-        organisation: true,
-        user: true,
+        organisation: {
+          select: { id: true, name: true },
+        },
+        user: { select: { id: true } },
         invitations: {
           where: { status: InvitationStatus.ACCEPTED },
           take: 1,

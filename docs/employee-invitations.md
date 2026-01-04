@@ -26,3 +26,4 @@
 ## Ponawianie zaproszeń
 - W tabeli pracowników kliknij „Wyślij ponownie” w wierszu pracownika z e-mailem.
 - W przypadku błędu pokaże się toast; wysyłka ma limit częstotliwości jak wyżej.
+- Jeśli pracownik ma już zaakceptowane zaproszenie lub brak adresu e-mail, API zwróci 400 z komunikatem (bez 500).

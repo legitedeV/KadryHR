@@ -13,6 +13,8 @@ import { Response } from 'express';
 import { getPermissionsForRole } from './permissions';
 import { RegisterDto } from './dto/register.dto';
 import { Role } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { QueueService } from '../queue/queue.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +22,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly queueService: QueueService,
   ) {}
 
   private parseTtlToMs(ttl: string): number {
@@ -170,38 +173,64 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    const { organisation, user } = await this.prisma.$transaction(
-      async (tx) => {
-        const organisation = await tx.organisation.create({
-          data: {
-            name: dto.organisationName,
-          },
-        });
+    let organisation;
+    let user;
+    try {
+      ({ organisation, user } = await this.prisma.$transaction(
+        async (tx) => {
+          const organisation = await tx.organisation.create({
+            data: {
+              name: dto.organisationName,
+            },
+          });
 
-        const user = await tx.user.create({
-          data: {
-            email: dto.email,
-            passwordHash,
-            role: Role.OWNER,
-            firstName: dto.firstName,
-            lastName: dto.lastName,
-            organisationId: organisation.id,
-          },
-        });
+          const user = await tx.user.create({
+            data: {
+              email: dto.email,
+              passwordHash,
+              role: Role.OWNER,
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+              organisationId: organisation.id,
+            },
+          });
 
-        await tx.employee.create({
-          data: {
-            organisationId: organisation.id,
-            userId: user.id,
-            firstName: dto.firstName,
-            lastName: dto.lastName,
-            email: dto.email,
-          },
-        });
+          await tx.employee.create({
+            data: {
+              organisationId: organisation.id,
+              userId: user.id,
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+              email: dto.email,
+            },
+          });
 
-        return { organisation, user };
-      },
-    );
+          await tx.auditLog.create({
+            data: {
+              organisationId: organisation.id,
+              actorUserId: user.id,
+              action: 'owner.registered',
+              entityType: 'organisation',
+              entityId: organisation.id,
+              after: {
+                email: dto.email,
+                organisationName: dto.organisationName,
+              },
+            },
+          });
+
+          return { organisation, user };
+        },
+      ));
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException('Użytkownik z tym e-mailem już istnieje');
+      }
+      throw error;
+    }
 
     const payload = this.buildUserPayload({
       ...user,
@@ -217,6 +246,15 @@ export class AuthService {
     });
 
     this.attachRefreshTokenCookie(res, refreshToken, refreshTokenTtl);
+
+    await this.queueService.addEmailDeliveryJob({
+      to: dto.email,
+      subject: 'Witamy w KadryHR',
+      text: 'Twoje konto właściciela zostało utworzone.',
+      html: `<p>Cześć ${dto.firstName},</p><p>Twoja organizacja ${dto.organisationName} została utworzona. Zaloguj się, aby kontynuować.</p>`,
+      organisationId: organisation.id,
+      userId: user.id,
+    });
 
     return {
       accessToken,
