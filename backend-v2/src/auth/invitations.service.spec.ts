@@ -1,73 +1,130 @@
-import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { InvitationsService } from './invitations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
-import { InvitationStatus } from '@prisma/client';
+import { InvitationStatus, Role } from '@prisma/client';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
-describe('InvitationsService', () => {
-  let service: InvitationsService;
-  let prisma: jest.Mocked<PrismaService>;
+const prismaMock = {
+  employee: { findFirst: jest.fn() },
+  employeeInvitation: { findFirst: jest.fn() },
+  user: { findUnique: jest.fn(), create: jest.fn() },
+  employeeInvitationCreateData: null,
+  $transaction: jest.fn(),
+};
 
-  beforeEach(async () => {
-    prisma = {
+const queueMock = {
+  addEmailDeliveryJob: jest.fn(),
+};
+const configMock = {
+  get: jest.fn(() => 'https://frontend.test'),
+} as unknown as ConfigService;
+const authMock = {} as unknown as AuthService;
+
+function setupService() {
+  prismaMock.$transaction.mockImplementation(async (cb: any) => {
+    const tx = {
       employeeInvitation: {
-        findFirst: jest.fn(),
+        updateMany: jest.fn(),
+        create: jest.fn((args: any) => args),
       },
-    } as unknown as jest.Mocked<PrismaService>;
-
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        InvitationsService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: QueueService, useValue: { addEmailDeliveryJob: jest.fn() } },
-        { provide: ConfigService, useValue: { get: jest.fn() } },
-        {
-          provide: AuthService,
-          useValue: {
-            login: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    service = moduleRef.get(InvitationsService);
+      employee: { update: jest.fn() },
+      auditLog: { create: jest.fn() },
+    };
+    await cb(tx);
   });
 
-  it('rejects invalid invitation token', async () => {
-    prisma.employeeInvitation.findFirst.mockResolvedValue(null as never);
+  return Test.createTestingModule({
+    providers: [
+      InvitationsService,
+      { provide: PrismaService, useValue: prismaMock },
+      { provide: QueueService, useValue: queueMock },
+      { provide: ConfigService, useValue: configMock },
+      { provide: AuthService, useValue: authMock },
+    ],
+  }).compile();
+}
+
+describe('InvitationsService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('issues a new invitation for employee with email', async () => {
+    const moduleRef = await setupService();
+    const service = moduleRef.get(InvitationsService);
+
+    prismaMock.employee.findFirst.mockResolvedValue({
+      id: 'emp-1',
+      organisationId: 'org-1',
+      firstName: 'Jan',
+      lastName: 'Kowalski',
+      email: 'test@example.com',
+      organisation: { name: 'Org' },
+      invitations: [],
+      userId: null,
+    });
+    prismaMock.employeeInvitation.findFirst.mockResolvedValue(null);
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: 'user-1',
+      role: Role.EMPLOYEE,
+    });
+    queueMock.addEmailDeliveryJob.mockResolvedValue(true);
+
+    const result = await service.issueInvitation({
+      organisationId: 'org-1',
+      employeeId: 'emp-1',
+      invitedEmail: 'test@example.com',
+      invitedByUserId: 'inviter-1',
+      action: 'issue',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(prismaMock.employeeInvitation.findFirst).toHaveBeenCalled();
+    expect(queueMock.addEmailDeliveryJob).toHaveBeenCalled();
+  });
+
+  it('throws when employee already activated', async () => {
+    const moduleRef = await setupService();
+    const service = moduleRef.get(InvitationsService);
+
+    prismaMock.employee.findFirst.mockResolvedValue({
+      id: 'emp-1',
+      organisationId: 'org-1',
+      firstName: 'Jan',
+      lastName: 'Kowalski',
+      email: 'test@example.com',
+      organisation: { name: 'Org' },
+      invitations: [{ id: 'inv', status: InvitationStatus.ACCEPTED }],
+      userId: 'user-1',
+    });
 
     await expect(
-      service.acceptInvitation('invalid', 'Password123!', {} as any),
+      service.issueInvitation({
+        organisationId: 'org-1',
+        employeeId: 'emp-1',
+        invitedEmail: 'test@example.com',
+        invitedByUserId: 'inviter-1',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('validates pending invitation metadata', async () => {
-    const now = new Date();
-    prisma.employeeInvitation.findFirst.mockResolvedValue({
-      id: '1',
-      organisationId: 'org1',
-      employeeId: 'emp1',
-      invitedEmail: 'test@example.com',
-      tokenHash: 'hash',
-      status: InvitationStatus.PENDING,
-      expiresAt: now,
-      acceptedAt: null,
-      revokedAt: null,
-      createdAt: now,
-      updatedAt: now,
-      organisation: { id: 'org1', name: 'ACME' },
-      employee: { id: 'emp1', firstName: 'Jan', lastName: 'Kowalski' },
-    } as any);
+  it('throws when employee missing', async () => {
+    const moduleRef = await setupService();
+    const service = moduleRef.get(InvitationsService);
 
-    const result = await service.validateInvitation('token');
+    prismaMock.employee.findFirst.mockResolvedValue(null);
 
-    expect(result).toMatchObject({
-      organisationName: 'ACME',
-      invitedEmail: 'test@example.com',
-      employee: { firstName: 'Jan', lastName: 'Kowalski' },
-    });
+    await expect(
+      service.issueInvitation({
+        organisationId: 'org-1',
+        employeeId: 'emp-1',
+        invitedEmail: 'test@example.com',
+        invitedByUserId: 'inviter-1',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

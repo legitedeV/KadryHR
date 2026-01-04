@@ -83,7 +83,8 @@ export class QueueService {
   async addNewsletterEmailJob(data: NewsletterEmailJob): Promise<boolean> {
     if (!this.queueAvailable) {
       this.logger.warn(
-        'Queue not available, skipping newsletter email delivery to: ' + data.to,
+        'Queue not available, skipping newsletter email delivery to: ' +
+          data.to,
       );
       return false;
     }
