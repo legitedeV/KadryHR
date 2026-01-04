@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Avatar } from "@/components/Avatar";
 import {
   EmployeeRecord,
   LocationRecord,
@@ -101,9 +103,27 @@ function formatEmployeeName(
   return name || "Pracownik";
 }
 
+function formatEmployeeRecordName(employee?: Partial<EmployeeRecord> | null) {
+  if (!employee) return "Pracownik";
+  const name = `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim();
+  return name || employee.email || "Pracownik";
+}
+
 function formatLocationName(shift: ShiftRecord, locations: LocationRecord[]) {
   const loc = locations.find((l) => l.id === shift.locationId);
   return loc?.name ?? shift.location?.name ?? "Lokalizacja";
+}
+
+export function buildShiftDescription(
+  shift: ShiftRecord,
+  employees: EmployeeRecord[],
+  locations: LocationRecord[],
+) {
+  const employeeName = formatEmployeeName(shift, employees);
+  const dayLabel = new Date(shift.startsAt).toLocaleDateString("pl-PL");
+  const timeRange = `${timeLabel(shift.startsAt)}–${timeLabel(shift.endsAt)}`;
+  const locationName = formatLocationName(shift, locations);
+  return `${employeeName}, ${dayLabel} (${timeRange}) · ${locationName}`;
 }
 
 function mapLeaveLabel(type: RequestType, name?: string | null) {
@@ -226,6 +246,7 @@ export default function GrafikPage() {
             id: s.employeeId,
             firstName: s.employee?.firstName ?? "",
             lastName: s.employee?.lastName ?? "",
+            avatarUrl: s.employee?.avatarUrl ?? null,
             email: "",
             phone: "",
             position: "",
@@ -320,6 +341,13 @@ export default function GrafikPage() {
         return sum + Math.max(duration, 0);
       }, 0),
     [shifts],
+  );
+
+  const describeShift = useCallback(
+    (shift: ShiftRecord) => {
+      return buildShiftDescription(shift, employees, locations);
+    },
+    [employees, locations],
   );
 
   return (
@@ -457,9 +485,23 @@ export default function GrafikPage() {
                 {rows.map((employee) => (
                   <tr key={employee.id} className="align-top">
                     <td className="px-3 py-3 text-slate-800 dark:text-slate-100">
-                      {`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() ||
-                        employee.email ||
-                        "Pracownik"}
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          name={formatEmployeeRecordName(employee)}
+                          src={employee.avatarUrl}
+                          size="sm"
+                        />
+                        <div className="leading-tight">
+                          <p className="font-semibold">
+                            {formatEmployeeRecordName(employee)}
+                          </p>
+                          {employee.position && (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {employee.position}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     {weekDays.map((day) => {
                       const cellKey = `${employee.id}-${isoDate(day)}`;
@@ -612,7 +654,7 @@ export default function GrafikPage() {
       {confirmDelete && (
         <ConfirmDialog
           title="Usuń zmianę"
-          description="Czy na pewno chcesz usunąć tę zmianę?"
+          description={`Czy na pewno chcesz usunąć tę zmianę? (${describeShift(confirmDelete)})`}
           confirmLabel="Usuń"
           onCancel={() => setConfirmDelete(null)}
           onConfirm={async () => {
@@ -620,6 +662,7 @@ export default function GrafikPage() {
               await apiDeleteShift(confirmDelete.id);
               pushToast({ title: "Usunięto zmianę", variant: "success" });
               setConfirmDelete(null);
+              setModalState(null);
               await loadShifts();
             } catch (err) {
               console.error(err);
@@ -676,6 +719,10 @@ function ShiftModal({
   const [notes, setNotes] = useState(shift?.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const selectedEmployee = useMemo(
+    () => employees.find((e) => e.id === employeeId) ?? null,
+    [employeeId, employees],
+  );
 
   if (!open) return null;
 
@@ -744,18 +791,25 @@ function ShiftModal({
           </label>
           <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
             Pracownik
-            <select
-              value={employeeId}
-              disabled={!canManage}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-brand-500 focus:ring disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950"
-            >
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {`${e.firstName} ${e.lastName}`.trim() || e.email || "Pracownik"}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1 flex items-center gap-2">
+              <Avatar
+                name={formatEmployeeRecordName(selectedEmployee)}
+                src={selectedEmployee?.avatarUrl}
+                size="sm"
+              />
+              <select
+                value={employeeId}
+                disabled={!canManage}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-brand-500 focus:ring disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950"
+              >
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {`${e.firstName} ${e.lastName}`.trim() || e.email || "Pracownik"}
+                  </option>
+                ))}
+              </select>
+            </div>
           </label>
         </div>
 
@@ -858,19 +912,60 @@ type ConfirmDialogProps = {
   confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  forceRender?: boolean;
+  portalTarget?: HTMLElement | null;
 };
 
-function ConfirmDialog({
+export function ConfirmDialog({
   title,
   description,
   confirmLabel,
   onConfirm,
   onCancel,
+  forceRender = false,
+  portalTarget,
 }: ConfirmDialogProps) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-slate-900">
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{title}</p>
+  const [mounted, setMounted] = useState(
+    forceRender || typeof document !== "undefined",
+  );
+
+  useEffect(() => {
+    if (!forceRender) setMounted(true);
+  }, [forceRender]);
+
+  useEffect(() => {
+    if (!mounted || typeof document === "undefined") return undefined;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [mounted, onCancel]);
+
+  if (!mounted) return null;
+
+  const dialogContent = (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+    >
+      <div
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur"
+        aria-hidden
+        onClick={onCancel}
+      />
+      <div
+        className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl outline-none dark:bg-slate-900"
+        tabIndex={-1}
+      >
+        <p
+          id="confirm-dialog-title"
+          className="text-sm font-semibold text-slate-900 dark:text-slate-50"
+        >
+          {title}
+        </p>
         <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{description}</p>
         <div className="mt-4 flex justify-end gap-2 text-xs">
           <button
@@ -889,4 +984,11 @@ function ConfirmDialog({
       </div>
     </div>
   );
+
+  const target = portalTarget ?? (typeof document !== "undefined" ? document.body : null);
+  if (target && typeof document !== "undefined" && !forceRender) {
+    return createPortal(dialogContent, target);
+  }
+
+  return dialogContent;
 }
