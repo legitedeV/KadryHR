@@ -46,4 +46,9 @@ export class UpdateLeaveRequestDto {
   @IsString()
   @MaxLength(1024)
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  attachmentUrl?: string;
 }
