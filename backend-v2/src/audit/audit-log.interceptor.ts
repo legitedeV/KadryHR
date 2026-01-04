@@ -92,8 +92,8 @@ export class AuditLogInterceptor implements NestInterceptor {
             action: metadata.action,
             entityType: metadata.entityType,
             entityId: resolvedEntityId,
-            before: (before as Prisma.InputJsonValue) ?? null,
-            after: (after as Prisma.InputJsonValue) ?? null,
+            before: before ?? null,
+            after: after ?? null,
             ip,
             userAgent,
           });

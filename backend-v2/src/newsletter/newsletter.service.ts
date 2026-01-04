@@ -2,9 +2,10 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  TooManyRequestsException,
   NotFoundException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { NewsletterSubscriptionStatus, Prisma } from '@prisma/client';
 import { randomBytes, createHash } from 'crypto';
@@ -107,8 +108,9 @@ export class NewsletterService {
     });
 
     if (recentTokens >= 3) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         'Poczekaj chwilę przed ponownym zamówieniem linku potwierdzającego.',
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
@@ -126,7 +128,9 @@ export class NewsletterService {
       html: `<p style="font-family:Inter,Arial,sans-serif">Dziękujemy za zapis do newslettera KadryHR.</p><p><a href="${confirmLink}">Potwierdź subskrypcję</a> – link wygaśnie za 24h.</p>`,
     });
 
-    this.logger.log(`Newsletter subscription initiated for ${subscriber.email}`);
+    this.logger.log(
+      `Newsletter subscription initiated for ${subscriber.email}`,
+    );
 
     return { success: true };
   }
@@ -220,12 +224,15 @@ export class NewsletterService {
     return { success: true };
   }
 
-  async list(organisationId: string, query: {
-    status?: NewsletterSubscriptionStatus;
-    from?: Date;
-    to?: Date;
-    email?: string;
-  }) {
+  async list(
+    organisationId: string,
+    query: {
+      status?: NewsletterSubscriptionStatus;
+      from?: Date;
+      to?: Date;
+      email?: string;
+    },
+  ) {
     if (!organisationId) {
       throw new ForbiddenException('Brak organizacji');
     }
