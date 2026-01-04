@@ -3,7 +3,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config/configuration';
 import { EmailModule } from '../email/email.module';
-import { PrismaModule } from '../prisma/prisma.module';
 import { EmailQueueProcessor } from './email-queue.processor';
 import { QueueService } from './queue.service';
 
@@ -36,7 +35,6 @@ import { QueueService } from './queue.service';
       name: 'email-delivery',
     }),
     EmailModule,
-    PrismaModule,
   ],
   providers: [EmailQueueProcessor, QueueService],
   exports: [QueueService],

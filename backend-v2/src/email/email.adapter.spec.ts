@@ -39,7 +39,9 @@ describe('EmailAdapter', () => {
 
     it('should send email successfully with configured transporter', async () => {
       // Mock the transporter's sendMail method
-      const sendMailMock = jest.fn().mockResolvedValue({ messageId: 'test-id' });
+      const sendMailMock = jest
+        .fn()
+        .mockResolvedValue({ messageId: 'test-id' });
       (adapter as any).transporter = { sendMail: sendMailMock };
 
       const result = await adapter.sendEmail({

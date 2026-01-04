@@ -345,10 +345,7 @@ export class ShiftsService {
           organisationId,
           employeeId,
           status: LeaveStatus.APPROVED,
-          AND: [
-            { startDate: { lte: endsAt } },
-            { endDate: { gte: startsAt } },
-          ],
+          AND: [{ startDate: { lte: endsAt } }, { endDate: { gte: startsAt } }],
         },
       });
 
