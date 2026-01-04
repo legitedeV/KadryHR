@@ -325,6 +325,36 @@ export async function apiLogout() {
   clearAuthTokens();
 }
 
+export async function apiValidateInvitation(token: string): Promise<InvitationValidationResponse> {
+  const response = await apiClient.request<InvitationValidationResponse>(`${AUTH_PREFIX}/invitations/validate`, {
+    method: "POST",
+    auth: false,
+    suppressToast: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+
+  return response;
+}
+
+export async function apiAcceptInvitation(payload: {
+  token: string;
+  password: string;
+  phone?: string;
+  acceptTerms?: boolean;
+}) {
+  const response = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/invitations/accept`, {
+    method: "POST",
+    auth: false,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const user = mapUser(response?.user);
+  apiClient.setTokens({ accessToken: response.accessToken });
+  return { user };
+}
+
 export async function apiGetShifts(params: {
   from: string;
   to: string;
@@ -425,13 +455,20 @@ export async function apiGetEmployee(id: string): Promise<EmployeeRecord> {
 
 export async function apiCreateEmployee(
   payload: SaveEmployeePayload,
-): Promise<EmployeeRecord> {
+): Promise<{ employee: EmployeeRecord; invitationSent: boolean; invitationError?: string | null }> {
   apiClient.hydrateFromStorage();
-  const response = await apiClient.request<EmployeeResponse>(`${EMPLOYEES_PREFIX}`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-  return mapEmployee(response);
+  const response = await apiClient.request<{ employee: EmployeeResponse; invitationSent: boolean; invitationError?: string | null }>(
+    `${EMPLOYEES_PREFIX}`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return {
+    employee: mapEmployee(response.employee),
+    invitationSent: response.invitationSent,
+    invitationError: response.invitationError,
+  };
 }
 
 export async function apiUpdateEmployee(
@@ -449,6 +486,13 @@ export async function apiUpdateEmployee(
 export async function apiDeleteEmployee(id: string) {
   apiClient.hydrateFromStorage();
   await apiClient.request(`${EMPLOYEES_PREFIX}/${id}`, { method: "DELETE" });
+}
+
+export async function apiResendInvitation(employeeId: string) {
+  apiClient.hydrateFromStorage();
+  await apiClient.request(`${EMPLOYEES_PREFIX}/${employeeId}/resend-invitation`, {
+    method: "POST",
+  });
 }
 
 export async function apiListLocations(): Promise<LocationRecord[]> {
@@ -805,6 +849,16 @@ interface LocationResponse {
   employees: EmployeeResponse[];
   createdAt: string;
   updatedAt: string;
+}
+
+interface InvitationValidationResponse {
+  organisationName: string;
+  invitedEmail: string;
+  employee: {
+    firstName: string;
+    lastName: string;
+  };
+  expiresAt: string;
 }
 
 interface LeaveRequestResponse {

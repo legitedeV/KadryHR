@@ -42,6 +42,35 @@ export class InvitationsService {
     return `${baseUrl.replace(/\/$/, '')}/auth/accept-invitation?token=${token}`;
   }
 
+  async validateInvitation(token: string) {
+    const tokenHash = this.hashToken(token);
+    const invitation = await this.prisma.employeeInvitation.findFirst({
+      where: {
+        tokenHash,
+        status: InvitationStatus.PENDING,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        organisation: true,
+        employee: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Zaproszenie jest nieprawidłowe lub wygasło');
+    }
+
+    return {
+      organisationName: invitation.organisation.name,
+      invitedEmail: invitation.invitedEmail,
+      employee: {
+        firstName: invitation.employee.firstName,
+        lastName: invitation.employee.lastName,
+      },
+      expiresAt: invitation.expiresAt,
+    };
+  }
+
   private async ensureUser(organisationId: string, email: string, names?: {
     firstName?: string | null;
     lastName?: string | null;

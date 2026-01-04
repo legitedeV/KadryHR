@@ -98,18 +98,30 @@ export class EmployeesController {
       dto,
     );
 
+    let invitationSent = false;
+    let invitationError: string | undefined;
+
     if (dto.email) {
-      await this.invitationsService.issueInvitation({
-        organisationId: user.organisationId,
-        employeeId: employee.id,
-        invitedEmail: dto.email,
-        invitedByUserId: user.id,
-      });
+      try {
+        await this.invitationsService.issueInvitation({
+          organisationId: user.organisationId,
+          employeeId: employee.id,
+          invitedEmail: dto.email,
+          invitedByUserId: user.id,
+        });
+        invitationSent = true;
+      } catch (error) {
+        invitationError =
+          error instanceof Error
+            ? error.message
+            : 'Wysłanie zaproszenia nie powiodło się';
+      }
     }
 
     return {
       employee,
-      invitationSent: Boolean(dto.email),
+      invitationSent,
+      invitationError,
     };
   }
 

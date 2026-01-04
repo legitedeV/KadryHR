@@ -9,6 +9,7 @@ import type { Response } from 'express';
 import { RegisterDto } from './dto/register.dto';
 import { InvitationsService } from './invitations.service';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
+import { ValidateInvitationDto } from './dto/validate-invitation.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -44,6 +45,11 @@ export class AuthController {
       res,
       { phone: dto.phone, acceptTerms: dto.acceptTerms },
     );
+  }
+
+  @Post('invitations/validate')
+  async validateInvitation(@Body() dto: ValidateInvitationDto) {
+    return this.invitationsService.validateInvitation(dto.token);
   }
 
   @UseGuards(JwtRefreshGuard)
