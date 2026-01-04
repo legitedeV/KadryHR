@@ -4,7 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export type AuditLogAction = string;
 
-export type AuditJson = Prisma.JsonValue;
+export type AuditJson =
+  | Prisma.InputJsonValue
+  | Prisma.NullableJsonNullValueInput;
 
 export interface AuditLogEntryInput {
   organisationId: string;
@@ -19,7 +21,7 @@ export interface AuditLogEntryInput {
 }
 
 const toAuditJson = (value: unknown): AuditJson => {
-  if (value === undefined || value === null) return null;
+  if (value === undefined || value === null) return Prisma.JsonNull;
   if (value instanceof Date) return value.toISOString();
 
   const valueType = typeof value;
