@@ -12,7 +12,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LeaveStatus, Role } from '@prisma/client';
-import { ELEVATED_ROLES, LeaveRequestsService } from './leave-requests.service';
+import {
+  ELEVATED_ROLES,
+  LeaveRequestsService,
+} from './leave-requests.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -53,10 +56,7 @@ export class LeaveRequestsController {
   }
 
   @Get(':id')
-  async findOne(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string,
-  ) {
+  async findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     if (user.role === Role.EMPLOYEE) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
@@ -95,9 +95,7 @@ export class LeaveRequestsController {
 
     // OWNER / MANAGER can create for an employee (employeeId required)
     if (!dto.employeeId) {
-      throw new BadRequestException(
-        'employeeId is required for manager/owner creation',
-      );
+      throw new BadRequestException('employeeId is required for manager/owner creation');
     }
 
     return this.leaveRequestsService.create(user.organisationId, dto, {
@@ -129,12 +127,7 @@ export class LeaveRequestsController {
       scope.restrictToEmployeeId = employee.id;
     }
 
-    return this.leaveRequestsService.update(
-      user.organisationId,
-      id,
-      dto,
-      scope,
-    );
+    return this.leaveRequestsService.update(user.organisationId, id, dto, scope);
   }
 
   @Patch(':id/status')
@@ -143,7 +136,10 @@ export class LeaveRequestsController {
     @Param('id') id: string,
     @Body() dto: UpdateLeaveRequestStatusDto,
   ) {
-    if (user.role === Role.EMPLOYEE && dto.status === LeaveStatus.CANCELLED) {
+    if (
+      user.role === Role.EMPLOYEE &&
+      dto.status === LeaveStatus.CANCELLED
+    ) {
       const employee = await this.leaveRequestsService.findEmployeeForUser(
         user.organisationId,
         user.id,

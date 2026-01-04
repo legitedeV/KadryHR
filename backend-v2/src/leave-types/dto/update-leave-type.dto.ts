@@ -1,10 +1,4 @@
-import {
-  IsBoolean,
-  IsEnum,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { LeaveCategory } from '@prisma/client';
 
 export class UpdateLeaveTypeDto {
