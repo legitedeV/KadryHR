@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { ExecutionContext } from '@nestjs/common';
+import { InvitationsService } from './invitations.service';
 
 class MockAuthService {
   login = jest.fn().mockResolvedValue({ ok: true });
@@ -21,7 +22,10 @@ describe('AuthController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: service }],
+      providers: [
+        { provide: AuthService, useValue: service },
+        { provide: InvitationsService, useValue: { acceptInvitation: jest.fn() } },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: (context: ExecutionContext) => true })

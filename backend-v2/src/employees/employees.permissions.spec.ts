@@ -9,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { InvitationsService } from '../auth/invitations.service';
 
 describe('EmployeesController permissions (integration)', () => {
   let app: INestApplication;
@@ -26,6 +27,10 @@ describe('EmployeesController permissions (integration)', () => {
         PermissionsGuard,
         { provide: EmployeesService, useValue: employeesService },
         { provide: AuditService, useValue: { log: jest.fn() } },
+        {
+          provide: InvitationsService,
+          useValue: { issueInvitation: jest.fn() },
+        },
         {
           provide: PrismaService,
           useValue: {
