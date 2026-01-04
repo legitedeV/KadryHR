@@ -72,6 +72,12 @@ enum NotificationRecipientStatus {
   SKIPPED
 }
 
+enum NewsletterSubscriptionStatus {
+  PENDING_CONFIRMATION
+  ACTIVE
+  UNSUBSCRIBED
+}
+
 model Organisation {
   id          String      @id @default(uuid())
   name        String
@@ -372,4 +378,36 @@ model NotificationRecipient {
   @@index([campaignId])
   @@index([userId])
   @@index([status])
+}
+
+model NewsletterSubscriber {
+  id               String                        @id @default(uuid())
+  email            String
+  name             String?
+  organisationId   String?
+  status           NewsletterSubscriptionStatus  @default(PENDING_CONFIRMATION)
+  marketingConsent Boolean                       @default(false)
+  subscribedAt     DateTime                      @default(now())
+  confirmedAt      DateTime?
+  unsubscribedAt   DateTime?
+  tokens           NewsletterToken[]
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+
+  @@unique([email, organisationId])
+}
+
+model NewsletterToken {
+  id           String    @id @default(uuid())
+  subscriberId String
+  tokenHash    String
+  type         String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  subscriber NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@index([subscriberId])
+  @@index([tokenHash, type])
 }

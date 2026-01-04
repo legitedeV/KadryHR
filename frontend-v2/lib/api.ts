@@ -87,6 +87,21 @@ export interface NotificationPreference {
   email: boolean;
 }
 
+export type NewsletterStatus =
+  | "PENDING_CONFIRMATION"
+  | "ACTIVE"
+  | "UNSUBSCRIBED";
+
+export interface NewsletterSubscriberSummary {
+  id: string;
+  email: string;
+  name?: string | null;
+  status: NewsletterStatus;
+  subscribedAt: string;
+  confirmedAt?: string | null;
+  unsubscribedAt?: string | null;
+}
+
 export interface AudienceFilter {
   all?: boolean;
   roles?: UserRole[];
@@ -922,6 +937,26 @@ function mapLeaveRequest(request: LeaveRequestResponse): RequestItem {
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
   };
+}
+
+export async function fetchNewsletterSubscribers(filters?: {
+  status?: NewsletterStatus;
+  from?: string;
+  to?: string;
+  email?: string;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.from) params.set("from", filters.from);
+  if (filters?.to) params.set("to", filters.to);
+  if (filters?.email) params.set("email", filters.email);
+
+  const query = params.toString();
+  const payload = await apiClient.request<{ data: NewsletterSubscriberSummary[] }>(
+    `/newsletter/subscribers${query ? `?${query}` : ""}`,
+  );
+
+  return payload.data;
 }
 
 function mapNotification(notification: NotificationResponse): NotificationItem {

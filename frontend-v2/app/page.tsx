@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MarketingHeader } from "@/components/MarketingHeader";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 const features = [
   {
@@ -300,7 +301,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <section
+          id="newsletter"
+          className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]"
+        >
           <div className="card p-6 space-y-3">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Opinie klientów</p>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -333,6 +337,9 @@ export default function HomePage() {
                 Porozmawiajmy
               </Link>
             </div>
+          </div>
+          <div className="card p-6">
+            <NewsletterSignup />
           </div>
         </section>
       </main>

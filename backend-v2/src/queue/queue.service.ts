@@ -12,6 +12,13 @@ export interface EmailDeliveryJob {
   userId: string;
 }
 
+export interface NewsletterEmailJob {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}
+
 @Injectable()
 export class QueueService {
   private readonly logger = new Logger(QueueService.name);
@@ -20,6 +27,8 @@ export class QueueService {
   constructor(
     @InjectQueue('email-delivery')
     private readonly emailQueue: Queue<EmailDeliveryJob>,
+    @InjectQueue('newsletter-email')
+    private readonly newsletterQueue: Queue<NewsletterEmailJob>,
   ) {
     // Check if queue is available
     this.checkQueueAvailability();
@@ -69,5 +78,32 @@ export class QueueService {
 
   isQueueAvailable(): boolean {
     return this.queueAvailable;
+  }
+
+  async addNewsletterEmailJob(data: NewsletterEmailJob): Promise<boolean> {
+    if (!this.queueAvailable) {
+      this.logger.warn(
+        'Queue not available, skipping newsletter email delivery to: ' + data.to,
+      );
+      return false;
+    }
+
+    try {
+      await this.newsletterQueue.add('newsletter-email', data, {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to add newsletter email job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return false;
+    }
   }
 }

@@ -5,6 +5,7 @@ import { AppConfig } from '../config/configuration';
 import { EmailModule } from '../email/email.module';
 import { EmailQueueProcessor } from './email-queue.processor';
 import { QueueService } from './queue.service';
+import { NewsletterEmailProcessor } from './newsletter-email.processor';
 
 @Module({
   imports: [
@@ -34,9 +35,12 @@ import { QueueService } from './queue.service';
     BullModule.registerQueue({
       name: 'email-delivery',
     }),
+    BullModule.registerQueue({
+      name: 'newsletter-email',
+    }),
     EmailModule,
   ],
-  providers: [EmailQueueProcessor, QueueService],
+  providers: [EmailQueueProcessor, NewsletterEmailProcessor, QueueService],
   exports: [QueueService],
 })
 export class QueueModule {}
