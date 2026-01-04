@@ -25,7 +25,7 @@ export default function NewsletterSubscribersPage() {
           email: emailFilter || undefined,
         });
         setSubscribers(data);
-      } catch (e) {
+  } catch {
         pushToast({ title: "Błąd", description: "Nie udało się wczytać subskrybentów." });
       } finally {
         setLoading(false);

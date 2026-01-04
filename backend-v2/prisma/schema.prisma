@@ -105,6 +105,8 @@ model Organisation {
   notifications Notification[]
   notificationPreferences NotificationPreference[]
   notificationCampaigns NotificationCampaign[]
+  newsletterSubscribers NewsletterSubscriber[]
+  employeeInvitations EmployeeInvitation[]
 }
 
 model User {
@@ -150,6 +152,7 @@ model Employee {
   availability Availability[]
   locations    LocationAssignment[]
   leaveRequests LeaveRequest[]
+  invitations EmployeeInvitation[]
 
   @@index([organisationId])
 }

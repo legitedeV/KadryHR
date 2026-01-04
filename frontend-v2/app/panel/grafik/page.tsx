@@ -930,7 +930,9 @@ export function ConfirmDialog({
   );
 
   useEffect(() => {
-    if (!forceRender) setMounted(true);
+    if (forceRender) return undefined;
+    const timeout = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timeout);
   }, [forceRender]);
 
   useEffect(() => {
