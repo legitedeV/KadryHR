@@ -37,15 +37,14 @@
     "lib/**/*.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "backend",
-    "backend-v2",
-    "frontend-v2",
-    "frontend",
-    "frontend-v2-tmp",
-    "tests",
-    "vitest.config.ts",
-    "vitest.setup.ts"
-  ]
-}
+    "exclude": [
+      "node_modules",
+      "backend",
+      "backend-v2",
+      "frontend-v2",
+      "frontend",
+      "tests",
+      "vitest.config.ts",
+      "vitest.setup.ts"
+    ]
+  }

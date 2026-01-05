@@ -30,6 +30,14 @@ backend-v2/build/
 backend-v2/coverage/
 backend-v2/*.log
 
+# backup artifacts
+frontend-v2-tmp/
+**/*_backup_merge_*/
+**/*.bak.*
+kadryhr_backup_before_leave_requests.sql
+tmp/
+.blackbox/tmp/
+
 # jeśli nie chcesz trzymać wygenerowanego klienta Prisma
 backend-v2/generated/
 backend-v2/src/generated/
