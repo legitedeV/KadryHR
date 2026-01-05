@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 
 export default function NewsletterUnsubscribePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <NewsletterUnsubscribeContent />
+    </Suspense>
+  );
+}
+
+function NewsletterUnsubscribeContent() {
   const params = useSearchParams();
   const token = params.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -66,6 +74,17 @@ export default function NewsletterUnsubscribePage() {
             </Link>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-4 py-16 text-slate-900 dark:from-slate-950 dark:to-slate-950 dark:text-slate-50">
+      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-soft ring-1 ring-slate-100/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:ring-slate-800">
+        <h1 className="text-3xl font-semibold">Wypisanie z newslettera</h1>
+        <p className="mt-4 text-slate-600 dark:text-slate-300">Przetwarzamy Twoją prośbę...</p>
       </div>
     </div>
   );

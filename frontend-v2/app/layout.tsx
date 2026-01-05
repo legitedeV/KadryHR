@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     // Theme is applied pre-hydration; suppress the initial class mismatch warning.
     <html lang="pl" suppressHydrationWarning>
-      <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50">
+      <body className="min-h-screen bg-[var(--bg-light)] text-slate-900 antialiased transition-colors duration-200 dark:bg-[var(--bg-dark)] dark:text-slate-50">
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {themeBootstrap}
         </Script>

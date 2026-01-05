@@ -7,7 +7,7 @@ type Theme = "light" | "dark";
 const STORAGE_KEY = "kadryhr_theme";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme | null>(null);
+  const [theme, setTheme] = useState<Theme>("dark");
 
   function applyTheme(next: Theme) {
     if (typeof document === "undefined") return;
@@ -17,37 +17,30 @@ export function ThemeToggle() {
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, next);
     }
+    document.documentElement.style.colorScheme = next === "dark" ? "dark" : "light";
   }
 
   useEffect(() => {
-    const stored =
-      typeof window !== "undefined"
-        ? (localStorage.getItem(STORAGE_KEY) as Theme | null)
-        : null;
-    const prefersDark =
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const next: Theme =
-      stored === "light" || stored === "dark"
-        ? stored
-        : prefersDark
-        ? "dark"
-        : "light";
-    applyTheme(next);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTheme(next);
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (stored === "light" || stored === "dark") {
+      applyTheme(stored);
+      setTheme(stored);
+      return;
+    }
+    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    const initial: Theme = prefersDark ? "dark" : "light";
+    applyTheme(initial);
+    setTheme(initial);
   }, []);
 
   function toggle() {
-    const current = theme ?? "dark";
-    const next: Theme = current === "dark" ? "light" : "dark";
+    const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
     applyTheme(next);
   }
 
-  const activeTheme = theme ?? "dark";
-  const isDark = activeTheme === "dark";
+  const isDark = theme === "dark";
 
   return (
     <button
@@ -63,12 +56,9 @@ export function ThemeToggle() {
             : "bg-slate-200 text-slate-700"
         }`}
       >
-        {/* light bulb icon */}
         <span className="text-[13px]">💡</span>
       </span>
-      <span className="hidden sm:inline">
-        {isDark ? "Tryb ciemny" : "Tryb jasny"}
-      </span>
+      <span className="hidden sm:inline">{isDark ? "Tryb ciemny" : "Tryb jasny"}</span>
     </button>
   );
 }

@@ -63,7 +63,7 @@ function LoginForm() {
       <div className="w-full max-w-md card p-6 space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-lg">
               K
             </div>
             <div>
@@ -71,7 +71,7 @@ function LoginForm() {
                 KadryHR
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Logowanie do panelu
+                Logowanie do panelu grafiku i pracowników
               </p>
             </div>
           </div>
@@ -114,7 +114,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={disabled}
-            className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-600 disabled:opacity-60"
+            className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-brand-600 disabled:opacity-60"
           >
             {disabled ? "Logowanie..." : "Zaloguj"}
           </button>
