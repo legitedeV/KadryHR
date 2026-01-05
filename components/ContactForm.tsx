@@ -30,66 +30,78 @@ export function ContactForm() {
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      <div className="space-y-2 text-sm">
-        <label className="block text-slate-700 dark:text-slate-200">
+    <form className="space-y-5" onSubmit={handleSubmit}>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
           Imię i nazwisko
         </label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+          className="input-field"
           placeholder="np. Anna Kowalska"
           required
         />
       </div>
-      <div className="space-y-2 text-sm">
-        <label className="block text-slate-700 dark:text-slate-200">
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
           E-mail
         </label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+          className="input-field"
           placeholder="twoj@sklep.pl"
           required
         />
       </div>
-      <div className="space-y-2 text-sm">
-        <label className="block text-slate-700 dark:text-slate-200">
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
           Wiadomość
         </label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={4}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+          className="input-field resize-none"
           placeholder="Opisz potrzeby swojego zespołu..."
           required
         />
       </div>
 
       {error && (
-        <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100">
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
           {error}
-        </p>
+        </div>
       )}
       {sent && (
-        <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-100">
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 ring-1 ring-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-800/50">
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
           Dziękujemy! Odezwiemy się w ciągu 1 dnia roboczego.
-        </p>
+        </div>
       )}
-      {!sent && (
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+      {!sent && !error && (
+        <p className="text-xs text-surface-500 dark:text-surface-400 flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           Demo formularz — wyślij, aby zostawić kontakt do oddzwonienia.
         </p>
       )}
 
       <button
         type="submit"
-        className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-600"
+        className="btn-primary w-full justify-center"
       >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
         Wyślij wiadomość
       </button>
     </form>
