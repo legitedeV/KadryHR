@@ -3,19 +3,25 @@ import Script from "next/script";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/lib/auth-context";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 
-// Inline script so it can run before hydration and set the theme class without a network roundtrip.
-const themeBootstrap = `(() => {
+const setThemeScript = `(() => {
   try {
-    const KEY = 'kadryhr_theme';
-    const stored = window.localStorage.getItem(KEY);
+    const stored = localStorage.getItem('${THEME_STORAGE_KEY}');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light';
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(theme);
-    document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+    const root = document.documentElement;
+    const body = document.body;
+    [root, body].forEach((element) => {
+      if (!element) return;
+      element.classList.remove('light');
+      element.classList.remove('dark');
+      element.classList.add(theme);
+    });
+    root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
   } catch (error) {
-    console.warn('Theme bootstrap failed', error);
+    console.error('Theme setup failed', error);
   }
 })();`;
 
@@ -30,15 +36,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Theme is applied pre-hydration; suppress the initial class mismatch warning.
     <html lang="pl" suppressHydrationWarning>
-      <body className="min-h-screen bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50">
-        <Script id="theme-bootstrap" strategy="beforeInteractive">
-          {themeBootstrap}
+      <head>
+        <Script id="theme-script" strategy="beforeInteractive">
+          {setThemeScript}
         </Script>
-        <ToastProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </ToastProvider>
+      </head>
+      <body className="antialiased transition-colors duration-200">
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { pushToast } from "@/lib/toast";
 
@@ -59,82 +59,129 @@ function LoginForm() {
   const disabled = loading || authLoading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md card p-6 space-y-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
-              K
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-900/20" />
+        <div className="absolute -right-32 bottom-1/4 h-64 w-64 rounded-full bg-accent-200/30 blur-3xl dark:bg-accent-900/20" />
+      </div>
+
+      <div className="w-full max-w-md card p-8 shadow-elevated">
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-400 via-brand-500 to-accent-500 flex items-center justify-center text-white font-bold shadow-glow">
+              <span className="text-xl">K</span>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                KadryHR
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Logowanie do panelu
-              </p>
+              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-50">KadryHR</h1>
+              <p className="text-sm text-surface-500 dark:text-surface-400">Logowanie do panelu</p>
             </div>
           </div>
           <ThemeToggle />
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-1 text-sm text-left">
-            <label className="block text-slate-700 dark:text-slate-200">
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
               E-mail
             </label>
-            <input
-              type="email"
-              required
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <input
+                type="email"
+                required
+                className="input-field pl-11"
+                placeholder="twoj@email.pl"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1 text-sm text-left">
-            <label className="block text-slate-700 dark:text-slate-200">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
               Hasło
             </label>
-            <input
-              type="password"
-              required
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <input
+                type="password"
+                required
+                className="input-field pl-11"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
           </div>
 
           {error && (
-            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100">
+            <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
               {error}
-            </p>
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={disabled}
-            className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-600 disabled:opacity-60"
-          >
-            {disabled ? "Logowanie..." : "Zaloguj"}
+          <button type="submit" disabled={disabled} className="btn-primary w-full justify-center py-3">
+            {disabled ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logowanie...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                Zaloguj
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
-          Nie masz konta? {" "}
-          <Link href="/register" className="underline underline-offset-2">
-            Zarejestruj się
-          </Link>
-          .
-        </p>
-
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
-          Wróć na{" "}
-          <Link href="/" className="underline underline-offset-2">
-            stronę startową
-          </Link>
-          .
-        </p>
+        <div className="mt-8 pt-6 border-t border-surface-200 dark:border-surface-800 space-y-2 text-center text-sm text-surface-500 dark:text-surface-400">
+          <p>
+            Nie masz konta?{" "}
+            <Link href="/register" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+              Zarejestruj się
+            </Link>
+            .
+          </p>
+          <p>
+            Wróć na{" "}
+            <Link href="/" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+              stronę startową
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

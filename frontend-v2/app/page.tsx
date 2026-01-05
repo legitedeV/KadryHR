@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { LeadCaptureForm } from "@/components/LeadCaptureForm";
 import { MarketingHeader } from "@/components/MarketingHeader";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 const features = [
   {
@@ -30,10 +30,7 @@ const segments = [
     title: "Sklepy convenience",
     text: "Żabka, Carrefour Express, osiedlowe markety – szybkie wdrożenie nawet w jeden dzień.",
   },
-  {
-    title: "Gastronomia",
-    text: "Kawiarnie, bistra, food trucki – obsługa zmian rotacyjnych i sezonowych.",
-  },
+  { title: "Gastronomia", text: "Kawiarnie, bistra, food trucki – obsługa zmian rotacyjnych i sezonowych." },
   {
     title: "Franczyzy",
     text: "Jedno lub kilka miejsc – wspólna baza pracowników, lokalne grafiki.",
@@ -49,247 +46,204 @@ const previewShifts = [
   { day: "Środa", slot: "14:00–22:00 · Szymon", status: "ok" },
 ];
 
-const testimonials = [
-  {
-    name: "Magda, właścicielka 3 sklepów",
-    quote:
-      "Zespoły wreszcie widzą grafik w telefonie, a ja mam spokój z dzwonieniem po zmianach.",
-  },
-  {
-    name: "Michał, manager sieci gastro",
-    quote: "Podgląd urlopów i zastępstw w jednym miejscu sprawił, że przestały nam się dublować dyżury.",
-  },
-];
-
-const steps = [
-  {
-    title: "Ułóż grafik",
-    text: "Przeciągasz godziny, dodajesz osoby i sprawdzasz obsadę na każdy lokal.",
-  },
-  {
-    title: "Zgarnij wnioski",
-    text: "Urlop, zamiana, oddanie zmiany – jedno kliknięcie akceptuje lub odrzuca zgłoszenie.",
-  },
-  {
-    title: "Wyślij powiadomienia",
-    text: "Ekipa widzi zmiany w aplikacji, dostaje przypomnienia i może potwierdzić obecność.",
-  },
-];
-
 export default function HomePage() {
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-50">
+    <div className="min-h-screen">
       <MarketingHeader />
 
-      <main className="mx-auto max-w-6xl px-4 py-12 space-y-16">
-        <section className="grid grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
-          <div className="space-y-7">
-            <div className="inline-flex items-center gap-3 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-700 shadow-soft ring-1 ring-brand-100/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/70 dark:text-brand-200 dark:ring-brand-800/70">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950/40 dark:text-brand-100">
-                ✨
+      <main className="mx-auto max-w-6xl px-6 py-16 space-y-24">
+        {/* Hero Section */}
+        <section className="grid grid-cols-1 gap-12 lg:grid-cols-2 items-center">
+          <div className="space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/60 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800/50">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
               </span>
-              KadryHR · grafik, wnioski i powiadomienia w jednym miejscu
+              Nowoczesny grafik dla małych biznesów
             </div>
-            <h1 className="text-3xl sm:text-5xl font-bold leading-tight text-slate-900 dark:text-slate-50">
-              Nowoczesny grafik, który wygląda i działa jak 2024.
+            <h1 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight text-surface-900 dark:text-surface-50">
+              KadryHR pomaga właścicielom sklepów <span className="gradient-text">układać grafik</span>, akceptować wnioski i
+              pilnować obsady.
             </h1>
-            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300">
-              Pastelowy, prosty interfejs po polsku. Zero zbędnych klików – szybkie
-              podejrzenie zmian na dziś, obsługa urlopów i dodawanie pracowników w dwóch krokach.
+            <p className="text-lg text-surface-600 dark:text-surface-300 leading-relaxed">
+              Pastelowy, prosty interfejs po polsku. Zero zbędnych klików – szybkie podejrzenie zmian na dziś, obsługa urlopów i
+              dodawanie pracowników w dwóch krokach.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-600"
-              >
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/login" className="btn-primary text-base px-6 py-3">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
                 Wypróbuj za darmo
               </Link>
-              <Link
-                href="/cennik"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100"
-              >
+              <Link href="/cennik" className="btn-secondary text-base px-6 py-3">
                 Zobacz cennik
               </Link>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                14 dni testu, bez karty. Mobilny podgląd w cenie.
-              </span>
             </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-sm">
+            <p className="text-sm text-surface-500 dark:text-surface-400 flex items-center gap-2">
+              <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Pierwsze 14 dni gratis, bez karty.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
               {[
                 { label: "Zmiany na dziś", value: "2 kliknięcia" },
                 { label: "Wnioski urlopowe", value: "1 widok" },
-                { label: "Powiadomienia", value: "push & e-mail" },
-                { label: "Zespół", value: "mobile friendly" },
+                { label: "Dla zespołu", value: "mobile friendly" },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm ring-1 ring-slate-100/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800"
+                  className="rounded-2xl border border-surface-200/80 bg-white/60 px-4 py-4 backdrop-blur-sm dark:border-surface-800/80 dark:bg-surface-900/60"
                 >
-                  <p className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
+                  <p className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     {item.label}
                   </p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                    {item.value}
-                  </p>
+                  <p className="mt-1 text-base font-bold text-surface-900 dark:text-surface-50">{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="relative">
-            <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-brand-100 blur-3xl dark:bg-brand-900/40" />
-            <div className="card relative z-10 space-y-4 p-5 shadow-soft">
-              <div className="flex items-center justify-between">
+            <div className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-brand-200/60 blur-3xl dark:bg-brand-900/30" />
+            <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-accent-200/40 blur-3xl dark:bg-accent-900/20" />
+            <div className="card relative z-10 p-6 shadow-elevated">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Podgląd grafiku</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Tydzień 01–07.01</p>
+                  <p className="section-label">Podgląd grafiku</p>
+                  <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">Tydzień 01–07.01</p>
                 </div>
-                <span className="badge bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800">
-                  Demo
-                </span>
+                <span className="badge badge-brand">Demo</span>
               </div>
-              <div className="grid gap-2 text-xs">
+              <div className="space-y-3">
                 {previewShifts.map((shift, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/80"
+                    className="flex items-center justify-between rounded-xl border border-surface-200/80 bg-surface-50/50 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft hover:border-brand-200/50 dark:border-surface-700/80 dark:bg-surface-800/50 dark:hover:border-brand-700/50"
                   >
                     <div>
-                      <p className="text-slate-900 dark:text-slate-50">{shift.slot}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{shift.day}</p>
+                      <p className="font-medium text-surface-900 dark:text-surface-50">{shift.slot}</p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{shift.day}</p>
                     </div>
-                    <span
-                      className={`badge ${
-                        shift.status === "ok"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
-                          : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-800"
-                      }`}
-                    >
+                    <span className={`badge ${shift.status === "ok" ? "badge-success" : "badge-warning"}`}>
                       {shift.status === "ok" ? "obsadzona" : "do obsady"}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-slate-500 dark:text-slate-400">Braki w tygodniu</p>
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-200">1 zmiana</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-slate-500 dark:text-slate-400">Wnioski oczekujące</p>
-                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-200">3 do decyzji</p>
-                </div>
-              </div>
             </div>
           </div>
         </section>
 
-        <section className="space-y-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Lead Capture Section */}
+        <section className="card p-8 shadow-elevated">
+          <div className="max-w-xl">
+            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+              Zostaw kontakt, odezwiemy się w 1 dzień roboczy
+            </p>
+            <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">Formularz z walidacją e-mail i potwierdzeniem wysyłki.</p>
+            <div className="mt-6">
+              <LeadCaptureForm />
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="space-y-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Funkcje</p>
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                Zrobione pod właścicieli sklepów i menedżerów
-              </h2>
+              <p className="section-label">Funkcje</p>
+              <h2 className="section-title mt-2">Zrobione pod właścicieli sklepów i menedżerów</h2>
             </div>
             <Link
               href="/panel/dashboard"
-              className="text-sm font-medium text-brand-700 underline underline-offset-4 dark:text-brand-200"
+              className="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-2"
             >
               Zobacz widok panelu
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="card p-4 transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-lg shadow-sm ring-1 ring-brand-100 dark:bg-brand-900/40 dark:ring-brand-800">
+              <div key={feature.title} className="card-hover p-6">
+                <div className="flex items-center gap-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 text-xl ring-1 ring-brand-100/80 dark:from-brand-950/50 dark:to-accent-950/50 dark:ring-brand-800/50">
                     {feature.icon}
                   </span>
-                  <p className="font-semibold text-slate-900 dark:text-slate-50">{feature.title}</p>
+                  <p className="font-bold text-surface-900 dark:text-surface-50">{feature.title}</p>
                 </div>
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{feature.desc}</p>
+                <p className="mt-4 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1 space-y-3">
-            <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Dla kogo</p>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
-              Najczęściej wybierają nas małe sieci i franczyzy
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+        {/* Segments Section */}
+        <section className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-1 space-y-4">
+            <p className="section-label">Dla kogo</p>
+            <h2 className="section-title">Najczęściej wybierają nas małe sieci i franczyzy</h2>
+            <p className="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
               KadryHR jest po polsku, działa w przeglądarce i na telefonie. Zaproszenie pracownika to jedno kliknięcie – bez
               zakładania kont.
             </p>
           </div>
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5">
             {segments.map((segment) => (
-              <div key={segment.title} className="card p-4 transition hover:-translate-y-1 hover:shadow-lg">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{segment.title}</p>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{segment.text}</p>
+              <div key={segment.title} className="card-hover p-5">
+                <p className="font-bold text-surface-900 dark:text-surface-50">{segment.title}</p>
+                <p className="mt-3 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">{segment.text}</p>
               </div>
             ))}
           </div>
         </section>
 
+        {/* Preview Table Section */}
         <section className="card relative overflow-hidden p-8">
-          <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-brand-200 blur-3xl dark:bg-brand-900/50" />
-          <div className="absolute bottom-0 right-0 h-28 w-28 rounded-full bg-brand-100 blur-3xl dark:bg-brand-900/40" />
-          <div className="relative flex flex-col gap-8">
-            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-              <div>
-                <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Podgląd</p>
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Przykładowy fragment grafiku</h2>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Kolory sygnalizują obsadę. Klikasz wniosek, akceptujesz, a grafik aktualizuje się automatycznie.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {steps.map((step) => (
-                  <div key={step.title} className="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{step.title}</p>
-                    <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{step.text}</p>
-                  </div>
-                ))}
-              </div>
+          <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full bg-brand-200/50 blur-3xl dark:bg-brand-900/30" />
+          <div className="relative">
+            <div className="mb-6">
+              <p className="section-label">Podgląd</p>
+              <h2 className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">Przykładowy fragment grafiku</h2>
+              <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
+                Kolory sygnalizują obsadę. Klikasz wniosek, akceptujesz, a grafik aktualizuje się automatycznie.
+              </p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-900/70">
-                  <tr className="border-b border-slate-200 dark:border-slate-800">
-                    <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">Dzień</th>
-                    <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">Zmiany</th>
+            <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
+              <table className="min-w-full text-sm">
+                <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+                  <tr className="border-b border-surface-200 dark:border-surface-800">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      Dzień
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      Zmiany
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {["Pon", "Wt", "Śr", "Czw", "Pt"].map((day, idx) => (
-                    <tr key={day}>
-                      <td className="px-3 py-2 text-slate-700 dark:text-slate-200">{day}</td>
-                      <td className="px-3 py-2">
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
+                  {["Pon", "Wt", "Śr", "Czw", "Pt"].map((day) => (
+                    <tr key={day} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-surface-700 dark:text-surface-200">{day}</td>
+                      <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
                           {previewShifts
                             .filter((s) => s.day.startsWith(day))
                             .map((s, i) => (
-                              <span
-                                key={`${idx}-${i}`}
-                                className={`badge ${
-                                  s.status === "ok"
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
-                                    : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-800"
-                                }`}
-                              >
+                              <span key={`${day}-${i}`} className={`badge ${s.status === "ok" ? "badge-success" : "badge-warning"}`}>
                                 {s.slot}
                               </span>
                             ))}
                           {previewShifts.filter((s) => s.day.startsWith(day)).length === 0 && (
-                            <span className="text-slate-400 dark:text-slate-500">Brak zmian</span>
+                            <span className="text-surface-400 dark:text-surface-500">Brak zmian</span>
                           )}
                         </div>
                       </td>
@@ -301,45 +255,21 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section
-          id="newsletter"
-          className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]"
-        >
-          <div className="card p-6 space-y-3">
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Opinie klientów</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {testimonials.map((item) => (
-                <div key={item.name} className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-                  <p className="text-sm text-slate-700 dark:text-slate-200">“{item.quote}”</p>
-                  <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">{item.name}</p>
-                </div>
-              ))}
-            </div>
+        {/* CTA Section */}
+        <section className="card p-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between bg-gradient-to-r from-brand-50/50 to-accent-50/30 dark:from-brand-950/30 dark:to-accent-950/20">
+          <div>
+            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">Gotowy na prostszy grafik?</p>
+            <p className="text-sm text-surface-600 dark:text-surface-300 mt-1">
+              Stwórz konto demo, dodaj pracownika i zaplanuj pierwszą zmianę w 2 minuty.
+            </p>
           </div>
-          <div className="card p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Gotowy na prostszy grafik?</p>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Stwórz konto demo, dodaj pracownika i zaplanuj pierwszą zmianę w 2 minuty.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/login"
-                className="rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-600"
-              >
-                Rozpocznij
-              </Link>
-              <Link
-                href="/kontakt"
-                className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:text-brand-700 dark:border-slate-700 dark:text-slate-100"
-              >
-                Porozmawiajmy
-              </Link>
-            </div>
-          </div>
-          <div className="card p-6">
-            <NewsletterSignup />
+          <div className="flex flex-wrap gap-4">
+            <Link href="/login" className="btn-primary">
+              Rozpocznij
+            </Link>
+            <Link href="/kontakt" className="btn-secondary">
+              Porozmawiajmy
+            </Link>
           </div>
         </section>
       </main>
