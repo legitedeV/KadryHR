@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LogoIcon } from "@/components/Logo";
 import { useAuth } from "@/lib/auth-context";
 import type { Permission, User } from "@/lib/api";
 import { usePermissions } from "@/lib/use-permissions";
@@ -75,9 +76,7 @@ function PanelShell({
     <div className="min-h-screen flex">
       <aside className="hidden md:flex md:flex-col w-60 border-r border-slate-200/70 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
         <div className="h-16 flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
-            K
-          </div>
+          <LogoIcon size={36} />
           <div>
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">
               KadryHR

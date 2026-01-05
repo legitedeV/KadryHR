@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LogoIcon } from "@/components/Logo";
 import { apiAcceptInvitation, apiValidateInvitation } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 
@@ -86,9 +87,7 @@ function AcceptInvitationForm() {
       <div className="w-full max-w-md card p-6 space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
-              K
-            </div>
+            <LogoIcon size={40} />
             <div>
               <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">KadryHR</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">Aktywuj swoje konto</p>
