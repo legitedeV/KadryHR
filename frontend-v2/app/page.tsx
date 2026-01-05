@@ -38,8 +38,8 @@ const segments = [
 ];
 
 const previewShifts = [
-  { day: "Poniedziałek", slot: "6:00–14:00 · Kasia", status: "ok" },
-  { day: "Poniedziałek", slot: "14:00–22:00 · Michał", status: "ok" },
+  { day: "Poniedziałek", slot: "6:00–14:30 · Kasia", status: "ok" },
+  { day: "Poniedziałek", slot: "14:30–23:00 · Michał", status: "ok" },
   { day: "Wtorek", slot: "6:00–14:00 · NIEOBSADZONA", status: "warn" },
   { day: "Wtorek", slot: "14:00–22:00 · Ola", status: "ok" },
   { day: "Środa", slot: "6:00–14:00 · Kasia", status: "ok" },

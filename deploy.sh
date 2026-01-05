@@ -1,109 +1,85 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/home/deploy/apps/kadryhr-app"
-BACK="$ROOT/backend-v2"
-FRONT="$ROOT/frontend-v2"
+APP_DIR="/home/deploy/apps/kadryhr-app"
+BACKEND_DIR="$APP_DIR/backend-v2"
+FRONTEND_DIR="$APP_DIR/frontend-v2"
 
-PM2_FRONT_ID="13"
-PM2_BACK_ID="17"
+# dostosuj nazwy procesów PM2 do tego, co masz
+PM2_BACKEND_NAME="kadryhr-backend-v2"
+PM2_FRONTEND_NAME="kadryhr-frontend-v2"
 
-BRANCH="${1:-main}"
+echo "==> KadryHR deploy start"
+cd "$APP_DIR"
 
-log() { echo -e "\n\033[1;32m==> $*\033[0m"; }
-warn() { echo -e "\n\033[1;33m[WARN] $*\033[0m"; }
-die() { echo -e "\n\033[1;31m[ERR] $*\033[0m"; exit 1; }
+OLD_REV=$(git rev-parse HEAD)
+echo "Current HEAD: $OLD_REV"
 
-require_file() {
-  local f="$1"
-  [[ -f "$f" ]] || die "Missing file: $f"
-}
+echo "==> git pull origin main"
+git pull origin main
 
-require_cmd() {
-  command -v "$1" >/dev/null 2>&1 || die "Missing command: $1"
-}
+NEW_REV=$(git rev-parse HEAD)
+echo "New HEAD: $NEW_REV"
 
-log "Preflight checks"
-require_cmd git
-require_cmd node
-require_cmd npm
-require_cmd pm2
+if [ "$OLD_REV" = "$NEW_REV" ]; then
+  echo "No new commits. Nothing to deploy."
+  exit 0
+fi
 
-require_file "$BACK/package.json"
-require_file "$FRONT/package.json"
+echo "==> Checking if backend deps changed..."
+BACKEND_DEPS_CHANGED="false"
+if git diff --name-only "$OLD_REV" "$NEW_REV" -- backend-v2/package.json backend-v2/package-lock.json | grep -q .; then
+  BACKEND_DEPS_CHANGED="true"
+fi
 
-# ---- ENV sanity checks (nie wypisujemy sekretów) ----
-log "Checking env files (sanity)"
-if [[ -f "$BACK/.env" ]]; then
-  grep -q '^DATABASE_URL=' "$BACK/.env" || warn "backend-v2/.env missing DATABASE_URL"
-  grep -Eq '^(PORT|APP_PORT)=' "$BACK/.env" || warn "backend-v2/.env missing PORT/APP_PORT"
+echo "==> Checking if frontend deps changed..."
+FRONTEND_DEPS_CHANGED="false"
+if git diff --name-only "$OLD_REV" "$NEW_REV" -- frontend-v2/package.json frontend-v2/package-lock.json | grep -q .; then
+  FRONTEND_DEPS_CHANGED="true"
+fi
+
+# ---------------- BACKEND ----------------
+
+cd "$BACKEND_DIR"
+
+if [ "$BACKEND_DEPS_CHANGED" = "true" ]; then
+  echo "==> Backend deps changed – running npm ci --omit=dev"
+  npm ci --omit=dev
 else
-  warn "backend-v2/.env not found"
+  echo "==> Backend deps unchanged – skipping npm ci"
 fi
 
-if [[ -f "$FRONT/.env.local" ]]; then
-  grep -q '^NEXT_PUBLIC_API_URL=' "$FRONT/.env.local" || warn "frontend-v2/.env.local missing NEXT_PUBLIC_API_URL"
-else
-  warn "frontend-v2/.env.local not found"
-fi
-
-# ---- GIT SYNC ----
-log "Git sync ($BRANCH)"
-cd "$ROOT"
-git fetch origin
-# nie wymuszam checkout jeśli jesteś na innym branżu; ustawiamy bezpiecznie
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if [[ "$CURRENT_BRANCH" != "$BRANCH" ]]; then
-  log "Switch branch: $CURRENT_BRANCH -> $BRANCH"
-  git checkout "$BRANCH"
-fi
-git pull --ff-only origin "$BRANCH" || die "git pull failed (non-ff). Resolve manually."
-
-# ---- BACKEND ----
-log "Backend: install deps"
-cd "$BACK"
-npm ci
-
-log "Backend: Prisma generate"
-npx prisma generate
-
-# migrate deploy jeśli są migracje, inaczej db push (u Ciebie brak migrations)
-if [[ -d "$BACK/prisma/migrations" ]] && [[ "$(ls -A "$BACK/prisma/migrations" 2>/dev/null | wc -l)" -gt 0 ]]; then
-  log "Backend: prisma migrate deploy"
-  npx prisma migrate deploy
-fi
-
-log "Backend: build"
+echo "==> Building backend"
 npm run build
 
-# ---- FRONTEND ----
-log "Frontend: install deps"
-cd "$FRONT"
-npm ci
+echo "==> Restarting backend with PM2 ($PM2_BACKEND_NAME)"
+if pm2 describe "$PM2_BACKEND_NAME" > /dev/null 2>&1; then
+  pm2 restart "$PM2_BACKEND_NAME"
+else
+  # dopasuj ścieżkę startową do swojej aplikacji Nest
+  pm2 start dist/main.js --name "$PM2_BACKEND_NAME"
+fi
 
-log "Frontend: build"
+# ---------------- FRONTEND ----------------
+
+cd "$FRONTEND_DIR"
+
+if [ "$FRONTEND_DEPS_CHANGED" = "true" ]; then
+  echo "==> Frontend deps changed – running npm ci --omit=dev"
+  npm ci --omit=dev
+else
+  echo "==> Frontend deps unchanged – skipping npm ci"
+fi
+
+echo "==> Building frontend"
 npm run build
 
-# ---- PM2 RESTART ----
-log "PM2 restart backend (ID=$PM2_BACK_ID) and frontend (ID=$PM2_FRONT_ID)"
-pm2 restart "$PM2_BACK_ID" --update-env
-pm2 restart "$PM2_FRONT_ID" --update-env
+echo "==> Restarting frontend with PM2 ($PM2_FRONTEND_NAME)"
+if pm2 describe "$PM2_FRONTEND_NAME" > /dev/null 2>&1; then
+  pm2 restart "$PM2_FRONTEND_NAME"
+else
+  # jeśli masz Next.js w trybie `next start`:
+  pm2 start "npm -- start -p 3000" --name "$PM2_FRONTEND_NAME"
+fi
 
-# opcjonalnie zapis stanu pm2
-pm2 save >/dev/null 2>&1 || true
-
-# ---- HEALTH CHECKS ----
-log "Health checks (best-effort)"
-# backend port: spróbuj 4000 i 5000 i 3001 (bez failowania deploya)
-for port in 4000 5000 3001; do
-  if curl -fsS "http://127.0.0.1:${port}/api/health" >/dev/null 2>&1; then
-    log "Backend OK: http://127.0.0.1:${port}/api/health"
-    break
-  fi
-done || true
-
-log "Tail logs (last 20 lines)"
-pm2 logs "$PM2_BACK_ID" --lines 20 --nostream || true
-pm2 logs "$PM2_FRONT_ID" --lines 20 --nostream || true
-
-log "DONE ✅"
+echo "==> Deploy finished successfully"
