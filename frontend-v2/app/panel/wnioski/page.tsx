@@ -1,96 +1,28 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import {
-  RequestItem,
-  RequestStatus,
-  RequestType,
-  LeaveTypeRecord,
-  LEAVE_TYPES,
-  apiCreateLeaveRequest,
-  apiListLeaveRequests,
-  apiListLeaveTypes,
-  apiCreateLeaveType,
-  apiUpdateLeaveType,
-  apiUpdateLeaveStatus,
-} from "@/lib/api";
-import { formatDateRange } from "@/lib/date-range";
-import { usePermissions } from "@/lib/use-permissions";
+import { useEffect, useMemo, useState } from "react";
+import { RequestItem, apiGetRequests } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 
 export default function WnioskiPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
-  const { hasPermission } = usePermissions();
-
-  const defaultDate = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState<{
-    type: RequestType;
-    leaveTypeId?: string;
-    startDate: string;
-    endDate: string;
-    reason: string;
-    attachmentUrl: string;
-  }>({
-    type: "PAID_LEAVE",
-    leaveTypeId: undefined,
-    startDate: defaultDate,
-    endDate: defaultDate,
-    reason: "",
-    attachmentUrl: "",
-  });
-  const [newLeaveType, setNewLeaveType] = useState<{
-    name: string;
-    code: RequestType;
-    isPaid: boolean;
-    color: string;
-  }>({
-    name: "",
-    code: "OTHER",
-    isPaid: true,
-    color: "#0ea5e9",
-  });
-  const [savingLeaveType, setSavingLeaveType] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [typesRes, requestsRes] = await Promise.all([
-          apiListLeaveTypes(),
-          apiListLeaveRequests({ take: 100 }),
-        ]);
-        setLeaveTypes(typesRes);
-        setRequests(requestsRes.data);
-        if (typesRes.length > 0) {
-          const firstActive = typesRes.find((t) => t.isActive);
-          if (firstActive) {
-            setForm((prev) => ({
-              ...prev,
-              type: ensureValidRequestType(firstActive.code ?? prev.type),
-              leaveTypeId: firstActive.id,
-            }));
-          }
-        } else {
-          setForm((prev) => ({
-            ...prev,
-            leaveTypeId: undefined,
-            type: ensureValidRequestType(prev.type),
-          }));
-        }
-        if (requestsRes.data.length > 0)
-          setSelectedId(requestsRes.data[0].id);
-      } catch (err) {
+    const token = getToken();
+    if (!token) return;
+    apiGetRequests(token)
+      .then((items) => {
+        setRequests(items);
+        if (items.length > 0) setSelectedId(items[0].id);
+      })
+      .catch((err) => {
         console.error(err);
         setError("Nie udało się pobrać wniosków");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const selected = useMemo(
@@ -98,314 +30,111 @@ export default function WnioskiPage() {
     [requests, selectedId]
   );
 
-  const canApprove = hasPermission("LEAVE_APPROVE");
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (new Date(form.startDate) > new Date(form.endDate)) {
-      setError("Data zakończenia nie może być wcześniejsza niż początek.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-    try {
-      const created = await apiCreateLeaveRequest({
-        type: form.type,
-        leaveTypeId: form.leaveTypeId,
-        startDate: new Date(form.startDate).toISOString(),
-        endDate: new Date(form.endDate).toISOString(),
-        reason: form.reason || undefined,
-        attachmentUrl: form.attachmentUrl || undefined,
-      });
-      setRequests((prev) => [created, ...prev]);
-      setSelectedId(created.id);
-      setForm((prev) => ({
-        ...prev,
-        reason: "",
-        attachmentUrl: "",
-      }));
-    } catch (err) {
-      console.error(err);
-      setError("Nie udało się wysłać wniosku");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleStatusChange = async (status: RequestStatus) => {
-    if (!selected) return;
-    setActionLoading(true);
-    setError(null);
-    try {
-      const updated = await apiUpdateLeaveStatus(selected.id, status);
-      setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      setSelectedId(updated.id);
-    } catch (err) {
-      console.error(err);
-      setError("Nie udało się zaktualizować statusu");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCreateLeaveType = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSavingLeaveType(true);
-    setError(null);
-    try {
-      const created = await apiCreateLeaveType(newLeaveType);
-      setLeaveTypes((prev) => [...prev, created]);
-      setNewLeaveType({ name: "", code: "OTHER", isPaid: true, color: "#0ea5e9" });
-    } catch (err) {
-      console.error(err);
-      setError("Nie udało się dodać typu urlopu");
-    } finally {
-      setSavingLeaveType(false);
-    }
-  };
-
-  const toggleLeaveType = async (id: string, isActive: boolean) => {
-    try {
-      const updated = await apiUpdateLeaveType(id, { isActive: !isActive });
-      setLeaveTypes((prev) => prev.map((lt) => (lt.id === id ? updated : lt)));
-    } catch (err) {
-      console.error(err);
-      setError("Nie udało się zaktualizować typu urlopu");
-    }
-  };
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-            Wnioski
+          <p className="section-label">Wnioski</p>
+          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
+            Lista wniosków pracowników
           </p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-            Lista wniosków urlopowych i absencyjnych
-          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Razem: <span className="font-semibold text-surface-900 dark:text-surface-100">{requests.length}</span>
         </div>
       </div>
 
-      <div className="card p-4">
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-              Typ wniosku
-            </label>
-            <select
-              value={leaveTypes.length > 0 ? form.leaveTypeId ?? "" : form.type}
-              onChange={(e) => {
-                const selected = leaveTypes.find((lt) => lt.id === e.target.value);
-                if (selected) {
-                  setForm((prev) => ({
-                    ...prev,
-                    leaveTypeId: selected.id,
-                    type: ensureValidRequestType(selected.code ?? prev.type),
-                  }));
-                } else {
-                  setForm((prev) => ({
-                    ...prev,
-                    leaveTypeId: undefined,
-                    type: ensureValidRequestType(e.target.value),
-                  }));
-                }
-              }}
-              className="input"
-            >
-              {leaveTypes
-                .filter((lt) => lt.isActive)
-                .map((lt) => (
-                  <option key={lt.id} value={lt.id}>
-                    {lt.name}
-                  </option>
-                ))}
-              {leaveTypes.length === 0 &&
-                Object.keys(LEAVE_TYPES).map((code) => (
-                  <option key={code} value={code}>
-                    {mapRequestType(code as RequestType)}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-              Początek
-            </label>
-            <input
-              type="date"
-              value={form.startDate}
-              onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
-              className="input"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-              Koniec
-            </label>
-            <input
-              type="date"
-              value={form.endDate}
-              onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
-              className="input"
-            />
-          </div>
-          <div className="space-y-1 md:col-span-2">
-            <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-              Powód (opcjonalnie)
-            </label>
-            <input
-              type="text"
-              value={form.reason}
-              onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-              placeholder="Krótki opis lub link do załącznika"
-              className="input"
-            />
-          </div>
-          <div className="md:col-span-5 flex items-center justify-end gap-3">
-            <input
-              type="url"
-              value={form.attachmentUrl}
-              onChange={(e) => setForm((prev) => ({ ...prev, attachmentUrl: e.target.value }))}
-              placeholder="Link do załącznika (opcjonalnie)"
-              className="input flex-1"
-            />
-            <button
-              type="submit"
-              className="btn-primary px-4 py-2 rounded-xl text-xs"
-              disabled={submitting}
-            >
-              {submitting ? "Zapisywanie..." : "Wyślij wniosek"}
-            </button>
-          </div>
-        </form>
-      </div>
+      {loading && (
+        <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Ładowanie wniosków...
+        </div>
+      )}
 
-      {canApprove && (
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-                Typy urlopów
-              </p>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                Lista i konfiguracja typów absencji w organizacji
-              </p>
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4 text-xs">
-            <form onSubmit={handleCreateLeaveType} className="space-y-2">
-              <div className="space-y-1">
-                <label className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-                  Nazwa
-                </label>
-                <input
-                  className="input"
-                  value={newLeaveType.name}
-                  onChange={(e) => setNewLeaveType((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Np. Opieka nad dzieckiem"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  className="input"
-                  value={newLeaveType.code}
-                  onChange={(e) =>
-                    setNewLeaveType((prev) => ({
-                      ...prev,
-                      code: ensureValidRequestType(e.target.value),
-                    }))
-                  }
-                >
-                  {Object.keys(LEAVE_TYPES).map((code) => (
-                    <option key={code} value={code}>
-                      {mapRequestType(code as RequestType)}
-                    </option>
-                  ))}
-                </select>
-                <label className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={newLeaveType.isPaid}
-                    onChange={(e) =>
-                      setNewLeaveType((prev) => ({ ...prev, isPaid: e.target.checked }))
-                    }
-                  />
-                  Płatny
-                </label>
-                <input
-                  type="color"
-                  className="w-12 h-9 border rounded-md"
-                  value={newLeaveType.color}
-                  onChange={(e) => setNewLeaveType((prev) => ({ ...prev, color: e.target.value }))}
-                  title="Kolor znacznika"
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn-primary px-4 py-2 rounded-lg"
-                disabled={savingLeaveType}
-              >
-                {savingLeaveType ? "Zapisywanie..." : "Dodaj typ"}
-              </button>
-            </form>
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+          <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </div>
+      )}
 
+      {!loading && !error && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* lista */}
+          <div className="card lg:col-span-2 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-xs">
-                <thead>
-                  <tr className="text-left text-slate-500 dark:text-slate-400">
-                    <th className="px-2 py-1">Nazwa</th>
-                    <th className="px-2 py-1">Kod</th>
-                    <th className="px-2 py-1">Status</th>
-                    <th className="px-2 py-1">Akcje</th>
+              <table className="min-w-full">
+                <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+                  <tr className="border-b border-surface-200 dark:border-surface-800">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      Pracownik
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      Typ
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      Data
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      Status
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {leaveTypes.map((lt) => (
-                    <tr key={lt.id}>
-                      <td className="px-2 py-1">
-                        <span className="inline-flex items-center gap-2">
-                          <span
-                            className="w-3 h-3 rounded-full border"
-                            style={{ backgroundColor: lt.color ?? undefined }}
-                          />
-                          {lt.name}
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
+                  {requests.map((r) => (
+                    <tr
+                      key={r.id}
+                      onClick={() => setSelectedId(r.id)}
+                      className={`cursor-pointer transition-colors ${
+                        selectedId === r.id
+                          ? "bg-brand-50/60 dark:bg-brand-950/30"
+                          : "hover:bg-surface-50/50 dark:hover:bg-surface-800/50"
+                      }`}
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
+                            {r.employeeName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium text-surface-900 dark:text-surface-100 text-sm">
+                            {r.employeeName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-surface-600 dark:text-surface-300">
+                        {mapRequestType(r.type)}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-surface-600 dark:text-surface-300">
+                        {new Date(r.date).toLocaleDateString("pl-PL")}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={statusBadgeClass(r.status)}>
+                          {mapStatus(r.status)}
                         </span>
-                      </td>
-                      <td className="px-2 py-1 text-slate-600 dark:text-slate-300">
-                        {lt.code ?? "OTHER"}
-                      </td>
-                      <td className="px-2 py-1">
-                        {lt.isActive ? (
-                          <span className="badge bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800">
-                            aktywny
-                          </span>
-                        ) : (
-                          <span className="badge bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700">
-                            nieaktywny
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1">
-                        <button
-                          type="button"
-                          className="underline text-xs"
-                          onClick={() => toggleLeaveType(lt.id, lt.isActive)}
-                        >
-                          {lt.isActive ? "Dezaktywuj" : "Aktywuj"}
-                        </button>
                       </td>
                     </tr>
                   ))}
-                  {leaveTypes.length === 0 && (
+                  {requests.length === 0 && (
                     <tr>
-                      <td
-                        className="px-2 py-2 text-slate-500 dark:text-slate-400"
-                        colSpan={4}
-                      >
-                        Brak skonfigurowanych typów. Dodaj pierwszy typ urlopu.
+                      <td colSpan={4} className="px-5 py-10 text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
+                            <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                          </div>
+                          <p className="text-sm text-surface-500 dark:text-surface-400">
+                            Brak wniosków do wyświetlenia.
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -413,159 +142,66 @@ export default function WnioskiPage() {
               </table>
             </div>
           </div>
-        </div>
-      )}
-
-      {loading && (
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Ładowanie wniosków...
-        </p>
-      )}
-
-      {error && (
-        <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100">
-          {error}
-        </p>
-      )}
-
-      {!loading && !error && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* lista */}
-          <div className="card p-0 lg:col-span-2 overflow-hidden">
-            <table className="min-w-full text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-900/70">
-                <tr className="border-b border-slate-200 dark:border-slate-800">
-                  <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                    Pracownik
-                  </th>
-                  <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                    Typ
-                  </th>
-                  <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                    Okres
-                  </th>
-                  <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {requests.map((r) => (
-                  <tr
-                    key={r.id}
-                    onClick={() => setSelectedId(r.id)}
-                    className={`cursor-pointer ${
-                      selectedId === r.id
-                        ? "bg-brand-50/60 dark:bg-slate-900"
-                        : ""
-                    }`}
-                  >
-                    <td className="px-3 py-2 text-slate-800 dark:text-slate-100">
-                      {r.employeeName}
-                    </td>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                      {mapRequestType(r.type, r.leaveType?.name)}
-                    </td>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                      {formatDateRange(r.startDate, r.endDate)}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={statusBadgeClass(r.status)}>
-                        {mapStatus(r.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {requests.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-3 py-4 text-center text-slate-500 dark:text-slate-400"
-                    >
-                      Brak wniosków do wyświetlenia.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
 
           {/* szczegóły */}
-          <div className="card p-4">
+          <div className="card p-6">
             {!selected ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Wybierz wniosek z listy, aby zobaczyć szczegóły.
-              </p>
+              <div className="flex flex-col items-center justify-center h-full py-10 text-center">
+                <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  Wybierz wniosek z listy, aby zobaczyć szczegóły.
+                </p>
+              </div>
             ) : (
-              <div className="space-y-3 text-xs">
+              <div className="space-y-5">
                 <div>
-                  <p className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-                    Szczegóły wniosku
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
-                     {mapRequestType(selected.type, selected.leaveType?.name)}
+                  <p className="section-label">Szczegóły wniosku</p>
+                  <p className="mt-2 text-lg font-bold text-surface-900 dark:text-surface-50">
+                    {mapRequestType(selected.type)}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-slate-600 dark:text-slate-300">
-                    Pracownik:{" "}
-                    <span className="font-medium text-slate-900 dark:text-slate-50">
-                      {selected.employeeName}
-                    </span>
-                  </p>
-                  <p className="text-slate-600 dark:text-slate-300">
-                    Okres: {formatDateRange(selected.startDate, selected.endDate)}
-                  </p>
-                  <p className="text-slate-600 dark:text-slate-300">
-                    Status:{" "}
-                    <span className={statusBadgeClass(selected.status)}>
-                      {mapStatus(selected.status)}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
-                    Szczegóły / powód
-                  </p>
-                  <p className="mt-1 text-slate-700 dark:text-slate-200">
-                    {selected.reason || "Brak dodatkowych informacji."}
-                  </p>
-                  {selected.attachmentUrl && (
-                    <a
-                      className="text-xs text-brand-600 underline"
-                      href={selected.attachmentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Załącznik
-                    </a>
-                  )}
-                  {selected.rejectionReason && (
-                    <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
-                      Powód odrzucenia: {selected.rejectionReason}
-                    </p>
-                  )}
-                </div>
-                {canApprove && selected.status === "PENDING" && (
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      type="button"
-                      className="btn-primary px-3 py-1.5 rounded-lg text-xs"
-                      onClick={() => handleStatusChange("APPROVED")}
-                      disabled={actionLoading}
-                    >
-                      Zatwierdź
-                    </button>
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 rounded-lg text-xs border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-100 dark:bg-rose-950/50"
-                      onClick={() => handleStatusChange("REJECTED")}
-                      disabled={actionLoading}
-                    >
-                      Odrzuć
-                    </button>
+                <div className="space-y-3 rounded-xl bg-surface-50/50 dark:bg-surface-800/50 p-4">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">Pracownik</p>
+                      <p className="font-semibold text-surface-900 dark:text-surface-50">{selected.employeeName}</p>
+                    </div>
                   </div>
-                )}
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">Data</p>
+                      <p className="font-semibold text-surface-900 dark:text-surface-50">{new Date(selected.date).toLocaleDateString("pl-PL")}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">Status</p>
+                      <span className={statusBadgeClass(selected.status)}>
+                        {mapStatus(selected.status)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="section-label">Szczegóły / powód</p>
+                  <p className="mt-2 text-sm text-surface-700 dark:text-surface-200 leading-relaxed">
+                    {selected.details}
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -575,25 +211,19 @@ export default function WnioskiPage() {
   );
 }
 
-function mapRequestType(type: RequestItem["type"], customName?: string | null) {
-  if (customName) return customName;
+function mapRequestType(type: RequestItem["type"]) {
   switch (type) {
-    case "PAID_LEAVE":
-      return "Urlop wypoczynkowy";
+    case "VACATION":
+      return "Urlop";
     case "SICK":
       return "Chorobowe";
-    case "UNPAID":
-      return "Urlop bezpłatny";
-    case "OTHER":
-      return "Inne";
+    case "SHIFT_GIVE":
+      return "Oddanie zmiany";
+    case "SHIFT_SWAP":
+      return "Zamiana zmiany";
     default:
       return type;
   }
-}
-
-function ensureValidRequestType(code?: string | null): RequestType {
-  const validCodes = Object.keys(LEAVE_TYPES) as RequestType[];
-  return validCodes.includes(code as RequestType) ? (code as RequestType) : "OTHER";
 }
 
 function mapStatus(status: RequestItem["status"]) {
@@ -604,38 +234,20 @@ function mapStatus(status: RequestItem["status"]) {
       return "zaakceptowany";
     case "REJECTED":
       return "odrzucony";
-    case "CANCELLED":
-      return "anulowany";
     default:
       return status;
   }
 }
 
 function statusBadgeClass(status: RequestItem["status"]) {
-  const base =
-    "badge border text-[11px] px-2.5 py-0.5 rounded-full font-medium";
   switch (status) {
     case "PENDING":
-      return (
-        base +
-        " bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-800"
-      );
+      return "badge badge-warning";
     case "APPROVED":
-      return (
-        base +
-        " bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
-      );
+      return "badge badge-success";
     case "REJECTED":
-      return (
-        base +
-        " bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:border-rose-800"
-      );
-    case "CANCELLED":
-      return (
-        base +
-        " bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
-      );
+      return "badge badge-error";
     default:
-      return base;
+      return "badge badge-neutral";
   }
 }

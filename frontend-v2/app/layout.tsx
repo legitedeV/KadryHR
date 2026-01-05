@@ -1,28 +1,28 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
-import { ToastProvider } from "@/components/ToastProvider";
-import { AuthProvider } from "@/lib/auth-context";
-
-// Inline script so it can run before hydration and set the theme class without a network roundtrip.
-const themeBootstrap = `(() => {
-  try {
-    const KEY = 'kadryhr_theme';
-    const stored = window.localStorage.getItem(KEY);
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light';
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(theme);
-    document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
-  } catch (error) {
-    console.warn('Theme bootstrap failed', error);
-  }
-})();`;
+import { THEME_STORAGE_KEY } from "../lib/theme";
+import { ThemeProvider } from "../components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "KadryHR",
   description: "Panel kadrowy dla małych sklepów",
 };
+
+const setThemeScript = `(() => {
+  try {
+    const stored = localStorage.getItem('${THEME_STORAGE_KEY}');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light';
+    const root = document.documentElement;
+    root.classList.remove('light');
+    root.classList.remove('dark');
+    root.classList.add(theme);
+    root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+  } catch (error) {
+    console.error('Theme setup failed', error);
+  }
+})();`;
 
 export default function RootLayout({
   children,
@@ -30,15 +30,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Theme is applied pre-hydration; suppress the initial class mismatch warning.
     <html lang="pl" suppressHydrationWarning>
-      <body className="min-h-screen bg-[var(--bg-light)] text-slate-900 antialiased transition-colors duration-200 dark:bg-[var(--bg-dark)] dark:text-slate-50">
-        <Script id="theme-bootstrap" strategy="beforeInteractive">
-          {themeBootstrap}
-        </Script>
-        <ToastProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </ToastProvider>
+      <head>
+        <Script id="theme-script" strategy="beforeInteractive">{setThemeScript}</Script>
+      </head>
+      <body className="antialiased transition-colors duration-200">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
