@@ -25,11 +25,6 @@ const setThemeScript = `(() => {
   }
 })();`;
 
-export const metadata: Metadata = {
-  title: "KadryHR",
-  description: "Panel kadrowy dla małych sklepów",
-};
-
 export default function RootLayout({
   children,
 }: {

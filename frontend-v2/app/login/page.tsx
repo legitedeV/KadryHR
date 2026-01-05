@@ -3,6 +3,8 @@
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { apiLogin } from "@/lib/api";
+import { saveToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
 import { pushToast } from "@/lib/toast";
@@ -23,40 +25,25 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/panel/dashboard";
-  const { login, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace(redirectTo);
-    }
-  }, [authLoading, user, redirectTo, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const loggedIn = await login(email, password);
-      if (loggedIn) {
-        pushToast({
-          title: "Zalogowano",
-          description: "Witaj ponownie w KadryHR",
-          variant: "success",
-        });
-        router.push(redirectTo);
-      }
+      const { accessToken } = await apiLogin(email, password);
+      saveToken(accessToken);
+      router.push(redirectTo);
     } catch (err: unknown) {
       setError(parseError(err));
     } finally {
       setLoading(false);
     }
   }
-
-  const disabled = loading || authLoading;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">

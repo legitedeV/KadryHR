@@ -75,7 +75,7 @@ body.dark {
 }
 
 body.light {
-  background:
+  background: 
     linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%),
     linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%);
   color: #18181b;
