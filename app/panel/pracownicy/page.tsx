@@ -22,86 +22,106 @@ export default function PracownicyPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-            Pracownicy
-          </p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+          <p className="section-label">Pracownicy</p>
+          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
             Lista pracowników
           </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Razem: <span className="font-semibold text-surface-900 dark:text-surface-100">{employees.length}</span>
         </div>
       </div>
 
       {loading && (
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
           Ładowanie pracowników...
-        </p>
+        </div>
       )}
 
       {error && (
-        <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100">
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+          <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
           {error}
-        </p>
+        </div>
       )}
 
       {!loading && !error && (
-        <div className="card p-0 overflow-hidden">
-          <table className="min-w-full text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-900/70">
-              <tr className="border-b border-slate-200 dark:border-slate-800">
-                <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  Imię i nazwisko
-                </th>
-                <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  Rola
-                </th>
-                <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  Lokalizacja
-                </th>
-                <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {employees.map((e) => (
-                <tr key={e.id}>
-                  <td className="px-3 py-2 text-slate-800 dark:text-slate-100">
-                    {e.name}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                    {e.role}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                    {e.locationName}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`badge ${
-                        e.active
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
-                          : "bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700"
-                      }`}
-                    >
-                      {e.active ? "aktywny" : "nieaktywny"}
-                    </span>
-                  </td>
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+                <tr className="border-b border-surface-200 dark:border-surface-800">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    Imię i nazwisko
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    Rola
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    Lokalizacja
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    Status
+                  </th>
                 </tr>
-              ))}
-              {employees.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-3 py-4 text-center text-slate-500 dark:text-slate-400"
-                  >
-                    Brak pracowników do wyświetlenia.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
+                {employees.map((e) => (
+                  <tr key={e.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/50 dark:to-accent-900/50 dark:text-brand-300">
+                          {e.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-surface-900 dark:text-surface-100">
+                          {e.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-surface-600 dark:text-surface-300">
+                      {e.role}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-surface-600 dark:text-surface-300">
+                      {e.locationName}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`badge ${e.active ? "badge-success" : "badge-neutral"}`}>
+                        {e.active ? "aktywny" : "nieaktywny"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {employees.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-10 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
+                          <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-surface-500 dark:text-surface-400">
+                          Brak pracowników do wyświetlenia.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
