@@ -15,9 +15,6 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": [
-      "vitest/globals"
-    ],
     "jsx": "preserve",
     "incremental": true,
     "paths": {
@@ -33,8 +30,11 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [
@@ -43,6 +43,9 @@
     "backend-v2",
     "frontend-v2",
     "frontend",
-    "frontend-v2-tmp"
+    "frontend-v2-tmp",
+    "tests",
+    "vitest.config.ts",
+    "vitest.setup.ts"
   ]
 }

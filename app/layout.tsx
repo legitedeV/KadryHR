@@ -34,7 +34,7 @@ export default function RootLayout({
       <head>
         <Script id="theme-script" strategy="beforeInteractive">{setThemeScript}</Script>
       </head>
-      <body className="antialiased bg-white text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50">
+      <body className="antialiased transition-colors duration-200">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
