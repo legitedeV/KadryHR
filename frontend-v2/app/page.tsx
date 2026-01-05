@@ -26,9 +26,15 @@ const features = [
 ];
 
 const segments = [
-  { title: "Sklepy convenience", text: "Żabka, Carrefour Express, osiedlowe markety – szybkie wdrożenie nawet w jeden dzień." },
+  {
+    title: "Sklepy convenience",
+    text: "Żabka, Carrefour Express, osiedlowe markety – szybkie wdrożenie nawet w jeden dzień.",
+  },
   { title: "Gastronomia", text: "Kawiarnie, bistra, food trucki – obsługa zmian rotacyjnych i sezonowych." },
-  { title: "Franczyzy", text: "Jedno lub kilka miejsc – wspólna baza pracowników, lokalne grafiki." },
+  {
+    title: "Franczyzy",
+    text: "Jedno lub kilka miejsc – wspólna baza pracowników, lokalne grafiki.",
+  },
 ];
 
 const previewShifts = [
@@ -57,35 +63,31 @@ export default function HomePage() {
               Nowoczesny grafik dla małych biznesów
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight text-surface-900 dark:text-surface-50">
-              KadryHR pomaga właścicielom sklepów{" "}
-              <span className="gradient-text">układać grafik</span>, akceptować
-              wnioski i pilnować obsady.
+              KadryHR pomaga właścicielom sklepów <span className="gradient-text">układać grafik</span>, akceptować wnioski i
+              pilnować obsady.
             </h1>
             <p className="text-lg text-surface-600 dark:text-surface-300 leading-relaxed">
-              Pastelowy, prosty interfejs po polsku. Zero zbędnych klików –
-              szybkie podejrzenie zmian na dziś, obsługa urlopów i dodawanie
-              pracowników w dwóch krokach.
+              Pastelowy, prosty interfejs po polsku. Zero zbędnych klików – szybkie podejrzenie zmian na dziś, obsługa urlopów i
+              dodawanie pracowników w dwóch krokach.
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href="/login"
-                className="btn-primary text-base px-6 py-3"
-              >
+              <Link href="/login" className="btn-primary text-base px-6 py-3">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 Wypróbuj za darmo
               </Link>
-              <Link
-                href="/cennik"
-                className="btn-secondary text-base px-6 py-3"
-              >
+              <Link href="/cennik" className="btn-secondary text-base px-6 py-3">
                 Zobacz cennik
               </Link>
             </div>
             <p className="text-sm text-surface-500 dark:text-surface-400 flex items-center gap-2">
               <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
               </svg>
               Pierwsze 14 dni gratis, bez karty.
             </p>
@@ -102,9 +104,7 @@ export default function HomePage() {
                   <p className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     {item.label}
                   </p>
-                  <p className="mt-1 text-base font-bold text-surface-900 dark:text-surface-50">
-                    {item.value}
-                  </p>
+                  <p className="mt-1 text-base font-bold text-surface-900 dark:text-surface-50">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -117,9 +117,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="section-label">Podgląd grafiku</p>
-                  <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-                    Tydzień 01–07.01
-                  </p>
+                  <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">Tydzień 01–07.01</p>
                 </div>
                 <span className="badge badge-brand">Demo</span>
               </div>
@@ -130,12 +128,8 @@ export default function HomePage() {
                     className="flex items-center justify-between rounded-xl border border-surface-200/80 bg-surface-50/50 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft hover:border-brand-200/50 dark:border-surface-700/80 dark:bg-surface-800/50 dark:hover:border-brand-700/50"
                   >
                     <div>
-                      <p className="font-medium text-surface-900 dark:text-surface-50">
-                        {shift.slot}
-                      </p>
-                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                        {shift.day}
-                      </p>
+                      <p className="font-medium text-surface-900 dark:text-surface-50">{shift.slot}</p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{shift.day}</p>
                     </div>
                     <span className={`badge ${shift.status === "ok" ? "badge-success" : "badge-warning"}`}>
                       {shift.status === "ok" ? "obsadzona" : "do obsady"}
@@ -153,9 +147,7 @@ export default function HomePage() {
             <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
               Zostaw kontakt, odezwiemy się w 1 dzień roboczy
             </p>
-            <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
-              Formularz z walidacją e-mail i potwierdzeniem wysyłki.
-            </p>
+            <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">Formularz z walidacją e-mail i potwierdzeniem wysyłki.</p>
             <div className="mt-6">
               <LeadCaptureForm />
             </div>
@@ -167,9 +159,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="section-label">Funkcje</p>
-              <h2 className="section-title mt-2">
-                Zrobione pod właścicieli sklepów i menedżerów
-              </h2>
+              <h2 className="section-title mt-2">Zrobione pod właścicieli sklepów i menedżerów</h2>
             </div>
             <Link
               href="/panel/dashboard"
@@ -183,21 +173,14 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="card-hover p-6"
-              >
+              <div key={feature.title} className="card-hover p-6">
                 <div className="flex items-center gap-4">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 text-xl ring-1 ring-brand-100/80 dark:from-brand-950/50 dark:to-accent-950/50 dark:ring-brand-800/50">
                     {feature.icon}
                   </span>
-                  <p className="font-bold text-surface-900 dark:text-surface-50">
-                    {feature.title}
-                  </p>
+                  <p className="font-bold text-surface-900 dark:text-surface-50">{feature.title}</p>
                 </div>
-                <p className="mt-4 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
-                  {feature.desc}
-                </p>
+                <p className="mt-4 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -207,26 +190,17 @@ export default function HomePage() {
         <section className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-1 space-y-4">
             <p className="section-label">Dla kogo</p>
-            <h2 className="section-title">
-              Najczęściej wybierają nas małe sieci i franczyzy
-            </h2>
+            <h2 className="section-title">Najczęściej wybierają nas małe sieci i franczyzy</h2>
             <p className="text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
-              KadryHR jest po polsku, działa w przeglądarce i na telefonie.
-              Zaproszenie pracownika to jedno kliknięcie – bez zakładania kont.
+              KadryHR jest po polsku, działa w przeglądarce i na telefonie. Zaproszenie pracownika to jedno kliknięcie – bez
+              zakładania kont.
             </p>
           </div>
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5">
             {segments.map((segment) => (
-              <div
-                key={segment.title}
-                className="card-hover p-5"
-              >
-                <p className="font-bold text-surface-900 dark:text-surface-50">
-                  {segment.title}
-                </p>
-                <p className="mt-3 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
-                  {segment.text}
-                </p>
+              <div key={segment.title} className="card-hover p-5">
+                <p className="font-bold text-surface-900 dark:text-surface-50">{segment.title}</p>
+                <p className="mt-3 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">{segment.text}</p>
               </div>
             ))}
           </div>
@@ -238,12 +212,9 @@ export default function HomePage() {
           <div className="relative">
             <div className="mb-6">
               <p className="section-label">Podgląd</p>
-              <h2 className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">
-                Przykładowy fragment grafiku
-              </h2>
+              <h2 className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">Przykładowy fragment grafiku</h2>
               <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
-                Kolory sygnalizują obsadę. Klikasz wniosek, akceptujesz, a
-                grafik aktualizuje się automatycznie.
+                Kolory sygnalizują obsadę. Klikasz wniosek, akceptujesz, a grafik aktualizuje się automatycznie.
               </p>
             </div>
             <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
@@ -261,26 +232,18 @@ export default function HomePage() {
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
                   {["Pon", "Wt", "Śr", "Czw", "Pt"].map((day) => (
                     <tr key={day} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-surface-700 dark:text-surface-200">
-                        {day}
-                      </td>
+                      <td className="px-4 py-3 font-medium text-surface-700 dark:text-surface-200">{day}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
                           {previewShifts
                             .filter((s) => s.day.startsWith(day))
                             .map((s, i) => (
-                              <span
-                                key={`${day}-${i}`}
-                                className={`badge ${s.status === "ok" ? "badge-success" : "badge-warning"}`}
-                              >
+                              <span key={`${day}-${i}`} className={`badge ${s.status === "ok" ? "badge-success" : "badge-warning"}`}>
                                 {s.slot}
                               </span>
                             ))}
-                          {previewShifts.filter((s) => s.day.startsWith(day)).length ===
-                            0 && (
-                            <span className="text-surface-400 dark:text-surface-500">
-                              Brak zmian
-                            </span>
+                          {previewShifts.filter((s) => s.day.startsWith(day)).length === 0 && (
+                            <span className="text-surface-400 dark:text-surface-500">Brak zmian</span>
                           )}
                         </div>
                       </td>
@@ -295,25 +258,16 @@ export default function HomePage() {
         {/* CTA Section */}
         <section className="card p-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between bg-gradient-to-r from-brand-50/50 to-accent-50/30 dark:from-brand-950/30 dark:to-accent-950/20">
           <div>
-            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
-              Gotowy na prostszy grafik?
-            </p>
+            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">Gotowy na prostszy grafik?</p>
             <p className="text-sm text-surface-600 dark:text-surface-300 mt-1">
-              Stwórz konto demo, dodaj pracownika i zaplanuj pierwszą zmianę w
-              2 minuty.
+              Stwórz konto demo, dodaj pracownika i zaplanuj pierwszą zmianę w 2 minuty.
             </p>
           </div>
           <div className="flex flex-wrap gap-4">
-            <Link
-              href="/login"
-              className="btn-primary"
-            >
+            <Link href="/login" className="btn-primary">
               Rozpocznij
             </Link>
-            <Link
-              href="/kontakt"
-              className="btn-secondary"
-            >
+            <Link href="/kontakt" className="btn-secondary">
               Porozmawiajmy
             </Link>
           </div>

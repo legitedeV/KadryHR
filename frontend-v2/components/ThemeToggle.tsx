@@ -1,64 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type Theme = "light" | "dark";
-
-const STORAGE_KEY = "kadryhr_theme";
+import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  function applyTheme(next: Theme) {
-    if (typeof document === "undefined") return;
-    const body = document.body;
-    body.classList.remove("light", "dark");
-    body.classList.add(next);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, next);
-    }
-    document.documentElement.style.colorScheme = next === "dark" ? "dark" : "light";
-  }
+  const { resolvedTheme, setTheme, isMounted } = useTheme();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      applyTheme(stored);
-      setTheme(stored);
-      return;
-    }
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-    const initial: Theme = prefersDark ? "dark" : "light";
-    applyTheme(initial);
-    setTheme(initial);
+    setReady(true);
   }, []);
 
-  function toggle() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    applyTheme(next);
-  }
-
-  const isDark = theme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button
       type="button"
-      onClick={toggle}
-      className="inline-flex items-center gap-2 rounded-full border border-slate-300/70 bg-white/70 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className={`relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-surface-200/80 bg-white/80 text-surface-600 shadow-sm backdrop-blur transition-all duration-300 hover:border-brand-300 hover:text-brand-600 dark:border-surface-700/80 dark:bg-surface-800/80 dark:text-surface-300 dark:hover:border-brand-600 dark:hover:text-brand-400 ${
+        ready && isMounted ? "opacity-100" : "opacity-0"
+      }`}
       aria-label="Przełącz motyw"
+      aria-pressed={isDark}
+      disabled={!isMounted}
     >
-      <span
-        className={`flex h-5 w-5 items-center justify-center rounded-full transition-all ${
-          isDark
-            ? "bg-amber-400 text-amber-950 shadow"
-            : "bg-slate-200 text-slate-700"
-        }`}
+      <span className="sr-only">{isDark ? "Tryb ciemny" : "Tryb jasny"}</span>
+      <svg
+        className={`h-5 w-5 transition-transform duration-300 ${isDark ? "rotate-0 scale-100" : "rotate-90 scale-0 absolute"}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
       >
-        <span className="text-[13px]">💡</span>
-      </span>
-      <span className="hidden sm:inline">{isDark ? "Tryb ciemny" : "Tryb jasny"}</span>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+      <svg
+        className={`h-5 w-5 transition-transform duration-300 ${!isDark ? "rotate-0 scale-100" : "-rotate-90 scale-0 absolute"}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
     </button>
   );
 }

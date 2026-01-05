@@ -12,7 +12,7 @@
   --color-brand-800: #075985;
   --color-brand-900: #0c4a6e;
   --color-brand-950: #082f49;
-  
+
   --color-accent-50: #fdf4ff;
   --color-accent-100: #fae8ff;
   --color-accent-200: #f5d0fe;
@@ -23,7 +23,7 @@
   --color-accent-700: #a21caf;
   --color-accent-800: #86198f;
   --color-accent-900: #701a75;
-  
+
   --color-surface-50: #fafafa;
   --color-surface-100: #f4f4f5;
   --color-surface-200: #e4e4e7;
@@ -58,7 +58,7 @@ html {
 
 body {
   min-height: 100vh;
-  background: 
+  background:
     linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%),
     linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%);
   color: #18181b;
@@ -68,7 +68,7 @@ body {
 }
 
 body.dark {
-  background: 
+  background:
     linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(217, 70, 239, 0.04) 50%, transparent 100%),
     linear-gradient(180deg, #0a0a0b 0%, #141416 100%);
   color: #e4e4e7;
