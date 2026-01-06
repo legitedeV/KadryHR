@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
+import { Logo } from "@/components/brand/Logo";
 
 function parseError(err: unknown) {
   return err instanceof Error ? err.message : "Błąd logowania";
@@ -52,14 +53,16 @@ function LoginForm() {
 
       <div className="w-full max-w-md card p-8 shadow-elevated">
         <div className="flex items-start justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-400 via-brand-500 to-accent-500 flex items-center justify-center text-white font-bold shadow-glow">
-              <span className="text-xl">K</span>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-50">KadryHR</h1>
-              <p className="text-sm text-surface-500 dark:text-surface-400">Logowanie do panelu</p>
+          <div className="flex items-center gap-3">
+            <Logo
+              variant="compact"
+              size="sm"
+              alt="KadryHR"
+              className="max-w-[200px]"
+              align="column"
+            />
+            <div className="text-xs text-surface-500 dark:text-surface-400">
+              Kadry i płace bez tajemnic
             </div>
           </div>
           <ThemeToggle />

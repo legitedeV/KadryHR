@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
 import { pushToast } from "@/lib/toast";
+import { Logo } from "@/components/brand/Logo";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -64,17 +65,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-lg card p-6 space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold shadow-soft">
-              K
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                KadryHR
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Rejestracja właściciela
-              </p>
-            </div>
+            <Logo variant="compact" size="sm" alt="KadryHR" className="max-w-[200px]" align="column" />
+            <div className="text-xs text-slate-500 dark:text-slate-400">Kadry i płace bez tajemnic</div>
           </div>
           <ThemeToggle />
         </div>
