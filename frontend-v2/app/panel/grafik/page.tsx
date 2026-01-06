@@ -288,18 +288,6 @@ export default function GrafikPage() {
     };
   }, [hasToken, range.from, range.to]);
 
-  const byDay: Record<string, ShiftDisplay[]> = useMemo(() => {
-    const grouped: Record<string, ShiftDisplay[]> = {};
-    dowOrder.forEach((k) => (grouped[k] = []));
-    shifts.forEach((s) => {
-      const display = mapShiftRecord(s, employees, locations);
-      const key = getDowKey(display.date);
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(display);
-    });
-    return grouped;
-  }, [employees, locations, shifts]);
-
   // Grid structure: employees as rows, days as columns
   const gridByEmployeeAndDay: Record<string, Record<string, ShiftDisplay[]>> = useMemo(() => {
     const grid: Record<string, Record<string, ShiftDisplay[]>> = {};
