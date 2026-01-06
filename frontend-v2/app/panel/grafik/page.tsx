@@ -224,6 +224,10 @@ function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
   };
 }
 
+function formatEmployeeName(employee: EmployeeRecord): string {
+  return `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik";
+}
+
 export default function GrafikPage() {
   const [range, setRange] = useState<WeekRange>(() => getWeekRange());
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
@@ -288,17 +292,30 @@ export default function GrafikPage() {
     };
   }, [hasToken, range.from, range.to]);
 
-  const byDay: Record<string, ShiftDisplay[]> = useMemo(() => {
-    const grouped: Record<string, ShiftDisplay[]> = {};
-    dowOrder.forEach((k) => (grouped[k] = []));
+  // Grid structure: employees as rows, days as columns
+  const gridByEmployeeAndDay: Record<string, Record<string, ShiftDisplay[]>> = useMemo(() => {
+    const grid: Record<string, Record<string, ShiftDisplay[]>> = {};
+    
+    // Initialize grid for all employees
+    employees.forEach((emp) => {
+      grid[emp.id] = {};
+      dowOrder.forEach((dow) => {
+        grid[emp.id][dow] = [];
+      });
+    });
+
+    // Populate grid with shifts
     shifts.forEach((s) => {
       const display = mapShiftRecord(s, employees, locations);
+      if (!display.employeeId) return; // Skip unassigned shifts
       const key = getDowKey(display.date);
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(display);
+      if (grid[display.employeeId] && grid[display.employeeId][key]) {
+        grid[display.employeeId][key].push(display);
+      }
     });
-    return grouped;
-  }, [employees, locations, shifts]);
+
+    return grid;
+  }, [employees, shifts, locations]);
 
   const handleWeekChange = (direction: "next" | "prev") => {
     const currentStart = new Date(range.from);
@@ -307,9 +324,9 @@ export default function GrafikPage() {
     setRange(getWeekRange(currentStart));
   };
 
-  const resetForm = (date?: string) => {
+  const resetForm = (date?: string, employeeId?: string) => {
     setForm({
-      employeeId: employees[0]?.id ?? "",
+      employeeId: employeeId ?? employees[0]?.id ?? "",
       locationId: locations[0]?.id,
       position: "",
       notes: "",
@@ -322,8 +339,8 @@ export default function GrafikPage() {
     setFormSuccess(null);
   };
 
-  const openCreateModal = (date?: string) => {
-    resetForm(date);
+  const openCreateModal = (date?: string, employeeId?: string) => {
+    resetForm(date, employeeId);
     setEditorOpen(true);
   };
 
@@ -490,114 +507,148 @@ export default function GrafikPage() {
             <table className="min-w-full">
               <thead className="bg-surface-50/80 dark:bg-surface-900/80">
                 <tr className="border-b border-surface-200 dark:border-surface-800">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 w-36">
-                    Dzień
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
+                    Pracownik
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                    Zmiany
-                  </th>
+                  {dowLabels.map((dayLabel, idx) => {
+                    const dayDate = new Date(range.from);
+                    dayDate.setDate(dayDate.getDate() + idx);
+                    return (
+                      <th key={dayLabel} className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 min-w-[180px]">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{dayLabel}</span>
+                          <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
+                            {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
+                          </span>
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
-                {dowOrder.map((key, idx) => {
-                  const dayShifts = byDay[key] || [];
-                  const dayDate = new Date(range.from);
-                  dayDate.setDate(dayDate.getDate() + idx);
-                  const dayDateValue = dayDate.toISOString().slice(0, 10);
-                  return (
-                    <tr key={key} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                      <td className="px-4 py-4 align-top whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs font-semibold text-surface-600 dark:text-surface-300">
-                            {dowLabels[idx].slice(0, 2)}
+                {employees.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-surface-500 dark:text-surface-400">
+                      <div className="flex flex-col items-center gap-2">
+                        <svg className="w-10 h-10 text-surface-300 dark:text-surface-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>Brak pracowników. Dodaj pracowników, aby tworzyć grafik.</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  employees.map((employee) => {
+                    const employeeShifts = gridByEmployeeAndDay[employee.id] || {};
+                    return (
+                      <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                        <td className="px-4 py-3 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
+                          <div className="flex items-center gap-3">
+                            <Avatar
+                              name={formatEmployeeName(employee)}
+                              src={employee.avatarUrl}
+                              size="md"
+                            />
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium text-surface-900 dark:text-surface-50 truncate">
+                                {formatEmployeeName(employee)}
+                              </span>
+                              {employee.position && (
+                                <span className="text-xs text-surface-500 dark:text-surface-400 truncate">
+                                  {employee.position}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-surface-700 dark:text-surface-200">{dowLabels[idx]}</span>
-                            <span className="text-xs text-surface-500 dark:text-surface-400">{dayDate.toLocaleDateString("pl-PL")}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        {dayShifts.length === 0 ? (
-                          <div className="flex items-center justify-between rounded-lg border border-dashed border-surface-200 px-4 py-3 text-sm text-surface-400 dark:border-surface-700 dark:text-surface-500">
-                            <span>Brak zmian</span>
-                            <button
-                              className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-950/50 dark:text-brand-300 dark:hover:bg-brand-900/50 transition-colors"
-                              onClick={() => openCreateModal(dayDateValue)}
-                              aria-label={`Dodaj zmianę na ${dowLabels[idx]}`}
-                            >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap items-start gap-3">
-                            {dayShifts.map((s) => {
-                              const sourceShift = shifts.find((shift) => shift.id === s.id);
-                              return (
-                              <div
-                                key={s.id}
-                                className={`group relative rounded-xl border px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft ${
-                                  s.status === "UNASSIGNED"
-                                    ? "border-rose-200 bg-rose-50/50 dark:border-rose-800/50 dark:bg-rose-950/30"
-                                    : "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <div
-                                      className={`font-semibold text-sm ${
-                                        s.status === "UNASSIGNED"
-                                          ? "text-rose-800 dark:text-rose-200"
-                                          : "text-emerald-800 dark:text-emerald-200"
-                                      }`}
+                        </td>
+                        {dowOrder.map((dow, dayIdx) => {
+                          const dayShifts = employeeShifts[dow] || [];
+                          const dayDate = new Date(range.from);
+                          dayDate.setDate(dayDate.getDate() + dayIdx);
+                          const dayDateValue = dayDate.toISOString().slice(0, 10);
+                          return (
+                            <td key={dow} className="px-3 py-3 align-top">
+                              <div className="flex flex-col gap-2 min-h-[60px]">
+                                {dayShifts.length === 0 ? (
+                                  <button
+                                    className="w-full h-full min-h-[60px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
+                                    onClick={() => openCreateModal(dayDateValue, employee.id)}
+                                    aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
+                                  >
+                                    <svg className="w-5 h-5 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                  </button>
+                                ) : (
+                                  <>
+                                    {dayShifts.map((shift) => {
+                                      const sourceShift = shifts.find((s) => s.id === shift.id);
+                                      return (
+                                        <div
+                                          key={shift.id}
+                                          className="group relative rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30 px-2 py-2 shadow-sm hover:shadow-md transition-all text-xs"
+                                        >
+                                          <div className="flex items-start justify-between gap-1">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="font-semibold text-emerald-800 dark:text-emerald-200">
+                                                {shift.start}–{shift.end}
+                                              </div>
+                                              {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
+                                                <div className="text-[10px] text-surface-600 dark:text-surface-300 mt-0.5 truncate">
+                                                  {shift.locationName}
+                                                </div>
+                                              )}
+                                              {shift.position && (
+                                                <div className="text-[10px] uppercase tracking-wide text-surface-500 dark:text-surface-400 mt-0.5 truncate">
+                                                  {shift.position}
+                                                </div>
+                                              )}
+                                              {shift.availabilityWarning && (
+                                                <div className="mt-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
+                                                  {shift.availabilityWarning}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <button
+                                                className="text-[10px] text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium"
+                                                onClick={() => sourceShift && openEditModal(sourceShift)}
+                                                aria-label="Edytuj zmianę"
+                                              >
+                                                ✎
+                                              </button>
+                                              <button
+                                                className="text-[10px] text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 font-medium"
+                                                onClick={() => setDeleteTarget(sourceShift || null)}
+                                                aria-label="Usuń zmianę"
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                    <button
+                                      className="w-full rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1.5 flex items-center justify-center group"
+                                      onClick={() => openCreateModal(dayDateValue, employee.id)}
+                                      aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                     >
-                                      {s.start}–{s.end}
-                                    </div>
-                                    <div className="mt-1 flex items-center gap-2 text-xs text-surface-700 dark:text-surface-200">
-                                      <Avatar name={s.employeeName} src={s.employeeAvatar} size="sm" />
-                                      <span className="font-medium">{s.employeeName || "NIEOBSADZONA"}</span>
-                                    </div>
-                                    <div className="text-xs text-surface-500 dark:text-surface-400 mt-1">{s.locationName}</div>
-                                    {s.position && (
-                                      <div className="mt-1 text-[11px] uppercase tracking-wide text-surface-500 dark:text-surface-400">
-                                        {s.position}
-                                      </div>
-                                    )}
-                                    {s.availabilityWarning && (
-                                      <div className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
-                                        {s.availabilityWarning}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col items-end gap-2 opacity-100 transition group-hover:opacity-100">
-                                    <button className="btn-secondary btn-xs" onClick={() => sourceShift && openEditModal(sourceShift)}>
-                                      Edytuj
+                                      <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                      </svg>
                                     </button>
-                                    <button className="btn-link text-rose-600" onClick={() => setDeleteTarget(sourceShift || null)}>
-                                      Usuń
-                                    </button>
-                                  </div>
-                                </div>
+                                  </>
+                                )}
                               </div>
-                              );
-                            })}
-                            <button
-                              className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-950/50 dark:text-brand-300 dark:hover:bg-brand-900/50 transition-colors self-center"
-                              onClick={() => openCreateModal(dayDateValue)}
-                              aria-label={`Dodaj zmianę na ${dowLabels[idx]}`}
-                            >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
