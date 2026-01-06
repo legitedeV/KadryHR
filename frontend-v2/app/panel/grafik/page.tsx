@@ -503,8 +503,8 @@ export default function GrafikPage() {
             {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
-            <table className="min-w-full">
+          <div className="overflow-x-auto xl:overflow-visible rounded-xl border border-surface-200/80 dark:border-surface-800/80">
+            <table className="min-w-[1200px] xl:min-w-full w-full">
               <thead className="bg-surface-50/80 dark:bg-surface-900/80">
                 <tr className="border-b border-surface-200 dark:border-surface-800">
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
@@ -514,7 +514,7 @@ export default function GrafikPage() {
                     const dayDate = new Date(range.from);
                     dayDate.setDate(dayDate.getDate() + idx);
                     return (
-                      <th key={dayLabel} className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 min-w-[180px]">
+                      <th key={dayLabel} className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 min-w-[160px]">
                         <div className="flex flex-col items-center gap-1">
                           <span>{dayLabel}</span>
                           <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
