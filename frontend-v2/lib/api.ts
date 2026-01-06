@@ -1088,3 +1088,140 @@ export async function apiListAuditLogs(
     `${AUDIT_PREFIX}${query ? `?${query}` : ""}`,
   );
 }
+
+// Organisation API
+export interface OrganisationDetails {
+  id: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  logoUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrganisationMember {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role: UserRole;
+  avatarUrl?: string | null;
+  createdAt: string;
+}
+
+export interface UpdateOrganisationPayload {
+  name?: string;
+  description?: string;
+  category?: string;
+  logoUrl?: string;
+}
+
+const ORGANISATIONS_PREFIX = "/organisations";
+
+export async function apiGetOrganisation(): Promise<OrganisationDetails> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationDetails>(`${ORGANISATIONS_PREFIX}/me`);
+}
+
+export async function apiUpdateOrganisation(
+  payload: UpdateOrganisationPayload,
+): Promise<OrganisationDetails> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationDetails>(`${ORGANISATIONS_PREFIX}/me`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiGetOrganisationMembers(): Promise<OrganisationMember[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationMember[]>(`${ORGANISATIONS_PREFIX}/me/members`);
+}
+
+// Profile API
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatarUrl?: string | null;
+  organisationId: string;
+  createdAt: string;
+  organisation: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangeEmailPayload {
+  currentPassword: string;
+  newEmail: string;
+}
+
+export interface UpdateMemberRolePayload {
+  role: "MANAGER" | "ADMIN" | "EMPLOYEE";
+}
+
+const USERS_PREFIX = "/users";
+
+export async function apiGetProfile(): Promise<UserProfile> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<UserProfile>(`${USERS_PREFIX}/profile`);
+}
+
+export async function apiUpdateProfile(
+  payload: UpdateProfilePayload,
+): Promise<UserProfile> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<UserProfile>(`${USERS_PREFIX}/profile`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiChangePassword(
+  payload: ChangePasswordPayload,
+): Promise<{ success: boolean; message: string }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean; message: string }>(
+    `${USERS_PREFIX}/profile/change-password`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiChangeEmail(
+  payload: ChangeEmailPayload,
+): Promise<UserProfile> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<UserProfile>(`${USERS_PREFIX}/profile/change-email`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateMemberRole(
+  userId: string,
+  payload: UpdateMemberRolePayload,
+): Promise<OrganisationMember> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationMember>(`${USERS_PREFIX}/${userId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
