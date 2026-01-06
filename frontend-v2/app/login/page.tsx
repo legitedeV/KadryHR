@@ -1,13 +1,10 @@
 "use client";
 
-import { FormEvent, Suspense, useEffect, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiLogin } from "@/lib/api";
-import { saveToken } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
-import { pushToast } from "@/lib/toast";
 
 function parseError(err: unknown) {
   return err instanceof Error ? err.message : "Błąd logowania";
@@ -25,18 +22,19 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/panel/dashboard";
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const disabled = loading || !email || !password;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const { accessToken } = await apiLogin(email, password);
-      saveToken(accessToken);
+      await login(email, password);
       router.push(redirectTo);
     } catch (err: unknown) {
       setError(parseError(err));

@@ -1,30 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiGetMe, User } from "@/lib/api";
-import { getToken, clearToken } from "@/lib/auth";
+import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 
 export default function ProfilPage() {
   const router = useRouter();
+  const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasSession);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
+    if (!hasSession) {
       router.replace("/login");
       return;
     }
-    apiGetMe(token)
+    apiGetMe()
       .then(setUser)
       .catch(() => {
         setError("Nie udało się pobrać profilu");
-        clearToken();
+        clearAuthTokens();
       })
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [hasSession, router]);
+
+  if (!hasSession) return null;
 
   if (loading) {
     return (
@@ -117,7 +119,7 @@ export default function ProfilPage() {
           
           <button
             onClick={() => {
-              clearToken();
+              clearAuthTokens();
               router.push("/login");
             }}
             className="btn-secondary"

@@ -25,6 +25,12 @@ const setThemeScript = `(() => {
   }
 })();`;
 
+export const metadata: Metadata = {
+  title: "KadryHR – Nowoczesne grafiki i kadry",
+  description:
+    "KadryHR łączy grafikowanie, wnioski urlopowe i komunikację zespołu w jednym nowoczesnym panelu.",
+};
+
 export default function RootLayout({
   children,
 }: {

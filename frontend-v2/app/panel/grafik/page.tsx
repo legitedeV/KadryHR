@@ -1,8 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Shift, apiGetShifts } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { useEffect, useMemo, useState } from "react";
+import {
+  EmployeeRecord,
+  LocationRecord,
+  ShiftRecord,
+  apiGetShifts,
+} from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
+
+type ShiftDisplay = {
+  id: string;
+  date: string;
+  start: string;
+  end: string;
+  employeeName: string;
+  locationName: string;
+  status: "ASSIGNED" | "UNASSIGNED";
+};
 
 function getWeekRange() {
   const now = new Date();
@@ -15,9 +30,7 @@ function getWeekRange() {
   return {
     from: fmt(monday),
     to: fmt(sunday),
-    label: `${monday.toLocaleDateString("pl-PL")} – ${sunday.toLocaleDateString(
-      "pl-PL"
-    )}`,
+    label: `${monday.toLocaleDateString("pl-PL")} – ${sunday.toLocaleDateString("pl-PL")}`,
   };
 }
 
@@ -34,6 +47,33 @@ const dowLabels = [
 
 const dowFromDate = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
+function formatTime(date: Date) {
+  return date.toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function mapShiftRecord(record: ShiftRecord): ShiftDisplay {
+  const startDate = new Date(record.startsAt);
+  const endDate = new Date(record.endsAt);
+  const employeeName = record.employee
+    ? `${record.employee.firstName ?? ""} ${record.employee.lastName ?? ""}`.trim() || "Pracownik"
+    : "Nieprzypisana";
+  const locationName = record.location?.name ?? "Brak lokalizacji";
+
+  return {
+    id: record.id,
+    date: startDate.toISOString().slice(0, 10),
+    start: formatTime(startDate),
+    end: formatTime(endDate),
+    employeeName,
+    locationName,
+    status: record.employeeId ? "ASSIGNED" : "UNASSIGNED",
+  };
+}
+
 function getDowKey(date: string) {
   const d = new Date(date);
   const idx = d.getDay(); // 0 = Sun
@@ -41,31 +81,135 @@ function getDowKey(date: string) {
   return dowFromDate[idx] ?? "Sun";
 }
 
+export function buildShiftDescription(
+  shift: ShiftRecord,
+  employees: EmployeeRecord[],
+  locations: LocationRecord[],
+) {
+  const employee = employees.find((e) => e.id === shift.employeeId);
+  const location = locations.find((loc) => loc.id === shift.locationId);
+  const startDate = new Date(shift.startsAt);
+  const endDate = new Date(shift.endsAt);
+  const employeeLabel = employee
+    ? `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik"
+    : "Nieprzypisana";
+  const dateLabel = startDate.toLocaleDateString("pl-PL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const timeLabel = `${formatTime(startDate)}–${formatTime(endDate)}`;
+  const locationLabel = location?.name ?? "Bez lokalizacji";
+
+  return `${employeeLabel} • ${dateLabel} • ${timeLabel} • ${locationLabel}`;
+}
+
+type ConfirmDialogProps = {
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  open?: boolean;
+  forceRender?: boolean;
+  portalTarget?: HTMLElement | null;
+};
+
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel = "Potwierdź",
+  cancelLabel = "Anuluj",
+  onConfirm,
+  onCancel,
+  open = true,
+  forceRender = false,
+}: ConfirmDialogProps) {
+  const shouldRender = forceRender || open;
+  if (!shouldRender) return null;
+
+  return (
+    <div
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-[60] flex items-center justify-center"
+    >
+      <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-elevated ring-1 ring-surface-200 dark:bg-surface-900 dark:ring-surface-700">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">{title}</h2>
+          <p className="text-sm text-surface-600 dark:text-surface-300">{description}</p>
+        </div>
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onCancel}
+            aria-label={cancelLabel}
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={onConfirm}
+            aria-label={confirmLabel}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GrafikPage() {
   const [range] = useState(getWeekRange);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [shifts, setShifts] = useState<ShiftDisplay[]>([]);
+  const hasToken = useMemo(() => !!getAccessToken(), []);
+  const [loading, setLoading] = useState(hasToken);
+  const [error, setError] = useState<string | null>(
+    hasToken ? null : "Zaloguj się, aby zobaczyć grafik.",
+  );
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    apiGetShifts(token, range.from, range.to)
-      .then(setShifts)
+    if (!hasToken) return;
+
+    let isMounted = true;
+
+    apiGetShifts({ from: range.from, to: range.to })
+      .then((items) => {
+        if (!isMounted) return;
+        setShifts(items.map(mapShiftRecord));
+      })
       .catch((err) => {
         console.error(err);
+        if (!isMounted) return;
         setError("Nie udało się pobrać grafiku z backendu");
       })
-      .finally(() => setLoading(false));
-  }, [range.from, range.to]);
+      .finally(() => {
+        if (!isMounted) return;
+        setLoading(false);
+      });
 
-  const byDay: Record<string, Shift[]> = {};
-  dowOrder.forEach((k) => (byDay[k] = []));
-  shifts.forEach((s) => {
-    const key = getDowKey(s.date);
-    if (!byDay[key]) byDay[key] = [];
-    byDay[key].push(s);
-  });
+    return () => {
+      isMounted = false;
+    };
+  }, [hasToken, range.from, range.to]);
+
+  const byDay: Record<string, ShiftDisplay[]> = useMemo(() => {
+    const grouped: Record<string, ShiftDisplay[]> = {};
+    dowOrder.forEach((k) => (grouped[k] = []));
+    shifts.forEach((s) => {
+      const key = getDowKey(s.date);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(s);
+    });
+    return grouped;
+  }, [shifts]);
 
   return (
     <div className="space-y-6">
@@ -94,7 +238,7 @@ export default function GrafikPage() {
         </div>
       )}
 
-      {error && (
+      {error && !loading && (
         <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
           <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -151,9 +295,7 @@ export default function GrafikPage() {
                       </td>
                       <td className="px-4 py-4">
                         {dayShifts.length === 0 ? (
-                          <span className="text-sm text-surface-400 dark:text-surface-500">
-                            Brak zmian
-                          </span>
+                          <span className="text-sm text-surface-400 dark:text-surface-500">Brak zmian</span>
                         ) : (
                           <div className="flex flex-wrap gap-3">
                             {dayShifts.map((s) => (
@@ -165,19 +307,19 @@ export default function GrafikPage() {
                                     : "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30"
                                 }`}
                               >
-                                <div className={`font-semibold text-sm ${
-                                  s.status === "UNASSIGNED"
-                                    ? "text-rose-800 dark:text-rose-200"
-                                    : "text-emerald-800 dark:text-emerald-200"
-                                }`}>
+                                <div
+                                  className={`font-semibold text-sm ${
+                                    s.status === "UNASSIGNED"
+                                      ? "text-rose-800 dark:text-rose-200"
+                                      : "text-emerald-800 dark:text-emerald-200"
+                                  }`}
+                                >
                                   {s.start}–{s.end}
                                 </div>
                                 <div className="text-xs text-surface-600 dark:text-surface-400 mt-0.5">
                                   {s.employeeName || "NIEOBSADZONA"}
                                 </div>
-                                <div className="text-xs text-surface-500 dark:text-surface-500 mt-1">
-                                  {s.locationName}
-                                </div>
+                                <div className="text-xs text-surface-500 dark:text-surface-500 mt-1">{s.locationName}</div>
                               </div>
                             ))}
                           </div>
