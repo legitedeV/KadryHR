@@ -224,6 +224,10 @@ function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
   };
 }
 
+function formatEmployeeName(employee: EmployeeRecord): string {
+  return `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik";
+}
+
 export default function GrafikPage() {
   const [range, setRange] = useState<WeekRange>(() => getWeekRange());
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
@@ -542,13 +546,13 @@ export default function GrafikPage() {
                         <td className="px-4 py-3 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
                           <div className="flex items-center gap-3">
                             <Avatar
-                              name={`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik"}
+                              name={formatEmployeeName(employee)}
                               src={employee.avatarUrl}
                               size="md"
                             />
                             <div className="flex flex-col min-w-0">
                               <span className="font-medium text-surface-900 dark:text-surface-50 truncate">
-                                {`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik"}
+                                {formatEmployeeName(employee)}
                               </span>
                               {employee.position && (
                                 <span className="text-xs text-surface-500 dark:text-surface-400 truncate">
@@ -570,7 +574,7 @@ export default function GrafikPage() {
                                   <button
                                     className="w-full h-full min-h-[60px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
                                     onClick={() => openCreateModal(dayDateValue, employee.id)}
-                                    aria-label={`Dodaj zmianę dla ${employee.firstName} ${employee.lastName} na ${dowLabels[dayIdx]}`}
+                                    aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                   >
                                     <svg className="w-5 h-5 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -629,7 +633,7 @@ export default function GrafikPage() {
                                     <button
                                       className="w-full rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1.5 flex items-center justify-center group"
                                       onClick={() => openCreateModal(dayDateValue, employee.id)}
-                                      aria-label={`Dodaj kolejną zmianę dla ${employee.firstName} ${employee.lastName} na ${dowLabels[dayIdx]}`}
+                                      aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                     >
                                       <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
