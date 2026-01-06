@@ -440,9 +440,6 @@ export default function GrafikPage() {
               Następny →
             </button>
           </div>
-          <button className="btn-primary" onClick={() => openCreateModal()}>
-            Dodaj zmianę
-          </button>
           <button className="btn-secondary" onClick={openPublishModal}>
             Opublikuj tydzień
           </button>
@@ -524,12 +521,18 @@ export default function GrafikPage() {
                         {dayShifts.length === 0 ? (
                           <div className="flex items-center justify-between rounded-lg border border-dashed border-surface-200 px-4 py-3 text-sm text-surface-400 dark:border-surface-700 dark:text-surface-500">
                             <span>Brak zmian</span>
-                            <button className="btn-link text-primary-600" onClick={() => openCreateModal(dayDateValue)}>
-                              Dodaj zmianę
+                            <button
+                              className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-950/50 dark:text-brand-300 dark:hover:bg-brand-900/50 transition-colors"
+                              onClick={() => openCreateModal(dayDateValue)}
+                              aria-label={`Dodaj zmianę na ${dowLabels[idx]}`}
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
                             </button>
                           </div>
                         ) : (
-                          <div className="flex flex-wrap gap-3">
+                          <div className="flex flex-wrap items-start gap-3">
                             {dayShifts.map((s) => {
                               const sourceShift = shifts.find((shift) => shift.id === s.id);
                               return (
@@ -580,6 +583,15 @@ export default function GrafikPage() {
                               </div>
                               );
                             })}
+                            <button
+                              className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-950/50 dark:text-brand-300 dark:hover:bg-brand-900/50 transition-colors self-center"
+                              onClick={() => openCreateModal(dayDateValue)}
+                              aria-label={`Dodaj zmianę na ${dowLabels[idx]}`}
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
                           </div>
                         )}
                       </td>

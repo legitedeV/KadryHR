@@ -1036,3 +1036,55 @@ function mapNotification(notification: NotificationResponse): NotificationItem {
     createdAt: notification.createdAt,
   };
 }
+
+// Audit Log Types and API
+export interface AuditLogEntry {
+  id: string;
+  organisationId: string;
+  actorUserId: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+  actor?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email: string;
+  };
+}
+
+export interface AuditLogQuery {
+  from?: string;
+  to?: string;
+  action?: string;
+  entityType?: string;
+  actorUserId?: string;
+  take?: number;
+  skip?: number;
+}
+
+const AUDIT_PREFIX = "/audit";
+
+export async function apiListAuditLogs(
+  params: AuditLogQuery = {},
+): Promise<PaginatedResponse<AuditLogEntry>> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  if (params.action) search.set("action", params.action);
+  if (params.entityType) search.set("entityType", params.entityType);
+  if (params.actorUserId) search.set("actorUserId", params.actorUserId);
+  if (params.take) search.set("take", String(params.take));
+  if (params.skip) search.set("skip", String(params.skip));
+
+  const query = search.toString();
+  return apiClient.request<PaginatedResponse<AuditLogEntry>>(
+    `${AUDIT_PREFIX}${query ? `?${query}` : ""}`,
+  );
+}

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { LeadCaptureForm } from "@/components/LeadCaptureForm";
 import { MarketingHeader } from "@/components/MarketingHeader";
-import { Logo } from "@/components/brand/Logo";
 
 const features = [
   {
@@ -57,7 +56,14 @@ export default function HomePage() {
         <section className="grid grid-cols-1 gap-12 lg:grid-cols-2 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
-              <Logo variant="full" size="lg" showTagline className="max-w-xs sm:max-w-md" alt="KadryHR – Kadry i płace bez tajemnic" />
+              <div className="space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-brand-700 dark:text-brand-300">
+                  KadryHR.pl
+                </h2>
+                <p className="text-sm font-medium text-surface-600 dark:text-surface-300">
+                  Kadry i płace bez tajemnic
+                </p>
+              </div>
               <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/60 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800/50">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
