@@ -63,9 +63,10 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-lg card p-6 space-y-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 flex justify-center">
-            <Logo variant="full" size="sm" alt="KadryHR – Kadry i płace bez tajemnic" />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Logo variant="compact" size="sm" alt="KadryHR" className="max-w-[200px]" align="column" />
+            <div className="text-xs text-slate-500 dark:text-slate-400">Kadry i płace bez tajemnic</div>
           </div>
           <ThemeToggle />
         </div>

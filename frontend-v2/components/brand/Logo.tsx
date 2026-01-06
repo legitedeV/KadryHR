@@ -33,9 +33,9 @@ const assets: Record<LogoVariant, { light: string; dark: string }> = {
 };
 
 const baseDimensions: Record<LogoVariant, { width: number; height: number }> = {
-  full: { width: 960, height: 260 },
-  compact: { width: 760, height: 200 },
-  icon: { width: 240, height: 240 },
+  full: { width: 420, height: 140 },
+  compact: { width: 320, height: 120 },
+  icon: { width: 160, height: 160 },
 };
 
 const sizeScale: Record<LogoSize, number> = {
@@ -64,11 +64,7 @@ export function Logo({
   const scale = sizeScale[size];
   const width = Math.round(dimensions.width * scale);
   const height = Math.round(dimensions.height * scale);
-  const altText =
-    alt ??
-    (variant === "full"
-      ? "KadryHR – Kadry i płace bez tajemnic"
-      : "KadryHR");
+  const altText = alt ?? (showTagline ? "KadryHR – Kadry i płace bez tajemnic" : "KadryHR");
   const content: ReactNode = (
     <div
       className={composeClassName(
@@ -78,17 +74,22 @@ export function Logo({
       aria-label={label}
     >
       <div className="relative">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcSet={asset.dark} />
-          <Image
-            src={asset.light}
-            alt={altText}
-            width={width}
-            height={height}
-            priority={priority}
-            className="block h-auto w-auto select-none"
-          />
-        </picture>
+        <Image
+          src={asset.light}
+          alt={altText}
+          width={width}
+          height={height}
+          priority={priority}
+          className="block h-auto w-auto select-none dark:hidden"
+        />
+        <Image
+          src={asset.dark}
+          alt={altText}
+          width={width}
+          height={height}
+          priority={priority}
+          className="hidden h-auto w-auto select-none dark:block"
+        />
       </div>
       {showTagline ? (
         <p className="text-xs font-medium text-surface-600 dark:text-surface-300 leading-tight">
