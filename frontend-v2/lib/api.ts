@@ -63,6 +63,22 @@ export interface AvailabilityRecord {
   startMinutes: number;
   endMinutes: number;
   notes?: string | null;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    avatarUrl?: string | null;
+  };
+}
+
+export type Weekday = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+
+export interface AvailabilityInput {
+  weekday?: Weekday;
+  date?: string;
+  startMinutes: number;
+  endMinutes: number;
+  notes?: string;
 }
 
 export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT" | "SCHEDULE_PUBLISHED" | "SWAP_STATUS" | "CUSTOM";
@@ -432,6 +448,32 @@ export async function apiGetAvailability(params: {
   if (params.employeeId) search.set("employeeId", params.employeeId);
   const query = search.toString();
   return apiClient.request<AvailabilityRecord[]>(`${AVAILABILITY_PREFIX}${query ? `?${query}` : ""}`);
+}
+
+export async function apiCreateAvailability(payload: {
+  employeeId?: string;
+  weekday?: Weekday;
+  date?: string;
+  startMinutes: number;
+  endMinutes: number;
+  notes?: string;
+}): Promise<AvailabilityRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityRecord>(`${AVAILABILITY_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiBulkUpsertAvailability(payload: {
+  employeeId?: string;
+  availabilities: AvailabilityInput[];
+}): Promise<AvailabilityRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityRecord[]>(`${AVAILABILITY_PREFIX}/bulk`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function apiListEmployees(

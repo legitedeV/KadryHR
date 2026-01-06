@@ -192,8 +192,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-4 sm:px-6 py-6 bg-gradient-to-b from-surface-50/80 to-surface-100/60 dark:from-surface-950 dark:to-surface-950">
-          <div className="max-w-screen-2xl w-full mx-auto">{children}</div>
+        <main className="flex-1 px-3 sm:px-4 lg:px-6 py-6 bg-gradient-to-b from-surface-50/80 to-surface-100/60 dark:from-surface-950 dark:to-surface-950">
+          <div className="max-w-[1600px] w-full mx-auto">{children}</div>
         </main>
       </div>
     </div>

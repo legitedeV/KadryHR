@@ -9,9 +9,11 @@ import {
   LocationRecord,
   ShiftPayload,
   ShiftRecord,
+  AvailabilityRecord,
   apiCreateShift,
   apiDeleteShift,
   apiGetShifts,
+  apiGetAvailability,
   apiListEmployees,
   apiListLocations,
   apiPublishSchedule,
@@ -233,6 +235,8 @@ export default function GrafikPage() {
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
+  const [availability, setAvailability] = useState<AvailabilityRecord[]>([]);
+  const [showAvailability, setShowAvailability] = useState(false);
   const hasToken = useMemo(() => !!getAccessToken(), []);
   const [loading, setLoading] = useState(hasToken);
   const [error, setError] = useState<string | null>(
@@ -267,12 +271,14 @@ export default function GrafikPage() {
       apiListEmployees({ take: 100, skip: 0 }),
       apiListLocations(),
       apiGetShifts({ from: range.from, to: range.to }),
+      apiGetAvailability({ from: range.from, to: range.to }),
     ])
-      .then(([employeeResponse, locationResponse, shiftResponse]) => {
+      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse]) => {
         if (!isMounted) return;
         setEmployees(employeeResponse.data);
         setLocations(locationResponse);
         setShifts(shiftResponse);
+        setAvailability(availabilityResponse);
         if (!employeeResponse.data.length) {
           setFormError("Dodaj pracowników, aby przypisać ich do zmian.");
         }
@@ -316,6 +322,55 @@ export default function GrafikPage() {
 
     return grid;
   }, [employees, shifts, locations]);
+
+  // Availability grid by employee and weekday
+  const availabilityByEmployeeAndDay: Record<string, Record<string, AvailabilityRecord[]>> = useMemo(() => {
+    const grid: Record<string, Record<string, AvailabilityRecord[]>> = {};
+    
+    // Initialize grid for all employees
+    employees.forEach((emp) => {
+      grid[emp.id] = {};
+      dowOrder.forEach((dow) => {
+        grid[emp.id][dow] = [];
+      });
+    });
+
+    // Map weekday enum to dow order
+    const weekdayMap: Record<string, typeof dowOrder[number]> = {
+      MONDAY: "Mon",
+      TUESDAY: "Tue",
+      WEDNESDAY: "Wed",
+      THURSDAY: "Thu",
+      FRIDAY: "Fri",
+      SATURDAY: "Sat",
+      SUNDAY: "Sun",
+    };
+
+    // Populate grid with availability
+    availability.forEach((a) => {
+      if (!a.employeeId) return;
+      
+      let key: string | undefined;
+      if (a.weekday) {
+        key = weekdayMap[a.weekday];
+      } else if (a.date) {
+        key = getDowKey(a.date);
+      }
+      
+      if (key && grid[a.employeeId] && grid[a.employeeId][key]) {
+        grid[a.employeeId][key].push(a);
+      }
+    });
+
+    return grid;
+  }, [employees, availability]);
+
+  // Format minutes to time string
+  const formatMinutes = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+  };
 
   const handleWeekChange = (direction: "next" | "prev") => {
     const currentStart = new Date(range.from);
@@ -457,6 +512,15 @@ export default function GrafikPage() {
               Następny →
             </button>
           </div>
+          <button 
+            className={`btn-secondary ${showAvailability ? 'ring-2 ring-brand-500' : ''}`}
+            onClick={() => setShowAvailability(!showAvailability)}
+          >
+            <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {showAvailability ? 'Ukryj dostępność' : 'Pokaż dostępność'}
+          </button>
           <button className="btn-secondary" onClick={openPublishModal}>
             Opublikuj tydzień
           </button>
@@ -483,7 +547,7 @@ export default function GrafikPage() {
       )}
 
       {!loading && !error && (
-        <div className="card p-6">
+        <div className="card p-4 lg:p-5">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div className="flex flex-wrap items-center gap-3">
               <span className="badge badge-success flex items-center gap-2">
@@ -503,7 +567,7 @@ export default function GrafikPage() {
             {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
+          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80 -mx-1 lg:-mx-2">
             <table className="min-w-full w-full table-fixed">
               <thead className="bg-surface-50/80 dark:bg-surface-900/80">
                 <tr className="border-b border-surface-200 dark:border-surface-800">
@@ -640,6 +704,103 @@ export default function GrafikPage() {
                                       </svg>
                                     </button>
                                   </>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Availability Table */}
+      {!loading && !error && showAvailability && (
+        <div className="card p-6 mt-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="section-label">Dostępność pracowników</p>
+              <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+                Tydzień: {range.label}
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
+            <table className="min-w-full w-full table-fixed">
+              <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+                <tr className="border-b border-surface-200 dark:border-surface-800">
+                  <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
+                    Pracownik
+                  </th>
+                  {dowLabels.map((dayLabel) => (
+                    <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                      {dayLabel}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
+                {employees.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-surface-500 dark:text-surface-400">
+                      Brak pracowników.
+                    </td>
+                  </tr>
+                ) : (
+                  employees.map((employee) => {
+                    const employeeAvail = availabilityByEmployeeAndDay[employee.id] || {};
+                    return (
+                      <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                        <td className="w-48 px-3 py-2 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
+                          <div className="flex items-center gap-2">
+                            <Avatar
+                              name={formatEmployeeName(employee)}
+                              src={employee.avatarUrl}
+                              size="sm"
+                            />
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium text-sm text-surface-900 dark:text-surface-50 truncate">
+                                {formatEmployeeName(employee)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        {dowOrder.map((dow) => {
+                          const dayAvail = employeeAvail[dow] || [];
+                          return (
+                            <td key={dow} className="px-2 py-2 align-top">
+                              <div className="flex flex-col gap-1 min-h-[40px]">
+                                {dayAvail.length === 0 ? (
+                                  <div className="w-full h-full min-h-[40px] rounded-lg bg-surface-100/50 dark:bg-surface-800/30 flex items-center justify-center">
+                                    <span className="text-[10px] text-surface-400 dark:text-surface-500">—</span>
+                                  </div>
+                                ) : (
+                                  dayAvail.map((avail, idx) => (
+                                    <div
+                                      key={avail.id || idx}
+                                      className="rounded-md border border-violet-200 bg-violet-50/50 dark:border-violet-800/50 dark:bg-violet-950/30 px-1.5 py-1 text-[10px]"
+                                    >
+                                      <div className="font-semibold text-violet-800 dark:text-violet-200">
+                                        {formatMinutes(avail.startMinutes)}–{formatMinutes(avail.endMinutes)}
+                                      </div>
+                                      {avail.notes && (
+                                        <div className="text-violet-600 dark:text-violet-300 truncate">
+                                          {avail.notes}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
                                 )}
                               </div>
                             </td>

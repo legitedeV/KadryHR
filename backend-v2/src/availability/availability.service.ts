@@ -4,18 +4,60 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lista dostępności w ramach organizacji.
+   * Lista dostępności w ramach organizacji z opcjonalnymi filtrami.
    */
-  findAll(organisationId: string) {
+  findAll(
+    organisationId: string,
+    query?: { from?: string; to?: string; employeeId?: string },
+  ) {
+    const where: Prisma.AvailabilityWhereInput = { organisationId };
+
+    if (query?.employeeId) {
+      where.employeeId = query.employeeId;
+    }
+
+    // Filter by date range if provided
+    if (query?.from || query?.to) {
+      where.date = {};
+      if (query?.from) {
+        (where.date as Prisma.DateTimeNullableFilter).gte = new Date(
+          query.from,
+        );
+      }
+      if (query?.to) {
+        (where.date as Prisma.DateTimeNullableFilter).lte = new Date(query.to);
+      }
+    }
+
     return this.prisma.availability.findMany({
-      where: { organisationId },
+      where,
       orderBy: [{ date: 'asc' }, { weekday: 'asc' }, { startMinutes: 'asc' }],
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Find employee by user ID
+   */
+  async findEmployeeByUserId(organisationId: string, userId: string) {
+    return this.prisma.employee.findFirst({
+      where: { organisationId, userId },
     });
   }
 
@@ -41,6 +83,16 @@ export class AvailabilityService {
         startMinutes: dto.startMinutes,
         endMinutes: dto.endMinutes,
         notes: dto.notes ?? null,
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }
@@ -73,6 +125,16 @@ export class AvailabilityService {
             : existing.endMinutes,
         notes: dto.notes ?? existing.notes,
       },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -93,5 +155,55 @@ export class AvailabilityService {
     });
 
     return { success: true };
+  }
+
+  /**
+   * Bulk upsert availability for an employee for a given week
+   */
+  async bulkUpsertForEmployee(
+    organisationId: string,
+    employeeId: string,
+    availabilities: Array<{
+      weekday?: string;
+      date?: string;
+      startMinutes: number;
+      endMinutes: number;
+      notes?: string;
+    }>,
+  ) {
+    // Delete existing availability for this employee in the date range
+    // For weekday-based availability, we'll delete any with matching weekdays
+    const weekdays = availabilities
+      .filter((a) => a.weekday)
+      .map((a) => a.weekday);
+
+    if (weekdays.length > 0) {
+      await this.prisma.availability.deleteMany({
+        where: {
+          organisationId,
+          employeeId,
+          weekday: { in: weekdays as any },
+        },
+      });
+    }
+
+    // Create new availability records
+    const created = await this.prisma.$transaction(
+      availabilities.map((avail) =>
+        this.prisma.availability.create({
+          data: {
+            organisationId,
+            employeeId,
+            date: avail.date ?? null,
+            weekday: avail.weekday as any,
+            startMinutes: avail.startMinutes,
+            endMinutes: avail.endMinutes,
+            notes: avail.notes ?? null,
+          },
+        }),
+      ),
+    );
+
+    return created;
   }
 }
