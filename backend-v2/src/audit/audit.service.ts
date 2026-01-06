@@ -18,6 +18,16 @@ export interface AuditLogPayload {
   metadata?: unknown;
 }
 
+export interface AuditLogQuery {
+  from?: string;
+  to?: string;
+  action?: string;
+  entityType?: string;
+  actorUserId?: string;
+  take?: number;
+  skip?: number;
+}
+
 /**
  * Konwersja dowolnej wartości na typ zgodny z Prisma.Json
  * (InputJsonValue) – rekurencyjnie dla tablic i obiektów.
@@ -42,9 +52,7 @@ function toAuditJson(value: unknown): AuditJson {
   if (typeof value === 'object') {
     const result: Record<string, AuditJson> = {};
 
-    for (const [key, v] of Object.entries(
-      value as Record<string, unknown>,
-    )) {
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
       result[key] = toAuditJson(v);
     }
 
@@ -52,7 +60,7 @@ function toAuditJson(value: unknown): AuditJson {
   }
 
   // fallback – cokolwiek innego zamieniamy na string
-  return String(value) as AuditJson;
+  return JSON.stringify(value) as AuditJson;
 }
 
 @Injectable()
@@ -104,6 +112,63 @@ export class AuditService {
       );
       return null;
     }
+  }
+
+  /**
+   * List audit logs with filtering and pagination.
+   */
+  async findAll(organisationId: string, query: AuditLogQuery = {}) {
+    const {
+      from,
+      to,
+      action,
+      entityType,
+      actorUserId,
+      take = 20,
+      skip = 0,
+    } = query;
+
+    const where: Prisma.AuditLogWhereInput = {
+      organisationId,
+    };
+
+    if (from) {
+      where.createdAt = { ...(where.createdAt as object), gte: new Date(from) };
+    }
+    if (to) {
+      where.createdAt = { ...(where.createdAt as object), lte: new Date(to) };
+    }
+    if (action) {
+      where.action = action;
+    }
+    if (entityType) {
+      where.entityType = entityType;
+    }
+    if (actorUserId) {
+      where.actorUserId = actorUserId;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where,
+        take,
+        skip,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          actor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      this.prisma.auditLog.count({ where }),
+    ]);
+
+    return { data, total, skip, take };
   }
 
   /**

@@ -176,52 +176,50 @@ export class AuthService {
     let organisation;
     let user;
     try {
-      ({ organisation, user } = await this.prisma.$transaction(
-        async (tx) => {
-          const organisation = await tx.organisation.create({
-            data: {
-              name: dto.organisationName,
-            },
-          });
+      ({ organisation, user } = await this.prisma.$transaction(async (tx) => {
+        const organisation = await tx.organisation.create({
+          data: {
+            name: dto.organisationName,
+          },
+        });
 
-          const user = await tx.user.create({
-            data: {
+        const user = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash,
+            role: Role.OWNER,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            organisationId: organisation.id,
+          },
+        });
+
+        await tx.employee.create({
+          data: {
+            organisationId: organisation.id,
+            userId: user.id,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            email: dto.email,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            organisationId: organisation.id,
+            actorUserId: user.id,
+            action: 'owner.registered',
+            entityType: 'organisation',
+            entityId: organisation.id,
+            after: {
               email: dto.email,
-              passwordHash,
-              role: Role.OWNER,
-              firstName: dto.firstName,
-              lastName: dto.lastName,
-              organisationId: organisation.id,
+              organisationName: dto.organisationName,
             },
-          });
+          },
+        });
 
-          await tx.employee.create({
-            data: {
-              organisationId: organisation.id,
-              userId: user.id,
-              firstName: dto.firstName,
-              lastName: dto.lastName,
-              email: dto.email,
-            },
-          });
-
-          await tx.auditLog.create({
-            data: {
-              organisationId: organisation.id,
-              actorUserId: user.id,
-              action: 'owner.registered',
-              entityType: 'organisation',
-              entityId: organisation.id,
-              after: {
-                email: dto.email,
-                organisationName: dto.organisationName,
-              },
-            },
-          });
-
-          return { organisation, user };
-        },
-      ));
+        return { organisation, user };
+      }));
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

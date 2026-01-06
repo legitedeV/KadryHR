@@ -89,6 +89,8 @@ model Organisation {
   id          String      @id @default(uuid())
   name        String
   description String?
+  category    String?
+  logoUrl     String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   preventShiftOnApprovedLeave Boolean @default(false)
@@ -117,6 +119,7 @@ model User {
   organisationId    String
   firstName         String?
   lastName          String?
+  avatarUrl         String?
   refreshTokenHash  String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

@@ -24,6 +24,12 @@ export class OrganisationsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateOrganisationDto,
   ) {
-    return this.organisationsService.update(user.organisationId, dto);
+    return this.organisationsService.update(user.organisationId, dto, user.id);
+  }
+
+  @Get('me/members')
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  async getMembers(@CurrentUser() user: AuthenticatedUser) {
+    return this.organisationsService.getMembers(user.organisationId);
   }
 }

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class CreateOrganisationDto {
   @IsString()
@@ -9,4 +9,14 @@ export class CreateOrganisationDto {
   @IsString()
   @MaxLength(1024)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsUrl({}, { message: 'Logo URL must be a valid URL' })
+  logoUrl?: string;
 }
