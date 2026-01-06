@@ -1,11 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Avatar } from "@/components/Avatar";
+import { Modal } from "@/components/Modal";
 import {
   EmployeeRecord,
   LocationRecord,
+  ShiftPayload,
   ShiftRecord,
+  apiCreateShift,
+  apiDeleteShift,
   apiGetShifts,
+  apiListEmployees,
+  apiListLocations,
+  apiPublishSchedule,
+  apiUpdateShift,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 
@@ -15,15 +25,31 @@ type ShiftDisplay = {
   start: string;
   end: string;
   employeeName: string;
+  employeeId?: string;
+  employeeAvatar?: string | null;
   locationName: string;
+  locationId?: string | null;
   status: "ASSIGNED" | "UNASSIGNED";
+  availabilityWarning?: string | null;
+  position?: string | null;
 };
 
-function getWeekRange() {
-  const now = new Date();
-  const day = now.getDay() || 7;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (day - 1));
+type ShiftFormState = {
+  employeeId: string;
+  locationId?: string;
+  position?: string;
+  notes?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+};
+
+type WeekRange = { from: string; to: string; label: string };
+
+function getWeekRange(anchor: Date = new Date()): WeekRange {
+  const day = anchor.getDay() || 7;
+  const monday = new Date(anchor);
+  monday.setDate(anchor.getDate() - (day - 1));
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
@@ -55,13 +81,19 @@ function formatTime(date: Date) {
   });
 }
 
-function mapShiftRecord(record: ShiftRecord): ShiftDisplay {
+function mapShiftRecord(record: ShiftRecord, employees: EmployeeRecord[], locations: LocationRecord[]): ShiftDisplay {
   const startDate = new Date(record.startsAt);
   const endDate = new Date(record.endsAt);
-  const employeeName = record.employee
-    ? `${record.employee.firstName ?? ""} ${record.employee.lastName ?? ""}`.trim() || "Pracownik"
+  const employee =
+    (record.employeeId && employees.find((e) => e.id === record.employeeId)) || record.employee;
+  const employeeName = employee
+    ? `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() ||
+      ("email" in employee ? (employee as EmployeeRecord).email ?? "" : "") ||
+      "Pracownik"
     : "Nieprzypisana";
-  const locationName = record.location?.name ?? "Brak lokalizacji";
+  const location =
+    (record.locationId && locations.find((loc) => loc.id === record.locationId)) || record.location;
+  const locationName = location?.name ?? "Brak lokalizacji";
 
   return {
     id: record.id,
@@ -69,8 +101,13 @@ function mapShiftRecord(record: ShiftRecord): ShiftDisplay {
     start: formatTime(startDate),
     end: formatTime(endDate),
     employeeName,
+    employeeId: record.employeeId,
+    employeeAvatar: record.employee?.avatarUrl ?? null,
     locationName,
+    locationId: record.locationId,
     status: record.employeeId ? "ASSIGNED" : "UNASSIGNED",
+    availabilityWarning: record.availabilityWarning ?? null,
+    position: record.position,
   };
 }
 
@@ -126,16 +163,17 @@ export function ConfirmDialog({
   onCancel,
   open = true,
   forceRender = false,
+  portalTarget,
 }: ConfirmDialogProps) {
   const shouldRender = forceRender || open;
   if (!shouldRender) return null;
 
-  return (
+  const dialog = (
     <div
       role="alertdialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[60] flex items-center justify-center"
+      className="fixed inset-0 z-[80] flex items-center justify-center"
     >
       <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" aria-hidden="true" />
       <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-elevated ring-1 ring-surface-200 dark:bg-surface-900 dark:ring-surface-700">
@@ -164,26 +202,76 @@ export function ConfirmDialog({
       </div>
     </div>
   );
+
+  const target = portalTarget ?? (typeof document !== "undefined" ? document.body : null);
+  if (target) {
+    return createPortal(dialog, target);
+  }
+
+  return dialog;
+}
+
+function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
+  const startsAt = new Date(`${form.date}T${form.startTime}:00`);
+  const endsAt = new Date(`${form.date}T${form.endTime}:00`);
+  return {
+    employeeId: form.employeeId,
+    locationId: form.locationId || undefined,
+    position: form.position || undefined,
+    notes: form.notes || undefined,
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
+  };
 }
 
 export default function GrafikPage() {
-  const [range] = useState(getWeekRange);
-  const [shifts, setShifts] = useState<ShiftDisplay[]>([]);
+  const [range, setRange] = useState<WeekRange>(() => getWeekRange());
+  const [shifts, setShifts] = useState<ShiftRecord[]>([]);
+  const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const [locations, setLocations] = useState<LocationRecord[]>([]);
   const hasToken = useMemo(() => !!getAccessToken(), []);
   const [loading, setLoading] = useState(hasToken);
   const [error, setError] = useState<string | null>(
     hasToken ? null : "Zaloguj się, aby zobaczyć grafik.",
   );
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ShiftRecord | null>(null);
+  const [editingShift, setEditingShift] = useState<ShiftRecord | null>(null);
+  const [form, setForm] = useState<ShiftFormState>(() => ({
+    employeeId: "",
+    locationId: undefined,
+    position: "",
+    notes: "",
+    date: range.from,
+    startTime: "09:00",
+    endTime: "17:00",
+  }));
 
   useEffect(() => {
     if (!hasToken) return;
 
     let isMounted = true;
+    setLoading(true);
+    setError(null);
 
-    apiGetShifts({ from: range.from, to: range.to })
-      .then((items) => {
+    Promise.all([
+      apiListEmployees({ take: 100, skip: 0 }),
+      apiListLocations(),
+      apiGetShifts({ from: range.from, to: range.to }),
+    ])
+      .then(([employeeResponse, locationResponse, shiftResponse]) => {
         if (!isMounted) return;
-        setShifts(items.map(mapShiftRecord));
+        setEmployees(employeeResponse.data);
+        setLocations(locationResponse);
+        setShifts(shiftResponse);
+        if (!employeeResponse.data.length) {
+          setFormError("Dodaj pracowników, aby przypisać ich do zmian.");
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -204,27 +292,160 @@ export default function GrafikPage() {
     const grouped: Record<string, ShiftDisplay[]> = {};
     dowOrder.forEach((k) => (grouped[k] = []));
     shifts.forEach((s) => {
-      const key = getDowKey(s.date);
+      const display = mapShiftRecord(s, employees, locations);
+      const key = getDowKey(display.date);
       if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(s);
+      grouped[key].push(display);
     });
     return grouped;
-  }, [shifts]);
+  }, [employees, locations, shifts]);
+
+  const handleWeekChange = (direction: "next" | "prev") => {
+    const currentStart = new Date(range.from);
+    const delta = direction === "next" ? 7 : -7;
+    currentStart.setDate(currentStart.getDate() + delta);
+    setRange(getWeekRange(currentStart));
+  };
+
+  const resetForm = (date?: string) => {
+    setForm({
+      employeeId: employees[0]?.id ?? "",
+      locationId: locations[0]?.id,
+      position: "",
+      notes: "",
+      date: date ?? range.from,
+      startTime: "09:00",
+      endTime: "17:00",
+    });
+    setEditingShift(null);
+    setFormError(null);
+    setFormSuccess(null);
+  };
+
+  const openCreateModal = (date?: string) => {
+    resetForm(date);
+    setEditorOpen(true);
+  };
+
+  const openEditModal = (shift: ShiftRecord) => {
+    const startDate = new Date(shift.startsAt);
+    const endDate = new Date(shift.endsAt);
+    setForm({
+      employeeId: shift.employeeId ?? "",
+      locationId: shift.locationId ?? undefined,
+      position: shift.position ?? "",
+      notes: shift.notes ?? "",
+      date: startDate.toISOString().slice(0, 10),
+      startTime: startDate.toISOString().slice(11, 16),
+      endTime: endDate.toISOString().slice(11, 16),
+    });
+    setEditingShift(shift);
+    setEditorOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.employeeId) {
+      setFormError("Wybierz pracownika, aby zapisać zmianę.");
+      return;
+    }
+
+    const start = new Date(`${form.date}T${form.startTime}:00`);
+    const end = new Date(`${form.date}T${form.endTime}:00`);
+    if (start >= end) {
+      setFormError("Godzina zakończenia musi być po godzinie rozpoczęcia.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (editingShift) {
+        const updated = await apiUpdateShift(editingShift.id, buildPayloadFromForm(form));
+        setShifts((prev) => prev.map((s) => (s.id === editingShift.id ? updated : s)));
+        setFormSuccess("Zmiana została zaktualizowana.");
+      } else {
+        const created = await apiCreateShift(buildPayloadFromForm(form));
+        setShifts((prev) => [created, ...prev]);
+        setFormSuccess("Zmiana została dodana.");
+      }
+      setEditorOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się zapisać zmiany. Spróbuj ponownie.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await apiDeleteShift(deleteTarget.id);
+      setShifts((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+    } catch (err) {
+      console.error(err);
+      setError("Nie udało się usunąć zmiany.");
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  const openPublishModal = () => {
+    setPublishOpen(true);
+  };
+
+  const handlePublish = async () => {
+    const employeeIds = Array.from(new Set(shifts.map((s) => s.employeeId).filter(Boolean))) as string[];
+    if (employeeIds.length === 0) {
+      setFormError("Brak obsadzonych zmian w tym tygodniu do powiadomienia.");
+      return;
+    }
+    setPublishing(true);
+    setFormError(null);
+    try {
+      const result = await apiPublishSchedule({
+        employeeIds,
+        dateRange: { from: range.from, to: range.to },
+      });
+      setFormSuccess(`Powiadomiono ${result.notified} pracowników o grafiku.`);
+      setPublishOpen(false);
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się opublikować grafiku.");
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="section-label">Grafik</p>
-          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
-            Tydzień: {range.label}
-          </p>
+          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">Tydzień: {range.label}</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          Łącznie zmian w tym tygodniu: <span className="font-semibold text-surface-900 dark:text-surface-100">{shifts.length}</span>
+        <div className="flex flex-wrap items-center gap-3 text-sm text-surface-600 dark:text-surface-300">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Łącznie zmian: <span className="font-semibold text-surface-900 dark:text-surface-100">{shifts.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="btn-secondary" onClick={() => handleWeekChange("prev")} aria-label="Poprzedni tydzień">
+              ← Poprzedni
+            </button>
+            <button className="btn-secondary" onClick={() => handleWeekChange("next")} aria-label="Następny tydzień">
+              Następny →
+            </button>
+          </div>
+          <button className="btn-primary" onClick={() => openCreateModal()}>
+            Dodaj zmianę
+          </button>
+          <button className="btn-secondary" onClick={openPublishModal}>
+            Opublikuj tydzień
+          </button>
         </div>
       </div>
 
@@ -263,7 +484,9 @@ export default function GrafikPage() {
                 </svg>
                 nieobsadzona
               </span>
+              {formSuccess && <span className="text-sm text-emerald-700 dark:text-emerald-200">{formSuccess}</span>}
             </div>
+            {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
@@ -281,6 +504,9 @@ export default function GrafikPage() {
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
                 {dowOrder.map((key, idx) => {
                   const dayShifts = byDay[key] || [];
+                  const dayDate = new Date(range.from);
+                  dayDate.setDate(dayDate.getDate() + idx);
+                  const dayDateValue = dayDate.toISOString().slice(0, 10);
                   return (
                     <tr key={key} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
                       <td className="px-4 py-4 align-top whitespace-nowrap">
@@ -288,40 +514,72 @@ export default function GrafikPage() {
                           <div className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs font-semibold text-surface-600 dark:text-surface-300">
                             {dowLabels[idx].slice(0, 2)}
                           </div>
-                          <span className="font-medium text-surface-700 dark:text-surface-200">
-                            {dowLabels[idx]}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-surface-700 dark:text-surface-200">{dowLabels[idx]}</span>
+                            <span className="text-xs text-surface-500 dark:text-surface-400">{dayDate.toLocaleDateString("pl-PL")}</span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         {dayShifts.length === 0 ? (
-                          <span className="text-sm text-surface-400 dark:text-surface-500">Brak zmian</span>
+                          <div className="flex items-center justify-between rounded-lg border border-dashed border-surface-200 px-4 py-3 text-sm text-surface-400 dark:border-surface-700 dark:text-surface-500">
+                            <span>Brak zmian</span>
+                            <button className="btn-link text-primary-600" onClick={() => openCreateModal(dayDateValue)}>
+                              Dodaj zmianę
+                            </button>
+                          </div>
                         ) : (
                           <div className="flex flex-wrap gap-3">
-                            {dayShifts.map((s) => (
+                            {dayShifts.map((s) => {
+                              const sourceShift = shifts.find((shift) => shift.id === s.id);
+                              return (
                               <div
                                 key={s.id}
-                                className={`rounded-xl border px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft ${
+                                className={`group relative rounded-xl border px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft ${
                                   s.status === "UNASSIGNED"
                                     ? "border-rose-200 bg-rose-50/50 dark:border-rose-800/50 dark:bg-rose-950/30"
                                     : "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30"
                                 }`}
                               >
-                                <div
-                                  className={`font-semibold text-sm ${
-                                    s.status === "UNASSIGNED"
-                                      ? "text-rose-800 dark:text-rose-200"
-                                      : "text-emerald-800 dark:text-emerald-200"
-                                  }`}
-                                >
-                                  {s.start}–{s.end}
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div
+                                      className={`font-semibold text-sm ${
+                                        s.status === "UNASSIGNED"
+                                          ? "text-rose-800 dark:text-rose-200"
+                                          : "text-emerald-800 dark:text-emerald-200"
+                                      }`}
+                                    >
+                                      {s.start}–{s.end}
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-2 text-xs text-surface-700 dark:text-surface-200">
+                                      <Avatar name={s.employeeName} src={s.employeeAvatar} size="sm" />
+                                      <span className="font-medium">{s.employeeName || "NIEOBSADZONA"}</span>
+                                    </div>
+                                    <div className="text-xs text-surface-500 dark:text-surface-400 mt-1">{s.locationName}</div>
+                                    {s.position && (
+                                      <div className="mt-1 text-[11px] uppercase tracking-wide text-surface-500 dark:text-surface-400">
+                                        {s.position}
+                                      </div>
+                                    )}
+                                    {s.availabilityWarning && (
+                                      <div className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
+                                        {s.availabilityWarning}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col items-end gap-2 opacity-100 transition group-hover:opacity-100">
+                                    <button className="btn-secondary btn-xs" onClick={() => sourceShift && openEditModal(sourceShift)}>
+                                      Edytuj
+                                    </button>
+                                    <button className="btn-link text-rose-600" onClick={() => setDeleteTarget(sourceShift || null)}>
+                                      Usuń
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="text-xs text-surface-600 dark:text-surface-400 mt-0.5">
-                                  {s.employeeName || "NIEOBSADZONA"}
-                                </div>
-                                <div className="text-xs text-surface-500 dark:text-surface-500 mt-1">{s.locationName}</div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </td>
@@ -333,6 +591,150 @@ export default function GrafikPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        open={editorOpen}
+        title={editingShift ? "Edytuj zmianę" : "Dodaj zmianę"}
+        description="Uzupełnij szczegóły zmiany i przypisz pracownika."
+        onClose={() => setEditorOpen(false)}
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setEditorOpen(false)}>
+              Anuluj
+            </button>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? "Zapisywanie..." : "Zapisz"}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Pracownik
+            <select
+              className="input"
+              value={form.employeeId}
+              onChange={(e) => setForm((prev) => ({ ...prev, employeeId: e.target.value }))}
+            >
+              <option value="">Wybierz pracownika</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {`${emp.firstName ?? ""} ${emp.lastName ?? ""}`.trim() || emp.email}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Lokalizacja
+            <select
+              className="input"
+              value={form.locationId ?? ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, locationId: e.target.value || undefined }))}
+            >
+              <option value="">Brak lokalizacji</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Data
+            <input
+              type="date"
+              className="input"
+              value={form.date}
+              onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+            />
+          </label>
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Godzina startu
+            <input
+              type="time"
+              className="input"
+              value={form.startTime}
+              onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
+            />
+          </label>
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Godzina końca
+            <input
+              type="time"
+              className="input"
+              value={form.endTime}
+              onChange={(e) => setForm((prev) => ({ ...prev, endTime: e.target.value }))}
+            />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Stanowisko / rola
+            <input
+              type="text"
+              className="input"
+              value={form.position}
+              onChange={(e) => setForm((prev) => ({ ...prev, position: e.target.value }))}
+              placeholder="np. Barista"
+            />
+          </label>
+          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            Notatki
+            <textarea
+              className="input min-h-[90px]"
+              value={form.notes}
+              onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Dodatkowe instrukcje dla zmiany"
+            />
+          </label>
+        </div>
+
+        {formError && (
+          <p className="text-sm text-rose-600 dark:text-rose-300">{formError}</p>
+        )}
+      </Modal>
+
+      <Modal
+        open={publishOpen}
+        title="Opublikuj grafik"
+        description="Powiadom pracowników o opublikowaniu grafiku na wybrany tydzień."
+        onClose={() => setPublishOpen(false)}
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setPublishOpen(false)}>
+              Anuluj
+            </button>
+            <button className="btn-primary" onClick={handlePublish} disabled={publishing}>
+              {publishing ? "Publikowanie..." : "Wyślij powiadomienia"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
+          <p>
+            Zakres: <span className="font-semibold">{range.label}</span>
+          </p>
+          <p>Powiadomienia zostaną wysłane do wszystkich pracowników przypisanych do zmian w tym tygodniu.</p>
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Usuń zmianę"
+        description={
+          deleteTarget
+            ? buildShiftDescription(deleteTarget, employees, locations)
+            : "Czy na pewno chcesz usunąć zmianę?"
+        }
+        confirmLabel="Usuń"
+        cancelLabel="Anuluj"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

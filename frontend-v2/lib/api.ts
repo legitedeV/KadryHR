@@ -396,6 +396,17 @@ export async function apiDeleteShift(id: string) {
   await apiClient.request(`${SHIFTS_PREFIX}/${id}`, { method: "DELETE" });
 }
 
+export async function apiPublishSchedule(payload: {
+  employeeIds: string[];
+  dateRange?: { from: string; to: string };
+}): Promise<{ success: boolean; notified: number }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean; notified: number }>(`${SHIFTS_PREFIX}/publish-schedule`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiGetShiftSummary(params: {
   from: string;
   to: string;

@@ -1,13 +1,13 @@
 export default function AuditPage() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
-      <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-        Audit log
-      </h1>
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-        A read-only audit log preview will appear here to review user actions
-        across the organisation.
+    <div className="rounded-2xl border border-surface-200 bg-white/90 p-6 shadow-sm dark:border-surface-800 dark:bg-surface-950/60">
+      <h1 className="text-lg font-semibold text-surface-900 dark:text-surface-50">Audit log</h1>
+      <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">
+        Backend rejestruje akcje w tabeli <code>AuditLog</code>, ale publiczny endpoint listujący wpisy nie jest jeszcze dostępny.
       </p>
+      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+        Po udostępnieniu API widok pokaże filtrowalną listę logów (daty, akcje, aktor). Zgłoszone w backlogu: „Frontend – parity follow-ups”.
+      </div>
     </div>
   );
 }

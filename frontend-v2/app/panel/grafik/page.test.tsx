@@ -18,7 +18,7 @@ test("delete confirmation dialog renders with overlay above editor", () => {
     />,
   );
 
-  assert(html.includes("z-[60]"));
+  assert(html.includes("z-[80]"));
   assert(html.includes("aria-modal=\"true\""));
   assert(html.includes("Przykładowy opis"));
 });
