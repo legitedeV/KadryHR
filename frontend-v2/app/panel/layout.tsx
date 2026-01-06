@@ -93,10 +93,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex md:flex-col w-64 border-r border-surface-200/80 glass dark:border-surface-800/80">
         <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
           <Logo
-            variant="icon"
+            variant="compact"
             size="sm"
             alt="KadryHR"
-            className="shrink-0"
+            className="max-w-[190px]"
             asLink="/panel/dashboard"
             label="KadryHR"
           />

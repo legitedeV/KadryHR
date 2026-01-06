@@ -57,12 +57,7 @@ export default function HomePage() {
         <section className="grid grid-cols-1 gap-12 lg:grid-cols-2 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
-              <Logo
-                variant="full"
-                size="lg"
-                alt="KadryHR – Kadry i płace bez tajemnic"
-                className="mx-auto mb-6"
-              />
+              <Logo variant="full" size="lg" showTagline className="max-w-xs sm:max-w-md" alt="KadryHR – Kadry i płace bez tajemnic" />
               <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/60 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800/50">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
