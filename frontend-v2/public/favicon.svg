@@ -1,0 +1,16 @@
+<svg width="64" height="64" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ringIcon" x1="18" y1="22" x2="148" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12BBD1" />
+      <stop offset="0.6" stop-color="#1F9BD7" />
+      <stop offset="1" stop-color="#0F6FB7" />
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="74" stroke="url(#ringIcon)" stroke-width="18" fill="#E8FBFF" />
+  <path d="M42 95C42 72.909 60.909 54 83 54C105.091 54 124 72.909 124 95C124 117.091 105.091 136 83 136C60.909 136 42 117.091 42 95Z" fill="#12BBD1" opacity="0.92"/>
+  <path d="M108 58C123.464 58 136 70.536 136 86C136 101.464 123.464 114 108 114C104.428 114 101.051 113.261 97.9765 111.936C105.7 106.125 110.5 97.394 110.5 87.5C110.5 75.9128 104.519 65.7339 95.1158 60.2073C98.5844 58.1408 102.154 58 108 58Z" fill="#0F6FB7"/>
+  <circle cx="74" cy="83" r="10" fill="white" />
+  <circle cx="101" cy="78" r="9" fill="white" />
+  <path d="M60 115C64 108 68.5 104.5 74.5 104.5C81 104.5 84 108 88 115" stroke="white" stroke-width="7" stroke-linecap="round"/>
+  <path d="M94 106.5C97 101.5 101.5 99 106.5 99C112 99 115 101.8 118 106.5" stroke="white" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -6,6 +6,7 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Logo, LogoMark } from "@/components/brand/Logo";
 
 const navItems = [
   { href: "/panel/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -91,18 +92,14 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       {/* sidebar */}
       <aside className="hidden md:flex md:flex-col w-64 border-r border-surface-200/80 glass dark:border-surface-800/80">
         <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
-          <div className="relative h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-400 via-brand-500 to-accent-500 flex items-center justify-center text-white font-bold shadow-soft">
-            <span className="text-lg">K</span>
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent" />
-          </div>
-          <div>
-            <div className="text-base font-bold text-surface-900 dark:text-surface-50">
-              KadryHR
-            </div>
-            <div className="text-xs text-surface-500 dark:text-surface-400">
-              Panel zarządzania
-            </div>
-          </div>
+          <Logo
+            variant="compact"
+            size="sm"
+            alt="KadryHR"
+            className="max-w-[190px]"
+            asLink="/panel/dashboard"
+            label="KadryHR"
+          />
         </div>
         <nav className="flex-1 py-6 px-4 space-y-1">
           <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
@@ -162,14 +159,17 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
       {/* main area */}
       <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-surface-200/80 glass px-6 flex items-center justify-between dark:border-surface-800/80">
-          <div>
-            <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
-              KadryHR · panel
-            </p>
-            <p className="text-base font-bold text-surface-900 dark:text-surface-50">
-              {titleByPath[pathname] ?? "Dashboard"}
-            </p>
+        <header className="h-16 border-b border-surface-200/80 glass px-6 flex items-center justify-between gap-4 dark:border-surface-800/80">
+          <div className="flex items-center gap-3 min-w-0">
+            <LogoMark size="sm" alt="KadryHR" ariaLabel="KadryHR" asLink="/panel/dashboard" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                KadryHR · panel
+              </p>
+              <p className="text-base font-bold text-surface-900 dark:text-surface-50 truncate">
+                {titleByPath[pathname] ?? "Dashboard"}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />

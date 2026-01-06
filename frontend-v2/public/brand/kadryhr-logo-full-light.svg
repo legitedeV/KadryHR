@@ -1,0 +1,28 @@
+<svg width="420" height="140" viewBox="0 0 420 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ringFull" x1="18" y1="22" x2="148" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12BBD1" />
+      <stop offset="0.6" stop-color="#1F9BD7" />
+      <stop offset="1" stop-color="#0F6FB7" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(12 4)">
+    <circle cx="80" cy="66" r="62" stroke="url(#ringFull)" stroke-width="12" fill="none" />
+    <path d="M32 70C32 52.327 46.327 38 64 38C81.6731 38 96 52.327 96 70C96 87.6731 81.6731 102 64 102C46.327 102 32 87.6731 32 70Z" fill="#12BBD1"/>
+    <path d="M102 39C115.807 39 127 50.1929 127 64C127 77.8071 115.807 89 102 89C100.007 89 98.0866 88.7163 96.2677 88.1879C102.013 83.3229 105.5 75.9655 105.5 67.5C105.5 58.1054 100.895 49.7646 93.7514 44.7782C96.5603 41.9174 98.9644 39 102 39Z" fill="#0F6FB7"/>
+    <circle cx="62" cy="63" r="8" fill="white" />
+    <circle cx="88" cy="59" r="7" fill="white" />
+    <path d="M56 87C58.8 82.2 62.6 79.8 67.4 79.8C72.9 79.8 75.7 82.3 79 87" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <path d="M82 81.5C84.4 77.5 87.6 75.4 91.8 75.4C96.6 75.4 99.4 77.8 101.8 82" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="121" cy="30" r="6" fill="#7CE7F7" />
+    <circle cx="133" cy="40" r="5" fill="#7CE7F7" />
+    <circle cx="117" cy="42" r="4" fill="#7CE7F7" />
+  </g>
+  <g transform="translate(180 22)">
+    <text x="0" y="46" fill="#0F6FB7" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="44" font-weight="800" letter-spacing="0.5">Kadry</text>
+    <rect x="147" y="11" width="86" height="42" rx="9" fill="#12BBD1"/>
+    <text x="162" y="41" fill="white" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="32" font-weight="800">HR</text>
+    <text x="240" y="46" fill="#0F6FB7" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="34" font-weight="700">.pl</text>
+    <text x="0" y="88" fill="#0F6FB7" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="18" font-weight="500">Kadry i płace bez tajemnic</text>
+  </g>
+</svg>
