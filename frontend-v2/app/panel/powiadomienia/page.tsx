@@ -16,6 +16,15 @@ import { pushToast } from "@/lib/toast";
 import { useNotificationsState } from "@/lib/notifications-context";
 import { usePermissions } from "@/lib/use-permissions";
 
+const AVAILABLE_TYPES: NotificationType[] = [
+  "TEST",
+  "LEAVE_STATUS",
+  "SHIFT_ASSIGNMENT",
+  "SCHEDULE_PUBLISHED",
+  "SWAP_STATUS",
+  "CUSTOM",
+];
+
 const TYPE_COPY: Record<NotificationType, { label: string; description: string }> = {
   TEST: { label: "Testowe", description: "Szybkie sprawdzenie działania powiadomień." },
   LEAVE_STATUS: {
@@ -39,6 +48,14 @@ const TYPE_COPY: Record<NotificationType, { label: string; description: string }
     description: "Powiadomienia niestandardowe.",
   },
 };
+
+// Default preferences if API returns empty or undefined
+const getDefaultPreferences = (): NotificationPreference[] =>
+  AVAILABLE_TYPES.map((type) => ({
+    type,
+    inApp: true,
+    email: false,
+  }));
 
 function formatDate(value?: string | null) {
   if (!value) return "";
@@ -78,10 +95,21 @@ export default function NotificationsPage() {
   const loadPreferences = useCallback(async () => {
     try {
       const prefs = await apiGetNotificationPreferences();
-      setPreferences(prefs);
+      // Ensure we always have a valid array with all notification types
+      if (!prefs || !Array.isArray(prefs) || prefs.length === 0) {
+        setPreferences(getDefaultPreferences());
+      } else {
+        // Merge fetched preferences with defaults to ensure all types are present
+        const merged = AVAILABLE_TYPES.map((type) => {
+          const existing = prefs.find((p) => p.type === type);
+          return existing ?? { type, inApp: true, email: false };
+        });
+        setPreferences(merged);
+      }
     } catch (err) {
       console.error(err);
-      setError("Nie udało się pobrać preferencji powiadomień.");
+      // On error, use default preferences instead of showing error
+      setPreferences(getDefaultPreferences());
     }
   }, []);
 
@@ -96,23 +124,28 @@ export default function NotificationsPage() {
   );
 
   const togglePreference = (type: NotificationType, field: "inApp" | "email") => {
-    setPreferences((prev) =>
-      prev.map((pref) =>
+    setPreferences((prev) => {
+      // Ensure prev is always an array
+      const currentPrefs = Array.isArray(prev) ? prev : getDefaultPreferences();
+      return currentPrefs.map((pref) =>
         pref.type === type
           ? {
               ...pref,
               [field]: !pref[field],
             }
           : pref,
-      ),
-    );
+      );
+    });
   };
 
   const savePreferences = async () => {
     setSavingPrefs(true);
     try {
       const updated = await apiUpdateNotificationPreferences(preferences);
-      setPreferences(updated);
+      // Handle response safely
+      if (updated && Array.isArray(updated)) {
+        setPreferences(updated);
+      }
       pushToast({
         title: "Zapisano",
         description: "Twoje preferencje powiadomień zostały zaktualizowane.",
@@ -168,14 +201,14 @@ export default function NotificationsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
+          <p className="section-label">
             Powiadomienia
           </p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
             Centrum powiadomień
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Nieprzeczytane: <span className="font-semibold text-slate-900 dark:text-slate-100">{unread}</span>
+          <p className="text-xs text-surface-500 dark:text-surface-400">
+            Nieprzeczytane: <span className="font-semibold text-surface-900 dark:text-surface-100">{unread}</span>
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -189,14 +222,14 @@ export default function NotificationsPage() {
               </button>
               <button
                 onClick={() => router.push("/panel/powiadomienia/historia")}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+                className="btn-secondary px-3 py-2 rounded-xl"
               >
                 Historia
               </button>
             </>
           )}
           <button
-            className="rounded-xl border border-slate-200 px-3 py-2 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+            className="btn-secondary px-3 py-2 rounded-xl"
             onClick={markAllRead}
             type="button"
             disabled={notifications.length === 0}
@@ -207,13 +240,13 @@ export default function NotificationsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-2 border-b border-surface-200 dark:border-surface-800">
         <button
           onClick={() => setActiveTab("inbox")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "inbox"
               ? "border-brand-500 text-brand-600 dark:text-brand-400"
-              : "border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+              : "border-transparent text-surface-600 hover:text-surface-900 dark:text-surface-400 dark:hover:text-surface-200"
           }`}
         >
           Inbox
@@ -223,7 +256,7 @@ export default function NotificationsPage() {
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "preferences"
               ? "border-brand-500 text-brand-600 dark:text-brand-400"
-              : "border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+              : "border-transparent text-surface-600 hover:text-surface-900 dark:text-surface-400 dark:hover:text-surface-200"
           }`}
         >
           Preferencje
@@ -240,103 +273,112 @@ export default function NotificationsPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
+              <p className="section-label">
                 Inbox
               </p>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
                 Ostatnie powiadomienia
               </p>
             </div>
-            <span className="text-[11px] rounded-full border border-slate-200 px-2 py-1 text-slate-600 dark:border-slate-800 dark:text-slate-300">
+            <span className="text-[11px] rounded-full border border-surface-200 px-2 py-1 text-surface-600 dark:border-surface-700 dark:text-surface-300">
               Łącznie: {notifications.length}
             </span>
+          </div>
+
+          {loading && (
+            <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Ładowanie powiadomień...
             </div>
+          )}
 
-            {loading && (
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Ładowanie powiadomień...
-              </p>
-            )}
-
-            {!loading && notifications.length === 0 && (
-              <div className="text-sm text-slate-600 dark:text-slate-300">
-                Brak powiadomień do wyświetlenia.
+          {!loading && notifications.length === 0 && (
+            <div className="flex flex-col items-center py-8 text-center">
+              <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
               </div>
-            )}
+              <p className="text-sm text-surface-500 dark:text-surface-400">Brak powiadomień do wyświetlenia.</p>
+            </div>
+          )}
 
-            <div className="space-y-2">
-              {notifications.map((notification) => {
-                const meta = TYPE_COPY[notification.type] ?? {
-                  label: notification.type,
-                  description: "",
-                };
-                const unreadItem = !notification.readAt;
-                return (
-                  <div
-                    key={notification.id}
-                    className={`rounded-xl border px-3 py-3 ${
-                      unreadItem
-                        ? "border-brand-200 bg-brand-50/70 dark:border-slate-700 dark:bg-slate-900/70"
-                        : "border-slate-200 dark:border-slate-800"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-200">
-                            {meta.label}
-                          </span>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {formatDate(notification.createdAt)}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
-                          {notification.title}
-                        </p>
-                        {notification.body && (
-                          <p className="text-sm text-slate-600 dark:text-slate-300">
-                            {notification.body}
-                          </p>
-                        )}
-                        {notification.data && (
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                            Szczegóły: {JSON.stringify(notification.data)}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {unreadItem ? (
-                          <button
-                            className="text-[11px] rounded-full border border-brand-200 bg-white px-3 py-1 text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:bg-slate-900 dark:text-brand-200"
-                            onClick={() => markAsRead(notification.id)}
-                          >
-                            Oznacz jako przeczytane
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                            Przeczytane
-                          </span>
-                        )}
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Kanały: {notification.channels.join(", ")}
+          <div className="space-y-2">
+            {notifications.map((notification) => {
+              const meta = TYPE_COPY[notification.type] ?? {
+                label: notification.type,
+                description: "",
+              };
+              const unreadItem = !notification.readAt;
+              return (
+                <div
+                  key={notification.id}
+                  className={`rounded-xl border px-3 py-3 transition-colors ${
+                    unreadItem
+                      ? "border-brand-200 bg-brand-50/70 dark:border-brand-800/50 dark:bg-brand-950/30"
+                      : "border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                          {meta.label}
+                        </span>
+                        <span className="text-[11px] text-surface-500 dark:text-surface-400">
+                          {formatDate(notification.createdAt)}
                         </span>
                       </div>
+                      <p className="mt-1 text-sm font-semibold text-surface-900 dark:text-surface-50">
+                        {notification.title}
+                      </p>
+                      {notification.body && (
+                        <p className="text-sm text-surface-600 dark:text-surface-300">
+                          {notification.body}
+                        </p>
+                      )}
+                      {notification.data && (
+                        <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-1">
+                          Szczegóły: {JSON.stringify(notification.data)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {unreadItem ? (
+                        <button
+                          className="text-[11px] rounded-full border border-brand-200 bg-white px-3 py-1 text-brand-700 hover:bg-brand-50 dark:border-brand-700 dark:bg-surface-800 dark:text-brand-300 dark:hover:bg-surface-700"
+                          onClick={() => markAsRead(notification.id)}
+                        >
+                          Oznacz jako przeczytane
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-surface-500 dark:text-surface-400">
+                          Przeczytane
+                        </span>
+                      )}
+                      <span className="text-[11px] text-surface-500 dark:text-surface-400">
+                        Kanały: {notification.channels?.join(", ") || "Brak"}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
       )}
 
       {activeTab === "preferences" && (
         <div className="card p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
+              <p className="section-label">
                 Preferencje
               </p>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
                 Kanały dostarczania
               </p>
             </div>
@@ -350,48 +392,74 @@ export default function NotificationsPage() {
             </button>
           </div>
 
-          <div className="space-y-3">
-            {preferences.map((pref) => {
-              const meta = TYPE_COPY[pref.type] ?? { label: pref.type, description: "" };
-              return (
-                <div
-                  key={pref.type}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                        {meta.label}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {meta.description}
+          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
+            <table className="min-w-full">
+              <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+                <tr className="border-b border-surface-200 dark:border-surface-800">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    Typ powiadomienia
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    W aplikacji
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                    E-mail
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
+                {preferences.map((pref) => {
+                  const meta = TYPE_COPY[pref.type] ?? { label: pref.type, description: "" };
+                  return (
+                    <tr key={pref.type} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                          {meta.label}
                         </p>
-                      </div>
-                      <div className="flex items-center gap-3 text-[11px]">
-                        <label className="flex items-center gap-1 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={pref.inApp}
-                            onChange={() => togglePreference(pref.type, "inApp")}
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                          {meta.description}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          disabled={savingPrefs}
+                          onClick={() => togglePreference(pref.type, "inApp")}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            pref.inApp ? "bg-brand-500" : "bg-surface-200 dark:bg-surface-700"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              pref.inApp ? "translate-x-5" : "translate-x-0"
+                            }`}
                           />
-                          <span>Aplikacja</span>
-                        </label>
-                        <label className="flex items-center gap-1 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={pref.email}
-                            onChange={() => togglePreference(pref.type, "email")}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          disabled={savingPrefs}
+                          onClick={() => togglePreference(pref.type, "email")}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            pref.email ? "bg-brand-500" : "bg-surface-200 dark:bg-surface-700"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              pref.email ? "translate-x-5" : "translate-x-0"
+                            }`}
                           />
-                          <span>Email</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
-    );
-  }
+        </div>
+      )}
+    </div>
+  );
+}
