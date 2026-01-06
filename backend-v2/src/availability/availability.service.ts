@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Weekday } from '@prisma/client';
 
 @Injectable()
 export class AvailabilityService {
@@ -175,14 +175,14 @@ export class AvailabilityService {
     // For weekday-based availability, we'll delete any with matching weekdays
     const weekdays = availabilities
       .filter((a) => a.weekday)
-      .map((a) => a.weekday);
+      .map((a) => a.weekday as Weekday);
 
     if (weekdays.length > 0) {
       await this.prisma.availability.deleteMany({
         where: {
           organisationId,
           employeeId,
-          weekday: { in: weekdays as any },
+          weekday: { in: weekdays },
         },
       });
     }
@@ -195,7 +195,7 @@ export class AvailabilityService {
             organisationId,
             employeeId,
             date: avail.date ?? null,
-            weekday: avail.weekday as any,
+            weekday: (avail.weekday as Weekday) ?? null,
             startMinutes: avail.startMinutes,
             endMinutes: avail.endMinutes,
             notes: avail.notes ?? null,

@@ -25,8 +25,6 @@ import { QueryAvailabilityDto } from './dto/query-availability.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 
-const ELEVATED_ROLES = [Role.OWNER, Role.MANAGER, Role.ADMIN];
-
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UseInterceptors(AuditLogInterceptor)
 @Controller('availability')

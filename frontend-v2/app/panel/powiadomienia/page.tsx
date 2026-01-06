@@ -360,7 +360,7 @@ export default function NotificationsPage() {
                         </span>
                       )}
                       <span className="text-[11px] text-surface-500 dark:text-surface-400">
-                        Kanały: {(notification.channels ?? []).join(", ")}
+                        Kanały: {notification.channels?.join(", ") || "Brak"}
                       </span>
                     </div>
                   </div>
