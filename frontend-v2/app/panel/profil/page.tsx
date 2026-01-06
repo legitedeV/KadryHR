@@ -174,7 +174,9 @@ export default function ProfilPage() {
   }, [currentPassword, newPassword, confirmPassword]);
 
   const handleChangeEmail = useCallback(async () => {
-    if (!newEmail.includes("@")) {
+    // Basic email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
       pushToast({
         title: "Błąd",
         description: "Podaj prawidłowy adres e-mail",

@@ -59,8 +59,8 @@ function toAuditJson(value: unknown): AuditJson {
     return result as AuditJson;
   }
 
-  // fallback – cokolwiek innego zamieniamy na string
-  return JSON.stringify(value) as AuditJson;
+  // fallback for undefined/functions/symbols – convert to null via unknown
+  return null as unknown as AuditJson;
 }
 
 @Injectable()
