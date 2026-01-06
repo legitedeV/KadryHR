@@ -16,18 +16,56 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ChangeEmailDto } from './dto/change-email.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.OWNER, Role.MANAGER)
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // Profile endpoints (any authenticated user)
+  @Get('profile')
+  async getProfile(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getProfile(user.id);
+  }
+
+  @Patch('profile')
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(user.id, dto);
+  }
+
+  @Post('profile/change-password')
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(user.id, dto);
+  }
+
+  @Post('profile/change-email')
+  async changeEmail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangeEmailDto,
+  ) {
+    return this.usersService.changeEmail(user.id, dto);
+  }
+
+  // User management endpoints (OWNER, MANAGER only)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Get()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findAll(user.organisationId);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Post()
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -36,6 +74,8 @@ export class UsersController {
     return this.usersService.create(user.organisationId, dto);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id')
   async update(
     @CurrentUser() user: AuthenticatedUser,
@@ -43,5 +83,21 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.usersService.update(id, user.organisationId, dto);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER)
+  @Patch(':id/role')
+  async updateMemberRole(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
+    return this.usersService.updateMemberRole(
+      user.id,
+      id,
+      user.organisationId,
+      dto,
+    );
   }
 }

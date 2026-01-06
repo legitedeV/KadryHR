@@ -503,18 +503,18 @@ export default function GrafikPage() {
             {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
           </div>
 
-          <div className="overflow-x-auto xl:overflow-visible rounded-xl border border-surface-200/80 dark:border-surface-800/80">
-            <table className="min-w-[1200px] xl:min-w-full w-full">
+          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
+            <table className="min-w-full w-full table-fixed">
               <thead className="bg-surface-50/80 dark:bg-surface-900/80">
                 <tr className="border-b border-surface-200 dark:border-surface-800">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
+                  <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
                     Pracownik
                   </th>
                   {dowLabels.map((dayLabel, idx) => {
                     const dayDate = new Date(range.from);
                     dayDate.setDate(dayDate.getDate() + idx);
                     return (
-                      <th key={dayLabel} className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 min-w-[160px]">
+                      <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                         <div className="flex flex-col items-center gap-1">
                           <span>{dayLabel}</span>
                           <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
@@ -543,19 +543,19 @@ export default function GrafikPage() {
                     const employeeShifts = gridByEmployeeAndDay[employee.id] || {};
                     return (
                       <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                        <td className="px-4 py-3 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
-                          <div className="flex items-center gap-3">
+                        <td className="w-48 px-3 py-2 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
+                          <div className="flex items-center gap-2">
                             <Avatar
                               name={formatEmployeeName(employee)}
                               src={employee.avatarUrl}
-                              size="md"
+                              size="sm"
                             />
                             <div className="flex flex-col min-w-0">
-                              <span className="font-medium text-surface-900 dark:text-surface-50 truncate">
+                              <span className="font-medium text-sm text-surface-900 dark:text-surface-50 truncate">
                                 {formatEmployeeName(employee)}
                               </span>
                               {employee.position && (
-                                <span className="text-xs text-surface-500 dark:text-surface-400 truncate">
+                                <span className="text-[10px] text-surface-500 dark:text-surface-400 truncate">
                                   {employee.position}
                                 </span>
                               )}
@@ -568,15 +568,15 @@ export default function GrafikPage() {
                           dayDate.setDate(dayDate.getDate() + dayIdx);
                           const dayDateValue = dayDate.toISOString().slice(0, 10);
                           return (
-                            <td key={dow} className="px-3 py-3 align-top">
-                              <div className="flex flex-col gap-2 min-h-[60px]">
+                            <td key={dow} className="px-2 py-2 align-top">
+                              <div className="flex flex-col gap-1 min-h-[50px]">
                                 {dayShifts.length === 0 ? (
                                   <button
-                                    className="w-full h-full min-h-[60px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
+                                    className="w-full h-full min-h-[50px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
                                     onClick={() => openCreateModal(dayDateValue, employee.id)}
                                     aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                   >
-                                    <svg className="w-5 h-5 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                     </svg>
                                   </button>
@@ -587,39 +587,39 @@ export default function GrafikPage() {
                                       return (
                                         <div
                                           key={shift.id}
-                                          className="group relative rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30 px-2 py-2 shadow-sm hover:shadow-md transition-all text-xs"
+                                          className="group relative rounded-md border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30 px-1.5 py-1.5 shadow-sm hover:shadow-md transition-all text-xs"
                                         >
-                                          <div className="flex items-start justify-between gap-1">
+                                          <div className="flex items-start justify-between gap-0.5">
                                             <div className="flex-1 min-w-0">
-                                              <div className="font-semibold text-emerald-800 dark:text-emerald-200">
+                                              <div className="font-semibold text-emerald-800 dark:text-emerald-200 text-[11px]">
                                                 {shift.start}–{shift.end}
                                               </div>
                                               {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
-                                                <div className="text-[10px] text-surface-600 dark:text-surface-300 mt-0.5 truncate">
+                                                <div className="text-[9px] text-surface-600 dark:text-surface-300 truncate">
                                                   {shift.locationName}
                                                 </div>
                                               )}
                                               {shift.position && (
-                                                <div className="text-[10px] uppercase tracking-wide text-surface-500 dark:text-surface-400 mt-0.5 truncate">
+                                                <div className="text-[9px] uppercase tracking-wide text-surface-500 dark:text-surface-400 truncate">
                                                   {shift.position}
                                                 </div>
                                               )}
                                               {shift.availabilityWarning && (
-                                                <div className="mt-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
+                                                <div className="mt-0.5 rounded bg-amber-50 px-1 py-0.5 text-[8px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
                                                   {shift.availabilityWarning}
                                                 </div>
                                               )}
                                             </div>
-                                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                               <button
-                                                className="text-[10px] text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium"
+                                                className="text-[9px] text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium p-0.5"
                                                 onClick={() => sourceShift && openEditModal(sourceShift)}
                                                 aria-label="Edytuj zmianę"
                                               >
                                                 ✎
                                               </button>
                                               <button
-                                                className="text-[10px] text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 font-medium"
+                                                className="text-[9px] text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 font-medium p-0.5"
                                                 onClick={() => setDeleteTarget(sourceShift || null)}
                                                 aria-label="Usuń zmianę"
                                               >
@@ -631,11 +631,11 @@ export default function GrafikPage() {
                                       );
                                     })}
                                     <button
-                                      className="w-full rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1.5 flex items-center justify-center group"
+                                      className="w-full rounded-md border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1 flex items-center justify-center group"
                                       onClick={() => openCreateModal(dayDateValue, employee.id)}
                                       aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                     >
-                                      <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                       </svg>
                                     </button>

@@ -26,9 +26,7 @@ describe('NewsletterService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    queueService.addNewsletterEmailJob = jest
-      .fn()
-      .mockResolvedValue(true);
+    queueService.addNewsletterEmailJob = jest.fn().mockResolvedValue(true);
     service = new NewsletterService(prisma, queueService);
   });
 

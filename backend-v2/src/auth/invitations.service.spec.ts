@@ -106,6 +106,8 @@ describe('InvitationsService.issueInvitation', () => {
         invitedEmail: 'emp@example.com',
         invitedByUserId: 'owner-1',
       }),
-    ).rejects.toThrow('Zaproszenie zostało już wysłane w ciągu ostatnich 10 minut');
+    ).rejects.toThrow(
+      'Zaproszenie zostało już wysłane w ciągu ostatnich 10 minut',
+    );
   });
 });
