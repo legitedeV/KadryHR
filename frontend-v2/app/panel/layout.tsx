@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
-import { clearToken, getToken } from "@/lib/auth";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -26,28 +26,44 @@ const titleByPath: Record<string, string> = {
 export default function PanelLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasSession);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
+    if (!hasSession) {
       router.replace("/login");
       return;
     }
-    apiGetMe(token)
-      .then(setUser)
+
+    let cancelled = false;
+
+    apiGetMe()
+      .then((me) => {
+        if (cancelled) return;
+        setUser(me);
+      })
       .catch(() => {
-        clearToken();
+        if (cancelled) return;
+        clearAuthTokens();
         router.replace("/login");
       })
-      .finally(() => setLoading(false));
-  }, [router]);
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasSession, router]);
 
   function handleLogout() {
-    clearToken();
+    clearAuthTokens();
     router.push("/login");
   }
+
+  if (!hasSession) return null;
 
   if (loading) {
     return (

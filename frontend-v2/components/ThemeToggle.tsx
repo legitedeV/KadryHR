@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme, isMounted } = useTheme();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setReady(true);
-  }, []);
+  const isClient = useMemo(() => typeof window !== "undefined", []);
 
   const isDark = resolvedTheme === "dark";
 
@@ -18,7 +14,7 @@ export function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={`relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-surface-200/80 bg-white/80 text-surface-600 shadow-sm backdrop-blur transition-all duration-300 hover:border-brand-300 hover:text-brand-600 dark:border-surface-700/80 dark:bg-surface-800/80 dark:text-surface-300 dark:hover:border-brand-600 dark:hover:text-brand-400 ${
-        ready && isMounted ? "opacity-100" : "opacity-0"
+        isMounted && isClient ? "opacity-100" : "opacity-0"
       }`}
       aria-label="Przełącz motyw"
       aria-pressed={isDark}

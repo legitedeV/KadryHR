@@ -32,11 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeSetting, setThemeSetting] = useState<ThemeSetting>(() =>
     getStoredTheme(isBrowser() ? window.localStorage : undefined),
   );
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useMemo(() => isBrowser(), []);
 
   useEffect(() => {
     if (!isBrowser()) return;
