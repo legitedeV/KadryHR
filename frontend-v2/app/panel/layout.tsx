@@ -6,7 +6,7 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Logo, LogoMark } from "@/components/brand/Logo";
+import { Logo } from "@/components/brand/Logo";
 
 const navItems = [
   { href: "/panel/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -161,7 +161,6 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col">
         <header className="h-16 border-b border-surface-200/80 glass px-6 flex items-center justify-between gap-4 dark:border-surface-800/80">
           <div className="flex items-center gap-3 min-w-0">
-            <LogoMark size="sm" alt="KadryHR" ariaLabel="KadryHR" asLink="/panel/dashboard" />
             <div className="min-w-0">
               <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
                 KadryHR · panel
