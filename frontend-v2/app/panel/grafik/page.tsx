@@ -491,7 +491,16 @@ export default function GrafikPage() {
     const originalEnd = new Date(shift.endsAt);
     const duration = originalEnd.getTime() - originalStart.getTime();
 
-    const newStart = new Date(`${targetDate}T${originalStart.toISOString().slice(11, 19)}`);
+    const [year, month, day] = targetDate.split("-").map(Number);
+    const newStart = new Date(
+      year,
+      month - 1,
+      day,
+      originalStart.getHours(),
+      originalStart.getMinutes(),
+      originalStart.getSeconds(),
+      originalStart.getMilliseconds(),
+    );
     const newEnd = new Date(newStart.getTime() + duration);
 
     try {
