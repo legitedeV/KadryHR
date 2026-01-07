@@ -87,6 +87,7 @@ export class ShiftsService {
         locationId: dto.locationId ?? null,
         position: dto.position ?? null,
         notes: dto.notes ?? null,
+        color: dto.color ?? null,
         startsAt,
         endsAt,
       },
@@ -127,6 +128,7 @@ export class ShiftsService {
       ? new Date(dto.startsAt)
       : existing.startsAt;
     const nextEndsAt = dto.endsAt ? new Date(dto.endsAt) : existing.endsAt;
+    const nextColor = dto.color !== undefined ? dto.color : existing.color;
 
     if (!(nextStartsAt.getTime() < nextEndsAt.getTime())) {
       throw new BadRequestException('Shift start must be before end');
@@ -158,6 +160,7 @@ export class ShiftsService {
         locationId: nextLocationId,
         position: dto.position ?? existing.position,
         notes: dto.notes ?? existing.notes,
+        color: nextColor,
         startsAt: nextStartsAt,
         endsAt: nextEndsAt,
       },

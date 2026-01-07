@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, DragEvent } from "react";
 import { createPortal } from "react-dom";
 import { Avatar } from "@/components/Avatar";
 import { Modal } from "@/components/Modal";
@@ -10,6 +10,7 @@ import {
   ShiftPayload,
   ShiftRecord,
   AvailabilityRecord,
+  ScheduleMetadata,
   apiCreateShift,
   apiDeleteShift,
   apiGetShifts,
@@ -18,8 +19,28 @@ import {
   apiListLocations,
   apiPublishSchedule,
   apiUpdateShift,
+  apiGetScheduleMetadata,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+
+// Shift templates for quick creation
+const SHIFT_TEMPLATES = [
+  { name: "Rano", startTime: "06:00", endTime: "15:00", color: "#3b82f6" },
+  { name: "Popołudnie", startTime: "14:30", endTime: "23:15", color: "#8b5cf6" },
+  { name: "Dostawa", startTime: "08:00", endTime: "10:00", color: "#22c55e" },
+];
+
+// Default shift colors palette
+const SHIFT_COLORS = [
+  "#3b82f6", // blue
+  "#8b5cf6", // violet
+  "#22c55e", // green
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#ec4899", // pink
+  "#06b6d4", // cyan
+  "#84cc16", // lime
+];
 
 type ShiftDisplay = {
   id: string;
@@ -34,6 +55,7 @@ type ShiftDisplay = {
   status: "ASSIGNED" | "UNASSIGNED";
   availabilityWarning?: string | null;
   position?: string | null;
+  color?: string | null;
 };
 
 type ShiftFormState = {
@@ -41,6 +63,7 @@ type ShiftFormState = {
   locationId?: string;
   position?: string;
   notes?: string;
+  color?: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -110,7 +133,14 @@ function mapShiftRecord(record: ShiftRecord, employees: EmployeeRecord[], locati
     status: record.employeeId ? "ASSIGNED" : "UNASSIGNED",
     availabilityWarning: record.availabilityWarning ?? null,
     position: record.position,
+    color: record.color ?? null,
   };
+}
+
+function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
 function getDowKey(date: string) {
@@ -221,6 +251,7 @@ function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
     locationId: form.locationId || undefined,
     position: form.position || undefined,
     notes: form.notes || undefined,
+    color: form.color || undefined,
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
   };
@@ -230,13 +261,24 @@ function formatEmployeeName(employee: EmployeeRecord): string {
   return `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik";
 }
 
+// Get text color for contrast against background
+function getContrastTextColor(hexColor: string): string {
+  const hex = hexColor.replace("#", "");
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? "#1e293b" : "#ffffff";
+}
+
 export default function GrafikPage() {
   const [range, setRange] = useState<WeekRange>(() => getWeekRange());
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [availability, setAvailability] = useState<AvailabilityRecord[]>([]);
-  const [showAvailability, setShowAvailability] = useState(false);
+  const [scheduleMetadata, setScheduleMetadata] = useState<ScheduleMetadata | null>(null);
+  const [draggedShift, setDraggedShift] = useState<string | null>(null);
   const hasToken = useMemo(() => !!getAccessToken(), []);
   const [loading, setLoading] = useState(hasToken);
   const [error, setError] = useState<string | null>(
@@ -255,6 +297,7 @@ export default function GrafikPage() {
     locationId: undefined,
     position: "",
     notes: "",
+    color: "",
     date: range.from,
     startTime: "09:00",
     endTime: "17:00",
@@ -272,13 +315,15 @@ export default function GrafikPage() {
       apiListLocations(),
       apiGetShifts({ from: range.from, to: range.to }),
       apiGetAvailability({ from: range.from, to: range.to }),
+      apiGetScheduleMetadata({ from: range.from, to: range.to }),
     ])
-      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse]) => {
+      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse, metadataResponse]) => {
         if (!isMounted) return;
         setEmployees(employeeResponse.data);
         setLocations(locationResponse);
         setShifts(shiftResponse);
         setAvailability(availabilityResponse);
+        setScheduleMetadata(metadataResponse);
         if (!employeeResponse.data.length) {
           setFormError("Dodaj pracowników, aby przypisać ich do zmian.");
         }
@@ -385,6 +430,7 @@ export default function GrafikPage() {
       locationId: locations[0]?.id,
       position: "",
       notes: "",
+      color: "",
       date: date ?? range.from,
       startTime: "09:00",
       endTime: "17:00",
@@ -407,12 +453,67 @@ export default function GrafikPage() {
       locationId: shift.locationId ?? undefined,
       position: shift.position ?? "",
       notes: shift.notes ?? "",
+      color: shift.color ?? "",
       date: startDate.toISOString().slice(0, 10),
       startTime: startDate.toISOString().slice(11, 16),
       endTime: endDate.toISOString().slice(11, 16),
     });
     setEditingShift(shift);
     setEditorOpen(true);
+  };
+
+  // Apply a shift template
+  const applyTemplate = (template: typeof SHIFT_TEMPLATES[number]) => {
+    setForm((prev) => ({
+      ...prev,
+      startTime: template.startTime,
+      endTime: template.endTime,
+      color: template.color,
+    }));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, shiftId: string) => {
+    setDraggedShift(shiftId);
+    e.dataTransfer.setData("text/plain", shiftId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLTableCellElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = async (e: DragEvent<HTMLTableCellElement>, targetDate: string, targetEmployeeId: string) => {
+    e.preventDefault();
+    const shiftId = e.dataTransfer.getData("text/plain");
+    if (!shiftId || !draggedShift) return;
+
+    const shift = shifts.find((s) => s.id === shiftId);
+    if (!shift) return;
+
+    // Calculate new start and end times preserving duration
+    const originalStart = new Date(shift.startsAt);
+    const originalEnd = new Date(shift.endsAt);
+    const duration = originalEnd.getTime() - originalStart.getTime();
+
+    const newStart = new Date(`${targetDate}T${originalStart.toISOString().slice(11, 19)}`);
+    const newEnd = new Date(newStart.getTime() + duration);
+
+    try {
+      const updated = await apiUpdateShift(shiftId, {
+        employeeId: targetEmployeeId,
+        startsAt: newStart.toISOString(),
+        endsAt: newEnd.toISOString(),
+      });
+      setShifts((prev) => prev.map((s) => (s.id === shiftId ? updated : s)));
+      setFormSuccess("Zmiana została przeniesiona.");
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się przenieść zmiany.");
+    } finally {
+      setDraggedShift(null);
+    }
   };
 
   const handleSave = async () => {
@@ -512,15 +613,6 @@ export default function GrafikPage() {
               Następny →
             </button>
           </div>
-          <button 
-            className={`btn-secondary ${showAvailability ? 'ring-2 ring-brand-500' : ''}`}
-            onClick={() => setShowAvailability(!showAvailability)}
-          >
-            <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {showAvailability ? 'Ukryj dostępność' : 'Pokaż dostępność'}
-          </button>
           <button className="btn-secondary" onClick={openPublishModal}>
             Opublikuj tydzień
           </button>
@@ -577,9 +669,32 @@ export default function GrafikPage() {
                   {dowLabels.map((dayLabel, idx) => {
                     const dayDate = new Date(range.from);
                     dayDate.setDate(dayDate.getDate() + idx);
+                    const dayDateStr = dayDate.toISOString().slice(0, 10);
+                    
+                    // Check for delivery day
+                    const isDeliveryDay = scheduleMetadata?.deliveryDays?.includes(dayDateStr);
+                    
+                    // Check for promotion day
+                    const promotionInfo = scheduleMetadata?.promotionDays?.find(p => p.date === dayDateStr);
+                    
                     return (
                       <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                         <div className="flex flex-col items-center gap-1">
+                          {/* Delivery and promotion labels */}
+                          {isDeliveryDay && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-white">
+                              DOSTAWA
+                            </span>
+                          )}
+                          {promotionInfo && (
+                            <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
+                              promotionInfo.type === 'ZMIANA_PROMOCJI' 
+                                ? 'bg-amber-500 text-white' 
+                                : 'bg-violet-500 text-white'
+                            }`}>
+                              {promotionInfo.type === 'ZMIANA_PROMOCJI' ? 'ZMIANA PROMOCJI' : 'MAŁA PROMOCJA'}
+                            </span>
+                          )}
                           <span>{dayLabel}</span>
                           <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
                             {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
@@ -605,6 +720,7 @@ export default function GrafikPage() {
                 ) : (
                   employees.map((employee) => {
                     const employeeShifts = gridByEmployeeAndDay[employee.id] || {};
+                    const employeeAvail = availabilityByEmployeeAndDay[employee.id] || {};
                     return (
                       <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
                         <td className="w-48 px-3 py-2 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
@@ -628,12 +744,30 @@ export default function GrafikPage() {
                         </td>
                         {dowOrder.map((dow, dayIdx) => {
                           const dayShifts = employeeShifts[dow] || [];
+                          const dayAvail = employeeAvail[dow] || [];
                           const dayDate = new Date(range.from);
                           dayDate.setDate(dayDate.getDate() + dayIdx);
                           const dayDateValue = dayDate.toISOString().slice(0, 10);
                           return (
-                            <td key={dow} className="px-2 py-2 align-top">
+                            <td 
+                              key={dow} 
+                              className={`px-2 py-2 align-top ${draggedShift ? 'hover:bg-brand-50/50 dark:hover:bg-brand-950/30' : ''}`}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, dayDateValue, employee.id)}
+                            >
                               <div className="flex flex-col gap-1 min-h-[50px]">
+                                {/* Availability indicator */}
+                                {dayAvail.length > 0 && (
+                                  <div className="flex gap-0.5 mb-0.5" title={`Dostępność: ${dayAvail.map(a => `${formatMinutes(a.startMinutes)}-${formatMinutes(a.endMinutes)}`).join(', ')}`}>
+                                    {dayAvail.map((avail, i) => (
+                                      <div 
+                                        key={avail.id || i}
+                                        className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500"
+                                        title={`${formatMinutes(avail.startMinutes)}-${formatMinutes(avail.endMinutes)}`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
                                 {dayShifts.length === 0 ? (
                                   <button
                                     className="w-full h-full min-h-[50px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
@@ -651,12 +785,34 @@ export default function GrafikPage() {
                                       return (
                                         <div
                                           key={shift.id}
-                                          className="group relative rounded-md border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30 px-1.5 py-1.5 shadow-sm hover:shadow-md transition-all text-xs"
+                                          draggable
+                                          onDragStart={(e) => handleDragStart(e, shift.id)}
+                                          className={`group relative rounded-md border px-1.5 py-1.5 shadow-sm hover:shadow-md transition-all text-xs cursor-move ${
+                                            shift.color 
+                                              ? '' 
+                                              : 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30'
+                                          }`}
+                                          style={shift.color ? {
+                                            backgroundColor: `${shift.color}20`,
+                                            borderColor: `${shift.color}50`,
+                                          } : undefined}
                                         >
-                                          <div className="flex items-start justify-between gap-0.5">
+                                          {/* Color indicator bar */}
+                                          {shift.color && (
+                                            <div 
+                                              className="absolute left-0 top-0 bottom-0 w-1 rounded-l-md"
+                                              style={{ backgroundColor: shift.color }}
+                                            />
+                                          )}
+                                          <div className={`flex items-start justify-between gap-0.5 ${shift.color ? 'ml-1.5' : ''}`}>
                                             <div className="flex-1 min-w-0">
-                                              <div className="font-semibold text-emerald-800 dark:text-emerald-200 text-[11px]">
-                                                {shift.start}–{shift.end}
+                                              <div 
+                                                className="font-semibold text-[11px]"
+                                                style={shift.color ? { color: getContrastTextColor(shift.color + '30') === '#ffffff' ? shift.color : shift.color } : undefined}
+                                              >
+                                                <span className={shift.color ? '' : 'text-emerald-800 dark:text-emerald-200'}>
+                                                  {shift.start}–{shift.end}
+                                                </span>
                                               </div>
                                               {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
                                                 <div className="text-[9px] text-surface-600 dark:text-surface-300 truncate">
@@ -719,102 +875,7 @@ export default function GrafikPage() {
         </div>
       )}
 
-      {/* Availability Table */}
-      {!loading && !error && showAvailability && (
-        <div className="card p-6 mt-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="h-10 w-10 rounded-2xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="section-label">Dostępność pracowników</p>
-              <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-                Tydzień: {range.label}
-              </p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
-            <table className="min-w-full w-full table-fixed">
-              <thead className="bg-surface-50/80 dark:bg-surface-900/80">
-                <tr className="border-b border-surface-200 dark:border-surface-800">
-                  <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
-                    Pracownik
-                  </th>
-                  {dowLabels.map((dayLabel) => (
-                    <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                      {dayLabel}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
-                {employees.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-surface-500 dark:text-surface-400">
-                      Brak pracowników.
-                    </td>
-                  </tr>
-                ) : (
-                  employees.map((employee) => {
-                    const employeeAvail = availabilityByEmployeeAndDay[employee.id] || {};
-                    return (
-                      <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                        <td className="w-48 px-3 py-2 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
-                          <div className="flex items-center gap-2">
-                            <Avatar
-                              name={formatEmployeeName(employee)}
-                              src={employee.avatarUrl}
-                              size="sm"
-                            />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-medium text-sm text-surface-900 dark:text-surface-50 truncate">
-                                {formatEmployeeName(employee)}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        {dowOrder.map((dow) => {
-                          const dayAvail = employeeAvail[dow] || [];
-                          return (
-                            <td key={dow} className="px-2 py-2 align-top">
-                              <div className="flex flex-col gap-1 min-h-[40px]">
-                                {dayAvail.length === 0 ? (
-                                  <div className="w-full h-full min-h-[40px] rounded-lg bg-surface-100/50 dark:bg-surface-800/30 flex items-center justify-center">
-                                    <span className="text-[10px] text-surface-400 dark:text-surface-500">—</span>
-                                  </div>
-                                ) : (
-                                  dayAvail.map((avail, idx) => (
-                                    <div
-                                      key={avail.id || idx}
-                                      className="rounded-md border border-violet-200 bg-violet-50/50 dark:border-violet-800/50 dark:bg-violet-950/30 px-1.5 py-1 text-[10px]"
-                                    >
-                                      <div className="font-semibold text-violet-800 dark:text-violet-200">
-                                        {formatMinutes(avail.startMinutes)}–{formatMinutes(avail.endMinutes)}
-                                      </div>
-                                      {avail.notes && (
-                                        <div className="text-violet-600 dark:text-violet-300 truncate">
-                                          {avail.notes}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Availability is now shown as indicators in the schedule grid - no separate table needed */}
 
       <Modal
         open={editorOpen}
@@ -832,6 +893,32 @@ export default function GrafikPage() {
           </>
         }
       >
+        {/* Quick shift templates */}
+        <div className="mb-4">
+          <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-2">Szybkie szablony:</p>
+          <div className="flex flex-wrap gap-2">
+            {SHIFT_TEMPLATES.map((template) => (
+              <button
+                key={template.name}
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:border-brand-400 dark:hover:border-brand-700"
+                style={{
+                  borderColor: template.color + '50',
+                  backgroundColor: template.color + '15',
+                  color: template.color,
+                }}
+                onClick={() => applyTemplate(template)}
+              >
+                <span 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: template.color }}
+                />
+                {template.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
             Pracownik
@@ -906,16 +993,50 @@ export default function GrafikPage() {
               placeholder="np. Barista"
             />
           </label>
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Notatki
-            <textarea
-              className="input min-h-[90px]"
-              value={form.notes}
-              onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-              placeholder="Dodatkowe instrukcje dla zmiany"
-            />
-          </label>
+          <div className="space-y-1">
+            <span className="text-sm font-medium text-surface-700 dark:text-surface-200">Kolor zmiany</span>
+            <div className="flex flex-wrap gap-2">
+              {SHIFT_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`w-7 h-7 rounded-md border-2 transition ${
+                    form.color === color 
+                      ? 'border-surface-900 dark:border-white ring-2 ring-brand-400' 
+                      : 'border-transparent hover:border-surface-300 dark:hover:border-surface-600'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setForm((prev) => ({ ...prev, color }))}
+                  title={color}
+                />
+              ))}
+              <button
+                type="button"
+                className={`w-7 h-7 rounded-md border-2 transition flex items-center justify-center ${
+                  !form.color 
+                    ? 'border-surface-900 dark:border-white ring-2 ring-brand-400 bg-surface-100 dark:bg-surface-800' 
+                    : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600 bg-surface-50 dark:bg-surface-900'
+                }`}
+                onClick={() => setForm((prev) => ({ ...prev, color: "" }))}
+                title="Brak koloru"
+              >
+                <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
+
+        <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          Notatki
+          <textarea
+            className="input min-h-[70px]"
+            value={form.notes}
+            onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+            placeholder="Dodatkowe instrukcje dla zmiany"
+          />
+        </label>
 
         {formError && (
           <p className="text-sm text-rose-600 dark:text-rose-300">{formError}</p>

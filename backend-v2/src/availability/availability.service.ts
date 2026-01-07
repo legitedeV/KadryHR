@@ -203,4 +203,141 @@ export class AvailabilityService {
 
     return created;
   }
+
+  // ==========================================
+  // AVAILABILITY WINDOWS (Task 1)
+  // ==========================================
+
+  /**
+   * Get all availability windows for an organisation
+   */
+  async findAllWindows(organisationId: string) {
+    return this.prisma.availabilityWindow.findMany({
+      where: { organisationId },
+      orderBy: { deadline: 'desc' },
+    });
+  }
+
+  /**
+   * Get current and future availability windows (open ones that haven't passed deadline)
+   */
+  async findActiveWindows(organisationId: string) {
+    const now = new Date();
+    return this.prisma.availabilityWindow.findMany({
+      where: {
+        organisationId,
+        isOpen: true,
+        deadline: { gte: now },
+      },
+      orderBy: { deadline: 'asc' },
+    });
+  }
+
+  /**
+   * Get a specific availability window
+   */
+  async findWindowById(organisationId: string, windowId: string) {
+    const window = await this.prisma.availabilityWindow.findFirst({
+      where: { id: windowId, organisationId },
+    });
+
+    if (!window) {
+      throw new NotFoundException('Availability window not found');
+    }
+
+    return window;
+  }
+
+  /**
+   * Create a new availability window
+   */
+  async createWindow(
+    organisationId: string,
+    dto: {
+      title?: string;
+      startDate: string;
+      endDate: string;
+      deadline: string;
+      isOpen?: boolean;
+    },
+  ) {
+    const startDate = new Date(dto.startDate);
+    const endDate = new Date(dto.endDate);
+    const deadline = new Date(dto.deadline);
+
+    if (startDate >= endDate) {
+      throw new BadRequestException('startDate must be before endDate');
+    }
+
+    return this.prisma.availabilityWindow.create({
+      data: {
+        organisationId,
+        title: dto.title ?? 'Składanie dyspozycji',
+        startDate,
+        endDate,
+        deadline,
+        isOpen: dto.isOpen ?? true,
+      },
+    });
+  }
+
+  /**
+   * Update an availability window
+   */
+  async updateWindow(
+    organisationId: string,
+    windowId: string,
+    dto: {
+      title?: string;
+      startDate?: string;
+      endDate?: string;
+      deadline?: string;
+      isOpen?: boolean;
+    },
+  ) {
+    const existing = await this.prisma.availabilityWindow.findFirst({
+      where: { id: windowId, organisationId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Availability window not found');
+    }
+
+    const startDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
+    const endDate = dto.endDate ? new Date(dto.endDate) : existing.endDate;
+
+    if (startDate >= endDate) {
+      throw new BadRequestException('startDate must be before endDate');
+    }
+
+    return this.prisma.availabilityWindow.update({
+      where: { id: windowId },
+      data: {
+        title: dto.title ?? existing.title,
+        startDate,
+        endDate,
+        deadline: dto.deadline ? new Date(dto.deadline) : existing.deadline,
+        isOpen: dto.isOpen ?? existing.isOpen,
+      },
+    });
+  }
+
+  /**
+   * Delete an availability window
+   */
+  async deleteWindow(organisationId: string, windowId: string) {
+    const existing = await this.prisma.availabilityWindow.findFirst({
+      where: { id: windowId, organisationId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Availability window not found');
+    }
+
+    await this.prisma.availabilityWindow.delete({
+      where: { id: windowId },
+    });
+
+    return { success: true };
+  }
 }

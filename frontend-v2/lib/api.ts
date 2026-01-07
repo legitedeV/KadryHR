@@ -4,9 +4,17 @@ import { clearAuthTokens } from "./auth";
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
 export type Permission =
   | "EMPLOYEE_MANAGE"
+  | "EMPLOYEE_VIEW"
   | "RCP_EDIT"
   | "LEAVE_APPROVE"
-  | "REPORT_EXPORT";
+  | "LEAVE_REQUEST"
+  | "REPORT_EXPORT"
+  | "SCHEDULE_MANAGE"
+  | "SCHEDULE_VIEW"
+  | "ORGANISATION_SETTINGS"
+  | "AUDIT_VIEW"
+  | "REPORTS_EXPORT"
+  | "AVAILABILITY_MANAGE";
 
 export interface OrganisationSummary {
   id: string;
@@ -28,6 +36,7 @@ export interface ShiftRecord {
   locationId?: string | null;
   position?: string | null;
   notes?: string | null;
+  color?: string | null;
   startsAt: string;
   endsAt: string;
   employee?: {
@@ -45,6 +54,7 @@ export interface ShiftPayload {
   locationId?: string;
   position?: string;
   notes?: string;
+  color?: string;
   startsAt: string;
   endsAt: string;
 }
@@ -71,6 +81,26 @@ export interface AvailabilityRecord {
   };
 }
 
+export interface AvailabilityWindowRecord {
+  id: string;
+  organisationId: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  deadline: string;
+  isOpen: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AvailabilityWindowInput {
+  title?: string;
+  startDate: string;
+  endDate: string;
+  deadline: string;
+  isOpen?: boolean;
+}
+
 export type Weekday = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
 
 export interface AvailabilityInput {
@@ -79,6 +109,11 @@ export interface AvailabilityInput {
   startMinutes: number;
   endMinutes: number;
   notes?: string;
+}
+
+export interface ScheduleMetadata {
+  deliveryDays: string[];
+  promotionDays: Array<{ date: string; type: "ZMIANA_PROMOCJI" | "MALA_PROMOCJA" }>;
 }
 
 export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT" | "SCHEDULE_PUBLISHED" | "SWAP_STATUS" | "CUSTOM";
@@ -474,6 +509,55 @@ export async function apiBulkUpsertAvailability(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// Availability Windows API
+export async function apiGetAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowRecord[]>(`${AVAILABILITY_PREFIX}/windows`);
+}
+
+export async function apiGetActiveAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowRecord[]>(`${AVAILABILITY_PREFIX}/windows/active`);
+}
+
+export async function apiCreateAvailabilityWindow(
+  payload: AvailabilityWindowInput,
+): Promise<AvailabilityWindowRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowRecord>(`${AVAILABILITY_PREFIX}/windows`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateAvailabilityWindow(
+  windowId: string,
+  payload: Partial<AvailabilityWindowInput>,
+): Promise<AvailabilityWindowRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowRecord>(`${AVAILABILITY_PREFIX}/windows/${windowId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteAvailabilityWindow(windowId: string): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`${AVAILABILITY_PREFIX}/windows/${windowId}`, {
+    method: "DELETE",
+  });
+}
+
+// Schedule Metadata API (delivery days, promotion labels)
+export async function apiGetScheduleMetadata(params: {
+  from: string;
+  to: string;
+}): Promise<ScheduleMetadata> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams({ from: params.from, to: params.to });
+  return apiClient.request<ScheduleMetadata>(`${ORGANISATIONS_PREFIX}/me/schedule-metadata?${search.toString()}`);
 }
 
 export async function apiListEmployees(
@@ -1132,12 +1216,17 @@ export async function apiListAuditLogs(
 }
 
 // Organisation API
+// Organisation API
 export interface OrganisationDetails {
   id: string;
   name: string;
   description?: string | null;
   category?: string | null;
   logoUrl?: string | null;
+  deliveryDays?: Weekday[];
+  deliveryLabelColor?: string | null;
+  promotionCycleStartDate?: string | null;
+  promotionCycleFrequency?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1157,6 +1246,10 @@ export interface UpdateOrganisationPayload {
   description?: string;
   category?: string;
   logoUrl?: string;
+  deliveryDays?: Weekday[];
+  deliveryLabelColor?: string;
+  promotionCycleStartDate?: string;
+  promotionCycleFrequency?: number;
 }
 
 const ORGANISATIONS_PREFIX = "/organisations";

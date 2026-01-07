@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  Matches,
 } from 'class-validator';
 
 export class CreateShiftDto {
@@ -24,6 +25,13 @@ export class CreateShiftDto {
   @IsString()
   @MaxLength(1024)
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9a-fA-F]{6}$/, {
+    message: 'color must be a valid hex color (e.g., #ff0000)',
+  })
+  color?: string;
 
   @IsISO8601()
   startsAt!: string;
