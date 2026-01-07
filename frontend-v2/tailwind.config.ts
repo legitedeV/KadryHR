@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
 
 const config: Config = {
   darkMode: "class",
@@ -9,6 +10,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        surface: colors.zinc,
+        accent: colors.fuchsia,
         brand: {
           50: "#f4fbff",
           100: "#e4f4ff",
