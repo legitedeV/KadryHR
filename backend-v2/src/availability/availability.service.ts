@@ -303,7 +303,9 @@ export class AvailabilityService {
       throw new NotFoundException('Availability window not found');
     }
 
-    const startDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
+    const startDate = dto.startDate
+      ? new Date(dto.startDate)
+      : existing.startDate;
     const endDate = dto.endDate ? new Date(dto.endDate) : existing.endDate;
 
     if (startDate >= endDate) {

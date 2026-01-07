@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, DragEvent } from "react";
+import { useEffect, useMemo, useState, DragEvent } from "react";
 import { createPortal } from "react-dom";
 import { Avatar } from "@/components/Avatar";
 import { Modal } from "@/components/Modal";
