@@ -54,10 +54,11 @@ pm2 logs kadryhr-backend-v2 --err --lines 50
 ```
 
 You should no longer see errors like:
-- `column User.avatarUrl does not exist`
 - `column Organisation.deliveryDays does not exist`
 - `column Shift.color does not exist`
 - `table public.AvailabilityWindow does not exist`
+
+Note: The `column User.avatarUrl does not exist` error is resolved by a separate migration (`20260113100000_add_user_avatar_and_org_columns`) that will also be applied during deployment.
 
 ## Migration Details
 
