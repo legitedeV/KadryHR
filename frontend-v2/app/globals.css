@@ -30,8 +30,10 @@ body {
 
 body.dark {
   background:
-    linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(217, 70, 239, 0.04) 50%, transparent 100%),
-    linear-gradient(180deg, #0a0a0b 0%, #141416 100%);
+    radial-gradient(1200px circle at 15% -10%, rgba(56, 189, 248, 0.18), transparent 55%),
+    radial-gradient(900px circle at 80% 0%, rgba(139, 92, 246, 0.18), transparent 55%),
+    radial-gradient(800px circle at 70% 90%, rgba(34, 197, 94, 0.12), transparent 60%),
+    linear-gradient(180deg, #050508 0%, #0f1016 60%, #111321 100%);
   color: #e4e4e7;
 }
 
@@ -182,6 +184,108 @@ body.light {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.btn-hero::after {
+  content: "";
+  position: absolute;
+  inset: -150% -50%;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.6), transparent 65%);
+  transform: translateX(-60%);
+  animation: sheen 3.5s ease-in-out infinite;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.btn-hero:hover::after {
+  opacity: 0.85;
+}
+
+.btn-hero-outline {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.hero-aurora {
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 70%;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.35), transparent 55%),
+    radial-gradient(circle at 80% 30%, rgba(217, 70, 239, 0.32), transparent 60%),
+    radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.25), transparent 60%);
+  filter: blur(40px);
+  animation: aurora 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(0px);
+  animation: float 12s ease-in-out infinite;
+  opacity: 0.75;
+}
+
+.floating-orb.orb-slow {
+  animation-duration: 18s;
+}
+
+.floating-orb.orb-fast {
+  animation-duration: 9s;
+}
+
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 30px 80px -40px rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(14px);
+}
+
+.dark .glass-panel {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.2));
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: 0 30px 80px -40px rgba(15, 23, 42, 0.7);
+}
+
+@keyframes aurora {
+  0% {
+    transform: translate3d(-5%, -5%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(5%, 5%, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(-2%, 8%, 0) scale(1);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0);
+  }
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateX(-60%);
+  }
+  50%,
+  100% {
+    transform: translateX(60%);
+  }
 }
 
 .btn-secondary {
