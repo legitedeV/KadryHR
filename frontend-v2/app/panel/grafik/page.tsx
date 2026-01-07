@@ -98,6 +98,8 @@ const dowLabels = [
 ];
 
 const dowFromDate = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const AFTERNOON_START_HOUR = 14;
+const REQUIRED_AFTERNOON_COUNT = 2;
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString("pl-PL", {
@@ -594,6 +596,36 @@ export default function GrafikPage() {
     }
   };
 
+  const promotionAfternoonCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!scheduleMetadata?.promotionDays?.length) return counts;
+    const promoDates = new Set(
+      scheduleMetadata.promotionDays
+        .filter((promo) => promo.type === "ZMIANA_PROMOCJI")
+        .map((promo) => promo.date),
+    );
+    shifts.forEach((shift) => {
+      if (!shift.employeeId) return;
+      const start = new Date(shift.startsAt);
+      const dateStr = start.toISOString().slice(0, 10);
+      if (!promoDates.has(dateStr)) return;
+      if (start.getHours() < AFTERNOON_START_HOUR) return;
+      counts[dateStr] = (counts[dateStr] ?? 0) + 1;
+    });
+    return counts;
+  }, [scheduleMetadata?.promotionDays, shifts]);
+
+  const promotionWarnings = useMemo(() => {
+    if (!scheduleMetadata?.promotionDays?.length) return [];
+    return scheduleMetadata.promotionDays
+      .filter((promo) => promo.type === "ZMIANA_PROMOCJI")
+      .map((promo) => {
+        const count = promotionAfternoonCounts[promo.date] ?? 0;
+        return { date: promo.date, count };
+      })
+      .filter((promo) => promo.count < REQUIRED_AFTERNOON_COUNT);
+  }, [promotionAfternoonCounts, scheduleMetadata?.promotionDays]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -662,6 +694,37 @@ export default function GrafikPage() {
             {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
           </div>
 
+          {promotionWarnings.length > 0 && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+              <div className="flex items-start gap-2">
+                <svg className="mt-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div className="space-y-1">
+                  <p className="font-semibold">
+                    ZMIANA PROMOCJI: wymagane minimum 2 osoby na popołudniowej zmianie.
+                  </p>
+                  <ul className="space-y-0.5 text-xs">
+                    {promotionWarnings.map((warning) => (
+                      <li key={warning.date}>
+                        {new Date(warning.date).toLocaleDateString("pl-PL", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                        })}{" "}
+                        · obsada {warning.count}/{REQUIRED_AFTERNOON_COUNT}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           {employees.length > 0 && shifts.length === 0 && (
             <div className="rounded-xl border border-dashed border-surface-200/80 bg-surface-50/40 dark:border-surface-800/80 dark:bg-surface-900/40">
               <EmptyState
@@ -709,18 +772,36 @@ export default function GrafikPage() {
                             </span>
                           )}
                           {promotionInfo && (
-                            <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
-                              promotionInfo.type === 'ZMIANA_PROMOCJI' 
-                                ? 'bg-amber-500 text-white' 
-                                : 'bg-violet-500 text-white'
-                            }`}>
-                              {promotionInfo.type === 'ZMIANA_PROMOCJI' ? 'ZMIANA PROMOCJI' : 'MAŁA PROMOCJA'}
+                            <span
+                              className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
+                                promotionInfo.type === "ZMIANA_PROMOCJI"
+                                  ? "bg-amber-500 text-white"
+                                  : "bg-violet-500 text-white"
+                              }`}
+                            >
+                              {promotionInfo.type === "ZMIANA_PROMOCJI" ? "ZMIANA PROMOCJI" : "MAŁA PROMOCJA"}
                             </span>
                           )}
                           <span>{dayLabel}</span>
                           <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
                             {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
                           </span>
+                          {promotionInfo?.type === "ZMIANA_PROMOCJI" && (
+                            <div className="mt-1 flex flex-col items-center gap-0.5 text-[9px]">
+                              <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700 ring-1 ring-amber-200/60 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/60">
+                                Wymagane 2 osoby
+                              </span>
+                              <span
+                                className={`font-semibold ${
+                                  (promotionAfternoonCounts[dayDateStr] ?? 0) >= REQUIRED_AFTERNOON_COUNT
+                                    ? "text-emerald-600 dark:text-emerald-300"
+                                    : "text-rose-600 dark:text-rose-300"
+                                }`}
+                              >
+                                Popołudnie: {promotionAfternoonCounts[dayDateStr] ?? 0}/{REQUIRED_AFTERNOON_COUNT}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </th>
                     );
@@ -911,6 +992,14 @@ export default function GrafikPage() {
           <>
             <button className="btn-secondary" onClick={() => setEditorOpen(false)}>
               Anuluj
+            </button>
+            <button
+              className="btn-secondary"
+              type="button"
+              onClick={() => resetForm(form.date, form.employeeId)}
+              disabled={saving}
+            >
+              Wyczyść
             </button>
             <button className="btn-primary" onClick={handleSave} disabled={saving}>
               {saving ? "Zapisywanie..." : "Zapisz"}

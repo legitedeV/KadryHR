@@ -7,6 +7,7 @@ import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/brand/Logo";
+import { NotificationsProvider } from "@/lib/notifications-context";
 
 const navItems = [
   { href: "/panel/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -92,112 +93,114 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex">
-      {/* sidebar */}
-      <aside className="hidden md:flex md:flex-col w-64 border-r border-surface-200/80 glass dark:border-surface-800/80">
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
-          <Logo
-            variant="compact"
-            size="xs"
-            alt="KadryHR"
-            className="max-w-[140px]"
-            asLink="/panel/dashboard"
-            label="KadryHR"
-          />
-        </div>
-        <nav className="flex-1 py-6 px-4 space-y-1">
-          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
-            Nawigacja
-          </p>
-          {navItems
-            .filter((item) => {
-              // Filter by roles if specified
-              const roles = (item as { roles?: string[] }).roles;
-              if (!roles) return true;
-              return roles.includes(user.role);
-            })
-            .map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-300 dark:ring-brand-800/50"
-                    : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
-                }`}
+    <NotificationsProvider>
+      <div className="min-h-screen flex">
+        {/* sidebar */}
+        <aside className="hidden md:flex md:flex-col w-64 border-r border-surface-200/80 glass dark:border-surface-800/80">
+          <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
+            <Logo
+              variant="compact"
+              size="xs"
+              alt="KadryHR"
+              className="max-w-[140px]"
+              asLink="/panel/dashboard"
+              label="KadryHR"
+            />
+          </div>
+          <nav className="flex-1 py-6 px-4 space-y-1">
+            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
+              Nawigacja
+            </p>
+            {navItems
+              .filter((item) => {
+                // Filter by roles if specified
+                const roles = (item as { roles?: string[] }).roles;
+                if (!roles) return true;
+                return roles.includes(user.role);
+              })
+              .map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-300 dark:ring-brand-800/50"
+                      : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                  </svg>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-surface-200 to-surface-300 flex items-center justify-center text-surface-600 font-semibold dark:from-surface-700 dark:to-surface-600 dark:text-surface-300">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                    {user.name}
+                  </div>
+                  <div className="text-xs text-surface-500 dark:text-surface-400">
+                    {user.role}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-xs rounded-lg border border-surface-200 px-2.5 py-1.5 font-medium text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                </svg>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-surface-200 to-surface-300 flex items-center justify-center text-surface-600 font-semibold dark:from-surface-700 dark:to-surface-600 dark:text-surface-300">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-surface-900 dark:text-surface-100">
-                  {user.name}
-                </div>
-                <div className="text-xs text-surface-500 dark:text-surface-400">
-                  {user.role}
-                </div>
+                Wyloguj
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Żabka · demo</span>
+            </div>
+          </div>
+        </aside>
+
+        {/* main area */}
+        <div className="flex-1 flex flex-col">
+          <header className="h-16 border-b border-surface-200/80 glass px-6 flex items-center justify-between gap-4 dark:border-surface-800/80">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                  KadryHR · panel
+                </p>
+                <p className="text-base font-bold text-surface-900 dark:text-surface-50 truncate">
+                  {titleByPath[pathname] ?? "Dashboard"}
+                </p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-xs rounded-lg border border-surface-200 px-2.5 py-1.5 font-medium text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-colors"
-            >
-              Wyloguj
-            </button>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>Żabka · demo</span>
-          </div>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="hidden sm:flex items-center gap-3 text-sm">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
+                  {user.email.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-surface-600 dark:text-surface-300">
+                  {user.email}
+                </span>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 px-3 sm:px-4 lg:px-6 py-6 bg-gradient-to-b from-surface-50/80 to-surface-100/60 dark:from-surface-950 dark:to-surface-950">
+            <div className="max-w-[1600px] w-full mx-auto">{children}</div>
+          </main>
         </div>
-      </aside>
-
-      {/* main area */}
-      <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-surface-200/80 glass px-6 flex items-center justify-between gap-4 dark:border-surface-800/80">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                KadryHR · panel
-              </p>
-              <p className="text-base font-bold text-surface-900 dark:text-surface-50 truncate">
-                {titleByPath[pathname] ?? "Dashboard"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <div className="hidden sm:flex items-center gap-3 text-sm">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
-                {user.email.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-surface-600 dark:text-surface-300">
-                {user.email}
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 px-3 sm:px-4 lg:px-6 py-6 bg-gradient-to-b from-surface-50/80 to-surface-100/60 dark:from-surface-950 dark:to-surface-950">
-          <div className="max-w-[1600px] w-full mx-auto">{children}</div>
-        </main>
       </div>
-    </div>
+    </NotificationsProvider>
   );
 }
