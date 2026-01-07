@@ -345,7 +345,7 @@ export default function DyspozycjePage() {
 
                 {slots.length === 0 ? (
                   <div className="text-sm text-surface-400 dark:text-surface-500 py-2">
-                    Brak podanej dostępności – kliknij „Dodaj przedział"
+                    Brak podanej dostępności – kliknij &ldquo;Dodaj przedział&rdquo;
                   </div>
                 ) : (
                   <div className="space-y-2">

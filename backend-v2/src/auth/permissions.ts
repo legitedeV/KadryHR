@@ -4,27 +4,27 @@ export enum Permission {
   // Schedule management
   SCHEDULE_MANAGE = 'SCHEDULE_MANAGE',
   SCHEDULE_VIEW = 'SCHEDULE_VIEW',
-  
+
   // Leave/Request management
   LEAVE_APPROVE = 'LEAVE_APPROVE',
   LEAVE_REQUEST = 'LEAVE_REQUEST',
-  
+
   // Employee management
   EMPLOYEE_MANAGE = 'EMPLOYEE_MANAGE',
   EMPLOYEE_VIEW = 'EMPLOYEE_VIEW',
-  
+
   // Organisation settings
   ORGANISATION_SETTINGS = 'ORGANISATION_SETTINGS',
-  
+
   // Audit logs
   AUDIT_VIEW = 'AUDIT_VIEW',
-  
+
   // Reports
   REPORTS_EXPORT = 'REPORTS_EXPORT',
-  
+
   // Availability management
   AVAILABILITY_MANAGE = 'AVAILABILITY_MANAGE',
-  
+
   // Legacy aliases for backward compatibility
   RCP_EDIT = 'RCP_EDIT',
   REPORT_EXPORT = 'REPORT_EXPORT',
