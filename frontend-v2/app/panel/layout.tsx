@@ -9,7 +9,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationsProvider } from "@/lib/notifications-context";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  roles?: string[];
+};
+
+const navItems: NavItem[] = [
   { href: "/panel/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
   { href: "/panel/grafik", label: "Grafik", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
   { href: "/panel/dyspozycje", label: "Dyspozycje", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
@@ -21,6 +28,9 @@ const navItems = [
   { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "MANAGER"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
+
+// Height for mobile menu content area (viewport height minus header and footer)
+const MOBILE_MENU_CONTENT_HEIGHT = 'calc(100vh - 180px)';
 
 const titleByPath: Record<string, string> = {
   "/panel/grafik": "Grafik zmian",
@@ -115,9 +125,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             {navItems
               .filter((item) => {
                 // Filter by roles if specified
-                const roles = (item as { roles?: string[] }).roles;
-                if (!roles) return true;
-                return roles.includes(user.role);
+                if (!item.roles) return true;
+                return item.roles.includes(user.role);
               })
               .map((item) => {
               const active = pathname === item.href;
@@ -202,16 +211,15 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               </svg>
             </button>
           </div>
-          <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+          <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto" style={{ maxHeight: MOBILE_MENU_CONTENT_HEIGHT }}>
             <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
               .filter((item) => {
                 // Filter by roles if specified
-                const roles = (item as { roles?: string[] }).roles;
-                if (!roles) return true;
-                return roles.includes(user.role);
+                if (!item.roles) return true;
+                return item.roles.includes(user.role);
               })
               .map((item) => {
               const active = pathname === item.href;
