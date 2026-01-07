@@ -20,6 +20,7 @@ frontend/.env
 !backend-v2/docs/BACKEND_V2_ARCHITECTURE.md
 !backend-v2/docs/FEATURE_GAP_ANALYSIS.md
 !backend-v2/docs/RUNTIME_DEPLOYMENT.md
+!backend-v2/docs/DEPLOYMENT_INSTRUCTIONS.md
 
 .env
 backend/.env
