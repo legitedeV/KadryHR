@@ -18,6 +18,7 @@ import { getAccessToken } from "@/lib/auth";
 import { usePermissions } from "@/lib/use-permissions";
 import { Modal } from "@/components/Modal";
 import { pushToast } from "@/lib/toast";
+import { EmptyState } from "@/components/EmptyState";
 
 const LEAVE_TYPE_OPTIONS: { value: RequestType; label: string }[] = [
   { value: "PAID_LEAVE", label: "Urlop płatny" },
@@ -500,23 +501,24 @@ export default function WnioskiPage() {
                   {requests.length === 0 && (
                     <tr>
                       <td colSpan={4} className="px-4 py-10 text-center">
-                        <div className="flex flex-col items-center">
-                          <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
-                            <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <EmptyState
+                          icon={
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                               />
                             </svg>
-                          </div>
-                          <p className="text-sm text-surface-500 dark:text-surface-400">
-                            Brak wniosków do wyświetlenia.
-                          </p>
-                          <button onClick={openCreateModal} className="mt-3 btn-primary px-3 py-2 text-sm">
-                            Dodaj pierwszy wniosek
-                          </button>
-                        </div>
+                          }
+                          title="Brak wniosków"
+                          description="Gdy pracownicy złożą wnioski, zobaczysz je na tej liście."
+                          action={
+                            <button onClick={openCreateModal} className="btn-primary px-3 py-2 text-sm">
+                              Dodaj pierwszy wniosek
+                            </button>
+                          }
+                        />
                       </td>
                     </tr>
                   )}
@@ -620,7 +622,7 @@ export default function WnioskiPage() {
                   {canCancelSelected && (
                     <button
                       onClick={() => openStatusModal("CANCELLED")}
-                      className="px-3 py-2 text-sm rounded-xl border border-surface-200 bg-white text-surface-700 hover:bg-surface-100 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-300 dark:hover:bg-surface-700"
+                      className="btn-danger px-3 py-2 text-sm"
                     >
                       <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -632,7 +634,7 @@ export default function WnioskiPage() {
                     <>
                       <button
                         onClick={() => openStatusModal("APPROVED")}
-                        className="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                        className="btn-primary px-3 py-2 text-sm"
                       >
                         <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -641,7 +643,7 @@ export default function WnioskiPage() {
                       </button>
                       <button
                         onClick={() => openStatusModal("REJECTED")}
-                        className="px-3 py-2 text-sm rounded-xl bg-rose-600 text-white hover:bg-rose-700"
+                        className="btn-danger px-3 py-2 text-sm"
                       >
                         <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -868,9 +870,9 @@ export default function WnioskiPage() {
             <button
               className={
                 statusAction === "APPROVED"
-                  ? "px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-semibold"
-                  : statusAction === "REJECTED"
-                    ? "px-4 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 font-semibold"
+                  ? "btn-primary"
+                  : statusAction === "REJECTED" || statusAction === "CANCELLED"
+                    ? "btn-danger"
                     : "btn-secondary"
               }
               onClick={handleStatusChange}

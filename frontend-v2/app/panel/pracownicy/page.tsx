@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 import { Modal } from "@/components/Modal";
+import { EmptyState } from "@/components/EmptyState";
 
 function formatEmployeeName(employee: EmployeeRecord) {
   const fullName = `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim();
@@ -254,18 +255,30 @@ export default function PracownicyPage() {
                 {employees.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-5 py-10 text-center">
-                      <div className="flex flex-col items-center">
-                        <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <EmptyState
+                        icon={
+                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                             />
                           </svg>
-                        </div>
-                        <p className="text-sm text-surface-500 dark:text-surface-400">Brak pracowników do wyświetlenia.</p>
-                      </div>
+                        }
+                        title="Brak pracowników"
+                        description="Dodaj członków zespołu, aby przypisać ich do grafików i wniosków."
+                        action={
+                          <button
+                            className="btn-primary px-3 py-2 text-sm"
+                            onClick={() => {
+                              resetForm();
+                              setCreateModalOpen(true);
+                            }}
+                          >
+                            Dodaj pracownika
+                          </button>
+                        }
+                      />
                     </td>
                   </tr>
                 )}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 type LogoVariant = "full" | "compact" | "icon";
-type LogoSize = "sm" | "md" | "lg";
+type LogoSize = "xs" | "sm" | "md" | "lg";
 
 type LogoProps = {
   variant?: LogoVariant;
@@ -39,6 +39,7 @@ const baseDimensions: Record<LogoVariant, { width: number; height: number }> = {
 };
 
 const sizeScale: Record<LogoSize, number> = {
+  xs: 0.25,
   sm: 0.6,
   md: 0.8,
   lg: 1,

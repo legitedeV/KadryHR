@@ -98,9 +98,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
           <Logo
             variant="compact"
-            size="sm"
+            size="xs"
             alt="KadryHR"
-            className="max-w-[190px]"
+            className="max-w-[140px]"
             asLink="/panel/dashboard"
             label="KadryHR"
           />
