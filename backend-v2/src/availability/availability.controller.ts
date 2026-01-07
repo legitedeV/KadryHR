@@ -22,6 +22,8 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import { QueryAvailabilityDto } from './dto/query-availability.dto';
+import { CreateAvailabilityWindowDto } from './dto/create-availability-window.dto';
+import { UpdateAvailabilityWindowDto } from './dto/update-availability-window.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 
@@ -153,5 +155,99 @@ export class AvailabilityController {
     @Param('id') id: string,
   ) {
     return this.availabilityService.remove(user.organisationId, id);
+  }
+
+  // ==========================================
+  // AVAILABILITY WINDOWS ENDPOINTS (Task 1)
+  // ==========================================
+
+  /**
+   * Get all availability windows (managers/admins)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('windows')
+  async findAllWindows(@CurrentUser() user: AuthenticatedUser) {
+    return this.availabilityService.findAllWindows(user.organisationId);
+  }
+
+  /**
+   * Get active (open) availability windows - accessible by all users
+   */
+  @Get('windows/active')
+  async findActiveWindows(@CurrentUser() user: AuthenticatedUser) {
+    return this.availabilityService.findActiveWindows(user.organisationId);
+  }
+
+  /**
+   * Get a specific availability window
+   */
+  @Get('windows/:windowId')
+  async findWindowById(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+  ) {
+    return this.availabilityService.findWindowById(
+      user.organisationId,
+      windowId,
+    );
+  }
+
+  /**
+   * Create a new availability window (managers/admins only)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Post('windows')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_CREATE',
+    entityType: 'availability_window',
+    captureBody: true,
+  })
+  async createWindow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateAvailabilityWindowDto,
+  ) {
+    return this.availabilityService.createWindow(user.organisationId, dto);
+  }
+
+  /**
+   * Update an availability window (managers/admins only)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Patch('windows/:windowId')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_UPDATE',
+    entityType: 'availability_window',
+    entityIdParam: 'windowId',
+    fetchBefore: true,
+    captureBody: true,
+  })
+  async updateWindow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+    @Body() dto: UpdateAvailabilityWindowDto,
+  ) {
+    return this.availabilityService.updateWindow(
+      user.organisationId,
+      windowId,
+      dto,
+    );
+  }
+
+  /**
+   * Delete an availability window (managers/admins only)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Delete('windows/:windowId')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_DELETE',
+    entityType: 'availability_window',
+    entityIdParam: 'windowId',
+    fetchBefore: true,
+  })
+  async deleteWindow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+  ) {
+    return this.availabilityService.deleteWindow(user.organisationId, windowId);
   }
 }

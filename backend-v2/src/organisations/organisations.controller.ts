@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import { OrganisationsService } from './organisations.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -31,5 +31,21 @@ export class OrganisationsController {
   @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
   async getMembers(@CurrentUser() user: AuthenticatedUser) {
     return this.organisationsService.getMembers(user.organisationId);
+  }
+
+  /**
+   * Get schedule metadata (delivery days, promotion labels) for a date range
+   */
+  @Get('me/schedule-metadata')
+  async getScheduleMetadata(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    return this.organisationsService.getScheduleMetadata(
+      user.organisationId,
+      new Date(from),
+      new Date(to),
+    );
   }
 }

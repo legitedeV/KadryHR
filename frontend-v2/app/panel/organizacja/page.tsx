@@ -11,6 +11,7 @@ import {
   apiUpdateMemberRole,
   OrganisationMember,
   User,
+  Weekday,
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 import { Avatar } from "@/components/Avatar";
@@ -28,6 +29,16 @@ const CATEGORIES = [
   "Inne",
 ];
 
+const WEEKDAY_OPTIONS: { key: Weekday; label: string }[] = [
+  { key: "MONDAY", label: "Poniedziałek" },
+  { key: "TUESDAY", label: "Wtorek" },
+  { key: "WEDNESDAY", label: "Środa" },
+  { key: "THURSDAY", label: "Czwartek" },
+  { key: "FRIDAY", label: "Piątek" },
+  { key: "SATURDAY", label: "Sobota" },
+  { key: "SUNDAY", label: "Niedziela" },
+];
+
 export default function OrganisationSettingsPage() {
   const router = useRouter();
   const hasSession = useMemo(() => !!getAccessToken(), []);
@@ -37,11 +48,17 @@ export default function OrganisationSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
+  // Form state - basic info
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+
+  // Form state - schedule settings
+  const [deliveryDays, setDeliveryDays] = useState<Weekday[]>([]);
+  const [deliveryLabelColor, setDeliveryLabelColor] = useState("#22c55e");
+  const [promotionCycleStartDate, setPromotionCycleStartDate] = useState("");
+  const [promotionCycleFrequency, setPromotionCycleFrequency] = useState(14);
 
   // Role modal
   const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -69,11 +86,17 @@ export default function OrganisationSettingsPage() {
         setUser(userData);
         setMembers(membersData);
 
-        // Initialize form
+        // Initialize form - basic info
         setName(orgData.name);
         setDescription(orgData.description ?? "");
         setCategory(orgData.category ?? "");
         setLogoUrl(orgData.logoUrl ?? "");
+
+        // Initialize form - schedule settings
+        setDeliveryDays(orgData.deliveryDays ?? []);
+        setDeliveryLabelColor(orgData.deliveryLabelColor ?? "#22c55e");
+        setPromotionCycleStartDate(orgData.promotionCycleStartDate?.slice(0, 10) ?? "");
+        setPromotionCycleFrequency(orgData.promotionCycleFrequency ?? 14);
       })
       .catch((err) => {
         console.error(err);
@@ -108,6 +131,10 @@ export default function OrganisationSettingsPage() {
         description: description.trim() || undefined,
         category: category || undefined,
         logoUrl: logoUrl.trim() || undefined,
+        deliveryDays: deliveryDays.length > 0 ? deliveryDays : undefined,
+        deliveryLabelColor: deliveryLabelColor || undefined,
+        promotionCycleStartDate: promotionCycleStartDate || undefined,
+        promotionCycleFrequency: promotionCycleFrequency || undefined,
       });
       pushToast({
         title: "Sukces",
@@ -124,7 +151,13 @@ export default function OrganisationSettingsPage() {
     } finally {
       setSaving(false);
     }
-  }, [name, description, category, logoUrl]);
+  }, [name, description, category, logoUrl, deliveryDays, deliveryLabelColor, promotionCycleStartDate, promotionCycleFrequency]);
+
+  const toggleDeliveryDay = (day: Weekday) => {
+    setDeliveryDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
 
   const openRoleModal = (member: OrganisationMember) => {
     setSelectedMember(member);
@@ -322,6 +355,111 @@ export default function OrganisationSettingsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Schedule Settings - Delivery Days */}
+        <div className="card p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 dark:from-emerald-900/50 dark:to-emerald-800/50 dark:text-emerald-300">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="section-label">Ustawienia grafiku</p>
+              <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+                Dni dostawy (Żabka)
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-surface-700 dark:text-surface-200 mb-3">
+                Wybierz dni dostawy
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAY_OPTIONS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+                      deliveryDays.includes(key)
+                        ? "bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-900/50 dark:border-emerald-700 dark:text-emerald-300"
+                        : "bg-surface-50 border-surface-200 text-surface-600 hover:border-surface-300 dark:bg-surface-800 dark:border-surface-700 dark:text-surface-400 dark:hover:border-surface-600"
+                    }`}
+                    onClick={() => toggleDeliveryDay(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+              Kolor etykiety &quot;DOSTAWA&quot;
+              <div className="flex items-center gap-3 mt-1">
+                <input
+                  type="color"
+                  className="w-10 h-10 rounded-md border border-surface-200 dark:border-surface-700 cursor-pointer"
+                  value={deliveryLabelColor}
+                  onChange={(e) => setDeliveryLabelColor(e.target.value)}
+                />
+                <span className="text-sm text-surface-500 dark:text-surface-400">
+                  {deliveryLabelColor}
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Schedule Settings - Promotion Cycle */}
+        <div className="card p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 dark:from-amber-900/50 dark:to-amber-800/50 dark:text-amber-300">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <div>
+              <p className="section-label">Ustawienia grafiku</p>
+              <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+                Cykl promocji
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+              Data rozpoczęcia cyklu
+              <input
+                type="date"
+                className="input mt-1"
+                value={promotionCycleStartDate}
+                onChange={(e) => setPromotionCycleStartDate(e.target.value)}
+              />
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                Wybierz wtorek, od którego zaczyna się cykl promocji
+              </p>
+            </label>
+
+            <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+              Częstotliwość (dni)
+              <select
+                className="input mt-1"
+                value={promotionCycleFrequency}
+                onChange={(e) => setPromotionCycleFrequency(Number(e.target.value))}
+              >
+                <option value={7}>Co tydzień</option>
+                <option value={14}>Co 2 tygodnie</option>
+                <option value={21}>Co 3 tygodnie</option>
+                <option value={28}>Co 4 tygodnie</option>
+              </select>
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                Pierwszy wtorek cyklu = &quot;ZMIANA PROMOCJI&quot;, następny = &quot;MAŁA PROMOCJA&quot;
+              </p>
+            </label>
           </div>
         </div>
       </div>

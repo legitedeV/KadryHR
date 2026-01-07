@@ -94,6 +94,14 @@ model Organisation {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   preventShiftOnApprovedLeave Boolean @default(false)
+  
+  // Delivery days configuration (Task 4.4)
+  deliveryDays      Weekday[] @default([])
+  deliveryLabelColor String?  @default("#22c55e")
+  
+  // Promotion change configuration (Task 4.5)
+  promotionCycleStartDate  DateTime?
+  promotionCycleFrequency  Int?      @default(14) // Every N days
 
   users       User[]
   employees   Employee[]
@@ -101,6 +109,7 @@ model Organisation {
   locationAssignments LocationAssignment[]
   shifts      Shift[]
   availability Availability[]
+  availabilityWindows AvailabilityWindow[]
   leaveRequests LeaveRequest[]
   leaveTypes  LeaveType[]
   auditLogs   AuditLog[]
@@ -109,6 +118,7 @@ model Organisation {
   notificationCampaigns NotificationCampaign[]
   newsletterSubscribers NewsletterSubscriber[]
   employeeInvitations EmployeeInvitation[]
+  rolePermissions RolePermission[]
 }
 
 model User {
@@ -199,6 +209,7 @@ model Shift {
   locationId     String?
   position       String?
   notes          String?
+  color          String?   // Task 4.2: Shift color
   startsAt       DateTime
   endsAt         DateTime
   createdAt      DateTime  @default(now())
@@ -445,4 +456,53 @@ model EmployeeInvitation {
   @@index([employeeId])
   @@index([tokenHash])
   @@index([status])
+}
+
+// Task 1: Availability Windows for submission periods
+model AvailabilityWindow {
+  id             String   @id @default(uuid())
+  organisationId String
+  title          String   @default("Składanie dyspozycji")
+  startDate      DateTime // Window covers availability from this date
+  endDate        DateTime // Window covers availability until this date
+  deadline       DateTime // Deadline for submitting availability
+  isOpen         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([deadline])
+  @@index([isOpen])
+}
+
+// Task 2: Role Permissions for granular access control
+enum PermissionType {
+  SCHEDULE_MANAGE
+  SCHEDULE_VIEW
+  LEAVE_APPROVE
+  LEAVE_REQUEST
+  EMPLOYEE_MANAGE
+  EMPLOYEE_VIEW
+  ORGANISATION_SETTINGS
+  AUDIT_VIEW
+  REPORTS_EXPORT
+  AVAILABILITY_MANAGE
+}
+
+model RolePermission {
+  id             String         @id @default(uuid())
+  organisationId String
+  role           Role
+  permission     PermissionType
+  enabled        Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, role, permission])
+  @@index([organisationId])
+  @@index([role])
 }

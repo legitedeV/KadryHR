@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Avatar } from "@/components/Avatar";
 import {
   EmployeeRecord,
   RequestItem,
@@ -18,7 +19,9 @@ type ShiftView = {
   end: string;
   status: "ASSIGNED" | "UNASSIGNED";
   employeeName: string;
+  employeeAvatar?: string | null;
   locationName: string;
+  color?: string | null;
 };
 
 type DashboardData = {
@@ -54,7 +57,9 @@ function mapShift(record: ShiftRecord): ShiftView {
     end: formatTime(endDate),
     status: record.employeeId ? "ASSIGNED" : "UNASSIGNED",
     employeeName,
+    employeeAvatar: record.employee?.avatarUrl ?? null,
     locationName,
+    color: record.color ?? null,
   };
 }
 
@@ -77,6 +82,22 @@ function getWeekRange() {
     to: fmt(sunday),
     label: `${monday.toLocaleDateString("pl-PL")} – ${sunday.toLocaleDateString("pl-PL")}`,
   };
+}
+
+// Get next 3 days from today
+function getNext3Days(): { date: string; dayName: string; dayNumber: string }[] {
+  const result = [];
+  const now = new Date();
+  for (let i = 0; i < 3; i++) {
+    const date = new Date(now);
+    date.setDate(now.getDate() + i);
+    result.push({
+      date: date.toISOString().slice(0, 10),
+      dayName: date.toLocaleDateString("pl-PL", { weekday: "short" }),
+      dayNumber: date.toLocaleDateString("pl-PL", { day: "numeric", month: "short" }),
+    });
+  }
+  return result;
 }
 
 export default function DashboardPage() {
@@ -153,6 +174,13 @@ export default function DashboardPage() {
   const unassigned = shifts.filter((s) => s.status === "UNASSIGNED");
   const pendingRequests = requests.filter((r) => r.status === "PENDING");
   const assignedEmployees = employees.filter((e) => e.locations.length > 0).length;
+  
+  // 3-day preview data
+  const next3Days = getNext3Days();
+  const shiftsByDay = next3Days.map(day => ({
+    ...day,
+    shifts: shifts.filter(s => s.date === day.date),
+  }));
 
   const totalHoursWeek = shifts.reduce((sum, s) => {
     const startParts = parseTimeLabel(s.start);
@@ -340,6 +368,102 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* 3-Day Schedule Preview */}
+      <div className="card p-6">
+        <div className="flex items-center gap-4 mb-5">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <p className="section-label">Podgląd grafiku</p>
+            <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+              Najbliższe 3 dni
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {shiftsByDay.map((day, idx) => (
+            <div 
+              key={day.date} 
+              className={`rounded-xl border p-4 ${
+                idx === 0 
+                  ? 'border-brand-200 bg-brand-50/30 dark:border-brand-800 dark:bg-brand-950/20' 
+                  : 'border-surface-200/80 bg-surface-50/50 dark:border-surface-700/80 dark:bg-surface-800/50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${
+                    idx === 0 
+                      ? 'text-brand-600 dark:text-brand-400' 
+                      : 'text-surface-500 dark:text-surface-400'
+                  }`}>
+                    {day.dayName}
+                  </p>
+                  <p className="text-sm font-bold text-surface-900 dark:text-surface-50">
+                    {day.dayNumber}
+                  </p>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  day.shifts.length > 0 
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' 
+                    : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'
+                }`}>
+                  {day.shifts.length} {day.shifts.length === 1 ? 'zmiana' : day.shifts.length > 1 && day.shifts.length < 5 ? 'zmiany' : 'zmian'}
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {day.shifts.length === 0 ? (
+                  <div className="flex items-center justify-center py-4 text-center">
+                    <p className="text-xs text-surface-400 dark:text-surface-500">Brak zmian</p>
+                  </div>
+                ) : (
+                  day.shifts.slice(0, 5).map((shift) => (
+                    <div 
+                      key={shift.id} 
+                      className="flex items-center gap-2 rounded-lg border border-surface-200/60 bg-white px-2.5 py-2 dark:border-surface-700/60 dark:bg-surface-900/50"
+                      style={shift.color ? { borderLeftColor: shift.color, borderLeftWidth: '3px' } : undefined}
+                    >
+                      <Avatar 
+                        name={shift.employeeName} 
+                        src={shift.employeeAvatar} 
+                        size="sm" 
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-surface-900 dark:text-surface-50 truncate">
+                          {shift.employeeName}
+                        </p>
+                        <p className="text-[10px] text-surface-500 dark:text-surface-400">
+                          {shift.start}–{shift.end}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {day.shifts.length > 5 && (
+                  <p className="text-xs text-center text-surface-400 dark:text-surface-500 pt-1">
+                    +{day.shifts.length - 5} więcej...
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 text-center">
+          <a 
+            href="/panel/grafik" 
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+          >
+            Przejdź do pełnego grafiku →
+          </a>
         </div>
       </div>
     </div>
