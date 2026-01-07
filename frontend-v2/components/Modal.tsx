@@ -26,7 +26,7 @@ export function Modal({ open, title, description, onClose, children, footer }: M
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-surface-900/50 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-surface-200/80 bg-white/90 p-6 shadow-elevated ring-1 ring-surface-200 dark:border-surface-800 dark:bg-surface-900/90 dark:ring-surface-800">
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-surface-200/80 bg-white/90 p-6 shadow-elevated ring-1 ring-surface-200 dark:border-surface-800 dark:bg-surface-900/90 dark:ring-surface-800 max-h-[calc(100vh-120px)] overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">{title}</h2>
@@ -45,7 +45,11 @@ export function Modal({ open, title, description, onClose, children, footer }: M
         </div>
 
         <div className="mt-4 space-y-4">{children}</div>
-        {footer && <div className="mt-6 flex items-center justify-end gap-3">{footer}</div>}
+        {footer && (
+          <div className="sticky bottom-0 mt-6 border-t border-surface-200/80 bg-white/90 pt-4 backdrop-blur dark:border-surface-800/80 dark:bg-surface-900/90">
+            <div className="flex items-center justify-end gap-3">{footer}</div>
+          </div>
+        )}
       </div>
     </div>
   );
