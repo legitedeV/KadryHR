@@ -410,13 +410,6 @@ export default function GrafikPage() {
     return grid;
   }, [employees, availability]);
 
-  // Format minutes to time string
-  const formatMinutes = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
-  };
-
   const handleWeekChange = (direction: "next" | "prev") => {
     const currentStart = new Date(range.from);
     const delta = direction === "next" ? 7 : -7;

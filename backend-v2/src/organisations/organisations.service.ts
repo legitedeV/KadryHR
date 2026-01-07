@@ -104,6 +104,10 @@ export class OrganisationsService {
     deliveryDays: string[];
     promotionDays: Array<{ date: string; type: 'ZMIANA_PROMOCJI' | 'MALA_PROMOCJA' }>;
   }> {
+    const DAYS_IN_WEEK = 7;
+    const TUESDAY = 2; // JS day number for Tuesday
+    const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+
     const org = await this.findOne(organisationId);
     
     const deliveryDays: string[] = [];
@@ -137,17 +141,17 @@ export class OrganisationsService {
       if (org.promotionCycleStartDate && org.promotionCycleFrequency) {
         const startDate = new Date(org.promotionCycleStartDate);
         const daysDiff = Math.floor(
-          (current.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+          (current.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY
         );
         
-        // Check if this is a Tuesday (day 2)
-        if (jsDay === 2 && daysDiff >= 0) {
+        // Check if this is a Tuesday
+        if (jsDay === TUESDAY && daysDiff >= 0) {
           const cyclePosition = daysDiff % (org.promotionCycleFrequency * 2);
           
-          if (cyclePosition < 7) {
+          if (cyclePosition < DAYS_IN_WEEK) {
             // First Tuesday in the 2-week cycle = ZMIANA PROMOCJI
             promotionDays.push({ date: dateStr, type: 'ZMIANA_PROMOCJI' });
-          } else if (cyclePosition >= org.promotionCycleFrequency && cyclePosition < org.promotionCycleFrequency + 7) {
+          } else if (cyclePosition >= org.promotionCycleFrequency && cyclePosition < org.promotionCycleFrequency + DAYS_IN_WEEK) {
             // Second Tuesday in the 2-week cycle = MALA PROMOCJA
             promotionDays.push({ date: dateStr, type: 'MALA_PROMOCJA' });
           }

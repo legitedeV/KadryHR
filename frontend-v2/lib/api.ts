@@ -1216,7 +1216,6 @@ export async function apiListAuditLogs(
 }
 
 // Organisation API
-// Organisation API
 export interface OrganisationDetails {
   id: string;
   name: string;
