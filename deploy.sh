@@ -49,6 +49,9 @@ else
   echo "==> Backend deps unchanged – skipping npm ci"
 fi
 
+echo "==> Running database migrations"
+npx prisma migrate deploy
+
 echo "==> Building backend"
 npm run build
 
