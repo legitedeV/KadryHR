@@ -14,6 +14,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { LeaveTypesModule } from './leave-types/leave-types.module';
 import { EmailModule } from './email/email.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { ContractsModule } from './contracts/contracts.module';
+import { PayrollModule } from './payroll/payroll.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { NewsletterModule } from './newsletter/newsletter.module';
     NotificationsModule,
     EmailModule,
     NewsletterModule,
+    ContractsModule,
+    PayrollModule,
+    DocumentsModule,
   ],
 })
 export class AppModule {}

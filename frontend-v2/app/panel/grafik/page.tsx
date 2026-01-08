@@ -19,6 +19,7 @@ import {
   apiListEmployees,
   apiListLocations,
   apiPublishSchedule,
+  apiClearWeek,
   apiUpdateShift,
   apiGetScheduleMetadata,
 } from "@/lib/api";
@@ -292,6 +293,8 @@ export default function GrafikPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [clearWeekOpen, setClearWeekOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ShiftRecord | null>(null);
   const [editingShift, setEditingShift] = useState<ShiftRecord | null>(null);
@@ -596,6 +599,30 @@ export default function GrafikPage() {
     }
   };
 
+  const openClearWeekModal = () => {
+    setClearWeekOpen(true);
+  };
+
+  const handleClearWeek = async () => {
+    setClearing(true);
+    setFormError(null);
+    try {
+      const result = await apiClearWeek({
+        from: range.from,
+        to: range.to,
+        // locationId can be added here if location filter is implemented
+      });
+      setShifts([]);
+      setFormSuccess(`Usunięto ${result.deletedCount} zmian z tego tygodnia.`);
+      setClearWeekOpen(false);
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się wyczyścić tygodnia.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const promotionAfternoonCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     if (!scheduleMetadata?.promotionDays?.length) return counts;
@@ -650,6 +677,13 @@ export default function GrafikPage() {
           </div>
           <button className="btn-secondary" onClick={openPublishModal}>
             Opublikuj tydzień
+          </button>
+          <button 
+            className="btn-secondary text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/50" 
+            onClick={openClearWeekModal}
+            disabled={shifts.length === 0}
+          >
+            Wyczyść tydzień
           </button>
         </div>
       </div>
@@ -1178,6 +1212,35 @@ export default function GrafikPage() {
             Zakres: <span className="font-semibold">{range.label}</span>
           </p>
           <p>Powiadomienia zostaną wysłane do wszystkich pracowników przypisanych do zmian w tym tygodniu.</p>
+        </div>
+      </Modal>
+
+      <Modal
+        open={clearWeekOpen}
+        title="Wyczyść tydzień"
+        description="Usuń wszystkie zmiany z wybranego tygodnia. Ta akcja jest nieodwracalna."
+        onClose={() => setClearWeekOpen(false)}
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setClearWeekOpen(false)}>
+              Anuluj
+            </button>
+            <button className="btn-danger" onClick={handleClearWeek} disabled={clearing}>
+              {clearing ? "Usuwanie..." : "Wyczyść tydzień"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
+          <p>
+            Zakres: <span className="font-semibold">{range.label}</span>
+          </p>
+          <p>
+            Liczba zmian do usunięcia: <span className="font-semibold">{shifts.length}</span>
+          </p>
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200">
+            ⚠️ Ostrzeżenie: Wszystkie zmiany z tego tygodnia zostaną trwale usunięte.
+          </div>
         </div>
       </Modal>
 

@@ -524,4 +524,30 @@ export class ShiftsService {
       });
     }
   }
+
+  /**
+   * Clear all shifts for a given week (date range)
+   * Optionally filter by location
+   */
+  async clearWeek(
+    organisationId: string,
+    dateRange: { from: Date; to: Date },
+    locationId?: string,
+  ): Promise<{ deletedCount: number }> {
+    const where: any = {
+      organisationId,
+      startsAt: { gte: dateRange.from },
+      endsAt: { lte: dateRange.to },
+    };
+
+    if (locationId) {
+      where.locationId = locationId;
+    }
+
+    const result = await this.prisma.shift.deleteMany({
+      where,
+    });
+
+    return { deletedCount: result.count };
+  }
 }

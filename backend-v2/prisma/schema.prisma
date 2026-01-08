@@ -119,6 +119,9 @@ model Organisation {
   newsletterSubscribers NewsletterSubscriber[]
   employeeInvitations EmployeeInvitation[]
   rolePermissions RolePermission[]
+  employmentContracts EmploymentContract[]
+  compensations Compensation[]
+  employeeDocuments EmployeeDocument[]
 }
 
 model User {
@@ -166,8 +169,100 @@ model Employee {
   locations    LocationAssignment[]
   leaveRequests LeaveRequest[]
   invitations EmployeeInvitation[]
+  contracts    EmploymentContract[]
+  documents    EmployeeDocument[]
 
   @@index([organisationId])
+}
+
+// HR Management & Payroll models
+enum ContractType {
+  UOP  // Umowa o pracę (Employment contract)
+  UZ   // Umowa zlecenie (Contract of mandate)
+  UOD  // Umowa o dzieło (Contract for specific work)
+  B2B  // Business to business
+}
+
+enum ContractStatus {
+  ACTIVE
+  ENDED
+  SUSPENDED
+}
+
+enum WorkTimeType {
+  FULL_TIME
+  PART_TIME
+  TEMPORARY
+}
+
+enum CompensationType {
+  MONTHLY_SALARY
+  HOURLY_RATE
+}
+
+model EmploymentContract {
+  id             String         @id @default(uuid())
+  organisationId String
+  employeeId     String
+  type           ContractType
+  status         ContractStatus @default(ACTIVE)
+  workTimeType   WorkTimeType   @default(FULL_TIME)
+  startDate      DateTime
+  endDate        DateTime?
+  position       String?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  compensations Compensation[]
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+model Compensation {
+  id             String           @id @default(uuid())
+  organisationId String
+  contractId     String
+  type           CompensationType
+  amount         Float            // Monthly salary or hourly rate in PLN
+  currency       String           @default("PLN")
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organisation Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  contract     EmploymentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([contractId])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model EmployeeDocument {
+  id             String   @id @default(uuid())
+  organisationId String
+  employeeId     String
+  name           String
+  description    String?
+  filename       String   // Original filename
+  storagePath    String   // Path to file in storage
+  mimeType       String
+  fileSize       Int      // Size in bytes
+  uploadedBy     String?  // User ID who uploaded
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([employeeId])
 }
 
 model Location {
