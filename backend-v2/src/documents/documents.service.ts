@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { Role } from '@prisma/client';
@@ -112,11 +116,7 @@ export class DocumentsService {
     return document;
   }
 
-  async remove(
-    organisationId: string,
-    employeeId: string,
-    documentId: string,
-  ) {
+  async remove(organisationId: string, employeeId: string, documentId: string) {
     const document = await this.prisma.employeeDocument.findFirst({
       where: {
         id: documentId,
