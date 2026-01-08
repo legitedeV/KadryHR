@@ -21,6 +21,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { EmployeesService } from '../employees/employees.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
+import { ClearWeekDto } from './dto/clear-week.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 import { Permission } from '../auth/permissions';
@@ -150,6 +151,38 @@ export class ShiftsController {
     return {
       success: true,
       notified: body.employeeIds.length,
+    };
+  }
+
+  /**
+   * Clear all shifts for a given week (date range)
+   * Requires SCHEDULE_MANAGE permission (Owner/Manager only)
+   */
+  @RequirePermissions(Permission.RCP_EDIT)
+  @Post('clear-week')
+  @AuditLog({
+    action: 'SCHEDULE_CLEAR_WEEK',
+    entityType: 'schedule',
+    captureBody: true,
+  })
+  async clearWeek(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ClearWeekDto,
+  ) {
+    const dateRange = {
+      from: new Date(dto.from),
+      to: new Date(dto.to),
+    };
+
+    const result = await this.shiftsService.clearWeek(
+      user.organisationId,
+      dateRange,
+      dto.locationId,
+    );
+
+    return {
+      success: true,
+      deletedCount: result.deletedCount,
     };
   }
 }

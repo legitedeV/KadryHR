@@ -458,6 +458,18 @@ export async function apiPublishSchedule(payload: {
   });
 }
 
+export async function apiClearWeek(payload: {
+  from: string;
+  to: string;
+  locationId?: string;
+}): Promise<{ success: boolean; deletedCount: number }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean; deletedCount: number }>(`${SHIFTS_PREFIX}/clear-week`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiGetShiftSummary(params: {
   from: string;
   to: string;
