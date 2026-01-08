@@ -16,6 +16,7 @@ import { EmailModule } from './email/email.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PayrollModule } from './payroll/payroll.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PayrollModule } from './payroll/payroll.module';
     NewsletterModule,
     ContractsModule,
     PayrollModule,
+    DocumentsModule,
   ],
 })
 export class AppModule {}
