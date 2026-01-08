@@ -224,7 +224,9 @@ export class PayrollService {
 
     const lines: string[] = [];
     lines.push('# Podsumowanie wynagrodzeń');
-    lines.push(`# Pracownik: ${summary.employee.firstName} ${summary.employee.lastName}`);
+    lines.push(
+      `# Pracownik: ${summary.employee.firstName} ${summary.employee.lastName}`,
+    );
     lines.push(`# Miesiąc: ${summary.month}`);
     lines.push('');
 
@@ -232,13 +234,17 @@ export class PayrollService {
     lines.push('Kategoria,Wartość');
     lines.push(`Łączne godziny,${summary.summary.totalHours}`);
     lines.push(`Liczba zmian,${summary.summary.totalShifts}`);
-    lines.push(`Szacowane wynagrodzenie brutto (PLN),${summary.summary.estimatedGross}`);
+    lines.push(
+      `Szacowane wynagrodzenie brutto (PLN),${summary.summary.estimatedGross}`,
+    );
     lines.push('');
 
     lines.push('Podział na tygodnie');
     lines.push('Tydzień (start),Tydzień (koniec),Godziny,Liczba zmian');
     for (const week of summary.byWeek) {
-      lines.push(`${week.weekStart},${week.weekEnd},${week.hours},${week.shifts}`);
+      lines.push(
+        `${week.weekStart},${week.weekEnd},${week.hours},${week.shifts}`,
+      );
     }
     lines.push('');
 
