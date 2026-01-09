@@ -534,11 +534,14 @@ body.light {
 }
 
 .sidebar-glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(246, 246, 247, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(244, 248, 255, 0.92) 100%);
 }
 
 .dark .sidebar-glass {
-  background: linear-gradient(180deg, rgba(15, 16, 22, 0.95) 0%, rgba(10, 11, 17, 0.95) 100%);
+  background:
+    radial-gradient(260px circle at 85% 20%, rgba(192, 38, 211, 0.18), transparent 65%),
+    radial-gradient(220px circle at 15% 10%, rgba(66, 143, 255, 0.2), transparent 60%),
+    linear-gradient(180deg, rgba(12, 16, 28, 0.97) 0%, rgba(10, 12, 20, 0.97) 100%);
   border-right: 1px solid rgba(63, 63, 70, 0.3);
 }
 
