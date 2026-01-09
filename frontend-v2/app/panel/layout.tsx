@@ -136,7 +136,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-300 dark:ring-brand-800/50"
+                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-900/70 dark:via-brand-800/40 dark:to-accent-900/50 dark:text-brand-100 dark:ring-brand-700/60"
                       : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
                   }`}
                 >
@@ -151,7 +151,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-surface-200 to-surface-300 flex items-center justify-center text-surface-600 font-semibold dark:from-surface-700 dark:to-surface-600 dark:text-surface-300">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -230,7 +230,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-300 dark:ring-brand-800/50"
+                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-900/70 dark:via-brand-800/40 dark:to-accent-900/50 dark:text-brand-100 dark:ring-brand-700/60"
                       : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
                   }`}
                 >
@@ -245,7 +245,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-surface-200 to-surface-300 flex items-center justify-center text-surface-600 font-semibold dark:from-surface-700 dark:to-surface-600 dark:text-surface-300">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
