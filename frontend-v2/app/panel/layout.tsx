@@ -136,7 +136,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-300 dark:ring-brand-800/50"
+                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-900/70 dark:via-brand-800/40 dark:to-accent-900/50 dark:text-brand-100 dark:ring-brand-700/60"
                       : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
                   }`}
                 >
@@ -230,7 +230,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-300 dark:ring-brand-800/50"
+                      ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-900/70 dark:via-brand-800/40 dark:to-accent-900/50 dark:text-brand-100 dark:ring-brand-700/60"
                       : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
                   }`}
                 >
