@@ -151,7 +151,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-surface-200 to-surface-300 flex items-center justify-center text-surface-600 font-semibold dark:from-surface-700 dark:to-surface-600 dark:text-surface-300">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -245,7 +245,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-surface-200 to-surface-300 flex items-center justify-center text-surface-600 font-semibold dark:from-surface-700 dark:to-surface-600 dark:text-surface-300">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
