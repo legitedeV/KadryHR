@@ -7,12 +7,16 @@ import {
   RequestStatus,
   LeaveTypeRecord,
   EmployeeRecord,
+  LeaveBalanceInfo,
+  LeaveRequestHistoryItem,
   apiListLeaveRequests,
   apiCreateLeaveRequest,
   apiUpdateLeaveRequest,
   apiUpdateLeaveStatus,
   apiListLeaveTypes,
   apiListEmployees,
+  apiGetLeaveBalances,
+  apiGetLeaveRequestHistory,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 import { usePermissions } from "@/lib/use-permissions";
@@ -47,6 +51,19 @@ function formatDateForInput(date: string) {
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function formatHistoryAction(action: string) {
+  switch (action) {
+    case "leave.create":
+      return "Utworzono wniosek";
+    case "leave.status_change":
+      return "Zmiana statusu";
+    case "leave.update":
+      return "Zaktualizowano wniosek";
+    default:
+      return action;
+  }
 }
 
 type FormState = {
@@ -89,11 +106,14 @@ export default function WnioskiPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveTypeRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const [balances, setBalances] = useState<LeaveBalanceInfo[]>([]);
+  const [history, setHistory] = useState<LeaveRequestHistoryItem[]>([]);
   const [loading, setLoading] = useState(hasSession);
   const [error, setError] = useState<string | null>(
     hasSession ? null : "Zaloguj się, aby zobaczyć wnioski.",
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showBalances, setShowBalances] = useState(false);
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -154,12 +174,41 @@ export default function WnioskiPage() {
     }
   }, [canManage]);
 
+  const loadBalances = useCallback(async () => {
+    try {
+      const data = await apiGetLeaveBalances({});
+      setBalances(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const loadHistory = useCallback(async (requestId: string) => {
+    try {
+      const data = await apiGetLeaveRequestHistory(requestId);
+      setHistory(data);
+    } catch (err) {
+      console.error(err);
+      setHistory([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!hasSession) return;
     loadRequests();
     loadLeaveTypes();
     loadEmployees();
-  }, [hasSession, loadRequests, loadLeaveTypes, loadEmployees]);
+    loadBalances();
+  }, [hasSession, loadRequests, loadLeaveTypes, loadEmployees, loadBalances]);
+
+  // Load history when selection changes
+  useEffect(() => {
+    if (selectedId) {
+      loadHistory(selectedId);
+    } else {
+      setHistory([]);
+    }
+  }, [selectedId, loadHistory]);
 
   const selected = useMemo(
     () => requests.find((r) => r.id === selectedId) || null,
@@ -322,6 +371,15 @@ export default function WnioskiPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowBalances(!showBalances)}
+            className="btn-secondary px-3 py-2 text-sm"
+          >
+            <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Salda urlopów
+          </button>
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="btn-secondary px-3 py-2 text-sm"
           >
@@ -338,6 +396,45 @@ export default function WnioskiPage() {
           </button>
         </div>
       </div>
+
+      {/* Leave Balances */}
+      {showBalances && (
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-4">
+            Salda urlopowe (rok {new Date().getFullYear()})
+          </h3>
+          {balances.length === 0 ? (
+            <p className="text-sm text-surface-500">Brak danych o saldach.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-surface-50 dark:bg-surface-800">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-surface-600 dark:text-surface-400">Pracownik</th>
+                    <th className="px-3 py-2 text-left font-medium text-surface-600 dark:text-surface-400">Typ urlopu</th>
+                    <th className="px-3 py-2 text-right font-medium text-surface-600 dark:text-surface-400">Przysługuje</th>
+                    <th className="px-3 py-2 text-right font-medium text-surface-600 dark:text-surface-400">Wykorzystano</th>
+                    <th className="px-3 py-2 text-right font-medium text-surface-600 dark:text-surface-400">Pozostało</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                  {balances.map((b) => (
+                    <tr key={`${b.employeeId}-${b.leaveTypeId}`}>
+                      <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{b.employeeName}</td>
+                      <td className="px-3 py-2 text-surface-700 dark:text-surface-300">{b.leaveTypeName}</td>
+                      <td className="px-3 py-2 text-right text-surface-700 dark:text-surface-300">{b.allocated + b.adjustment} dni</td>
+                      <td className="px-3 py-2 text-right text-surface-700 dark:text-surface-300">{b.used} dni</td>
+                      <td className={`px-3 py-2 text-right font-semibold ${b.remaining > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {b.remaining} dni
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       {showFilters && (
@@ -653,6 +750,30 @@ export default function WnioskiPage() {
                     </>
                   )}
                 </div>
+
+                {/* History */}
+                {history.length > 0 && (
+                  <div className="pt-4 border-t border-surface-200 dark:border-surface-700">
+                    <p className="section-label mb-3">Historia zmian</p>
+                    <div className="space-y-3">
+                      {history.map((item) => (
+                        <div key={item.id} className="flex gap-3 text-sm">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="h-2 w-2 rounded-full bg-brand-500"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-surface-900 dark:text-surface-50 font-medium">
+                              {formatHistoryAction(item.action)}
+                            </p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              {item.actorName} • {new Date(item.createdAt).toLocaleString("pl-PL")}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

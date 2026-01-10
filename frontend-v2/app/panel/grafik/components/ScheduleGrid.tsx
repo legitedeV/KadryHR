@@ -2,7 +2,7 @@ import type { DragEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import type { AvailabilityIndicator, ShiftDisplay, WeekRange } from "../types";
-import type { EmployeeRecord, ScheduleMetadata, ShiftRecord } from "@/lib/api";
+import type { ApprovedLeaveForSchedule, EmployeeRecord, ScheduleMetadata, ShiftRecord } from "@/lib/api";
 import { formatEmployeeName, formatMinutes, getContrastTextColor } from "../utils";
 
 const dowOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -25,6 +25,7 @@ interface ScheduleGridProps {
   shifts: ShiftRecord[];
   gridByEmployeeAndDay: Record<string, Record<string, ShiftDisplay[]>>;
   availabilityIndicators: Record<string, Record<string, AvailabilityIndicator>>;
+  approvedLeavesByEmployeeAndDay?: Record<string, Record<string, ApprovedLeaveForSchedule[]>>;
   draggedShift: string | null;
   scheduleMetadata: ScheduleMetadata | null;
   promotionAfternoonCounts: Record<string, number>;
@@ -52,6 +53,7 @@ export function ScheduleGrid({
   shifts,
   gridByEmployeeAndDay,
   availabilityIndicators,
+  approvedLeavesByEmployeeAndDay,
   draggedShift,
   scheduleMetadata,
   promotionAfternoonCounts,
@@ -250,6 +252,7 @@ export function ScheduleGrid({
                     {dowOrder.map((dow, dayIdx) => {
                       const dayShifts = employeeShifts[dow] || [];
                       const dayIndicator = employeeAvail[dow];
+                      const dayLeaves = approvedLeavesByEmployeeAndDay?.[employee.id]?.[dow] || [];
                       const dayDate = new Date(range.from);
                       dayDate.setDate(dayDate.getDate() + dayIdx);
                       const dayDateValue = dayDate.toISOString().slice(0, 10);
@@ -263,11 +266,12 @@ export function ScheduleGrid({
                               .join(", ")}`
                           : dayIndicator.label
                         : "Brak dostępności";
+                      const hasApprovedLeave = dayLeaves.length > 0;
 
                       return (
                         <td
                           key={dow}
-                          className={`px-2 py-2 align-top ${draggedShift ? "hover:bg-brand-50/50 dark:hover:bg-brand-950/30" : ""}`}
+                          className={`px-2 py-2 align-top ${draggedShift ? "hover:bg-brand-50/50 dark:hover:bg-brand-950/30" : ""} ${hasApprovedLeave ? "bg-amber-50/30 dark:bg-amber-950/20" : ""}`}
                           onDragOver={(event) => {
                             event.preventDefault();
                             event.dataTransfer.dropEffect = "move";
@@ -281,6 +285,14 @@ export function ScheduleGrid({
                                   <span className={`h-2 w-2 rounded-full ${availabilityDotColor(dayIndicator.status)}`} />
                                   <span className="sr-only">{dayAvailabilityLabel}</span>
                                 </div>
+                              )}
+                              {hasApprovedLeave && (
+                                <span 
+                                  className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-amber-500 text-white"
+                                  title={dayLeaves[0].leaveType?.name || "Urlop"}
+                                >
+                                  URLOP
+                                </span>
                               )}
                             </div>
                             {dayShifts.length === 0 ? (

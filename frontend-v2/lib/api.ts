@@ -886,6 +886,102 @@ export async function apiGetRequests(): Promise<RequestItem[]> {
   return response.data;
 }
 
+// Leave Balance Types and API
+export interface LeaveBalanceInfo {
+  employeeId: string;
+  employeeName: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  year: number;
+  allocated: number;
+  used: number;
+  adjustment: number;
+  remaining: number;
+}
+
+export async function apiGetLeaveBalances(params: {
+  employeeId?: string;
+  year?: number;
+} = {}): Promise<LeaveBalanceInfo[]> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.employeeId) search.set("employeeId", params.employeeId);
+  if (params.year) search.set("year", String(params.year));
+  
+  const query = search.toString();
+  return apiClient.request<LeaveBalanceInfo[]>(
+    `${LEAVE_PREFIX}/balances${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function apiAdjustLeaveBalance(
+  employeeId: string,
+  leaveTypeId: string,
+  data: { year?: number; adjustment: number; allocated?: number },
+): Promise<LeaveBalanceInfo> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<LeaveBalanceInfo>(
+    `${LEAVE_PREFIX}/balances/${employeeId}/${leaveTypeId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+// Get approved leaves for schedule view
+export interface ApprovedLeaveForSchedule {
+  id: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  type: RequestType;
+  leaveType?: {
+    id: string;
+    name: string;
+    color?: string | null;
+  } | null;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+  };
+}
+
+export async function apiGetApprovedLeavesForSchedule(params: {
+  from: string;
+  to: string;
+}): Promise<ApprovedLeaveForSchedule[]> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+  return apiClient.request<ApprovedLeaveForSchedule[]>(
+    `${LEAVE_PREFIX}/approved?${search.toString()}`,
+  );
+}
+
+// Get leave request history
+export interface LeaveRequestHistoryItem {
+  id: string;
+  action: string;
+  actorName: string;
+  actorEmail: string;
+  createdAt: string;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
+}
+
+export async function apiGetLeaveRequestHistory(
+  requestId: string,
+): Promise<LeaveRequestHistoryItem[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<LeaveRequestHistoryItem[]>(
+    `${LEAVE_PREFIX}/${requestId}/history`,
+  );
+}
+
 export async function apiListNotifications(params: {
   take?: number;
   skip?: number;

@@ -66,7 +66,7 @@ export class ShiftsService {
       await this.ensureLocation(organisationId, dto.locationId);
     }
 
-    await this.ensureNoConflict(
+    const leaveWarning = await this.ensureNoConflict(
       organisationId,
       dto.employeeId,
       startsAt,
@@ -107,7 +107,7 @@ export class ShiftsService {
       'assigned',
     );
 
-    return { ...created, availabilityWarning };
+    return { ...created, availabilityWarning, leaveWarning };
   }
 
   /**
@@ -139,7 +139,7 @@ export class ShiftsService {
     if (nextLocationId) {
       await this.ensureLocation(organisationId, nextLocationId);
     }
-    await this.ensureNoConflict(
+    const leaveWarning = await this.ensureNoConflict(
       organisationId,
       nextEmployeeId,
       nextStartsAt,
@@ -189,7 +189,7 @@ export class ShiftsService {
       );
     }
 
-    return { ...updated, availabilityWarning };
+    return { ...updated, availabilityWarning, leaveWarning };
   }
 
   /**
@@ -317,13 +317,22 @@ export class ShiftsService {
     return location;
   }
 
+  /**
+   * Checks for shift and leave conflicts for an employee.
+   * 
+   * @returns null if no leave conflict, or a warning message if there's an 
+   *          approved leave but the organisation allows shifts during leave.
+   * @throws BadRequestException if:
+   *         - Employee already has a shift in the time range
+   *         - Employee has approved leave AND organisation prevents shifts during leave
+   */
   private async ensureNoConflict(
     organisationId: string,
     employeeId: string,
     startsAt: Date,
     endsAt: Date,
     ignoreShiftId?: string,
-  ) {
+  ): Promise<string | null> {
     const conflict = await this.prisma.shift.findFirst({
       where: {
         organisationId,
@@ -345,22 +354,29 @@ export class ShiftsService {
       select: { preventShiftOnApprovedLeave: true },
     });
 
-    if (org?.preventShiftOnApprovedLeave) {
-      const leaveConflict = await this.prisma.leaveRequest.findFirst({
-        where: {
-          organisationId,
-          employeeId,
-          status: LeaveStatus.APPROVED,
-          AND: [{ startDate: { lte: endsAt } }, { endDate: { gte: startsAt } }],
-        },
-      });
+    // Check for approved leave conflicts
+    const leaveConflict = await this.prisma.leaveRequest.findFirst({
+      where: {
+        organisationId,
+        employeeId,
+        status: LeaveStatus.APPROVED,
+        AND: [{ startDate: { lte: endsAt } }, { endDate: { gte: startsAt } }],
+      },
+      include: { leaveType: true },
+    });
 
-      if (leaveConflict) {
+    if (leaveConflict) {
+      const leaveTypeName = leaveConflict.leaveType?.name ?? 'Urlop';
+      if (org?.preventShiftOnApprovedLeave) {
         throw new BadRequestException(
-          'Employee has an approved leave request during this time period',
+          `Pracownik ma zatwierdzony urlop (${leaveTypeName}) w tym terminie. Nie można dodać zmiany.`,
         );
       }
+      // Return a warning if the flag is false
+      return `Pracownik ma zatwierdzony urlop (${leaveTypeName}) w tym terminie.`;
     }
+
+    return null;
   }
 
   private async computeAvailabilityWarning(
