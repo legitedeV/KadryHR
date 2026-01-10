@@ -1,10 +1,3 @@
-// scripts/create-github-labels.js
-//
-// Użycie:
-//   export
-//   export GITHUB_REPO="legitedeV/KadryHR"
-//   node scripts/create-github-labels.js
-
 const labels = [
   // === type:* ===
   {
