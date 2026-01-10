@@ -319,8 +319,8 @@ export class ShiftsService {
 
   /**
    * Checks for shift and leave conflicts for an employee.
-   * 
-   * @returns null if no leave conflict, or a warning message if there's an 
+   *
+   * @returns null if no leave conflict, or a warning message if there's an
    *          approved leave but the organisation allows shifts during leave.
    * @throws BadRequestException if:
    *         - Employee already has a shift in the time range

@@ -308,7 +308,8 @@ export class LeaveBalanceService {
             employeeId,
             leaveTypeId: leaveType.id,
             year,
-            allocated: leaveType.defaultDaysPerYear ?? DEFAULT_ANNUAL_LEAVE_DAYS,
+            allocated:
+              leaveType.defaultDaysPerYear ?? DEFAULT_ANNUAL_LEAVE_DAYS,
             used: 0,
             adjustment: 0,
           },

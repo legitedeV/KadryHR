@@ -42,7 +42,12 @@ describe('LeaveBalanceService', () => {
     it('should return balances for an employee', async () => {
       const year = 2024;
       mockPrisma.leaveType.findMany.mockResolvedValue([
-        { id: 'lt-1', name: 'Urlop wypoczynkowy', defaultDaysPerYear: 26, isActive: true },
+        {
+          id: 'lt-1',
+          name: 'Urlop wypoczynkowy',
+          defaultDaysPerYear: 26,
+          isActive: true,
+        },
       ]);
       mockPrisma.leaveBalance.findFirst.mockResolvedValue(null);
       mockPrisma.leaveBalance.create.mockResolvedValue({
