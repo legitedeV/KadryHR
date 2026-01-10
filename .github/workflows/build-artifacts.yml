@@ -1,0 +1,66 @@
+name: Build Artifacts
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend-v2/package-lock.json
+            frontend-v2/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend-v2
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: frontend-v2
+        run: npm ci
+
+      - name: Backend checks and build
+        working-directory: backend-v2
+        run: |
+          npm run lint
+          npm test
+          npm run build
+
+      - name: Frontend checks and build
+        working-directory: frontend-v2
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run build
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifact/backend-v2 artifact/frontend-v2
+          rsync -a --delete backend-v2/dist artifact/backend-v2/dist
+          rsync -a --delete backend-v2/prisma artifact/backend-v2/prisma
+          rsync -a backend-v2/package.json backend-v2/package-lock.json artifact/backend-v2/
+          rsync -a --delete frontend-v2/.next artifact/frontend-v2/.next
+          rsync -a --delete frontend-v2/public artifact/frontend-v2/public
+          rsync -a frontend-v2/package.json frontend-v2/package-lock.json frontend-v2/next.config.mjs artifact/frontend-v2/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kadryhr-build-${{ github.sha }}
+          path: artifact
+          if-no-files-found: error
+          retention-days: 14
