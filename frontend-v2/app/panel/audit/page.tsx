@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState, useCallback } from "react";
 import {
   apiListAuditLogs,
@@ -66,7 +67,7 @@ function formatDescription(entry: AuditLogEntry): string {
   return `${actionLabel} – ${entityLabel}`;
 }
 
-function formatJsonValue(value: unknown, depth = 0): JSX.Element | string {
+function formatJsonValue(value: unknown, depth = 0): ReactNode {
   if (value === null || value === undefined) {
     return <span className="text-surface-400">null</span>;
   }
@@ -80,10 +81,10 @@ function formatJsonValue(value: unknown, depth = 0): JSX.Element | string {
   }
 
   if (typeof value === "string") {
-    if (value.length > 100) {
+    if (value.length > MAX_STRING_LENGTH) {
       return (
         <span className="text-emerald-600 dark:text-emerald-400">
-          &quot;{value.slice(0, 100)}...&quot;
+          &quot;{value.slice(0, MAX_STRING_LENGTH)}...&quot;
         </span>
       );
     }
@@ -123,7 +124,10 @@ function formatJsonValue(value: unknown, depth = 0): JSX.Element | string {
 }
 
 const PAGE_SIZE = 20;
-const TABLE_COLUMN_COUNT = 6;
+const MAX_STRING_LENGTH = 100;
+
+// Table columns: Date, User, Action, Resource, Description, Details
+const TABLE_COLUMNS = ["Date", "User", "Action", "Resource", "Description", "Details"] as const;
 
 export default function AuditPage() {
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
@@ -143,6 +147,17 @@ export default function AuditPage() {
   // Detail modal
   const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null);
 
+  // Load members once on mount
+  useEffect(() => {
+    apiGetOrganisationMembers()
+      .then((membersData) => {
+        setMembers(membersData);
+      })
+      .catch((err) => {
+        console.error("Failed to load members:", err);
+      });
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -157,16 +172,9 @@ export default function AuditPage() {
       if (entityTypeFilter) query.entityType = entityTypeFilter;
       if (userFilter) query.actorUserId = userFilter;
 
-      const [logsResponse, membersResponse] = await Promise.all([
-        apiListAuditLogs(query),
-        members.length === 0 ? apiGetOrganisationMembers() : Promise.resolve(members),
-      ]);
-
+      const logsResponse = await apiListAuditLogs(query);
       setEntries(logsResponse.data);
       setTotal(logsResponse.total);
-      if (members.length === 0) {
-        setMembers(membersResponse);
-      }
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Nie udało się pobrać logów audytu.";
@@ -175,7 +183,7 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateFrom, dateTo, actionFilter, entityTypeFilter, userFilter, members.length]);
+  }, [page, dateFrom, dateTo, actionFilter, entityTypeFilter, userFilter]);
 
   useEffect(() => {
     loadData();
@@ -375,7 +383,7 @@ export default function AuditPage() {
                 {entries.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={TABLE_COLUMN_COUNT}
+                      colSpan={TABLE_COLUMNS.length}
                       className="px-4 py-8 text-center"
                     >
                       <EmptyState

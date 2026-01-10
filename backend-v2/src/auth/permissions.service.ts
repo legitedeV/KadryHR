@@ -225,9 +225,12 @@ export class PermissionsService {
     });
 
     if (customPermissions.length > 0) {
-      return customPermissions.map(
-        (p) => p.permission as unknown as Permission,
-      );
+      const validPermissions = Object.values(Permission);
+      return customPermissions
+        .map((p) => p.permission as string)
+        .filter((p): p is Permission =>
+          validPermissions.includes(p as Permission),
+        );
     }
 
     return getPermissionsForRole(role);
