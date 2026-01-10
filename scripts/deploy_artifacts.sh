@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 REPO_SLUG=${REPO_SLUG:-"KadryHR/KadryHR"}
 WORKFLOW_FILE=${WORKFLOW_FILE:-"build-artifacts.yml"}
 BRANCH=${BRANCH:-"main"}

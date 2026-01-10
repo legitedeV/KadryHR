@@ -24,22 +24,22 @@ echo "New HEAD: $NEW_REV"
 echo "==> Detecting changed files"
 CHANGED_FILES=$(git diff --name-only "$OLD_REV" "$NEW_REV")
 
-BACKEND_CHANGED="false"
+BACKEND_CHANGED="true"
 if echo "$CHANGED_FILES" | rg -q "^backend-v2/"; then
   BACKEND_CHANGED="true"
 fi
 
-FRONTEND_CHANGED="false"
+FRONTEND_CHANGED="true"
 if echo "$CHANGED_FILES" | rg -q "^frontend-v2/"; then
   FRONTEND_CHANGED="true"
 fi
 
-BACKEND_LOCK_CHANGED="false"
+BACKEND_LOCK_CHANGED="true"
 if echo "$CHANGED_FILES" | rg -q "^backend-v2/package-lock.json$"; then
   BACKEND_LOCK_CHANGED="true"
 fi
 
-FRONTEND_LOCK_CHANGED="false"
+FRONTEND_LOCK_CHANGED="true"
 if echo "$CHANGED_FILES" | rg -q "^frontend-v2/package-lock.json$"; then
   FRONTEND_LOCK_CHANGED="true"
 fi

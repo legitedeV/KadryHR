@@ -1,7 +1,7 @@
 // scripts/create-github-labels.js
 //
 // Użycie:
-//   export GITHUB_TOKEN=ghp_xxx
+//   export
 //   export GITHUB_REPO="legitedeV/KadryHR"
 //   node scripts/create-github-labels.js
 
