@@ -2,6 +2,9 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { LeaveStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Default annual leave allocation in days (Polish standard) */
+const DEFAULT_ANNUAL_LEAVE_DAYS = 26;
+
 export interface LeaveBalanceInfo {
   employeeId: string;
   employeeName: string;
@@ -305,7 +308,7 @@ export class LeaveBalanceService {
             employeeId,
             leaveTypeId: leaveType.id,
             year,
-            allocated: leaveType.defaultDaysPerYear ?? 26, // Default to Polish standard
+            allocated: leaveType.defaultDaysPerYear ?? DEFAULT_ANNUAL_LEAVE_DAYS,
             used: 0,
             adjustment: 0,
           },
