@@ -56,7 +56,7 @@ if [ "$BACKEND_CHANGED" = "true" ]; then
 
   if [ "$BACKEND_LOCK_CHANGED" = "true" ]; then
     echo "==> Backend lockfile changed – running npm ci --omit=dev"
-    npm ci --omit=dev
+    npm install
   else
     echo "==> Backend lockfile unchanged – skipping npm ci"
   fi
@@ -84,10 +84,10 @@ if [ "$FRONTEND_CHANGED" = "true" ]; then
   cd "$FRONTEND_DIR"
 
   if [ "$FRONTEND_LOCK_CHANGED" = "true" ]; then
-    echo "==> Frontend lockfile changed – running npm ci --omit=dev"
-    npm ci --omit=dev
+    echo "==> Frontend lockfile changed – running npm install"
+    npm install
   else
-    echo "==> Frontend lockfile unchanged – skipping npm ci"
+    echo "==> Frontend lockfile unchanged – skipping npm install"
   fi
 
   echo "==> Building frontend"
