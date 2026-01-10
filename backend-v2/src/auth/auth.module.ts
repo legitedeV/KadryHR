@@ -10,6 +10,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { StringValue } from 'ms';
 import { QueueModule } from '../queue/queue.module';
 import { InvitationsService } from './invitations.service';
+import { PermissionsService } from './permissions.service';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -40,7 +41,13 @@ import { AuditModule } from '../audit/audit.module';
     AuditModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, InvitationsService],
-  exports: [AuthService, InvitationsService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtRefreshStrategy,
+    InvitationsService,
+    PermissionsService,
+  ],
+  exports: [AuthService, InvitationsService, PermissionsService],
 })
 export class AuthModule {}

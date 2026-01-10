@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -20,11 +21,15 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ChangeEmailDto } from './dto/change-email.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { PermissionsService } from '../auth/permissions.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly permissionsService: PermissionsService,
+  ) {}
 
   // Profile endpoints (any authenticated user)
   @Get('profile')
@@ -54,6 +59,14 @@ export class UsersController {
     @Body() dto: ChangeEmailDto,
   ) {
     return this.usersService.changeEmail(user.id, dto);
+  }
+
+  /**
+   * Get all available roles with descriptions for UI display
+   */
+  @Get('roles')
+  getRoleDescriptions() {
+    return this.permissionsService.getRoleDescriptions();
   }
 
   // User management endpoints (OWNER, MANAGER only)
@@ -93,6 +106,12 @@ export class UsersController {
     @Param('id') id: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {
+    // Validate role change is allowed
+    const check = this.permissionsService.canChangeUserRole(user, id, dto.role);
+    if (!check.allowed) {
+      throw new BadRequestException(check.reason);
+    }
+
     return this.usersService.updateMemberRole(
       user.id,
       id,

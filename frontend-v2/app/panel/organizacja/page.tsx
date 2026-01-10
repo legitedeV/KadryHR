@@ -9,7 +9,9 @@ import {
   apiUpdateOrganisation,
   apiGetOrganisationMembers,
   apiUpdateMemberRole,
+  apiGetRoleDescriptions,
   OrganisationMember,
+  RoleDescription,
   User,
   Weekday,
 } from "@/lib/api";
@@ -44,6 +46,7 @@ export default function OrganisationSettingsPage() {
   const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
   const [members, setMembers] = useState<OrganisationMember[]>([]);
+  const [roleDescriptions, setRoleDescriptions] = useState<RoleDescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,8 +76,8 @@ export default function OrganisationSettingsPage() {
 
     let cancelled = false;
 
-    Promise.all([apiGetMe(), apiGetOrganisation(), apiGetOrganisationMembers()])
-      .then(([userData, orgData, membersData]) => {
+    Promise.all([apiGetMe(), apiGetOrganisation(), apiGetOrganisationMembers(), apiGetRoleDescriptions()])
+      .then(([userData, orgData, membersData, rolesData]) => {
         if (cancelled) return;
 
         // Check permissions
@@ -85,6 +88,7 @@ export default function OrganisationSettingsPage() {
 
         setUser(userData);
         setMembers(membersData);
+        setRoleDescriptions(rolesData);
 
         // Initialize form - basic info
         setName(orgData.name);
@@ -582,29 +586,29 @@ export default function OrganisationSettingsPage() {
             </select>
           </label>
 
-          <div className="text-sm text-surface-600 dark:text-surface-300">
-            <p className="font-medium mb-2">Uprawnienia:</p>
-            <ul className="list-disc list-inside space-y-1">
-              {newRole === "MANAGER" && (
-                <>
-                  <li>Zarządzanie pracownikami</li>
-                  <li>Edycja grafiku</li>
-                  <li>Zatwierdzanie wniosków</li>
-                </>
-              )}
-              {newRole === "ADMIN" && (
-                <>
-                  <li>Zarządzanie pracownikami</li>
-                  <li>Edycja grafiku</li>
-                  <li>Zatwierdzanie wniosków</li>
-                  <li>Eksport raportów</li>
-                </>
-              )}
-              {newRole === "EMPLOYEE" && (
-                <li>Tylko podgląd własnych danych</li>
-              )}
-            </ul>
-          </div>
+          {/* Role description from API */}
+          {(() => {
+            const roleDesc = roleDescriptions.find((r) => r.role === newRole);
+            if (!roleDesc) return null;
+            return (
+              <div className="rounded-xl border border-surface-200 dark:border-surface-700 p-4 bg-surface-50 dark:bg-surface-800/50">
+                <p className="text-sm font-medium text-surface-900 dark:text-surface-50 mb-2">
+                  {roleDesc.label}
+                </p>
+                <p className="text-sm text-surface-600 dark:text-surface-300 mb-3">
+                  {roleDesc.description}
+                </p>
+                <div className="text-sm text-surface-600 dark:text-surface-300">
+                  <p className="font-medium mb-2">Uprawnienia:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {roleDesc.permissions.map((perm) => (
+                      <li key={perm}>{perm}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </Modal>
     </div>

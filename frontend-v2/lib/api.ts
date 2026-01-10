@@ -1543,3 +1543,16 @@ export async function apiUpdateMemberRole(
     body: JSON.stringify(payload),
   });
 }
+
+// Role descriptions for UI display
+export interface RoleDescription {
+  role: UserRole;
+  label: string;
+  description: string;
+  permissions: string[];
+}
+
+export async function apiGetRoleDescriptions(): Promise<RoleDescription[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<RoleDescription[]>(`${USERS_PREFIX}/roles`);
+}
