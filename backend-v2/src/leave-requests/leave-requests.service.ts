@@ -15,6 +15,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditService } from '../audit/audit.service';
+import { LeaveBalanceService } from './leave-balance.service';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import { UpdateLeaveRequestStatusDto } from './dto/update-leave-request-status.dto';
@@ -41,6 +42,7 @@ export class LeaveRequestsService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly auditService: AuditService,
+    private readonly leaveBalanceService: LeaveBalanceService,
   ) {}
 
   async findEmployeeForUser(organisationId: string, userId: string) {
@@ -109,6 +111,91 @@ export class LeaveRequestsService {
     return { data, total, skip, take };
   }
 
+  async findApprovedForSchedule(
+    organisationId: string,
+    from?: Date,
+    to?: Date,
+  ) {
+    const where: Prisma.LeaveRequestWhereInput = {
+      organisationId,
+      status: LeaveStatus.APPROVED,
+    };
+
+    if (from || to) {
+      where.AND = [];
+      if (from) {
+        where.AND.push({
+          endDate: { gte: from },
+        });
+      }
+      if (to) {
+        where.AND.push({
+          startDate: { lte: to },
+        });
+      }
+    }
+
+    return this.prisma.leaveRequest.findMany({
+      where,
+      select: {
+        id: true,
+        employeeId: true,
+        startDate: true,
+        endDate: true,
+        type: true,
+        leaveType: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { startDate: 'asc' },
+    });
+  }
+
+  async getRequestHistory(organisationId: string, leaveRequestId: string) {
+    // Get audit logs for this leave request
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        organisationId,
+        entityType: 'LeaveRequest',
+        entityId: leaveRequestId,
+      },
+      include: {
+        actor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return logs.map((log) => ({
+      id: log.id,
+      action: log.action,
+      actorName:
+        `${log.actor.firstName ?? ''} ${log.actor.lastName ?? ''}`.trim() ||
+        log.actor.email,
+      actorEmail: log.actor.email,
+      createdAt: log.createdAt.toISOString(),
+      before: log.before,
+      after: log.after,
+    }));
+  }
+
   async findOne(organisationId: string, id: string, scope?: AccessScope) {
     const item = await this.prisma.leaveRequest.findFirst({
       where: { id, organisationId },
@@ -153,6 +240,19 @@ export class LeaveRequestsService {
 
     if (dto.leaveTypeId) {
       await this.ensureLeaveType(organisationId, dto.leaveTypeId);
+
+      // Validate leave balance
+      const balanceCheck = await this.leaveBalanceService.validateBalance(
+        organisationId,
+        targetEmployeeId,
+        dto.leaveTypeId,
+        startDate,
+        endDate,
+      );
+
+      if (!balanceCheck.valid) {
+        throw new BadRequestException(balanceCheck.message);
+      }
     }
 
     const created = await this.prisma.leaveRequest.create({
@@ -265,6 +365,21 @@ export class LeaveRequestsService {
 
     this.ensureStatusTransition(existing.status, dto.status);
 
+    // Validate balance before approval
+    if (dto.status === LeaveStatus.APPROVED && existing.leaveTypeId) {
+      const balanceCheck = await this.leaveBalanceService.validateBalance(
+        organisationId,
+        existing.employeeId,
+        existing.leaveTypeId,
+        existing.startDate,
+        existing.endDate,
+      );
+
+      if (!balanceCheck.valid) {
+        throw new BadRequestException(balanceCheck.message);
+      }
+    }
+
     const data: Prisma.LeaveRequestUncheckedUpdateInput = {
       status: dto.status,
       approvedByUserId:
@@ -278,6 +393,18 @@ export class LeaveRequestsService {
       data,
       include: LEAVE_INCLUDE,
     });
+
+    // Update leave balance when approved
+    if (dto.status === LeaveStatus.APPROVED && existing.leaveTypeId) {
+      await this.leaveBalanceService.updateUsedBalance(
+        organisationId,
+        existing.employeeId,
+        existing.leaveTypeId,
+        existing.startDate,
+        existing.endDate,
+        'add',
+      );
+    }
 
     await this.auditService.log({
       organisationId,

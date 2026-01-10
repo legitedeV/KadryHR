@@ -16,6 +16,8 @@ import {
   apiListScheduleTemplates,
   apiPublishSchedule,
   apiUpdateShift,
+  apiGetApprovedLeavesForSchedule,
+  ApprovedLeaveForSchedule,
   AvailabilityRecord,
   EmployeeRecord,
   LocationRecord,
@@ -222,6 +224,7 @@ export default function GrafikPage() {
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [availability, setAvailability] = useState<AvailabilityRecord[]>([]);
+  const [approvedLeaves, setApprovedLeaves] = useState<ApprovedLeaveForSchedule[]>([]);
   const [scheduleMetadata, setScheduleMetadata] = useState<ScheduleMetadata | null>(null);
   const [templates, setTemplates] = useState<ScheduleTemplateRecord[]>([]);
   const [draggedShift, setDraggedShift] = useState<string | null>(null);
@@ -281,14 +284,16 @@ export default function GrafikPage() {
       apiGetShifts({ from: range.from, to: range.to }),
       apiGetAvailability({ from: range.from, to: range.to }),
       apiGetScheduleMetadata({ from: range.from, to: range.to }),
+      apiGetApprovedLeavesForSchedule({ from: range.from, to: range.to }),
     ])
-      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse, metadataResponse]) => {
+      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse, metadataResponse, approvedLeavesResponse]) => {
         if (!isMounted) return;
         setEmployees(employeeResponse.data);
         setLocations(locationResponse);
         setShifts(shiftResponse);
         setAvailability(availabilityResponse);
         setScheduleMetadata(metadataResponse);
+        setApprovedLeaves(approvedLeavesResponse);
         if (!employeeResponse.data.length) {
           setFormError("Dodaj pracowników, aby przypisać ich do zmian.");
         }
@@ -307,6 +312,40 @@ export default function GrafikPage() {
       isMounted = false;
     };
   }, [hasToken, range.from, range.to]);
+
+  // Build approved leaves lookup by employee and day
+  const approvedLeavesByEmployeeAndDay: Record<string, Record<string, ApprovedLeaveForSchedule[]>> = useMemo(() => {
+    const grid: Record<string, Record<string, ApprovedLeaveForSchedule[]>> = {};
+
+    employees.forEach((emp) => {
+      grid[emp.id] = {};
+      dowOrder.forEach((dow) => {
+        grid[emp.id][dow] = [];
+      });
+    });
+
+    approvedLeaves.forEach((leave) => {
+      if (!leave.employeeId || !grid[leave.employeeId]) return;
+      
+      // Check each day of the week
+      const startDate = new Date(range.from);
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        const dateStr = currentDate.toISOString().slice(0, 10);
+        
+        const leaveStart = new Date(leave.startDate).toISOString().slice(0, 10);
+        const leaveEnd = new Date(leave.endDate).toISOString().slice(0, 10);
+        
+        if (dateStr >= leaveStart && dateStr <= leaveEnd) {
+          const dow = dowOrder[i];
+          grid[leave.employeeId][dow].push(leave);
+        }
+      }
+    });
+
+    return grid;
+  }, [employees, approvedLeaves, range.from]);
 
   const gridByEmployeeAndDay: Record<string, Record<string, ReturnType<typeof mapShiftRecord>[]>> = useMemo(() => {
     const grid: Record<string, Record<string, ReturnType<typeof mapShiftRecord>[]>> = {};
@@ -812,6 +851,7 @@ export default function GrafikPage() {
             shifts={shifts}
             gridByEmployeeAndDay={gridByEmployeeAndDay}
             availabilityIndicators={availabilityIndicators}
+            approvedLeavesByEmployeeAndDay={approvedLeavesByEmployeeAndDay}
             draggedShift={draggedShift}
             scheduleMetadata={scheduleMetadata}
             promotionAfternoonCounts={promotionAfternoonCounts}

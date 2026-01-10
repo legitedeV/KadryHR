@@ -25,6 +25,9 @@ const mockPrisma = {
   organisation: {
     findUnique: jest.fn(),
   },
+  leaveRequest: {
+    findFirst: jest.fn(),
+  },
 };
 
 const mockNotifications = {
@@ -53,6 +56,7 @@ describe('ShiftsService', () => {
     mockPrisma.organisation.findUnique.mockResolvedValue({
       preventShiftOnApprovedLeave: false,
     });
+    mockPrisma.leaveRequest.findFirst.mockResolvedValue(null);
   });
 
   it('throws on overlapping shift for employee', async () => {
@@ -135,5 +139,78 @@ describe('ShiftsService', () => {
       },
     });
     expect(result).toEqual({ deletedCount: 3 });
+  });
+
+  describe('leave conflict handling', () => {
+    it('blocks shift creation when preventShiftOnApprovedLeave is true', async () => {
+      mockPrisma.organisation.findUnique.mockResolvedValue({
+        preventShiftOnApprovedLeave: true,
+      });
+      mockPrisma.leaveRequest.findFirst.mockResolvedValue({
+        id: 'leave-1',
+        employeeId: 'emp-1',
+        status: 'APPROVED',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-02'),
+        leaveType: { name: 'Urlop wypoczynkowy' },
+      });
+
+      await expect(
+        service.create('org-1', {
+          employeeId: 'emp-1',
+          startsAt: '2024-01-01T08:00:00.000Z',
+          endsAt: '2024-01-01T16:00:00.000Z',
+        }),
+      ).rejects.toThrow('ma zatwierdzony urlop');
+    });
+
+    it('allows shift with warning when preventShiftOnApprovedLeave is false', async () => {
+      mockPrisma.organisation.findUnique.mockResolvedValue({
+        preventShiftOnApprovedLeave: false,
+      });
+      mockPrisma.leaveRequest.findFirst.mockResolvedValue({
+        id: 'leave-1',
+        employeeId: 'emp-1',
+        status: 'APPROVED',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-02'),
+        leaveType: { name: 'Urlop wypoczynkowy' },
+      });
+      mockPrisma.shift.create.mockResolvedValue({
+        id: 'shift-1',
+        employeeId: 'emp-1',
+        startsAt: new Date('2024-01-01T08:00:00.000Z'),
+        endsAt: new Date('2024-01-01T16:00:00.000Z'),
+      });
+
+      const result = await service.create('org-1', {
+        employeeId: 'emp-1',
+        startsAt: '2024-01-01T08:00:00.000Z',
+        endsAt: '2024-01-01T16:00:00.000Z',
+      });
+
+      expect(result.leaveWarning).toContain('ma zatwierdzony urlop');
+    });
+
+    it('creates shift without warning when no leave conflict exists', async () => {
+      mockPrisma.organisation.findUnique.mockResolvedValue({
+        preventShiftOnApprovedLeave: true,
+      });
+      mockPrisma.leaveRequest.findFirst.mockResolvedValue(null);
+      mockPrisma.shift.create.mockResolvedValue({
+        id: 'shift-1',
+        employeeId: 'emp-1',
+        startsAt: new Date('2024-01-01T08:00:00.000Z'),
+        endsAt: new Date('2024-01-01T16:00:00.000Z'),
+      });
+
+      const result = await service.create('org-1', {
+        employeeId: 'emp-1',
+        startsAt: '2024-01-01T08:00:00.000Z',
+        endsAt: '2024-01-01T16:00:00.000Z',
+      });
+
+      expect(result.leaveWarning).toBeNull();
+    });
   });
 });

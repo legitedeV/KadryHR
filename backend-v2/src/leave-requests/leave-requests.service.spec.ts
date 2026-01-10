@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LeaveRequestsService } from './leave-requests.service';
+import { LeaveBalanceService } from './leave-balance.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LeaveStatus, LeaveCategory, Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -30,6 +31,14 @@ const mockAudit = {
   log: jest.fn(),
 };
 
+const mockLeaveBalanceService = {
+  validateBalance: jest.fn(),
+  updateUsedBalance: jest.fn(),
+  getEmployeeBalances: jest.fn(),
+  getOrganisationBalances: jest.fn(),
+  adjustBalance: jest.fn(),
+};
+
 describe('LeaveRequestsService', () => {
   let service: LeaveRequestsService;
 
@@ -40,6 +49,7 @@ describe('LeaveRequestsService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: NotificationsService, useValue: mockNotifications },
         { provide: AuditService, useValue: mockAudit },
+        { provide: LeaveBalanceService, useValue: mockLeaveBalanceService },
       ],
     }).compile();
 
@@ -65,6 +75,8 @@ describe('LeaveRequestsService', () => {
       endDate: new Date('2024-01-02T00:00:00.000Z'),
       type: LeaveCategory.PAID_LEAVE,
     });
+    mockLeaveBalanceService.validateBalance.mockResolvedValue({ valid: true });
+    mockLeaveBalanceService.updateUsedBalance.mockResolvedValue(undefined);
   });
 
   it('rejects leave when startDate is after endDate', async () => {

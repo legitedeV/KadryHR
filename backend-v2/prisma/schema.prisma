@@ -123,6 +123,7 @@ model Organisation {
   compensations Compensation[]
   employeeDocuments EmployeeDocument[]
   scheduleTemplates ScheduleTemplate[]
+  leaveBalances LeaveBalance[]
 }
 
 model User {
@@ -174,6 +175,7 @@ model Employee {
   invitations EmployeeInvitation[]
   contracts    EmploymentContract[]
   documents    EmployeeDocument[]
+  leaveBalances LeaveBalance[]
 
   @@index([organisationId])
 }
@@ -420,14 +422,38 @@ model LeaveType {
   isPaid         Boolean  @default(true)
   color          String?
   isActive       Boolean  @default(true)
+  defaultDaysPerYear Int?     @default(26) // Default annual allocation
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
 
   @@unique([organisationId, name])
   @@index([organisationId])
+}
+
+model LeaveBalance {
+  id             String   @id @default(uuid())
+  organisationId String
+  employeeId     String
+  leaveTypeId    String
+  year           Int      // Calendar year for the balance
+  allocated      Int      @default(0)  // Total days allocated for the year
+  used           Int      @default(0)  // Days used (approved leaves)
+  adjustment     Int      @default(0)  // Manual adjustments (carry-over, etc.)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType    LeaveType    @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, employeeId, leaveTypeId, year])
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([leaveTypeId])
 }
 
 model AuditLog {

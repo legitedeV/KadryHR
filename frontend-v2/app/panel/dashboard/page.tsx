@@ -6,9 +6,11 @@ import {
   EmployeeRecord,
   RequestItem,
   ShiftRecord,
+  ApprovedLeaveForSchedule,
   apiGetRequests,
   apiGetShifts,
   apiListEmployees,
+  apiGetApprovedLeavesForSchedule,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 
@@ -28,6 +30,7 @@ type DashboardData = {
   shifts: ShiftView[];
   employees: EmployeeRecord[];
   requests: RequestItem[];
+  upcomingLeaves: ApprovedLeaveForSchedule[];
 };
 
 function parseTimeLabel(value: string): [number, number] | null {
@@ -100,6 +103,15 @@ function getNext3Days(): { date: string; dayName: string; dayNumber: string }[] 
   return result;
 }
 
+// Get next 7 days for upcoming leaves
+function getNext7DaysRange() {
+  const now = new Date();
+  const next7 = new Date(now);
+  next7.setDate(now.getDate() + 7);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  return { from: fmt(now), to: fmt(next7) };
+}
+
 export default function DashboardPage() {
   const [range] = useState(getWeekRange);
   const hasSession = useMemo(() => !!getAccessToken(), []);
@@ -113,14 +125,17 @@ export default function DashboardPage() {
     if (!hasSession) return;
     let cancelled = false;
 
+    const leaveRange = getNext7DaysRange();
+
     Promise.all([
       apiGetShifts({ from: range.from, to: range.to }),
       apiListEmployees({ take: 50, skip: 0 }),
       apiGetRequests(),
+      apiGetApprovedLeavesForSchedule({ from: leaveRange.from, to: leaveRange.to }),
     ])
-      .then(([shifts, employeesResponse, requests]) => {
+      .then(([shifts, employeesResponse, requests, upcomingLeaves]) => {
         if (cancelled) return;
-        setData({ shifts: shifts.map(mapShift), employees: employeesResponse.data, requests });
+        setData({ shifts: shifts.map(mapShift), employees: employeesResponse.data, requests, upcomingLeaves });
       })
       .catch((err) => {
         console.error(err);
@@ -168,7 +183,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { shifts, employees, requests } = data;
+  const { shifts, employees, requests, upcomingLeaves } = data;
   const todaysDate = new Date().toISOString().slice(0, 10);
   const todaysShifts = shifts.filter((s) => s.date === todaysDate);
   const unassigned = shifts.filter((s) => s.status === "UNASSIGNED");
@@ -368,6 +383,53 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Upcoming Leaves Widget */}
+      <div className="card p-6">
+        <div className="flex items-center gap-4 mb-5">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 dark:from-amber-900/50 dark:to-amber-800/50 dark:text-amber-300">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="section-label">Urlopy</p>
+            <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+              Najbliższe 7 dni
+            </p>
+          </div>
+          <span className={`badge ${upcomingLeaves.length > 0 ? "badge-warning" : "badge-success"}`}>
+            {upcomingLeaves.length} {upcomingLeaves.length === 1 ? "osoba" : "osób"}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {upcomingLeaves.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <svg className="w-10 h-10 text-surface-300 dark:text-surface-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-surface-500 dark:text-surface-400 text-sm">Brak zatwierdzonych urlopów w najbliższym tygodniu</p>
+            </div>
+          ) : (
+            upcomingLeaves.slice(0, 5).map((leave) => (
+              <div key={leave.id} className="rounded-lg bg-amber-50/50 dark:bg-amber-950/30 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-surface-900 dark:text-surface-50">
+                    {leave.employee?.firstName} {leave.employee?.lastName}
+                  </p>
+                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500 text-white">
+                    {leave.leaveType?.name || "Urlop"}
+                  </span>
+                </div>
+                <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                  {formatDateRange(leave.startDate, leave.endDate)}
+                </p>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
