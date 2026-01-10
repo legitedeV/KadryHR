@@ -117,7 +117,11 @@ function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
   };
 }
 
-function buildShiftDescription(shift: ShiftRecord, employees: EmployeeRecord[], locations: LocationRecord[]) {
+export function buildShiftDescription(
+  shift: ShiftRecord,
+  employees: EmployeeRecord[],
+  locations: LocationRecord[],
+) {
   const employee = employees.find((e) => e.id === shift.employeeId);
   const location = locations.find((loc) => loc.id === shift.locationId);
   const startDate = new Date(shift.startsAt);
@@ -136,6 +140,8 @@ function buildShiftDescription(shift: ShiftRecord, employees: EmployeeRecord[], 
 
   return `${employeeLabel} • ${dateLabel} • ${timeLabel} • ${locationLabel}`;
 }
+
+export { ConfirmDialog };
 
 function getAvailabilityIndicator(dayAvail: AvailabilityRecord[]): AvailabilityIndicator {
   const totalMinutes = dayAvail.reduce((sum, slot) => sum + Math.max(0, slot.endMinutes - slot.startMinutes), 0);
