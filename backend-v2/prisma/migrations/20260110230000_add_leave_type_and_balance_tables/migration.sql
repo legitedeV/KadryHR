@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS "LeaveType" (
     CONSTRAINT "LeaveType_pkey" PRIMARY KEY ("id")
 );
 
+-- Ensure defaultDaysPerYear column exists (for cases where table was created without it)
+ALTER TABLE "LeaveType" ADD COLUMN IF NOT EXISTS "defaultDaysPerYear" INTEGER DEFAULT 26;
+
 -- CreateTable LeaveBalance
 CREATE TABLE IF NOT EXISTS "LeaveBalance" (
     "id" TEXT NOT NULL,
