@@ -17,6 +17,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DocumentsModule } from './documents/documents.module';
     ContractsModule,
     PayrollModule,
     DocumentsModule,
+    ScheduleTemplatesModule,
   ],
 })
 export class AppModule {}

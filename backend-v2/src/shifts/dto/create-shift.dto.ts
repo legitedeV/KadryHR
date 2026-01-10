@@ -28,6 +28,11 @@ export class CreateShiftDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(512)
+  availabilityOverrideReason?: string;
+
+  @IsOptional()
+  @IsString()
   @Matches(/^#[0-9a-fA-F]{6}$/, {
     message: 'color must be a valid hex color (e.g., #ff0000)',
   })

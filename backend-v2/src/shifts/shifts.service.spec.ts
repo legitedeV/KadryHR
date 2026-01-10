@@ -10,6 +10,7 @@ const mockPrisma = {
     update: jest.fn(),
     delete: jest.fn(),
     findMany: jest.fn(),
+    deleteMany: jest.fn(),
   },
   employee: {
     findFirst: jest.fn(),
@@ -111,5 +112,28 @@ describe('ShiftsService', () => {
     expect(summary).toEqual([
       { employeeId: 'emp-1', employeeName: 'Jan Kowalski', hours: 6 },
     ]);
+  });
+
+  it('clears shifts for a week with optional location', async () => {
+    mockPrisma.shift.deleteMany.mockResolvedValue({ count: 3 });
+
+    const result = await service.clearWeek(
+      'org-1',
+      {
+        from: new Date('2024-01-01T00:00:00.000Z'),
+        to: new Date('2024-01-07T23:59:59.000Z'),
+      },
+      'loc-1',
+    );
+
+    expect(mockPrisma.shift.deleteMany).toHaveBeenCalledWith({
+      where: {
+        organisationId: 'org-1',
+        startsAt: { gte: new Date('2024-01-01T00:00:00.000Z') },
+        endsAt: { lte: new Date('2024-01-07T23:59:59.000Z') },
+        locationId: 'loc-1',
+      },
+    });
+    expect(result).toEqual({ deletedCount: 3 });
   });
 });

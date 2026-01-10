@@ -22,6 +22,7 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { EmployeesService } from '../employees/employees.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { ClearWeekDto } from './dto/clear-week.dto';
+import { CopyWeekDto } from './dto/copy-week.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 import { Permission } from '../auth/permissions';
@@ -184,5 +185,32 @@ export class ShiftsController {
       success: true,
       deletedCount: result.deletedCount,
     };
+  }
+
+  /**
+   * Prepare shifts from previous week to copy into current week.
+   * Returns shift payloads that can be created via standard shift creation API.
+   */
+  @RequirePermissions(Permission.RCP_EDIT)
+  @Post('copy-previous-week')
+  @AuditLog({
+    action: 'SCHEDULE_COPY_PREVIOUS_WEEK',
+    entityType: 'schedule',
+    captureBody: true,
+  })
+  async copyPreviousWeek(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CopyWeekDto,
+  ) {
+    const dateRange = {
+      from: new Date(dto.from),
+      to: new Date(dto.to),
+    };
+
+    return this.shiftsService.buildCopyFromPreviousWeek(
+      user.organisationId,
+      dateRange,
+      dto.locationId,
+    );
   }
 }
