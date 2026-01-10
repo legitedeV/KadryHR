@@ -87,6 +87,7 @@ export class ShiftsService {
         locationId: dto.locationId ?? null,
         position: dto.position ?? null,
         notes: dto.notes ?? null,
+        availabilityOverrideReason: dto.availabilityOverrideReason ?? null,
         color: dto.color ?? null,
         startsAt,
         endsAt,
@@ -160,6 +161,8 @@ export class ShiftsService {
         locationId: nextLocationId,
         position: dto.position ?? existing.position,
         notes: dto.notes ?? existing.notes,
+        availabilityOverrideReason:
+          dto.availabilityOverrideReason ?? existing.availabilityOverrideReason,
         color: nextColor,
         startsAt: nextStartsAt,
         endsAt: nextEndsAt,
@@ -549,5 +552,52 @@ export class ShiftsService {
     });
 
     return { deletedCount: result.count };
+  }
+
+  /**
+   * Build shift payloads from the previous week so the frontend can create them
+   * using the standard shift creation endpoint.
+   */
+  async buildCopyFromPreviousWeek(
+    organisationId: string,
+    dateRange: { from: Date; to: Date },
+    locationId?: string,
+  ) {
+    const previousFrom = new Date(dateRange.from);
+    previousFrom.setDate(previousFrom.getDate() - 7);
+    const previousTo = new Date(dateRange.to);
+    previousTo.setDate(previousTo.getDate() - 7);
+
+    const where: Prisma.ShiftWhereInput = {
+      organisationId,
+      startsAt: { gte: previousFrom },
+      endsAt: { lte: previousTo },
+    };
+
+    if (locationId) {
+      where.locationId = locationId;
+    }
+
+    const shifts = await this.prisma.shift.findMany({
+      where,
+      orderBy: { startsAt: 'asc' },
+    });
+
+    return shifts.map((shift) => {
+      const newStart = new Date(shift.startsAt);
+      newStart.setDate(newStart.getDate() + 7);
+      const newEnd = new Date(shift.endsAt);
+      newEnd.setDate(newEnd.getDate() + 7);
+
+      return {
+        employeeId: shift.employeeId,
+        locationId: shift.locationId ?? undefined,
+        position: shift.position ?? undefined,
+        notes: shift.notes ?? undefined,
+        color: shift.color ?? undefined,
+        startsAt: newStart.toISOString(),
+        endsAt: newEnd.toISOString(),
+      };
+    });
   }
 }

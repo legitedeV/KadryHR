@@ -36,6 +36,7 @@ export interface ShiftRecord {
   locationId?: string | null;
   position?: string | null;
   notes?: string | null;
+  availabilityOverrideReason?: string | null;
   color?: string | null;
   startsAt: string;
   endsAt: string;
@@ -54,6 +55,7 @@ export interface ShiftPayload {
   locationId?: string;
   position?: string;
   notes?: string;
+  availabilityOverrideReason?: string;
   color?: string;
   startsAt: string;
   endsAt: string;
@@ -114,6 +116,43 @@ export interface AvailabilityInput {
 export interface ScheduleMetadata {
   deliveryDays: string[];
   promotionDays: Array<{ date: string; type: "ZMIANA_PROMOCJI" | "MALA_PROMOCJA" }>;
+}
+
+export interface ScheduleTemplateRecord {
+  id: string;
+  name: string;
+  description?: string | null;
+  createdAt: string;
+  createdBy?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  } | null;
+  _count?: { shifts: number };
+}
+
+export interface ScheduleTemplateShift {
+  id: string;
+  employeeId: string;
+  locationId?: string | null;
+  position?: string | null;
+  notes?: string | null;
+  color?: string | null;
+  weekday: Weekday;
+  startMinutes: number;
+  endMinutes: number;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  };
+  location?: { id?: string; name?: string | null };
+}
+
+export interface ScheduleTemplateDetail extends ScheduleTemplateRecord {
+  shifts: ScheduleTemplateShift[];
 }
 
 export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT" | "SCHEDULE_PUBLISHED" | "SWAP_STATUS" | "CUSTOM";
@@ -318,6 +357,7 @@ const LOCATIONS_PREFIX = "/locations";
 const AVAILABILITY_PREFIX = "/availability";
 const LEAVE_PREFIX = "/leave-requests";
 const NOTIFICATIONS_PREFIX = "/notifications";
+const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -470,6 +510,18 @@ export async function apiClearWeek(payload: {
   });
 }
 
+export async function apiCopyPreviousWeek(payload: {
+  from: string;
+  to: string;
+  locationId?: string;
+}): Promise<ShiftPayload[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPayload[]>(`${SHIFTS_PREFIX}/copy-previous-week`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiGetShiftSummary(params: {
   from: string;
   to: string;
@@ -570,6 +622,30 @@ export async function apiGetScheduleMetadata(params: {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams({ from: params.from, to: params.to });
   return apiClient.request<ScheduleMetadata>(`${ORGANISATIONS_PREFIX}/me/schedule-metadata?${search.toString()}`);
+}
+
+export async function apiListScheduleTemplates(): Promise<ScheduleTemplateRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ScheduleTemplateRecord[]>(`${SCHEDULE_TEMPLATES_PREFIX}`);
+}
+
+export async function apiGetScheduleTemplate(id: string): Promise<ScheduleTemplateDetail> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ScheduleTemplateDetail>(`${SCHEDULE_TEMPLATES_PREFIX}/${id}`);
+}
+
+export async function apiCreateScheduleTemplateFromWeek(payload: {
+  name: string;
+  description?: string;
+  from: string;
+  to: string;
+  locationId?: string;
+}): Promise<ScheduleTemplateRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ScheduleTemplateRecord>(`${SCHEDULE_TEMPLATES_PREFIX}/from-week`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function apiListEmployees(

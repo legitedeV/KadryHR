@@ -1,77 +1,43 @@
 "use client";
 
-import { useEffect, useMemo, useState, DragEvent } from "react";
-import { createPortal } from "react-dom";
-import { Avatar } from "@/components/Avatar";
-import { Modal } from "@/components/Modal";
-import { EmptyState } from "@/components/EmptyState";
+import { DragEvent, useEffect, useMemo, useState } from "react";
 import {
-  EmployeeRecord,
-  LocationRecord,
-  ShiftPayload,
-  ShiftRecord,
-  AvailabilityRecord,
-  ScheduleMetadata,
+  apiClearWeek,
+  apiCopyPreviousWeek,
+  apiCreateScheduleTemplateFromWeek,
   apiCreateShift,
   apiDeleteShift,
-  apiGetShifts,
   apiGetAvailability,
+  apiGetScheduleMetadata,
+  apiGetScheduleTemplate,
+  apiGetShifts,
   apiListEmployees,
   apiListLocations,
+  apiListScheduleTemplates,
   apiPublishSchedule,
-  apiClearWeek,
   apiUpdateShift,
-  apiGetScheduleMetadata,
+  AvailabilityRecord,
+  EmployeeRecord,
+  LocationRecord,
+  ScheduleMetadata,
+  ScheduleTemplateRecord,
+  ShiftPayload,
+  ShiftRecord,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import { ClearWeekModal } from "./components/ClearWeekModal";
+import { PublishScheduleModal } from "./components/PublishScheduleModal";
+import { ScheduleGrid, countAfternoonPromotions } from "./components/ScheduleGrid";
+import { ScheduleHeader } from "./components/ScheduleHeader";
+import { ShiftEditorModal } from "./components/ShiftEditorModal";
+import { TemplatesDialog } from "./components/TemplatesDialog";
+import { AvailabilityOverrideModal } from "./components/AvailabilityOverrideModal";
+import type { AvailabilityIndicator, ShiftDisplay, ShiftFormState, WeekRange } from "./types";
 
-// Shift templates for quick creation
-const SHIFT_TEMPLATES = [
-  { name: "Rano", startTime: "06:00", endTime: "15:00", color: "#3b82f6" },
-  { name: "Popołudnie", startTime: "14:30", endTime: "23:15", color: "#8b5cf6" },
-  { name: "Dostawa", startTime: "08:00", endTime: "10:00", color: "#22c55e" },
-];
-
-// Default shift colors palette
-const SHIFT_COLORS = [
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#22c55e", // green
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#84cc16", // lime
-];
-
-type ShiftDisplay = {
-  id: string;
-  date: string;
-  start: string;
-  end: string;
-  employeeName: string;
-  employeeId?: string;
-  employeeAvatar?: string | null;
-  locationName: string;
-  locationId?: string | null;
-  status: "ASSIGNED" | "UNASSIGNED";
-  availabilityWarning?: string | null;
-  position?: string | null;
-  color?: string | null;
-};
-
-type ShiftFormState = {
-  employeeId: string;
-  locationId?: string;
-  position?: string;
-  notes?: string;
-  color?: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-};
-
-type WeekRange = { from: string; to: string; label: string };
+const dowOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+const dowFromDate = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const FULL_DAY_MINUTES = 6 * 60;
 
 function getWeekRange(anchor: Date = new Date()): WeekRange {
   const day = anchor.getDay() || 7;
@@ -87,21 +53,6 @@ function getWeekRange(anchor: Date = new Date()): WeekRange {
   };
 }
 
-const dowOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const dowLabels = [
-  "Poniedziałek",
-  "Wtorek",
-  "Środa",
-  "Czwartek",
-  "Piątek",
-  "Sobota",
-  "Niedziela",
-];
-
-const dowFromDate = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-const AFTERNOON_START_HOUR = 14;
-const REQUIRED_AFTERNOON_COUNT = 2;
-
 function formatTime(date: Date) {
   return date.toLocaleTimeString("pl-PL", {
     hour: "2-digit",
@@ -110,7 +61,11 @@ function formatTime(date: Date) {
   });
 }
 
-function mapShiftRecord(record: ShiftRecord, employees: EmployeeRecord[], locations: LocationRecord[]): ShiftDisplay {
+function mapShiftRecord(
+  record: ShiftRecord,
+  employees: EmployeeRecord[],
+  locations: LocationRecord[],
+): ShiftDisplay {
   const startDate = new Date(record.startsAt);
   const endDate = new Date(record.endsAt);
   const employee =
@@ -141,24 +96,28 @@ function mapShiftRecord(record: ShiftRecord, employees: EmployeeRecord[], locati
   };
 }
 
-function formatMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-}
-
 function getDowKey(date: string) {
   const d = new Date(date);
-  const idx = d.getDay(); // 0 = Sun
+  const idx = d.getDay();
   if (Number.isNaN(idx) || idx < 0 || idx > 6) return "Sun";
   return dowFromDate[idx] ?? "Sun";
 }
 
-export function buildShiftDescription(
-  shift: ShiftRecord,
-  employees: EmployeeRecord[],
-  locations: LocationRecord[],
-) {
+function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
+  const startsAt = new Date(`${form.date}T${form.startTime}:00`);
+  const endsAt = new Date(`${form.date}T${form.endTime}:00`);
+  return {
+    employeeId: form.employeeId,
+    locationId: form.locationId || undefined,
+    position: form.position || undefined,
+    notes: form.notes || undefined,
+    color: form.color || undefined,
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
+  };
+}
+
+function buildShiftDescription(shift: ShiftRecord, employees: EmployeeRecord[], locations: LocationRecord[]) {
   const employee = employees.find((e) => e.id === shift.employeeId);
   const location = locations.find((loc) => loc.id === shift.locationId);
   const startDate = new Date(shift.startsAt);
@@ -178,101 +137,77 @@ export function buildShiftDescription(
   return `${employeeLabel} • ${dateLabel} • ${timeLabel} • ${locationLabel}`;
 }
 
-type ConfirmDialogProps = {
-  title: string;
-  description: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  open?: boolean;
-  forceRender?: boolean;
-  portalTarget?: HTMLElement | null;
-};
-
-export function ConfirmDialog({
-  title,
-  description,
-  confirmLabel = "Potwierdź",
-  cancelLabel = "Anuluj",
-  onConfirm,
-  onCancel,
-  open = true,
-  forceRender = false,
-  portalTarget,
-}: ConfirmDialogProps) {
-  const shouldRender = forceRender || open;
-  if (!shouldRender) return null;
-
-  const dialog = (
-    <div
-      role="alertdialog"
-      aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-[80] flex items-center justify-center"
-    >
-      <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-surface-200/80 bg-white p-6 shadow-elevated ring-1 ring-surface-200 dark:border-surface-800 dark:bg-surface-900 dark:ring-surface-700">
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">{title}</h2>
-          <p className="text-sm text-surface-600 dark:text-surface-300">{description}</p>
-        </div>
-        <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={onCancel}
-            aria-label={cancelLabel}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={confirmLabel.toLowerCase().includes("usuń") ? "btn-danger" : "btn-primary"}
-            onClick={onConfirm}
-            aria-label={confirmLabel}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const target = portalTarget ?? (typeof document !== "undefined" ? document.body : null);
-  if (target) {
-    return createPortal(dialog, target);
+function getAvailabilityIndicator(dayAvail: AvailabilityRecord[]): AvailabilityIndicator {
+  const totalMinutes = dayAvail.reduce((sum, slot) => sum + Math.max(0, slot.endMinutes - slot.startMinutes), 0);
+  if (totalMinutes >= FULL_DAY_MINUTES) {
+    return {
+      status: "available",
+      label: "Dostępny przez większość dnia",
+      windows: dayAvail,
+    };
   }
-
-  return dialog;
-}
-
-function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
-  const startsAt = new Date(`${form.date}T${form.startTime}:00`);
-  const endsAt = new Date(`${form.date}T${form.endTime}:00`);
+  if (totalMinutes > 0) {
+    return {
+      status: "partial",
+      label: "Częściowa dostępność",
+      windows: dayAvail,
+    };
+  }
   return {
-    employeeId: form.employeeId,
-    locationId: form.locationId || undefined,
-    position: form.position || undefined,
-    notes: form.notes || undefined,
-    color: form.color || undefined,
-    startsAt: startsAt.toISOString(),
-    endsAt: endsAt.toISOString(),
+    status: "unavailable",
+    label: "Brak dostępności",
+    windows: dayAvail,
   };
 }
 
-function formatEmployeeName(employee: EmployeeRecord): string {
-  return `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() || employee.email || "Pracownik";
+function getAvailabilitySeverity(dayAvail: AvailabilityRecord[], startMinutes: number, endMinutes: number) {
+  if (!dayAvail.length) {
+    return "outside" as const;
+  }
+
+  const windows = dayAvail
+    .map((slot) => ({ start: slot.startMinutes, end: slot.endMinutes }))
+    .sort((a, b) => a.start - b.start);
+
+  const merged: Array<{ start: number; end: number }> = [];
+  windows.forEach((slot) => {
+    if (!merged.length) {
+      merged.push({ ...slot });
+      return;
+    }
+    const last = merged[merged.length - 1];
+    if (slot.start <= last.end) {
+      last.end = Math.max(last.end, slot.end);
+    } else {
+      merged.push({ ...slot });
+    }
+  });
+
+  const overlaps = merged.some((slot) => startMinutes < slot.end && endMinutes > slot.start);
+  const fullyCovered = merged.some((slot) => startMinutes >= slot.start && endMinutes <= slot.end);
+
+  if (fullyCovered) return "available" as const;
+  if (overlaps) return "partial" as const;
+  return "outside" as const;
 }
 
-// Get text color for contrast against background
-function getContrastTextColor(hexColor: string): string {
-  const hex = hexColor.replace("#", "");
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? "#1e293b" : "#ffffff";
+function getWeekdayIndex(weekday: string) {
+  switch (weekday) {
+    case "MONDAY":
+      return 0;
+    case "TUESDAY":
+      return 1;
+    case "WEDNESDAY":
+      return 2;
+    case "THURSDAY":
+      return 3;
+    case "FRIDAY":
+      return 4;
+    case "SATURDAY":
+      return 5;
+    default:
+      return 6;
+  }
 }
 
 export default function GrafikPage() {
@@ -282,7 +217,25 @@ export default function GrafikPage() {
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [availability, setAvailability] = useState<AvailabilityRecord[]>([]);
   const [scheduleMetadata, setScheduleMetadata] = useState<ScheduleMetadata | null>(null);
+  const [templates, setTemplates] = useState<ScheduleTemplateRecord[]>([]);
   const [draggedShift, setDraggedShift] = useState<string | null>(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [applyingTemplateId, setApplyingTemplateId] = useState<string | null>(null);
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
+  const [copyingWeek, setCopyingWeek] = useState(false);
+  const [bulkCreating, setBulkCreating] = useState(false);
+  const [copyConfirmOpen, setCopyConfirmOpen] = useState(false);
+  const [pendingAvailabilitySeverity, setPendingAvailabilitySeverity] = useState<"partial" | "outside" | null>(null);
+  const [availabilityOverrideReason, setAvailabilityOverrideReason] = useState("");
+  const [pendingAction, setPendingAction] = useState<
+    | { type: "create"; payload: ShiftPayload }
+    | { type: "update"; payload: ShiftPayload; shiftId: string }
+    | { type: "bulk"; payloads: ShiftPayload[] }
+    | null
+  >(null);
+
   const hasToken = useMemo(() => !!getAccessToken(), []);
   const [loading, setLoading] = useState(hasToken);
   const [error, setError] = useState<string | null>(
@@ -349,11 +302,9 @@ export default function GrafikPage() {
     };
   }, [hasToken, range.from, range.to]);
 
-  // Grid structure: employees as rows, days as columns
-  const gridByEmployeeAndDay: Record<string, Record<string, ShiftDisplay[]>> = useMemo(() => {
-    const grid: Record<string, Record<string, ShiftDisplay[]>> = {};
-    
-    // Initialize grid for all employees
+  const gridByEmployeeAndDay: Record<string, Record<string, ReturnType<typeof mapShiftRecord>[]>> = useMemo(() => {
+    const grid: Record<string, Record<string, ReturnType<typeof mapShiftRecord>[]>> = {};
+
     employees.forEach((emp) => {
       grid[emp.id] = {};
       dowOrder.forEach((dow) => {
@@ -361,10 +312,9 @@ export default function GrafikPage() {
       });
     });
 
-    // Populate grid with shifts
     shifts.forEach((s) => {
       const display = mapShiftRecord(s, employees, locations);
-      if (!display.employeeId) return; // Skip unassigned shifts
+      if (!display.employeeId) return;
       const key = getDowKey(display.date);
       if (grid[display.employeeId] && grid[display.employeeId][key]) {
         grid[display.employeeId][key].push(display);
@@ -374,11 +324,9 @@ export default function GrafikPage() {
     return grid;
   }, [employees, shifts, locations]);
 
-  // Availability grid by employee and weekday
   const availabilityByEmployeeAndDay: Record<string, Record<string, AvailabilityRecord[]>> = useMemo(() => {
     const grid: Record<string, Record<string, AvailabilityRecord[]>> = {};
-    
-    // Initialize grid for all employees
+
     employees.forEach((emp) => {
       grid[emp.id] = {};
       dowOrder.forEach((dow) => {
@@ -386,7 +334,6 @@ export default function GrafikPage() {
       });
     });
 
-    // Map weekday enum to dow order
     const weekdayMap: Record<string, typeof dowOrder[number]> = {
       MONDAY: "Mon",
       TUESDAY: "Tue",
@@ -397,17 +344,16 @@ export default function GrafikPage() {
       SUNDAY: "Sun",
     };
 
-    // Populate grid with availability
     availability.forEach((a) => {
       if (!a.employeeId) return;
-      
+
       let key: string | undefined;
       if (a.weekday) {
         key = weekdayMap[a.weekday];
       } else if (a.date) {
         key = getDowKey(a.date);
       }
-      
+
       if (key && grid[a.employeeId] && grid[a.employeeId][key]) {
         grid[a.employeeId][key].push(a);
       }
@@ -415,6 +361,22 @@ export default function GrafikPage() {
 
     return grid;
   }, [employees, availability]);
+
+  const availabilityIndicators = useMemo(() => {
+    const indicators: Record<string, Record<string, AvailabilityIndicator>> = {};
+    employees.forEach((employee) => {
+      indicators[employee.id] = {};
+      dowOrder.forEach((dow) => {
+        const dayAvail = availabilityByEmployeeAndDay[employee.id]?.[dow] ?? [];
+        indicators[employee.id][dow] = getAvailabilityIndicator(dayAvail);
+      });
+    });
+    return indicators;
+  }, [availabilityByEmployeeAndDay, employees]);
+
+  const promotionAfternoonCounts = useMemo(() => {
+    return countAfternoonPromotions(shifts, scheduleMetadata);
+  }, [scheduleMetadata, shifts]);
 
   const handleWeekChange = (direction: "next" | "prev") => {
     const currentStart = new Date(range.from);
@@ -461,37 +423,100 @@ export default function GrafikPage() {
     setEditorOpen(true);
   };
 
-  // Apply a shift template
-  const applyTemplate = (template: typeof SHIFT_TEMPLATES[number]) => {
-    setForm((prev) => ({
-      ...prev,
-      startTime: template.startTime,
-      endTime: template.endTime,
-      color: template.color,
-    }));
-  };
-
-  // Drag and drop handlers
-  const handleDragStart = (e: DragEvent<HTMLDivElement>, shiftId: string) => {
+  const handleDragStart = (shiftId: string, event: DragEvent<HTMLDivElement>) => {
     setDraggedShift(shiftId);
-    e.dataTransfer.setData("text/plain", shiftId);
-    e.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", shiftId);
+    event.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: DragEvent<HTMLTableCellElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+  const checkAvailabilityForPayload = (payload: ShiftPayload) => {
+    const dateKey = payload.startsAt.slice(0, 10);
+    const dowKey = getDowKey(dateKey);
+    const dayAvail = availabilityByEmployeeAndDay[payload.employeeId]?.[dowKey] ?? [];
+    const startDate = new Date(payload.startsAt);
+    const endDate = new Date(payload.endsAt);
+    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+    const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+    return getAvailabilitySeverity(dayAvail, startMinutes, endMinutes);
   };
 
-  const handleDrop = async (e: DragEvent<HTMLTableCellElement>, targetDate: string, targetEmployeeId: string) => {
-    e.preventDefault();
-    const shiftId = e.dataTransfer.getData("text/plain");
+  const queueAvailabilityOverride = (
+    severity: "partial" | "outside",
+    action: { type: "create"; payload: ShiftPayload } | { type: "update"; payload: ShiftPayload; shiftId: string } | { type: "bulk"; payloads: ShiftPayload[] },
+  ) => {
+    setPendingAvailabilitySeverity(severity);
+    setAvailabilityOverrideReason("");
+    setPendingAction(action);
+  };
+
+  const executeAction = async (
+    action: { type: "create"; payload: ShiftPayload } | { type: "update"; payload: ShiftPayload; shiftId: string } | { type: "bulk"; payloads: ShiftPayload[] },
+    overrideReason?: string,
+  ) => {
+    if (action.type === "create") {
+      const payload = overrideReason
+        ? { ...action.payload, availabilityOverrideReason: overrideReason }
+        : action.payload;
+      const created = await apiCreateShift(payload);
+      setShifts((prev) => [created, ...prev]);
+      setFormSuccess("Zmiana została dodana.");
+    } else if (action.type === "update") {
+      const payload = overrideReason
+        ? { ...action.payload, availabilityOverrideReason: overrideReason }
+        : action.payload;
+      const updated = await apiUpdateShift(action.shiftId, payload);
+      setShifts((prev) => prev.map((s) => (s.id === action.shiftId ? updated : s)));
+      setFormSuccess("Zmiana została zaktualizowana.");
+    } else {
+      const payloads = overrideReason
+        ? action.payloads.map((payload) => ({ ...payload, availabilityOverrideReason: overrideReason }))
+        : action.payloads;
+      const results = await Promise.allSettled(payloads.map((payload) => apiCreateShift(payload)));
+      const createdShifts = results
+        .filter((result): result is PromiseFulfilledResult<ShiftRecord> => result.status === "fulfilled")
+        .map((result) => result.value);
+      setShifts((prev) => [...createdShifts, ...prev]);
+      const failedCount = results.filter((result) => result.status === "rejected").length;
+      if (failedCount > 0) {
+        setFormError(`Nie udało się dodać ${failedCount} zmian z powodu konfliktów lub błędów.`);
+      } else {
+        setFormSuccess(`Dodano ${createdShifts.length} zmian.`);
+      }
+    }
+  };
+
+  const handleAvailabilityConfirm = async () => {
+    if (!pendingAvailabilitySeverity || !pendingAction) return;
+    setPendingAvailabilitySeverity(null);
+    const action = pendingAction;
+    setPendingAction(null);
+    try {
+      if (action.type === "bulk") {
+        setBulkCreating(true);
+      } else {
+        setSaving(true);
+      }
+      await executeAction(action, availabilityOverrideReason.trim() || undefined);
+      setEditorOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się zapisać zmiany. Spróbuj ponownie.");
+    } finally {
+      setSaving(false);
+      setBulkCreating(false);
+      setAvailabilityOverrideReason("");
+    }
+  };
+
+  const handleDrop = async (event: DragEvent<HTMLTableCellElement>, targetDate: string, targetEmployeeId: string) => {
+    event.preventDefault();
+    const shiftId = event.dataTransfer.getData("text/plain");
     if (!shiftId || !draggedShift) return;
 
     const shift = shifts.find((s) => s.id === shiftId);
     if (!shift) return;
 
-    // Calculate new start and end times preserving duration
     const originalStart = new Date(shift.startsAt);
     const originalEnd = new Date(shift.endsAt);
     const duration = originalEnd.getTime() - originalStart.getTime();
@@ -508,12 +533,21 @@ export default function GrafikPage() {
     );
     const newEnd = new Date(newStart.getTime() + duration);
 
+    const payload: ShiftPayload = {
+      employeeId: targetEmployeeId,
+      startsAt: newStart.toISOString(),
+      endsAt: newEnd.toISOString(),
+    };
+
+    const severity = checkAvailabilityForPayload(payload);
+    if (severity !== "available") {
+      queueAvailabilityOverride(severity, { type: "update", payload, shiftId });
+      setDraggedShift(null);
+      return;
+    }
+
     try {
-      const updated = await apiUpdateShift(shiftId, {
-        employeeId: targetEmployeeId,
-        startsAt: newStart.toISOString(),
-        endsAt: newEnd.toISOString(),
-      });
+      const updated = await apiUpdateShift(shiftId, payload);
       setShifts((prev) => prev.map((s) => (s.id === shiftId ? updated : s)));
       setFormSuccess("Zmiana została przeniesiona.");
     } catch (err) {
@@ -539,15 +573,19 @@ export default function GrafikPage() {
 
     setSaving(true);
     setFormError(null);
+    const payload = buildPayloadFromForm(form);
+    const severity = checkAvailabilityForPayload(payload);
+    if (severity !== "available") {
+      queueAvailabilityOverride(severity, editingShift ? { type: "update", payload, shiftId: editingShift.id } : { type: "create", payload });
+      setSaving(false);
+      return;
+    }
+
     try {
       if (editingShift) {
-        const updated = await apiUpdateShift(editingShift.id, buildPayloadFromForm(form));
-        setShifts((prev) => prev.map((s) => (s.id === editingShift.id ? updated : s)));
-        setFormSuccess("Zmiana została zaktualizowana.");
+        await executeAction({ type: "update", payload, shiftId: editingShift.id });
       } else {
-        const created = await apiCreateShift(buildPayloadFromForm(form));
-        setShifts((prev) => [created, ...prev]);
-        setFormSuccess("Zmiana została dodana.");
+        await executeAction({ type: "create", payload });
       }
       setEditorOpen(false);
       resetForm();
@@ -570,10 +608,6 @@ export default function GrafikPage() {
     } finally {
       setDeleteTarget(null);
     }
-  };
-
-  const openPublishModal = () => {
-    setPublishOpen(true);
   };
 
   const handlePublish = async () => {
@@ -599,10 +633,6 @@ export default function GrafikPage() {
     }
   };
 
-  const openClearWeekModal = () => {
-    setClearWeekOpen(true);
-  };
-
   const handleClearWeek = async () => {
     setClearing(true);
     setFormError(null);
@@ -610,7 +640,6 @@ export default function GrafikPage() {
       const result = await apiClearWeek({
         from: range.from,
         to: range.to,
-        // locationId can be added here if location filter is implemented
       });
       setShifts([]);
       setFormSuccess(`Usunięto ${result.deletedCount} zmian z tego tygodnia.`);
@@ -623,70 +652,128 @@ export default function GrafikPage() {
     }
   };
 
-  const promotionAfternoonCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    if (!scheduleMetadata?.promotionDays?.length) return counts;
-    const promoDates = new Set(
-      scheduleMetadata.promotionDays
-        .filter((promo) => promo.type === "ZMIANA_PROMOCJI")
-        .map((promo) => promo.date),
-    );
-    shifts.forEach((shift) => {
-      if (!shift.employeeId) return;
-      const start = new Date(shift.startsAt);
-      const dateStr = start.toISOString().slice(0, 10);
-      if (!promoDates.has(dateStr)) return;
-      if (start.getHours() < AFTERNOON_START_HOUR) return;
-      counts[dateStr] = (counts[dateStr] ?? 0) + 1;
-    });
-    return counts;
-  }, [scheduleMetadata?.promotionDays, shifts]);
+  const loadTemplates = async () => {
+    setLoadingTemplates(true);
+    setTemplatesError(null);
+    try {
+      const data = await apiListScheduleTemplates();
+      setTemplates(data);
+    } catch (err) {
+      console.error(err);
+      setTemplatesError("Nie udało się pobrać szablonów.");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
 
-  const promotionWarnings = useMemo(() => {
-    if (!scheduleMetadata?.promotionDays?.length) return [];
-    return scheduleMetadata.promotionDays
-      .filter((promo) => promo.type === "ZMIANA_PROMOCJI")
-      .map((promo) => {
-        const count = promotionAfternoonCounts[promo.date] ?? 0;
-        return { date: promo.date, count };
-      })
-      .filter((promo) => promo.count < REQUIRED_AFTERNOON_COUNT);
-  }, [promotionAfternoonCounts, scheduleMetadata?.promotionDays]);
+  const handleOpenTemplates = () => {
+    setTemplatesOpen(true);
+    if (!templates.length) {
+      void loadTemplates();
+    }
+  };
+
+  const handleCreateTemplate = async (name: string) => {
+    setCreatingTemplate(true);
+    setTemplatesError(null);
+    try {
+      await apiCreateScheduleTemplateFromWeek({
+        name,
+        from: range.from,
+        to: range.to,
+      });
+      await loadTemplates();
+      setFormSuccess("Szablon został zapisany.");
+    } catch (err) {
+      console.error(err);
+      setTemplatesError("Nie udało się zapisać szablonu.");
+    } finally {
+      setCreatingTemplate(false);
+    }
+  };
+
+  const handleApplyTemplate = async (templateId: string) => {
+    setApplyingTemplateId(templateId);
+    setFormError(null);
+    try {
+      const template = await apiGetScheduleTemplate(templateId);
+      const monday = new Date(range.from);
+      const payloads: ShiftPayload[] = template.shifts.map((shift) => {
+        const dayOffset = getWeekdayIndex(shift.weekday);
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + dayOffset);
+        const startDate = new Date(dayDate);
+        startDate.setMinutes(startDate.getMinutes() + shift.startMinutes);
+        const endDate = new Date(dayDate);
+        endDate.setMinutes(endDate.getMinutes() + shift.endMinutes);
+        return {
+          employeeId: shift.employeeId,
+          locationId: shift.locationId ?? undefined,
+          position: shift.position ?? undefined,
+          notes: shift.notes ?? undefined,
+          color: shift.color ?? undefined,
+          startsAt: startDate.toISOString(),
+          endsAt: endDate.toISOString(),
+        };
+      });
+
+      const severities = payloads.map((payload) => checkAvailabilityForPayload(payload));
+      if (severities.includes("outside") || severities.includes("partial")) {
+        const severity = severities.includes("outside") ? "outside" : "partial";
+        queueAvailabilityOverride(severity, { type: "bulk", payloads });
+      } else {
+        setBulkCreating(true);
+        await executeAction({ type: "bulk", payloads });
+      }
+      setTemplatesOpen(false);
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się zastosować szablonu.");
+    } finally {
+      setBulkCreating(false);
+      setApplyingTemplateId(null);
+    }
+  };
+
+  const handleCopyPreviousWeek = async () => {
+    setCopyingWeek(true);
+    setFormError(null);
+    try {
+      const payloads = await apiCopyPreviousWeek({ from: range.from, to: range.to });
+      if (payloads.length === 0) {
+        setFormError("Brak zmian do skopiowania z poprzedniego tygodnia.");
+        return;
+      }
+      const severities = payloads.map((payload) => checkAvailabilityForPayload(payload));
+      if (severities.includes("outside") || severities.includes("partial")) {
+        const severity = severities.includes("outside") ? "outside" : "partial";
+        queueAvailabilityOverride(severity, { type: "bulk", payloads });
+      } else {
+        await executeAction({ type: "bulk", payloads });
+      }
+      setCopyConfirmOpen(false);
+    } catch (err) {
+      console.error(err);
+      setFormError("Nie udało się skopiować poprzedniego tygodnia.");
+    } finally {
+      setCopyingWeek(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="section-label">Grafik</p>
-          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">Tydzień: {range.label}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-surface-600 dark:text-surface-300">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Łącznie zmian: <span className="font-semibold text-surface-900 dark:text-surface-100">{shifts.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="btn-secondary" onClick={() => handleWeekChange("prev")} aria-label="Poprzedni tydzień">
-              ← Poprzedni
-            </button>
-            <button className="btn-secondary" onClick={() => handleWeekChange("next")} aria-label="Następny tydzień">
-              Następny →
-            </button>
-          </div>
-          <button className="btn-secondary" onClick={openPublishModal}>
-            Opublikuj tydzień
-          </button>
-          <button 
-            className="btn-secondary text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/50" 
-            onClick={openClearWeekModal}
-            disabled={shifts.length === 0}
-          >
-            Wyczyść tydzień
-          </button>
-        </div>
-      </div>
+      <ScheduleHeader
+        range={range}
+        shiftsCount={shifts.length}
+        onPrevWeek={() => handleWeekChange("prev")}
+        onNextWeek={() => handleWeekChange("next")}
+        onPublish={() => setPublishOpen(true)}
+        onClearWeek={() => setClearWeekOpen(true)}
+        onCopyPreviousWeek={() => setCopyConfirmOpen(true)}
+        onOpenTemplates={handleOpenTemplates}
+        copying={copyingWeek}
+        templatesLoading={loadingTemplates}
+      />
 
       {loading && (
         <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
@@ -708,541 +795,85 @@ export default function GrafikPage() {
       )}
 
       {!loading && !error && (
-        <div className="card p-4 lg:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="badge badge-success flex items-center gap-2">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                zmiana obsadzona
-              </span>
-              <span className="badge badge-error flex items-center gap-2">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                nieobsadzona
-              </span>
-              {formSuccess && <span className="text-sm text-emerald-700 dark:text-emerald-200">{formSuccess}</span>}
-            </div>
-            {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
-          </div>
-
-          {promotionWarnings.length > 0 && (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-              <div className="flex items-start gap-2">
-                <svg className="mt-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <div className="space-y-1">
-                  <p className="font-semibold">
-                    ZMIANA PROMOCJI: wymagane minimum 2 osoby na popołudniowej zmianie.
-                  </p>
-                  <ul className="space-y-0.5 text-xs">
-                    {promotionWarnings.map((warning) => (
-                      <li key={warning.date}>
-                        {new Date(warning.date).toLocaleDateString("pl-PL", {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                        })}{" "}
-                        · obsada {warning.count}/{REQUIRED_AFTERNOON_COUNT}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
+        <>
+          {formSuccess && (
+            <div className="text-sm text-emerald-700 dark:text-emerald-200">{formSuccess}</div>
           )}
-
-          {employees.length > 0 && shifts.length === 0 && (
-            <div className="rounded-xl border border-dashed border-surface-200/80 bg-surface-50/40 dark:border-surface-800/80 dark:bg-surface-900/40">
-              <EmptyState
-                icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                }
-                title="Brak zmian w tym tygodniu"
-                description="Dodaj pierwszą zmianę, aby rozpocząć planowanie grafiku."
-                action={
-                  <button className="btn-primary px-4 py-2" onClick={() => openCreateModal()}>
-                    Dodaj zmianę
-                  </button>
-                }
-              />
-            </div>
-          )}
-
-          <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80 -mx-1 lg:-mx-2">
-            <table className="min-w-full w-full table-fixed">
-              <thead className="bg-surface-50/80 dark:bg-surface-900/80">
-                <tr className="border-b border-surface-200 dark:border-surface-800">
-                  <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
-                    Pracownik
-                  </th>
-                  {dowLabels.map((dayLabel, idx) => {
-                    const dayDate = new Date(range.from);
-                    dayDate.setDate(dayDate.getDate() + idx);
-                    const dayDateStr = dayDate.toISOString().slice(0, 10);
-                    
-                    // Check for delivery day
-                    const isDeliveryDay = scheduleMetadata?.deliveryDays?.includes(dayDateStr);
-                    
-                    // Check for promotion day
-                    const promotionInfo = scheduleMetadata?.promotionDays?.find(p => p.date === dayDateStr);
-                    
-                    return (
-                      <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                        <div className="flex flex-col items-center gap-1">
-                          {/* Delivery and promotion labels */}
-                          {isDeliveryDay && (
-                            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-white">
-                              DOSTAWA
-                            </span>
-                          )}
-                          {promotionInfo && (
-                            <span
-                              className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
-                                promotionInfo.type === "ZMIANA_PROMOCJI"
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-violet-500 text-white"
-                              }`}
-                            >
-                              {promotionInfo.type === "ZMIANA_PROMOCJI" ? "ZMIANA PROMOCJI" : "MAŁA PROMOCJA"}
-                            </span>
-                          )}
-                          <span>{dayLabel}</span>
-                          <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
-                            {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
-                          </span>
-                          {promotionInfo?.type === "ZMIANA_PROMOCJI" && (
-                            <div className="mt-1 flex flex-col items-center gap-0.5 text-[9px]">
-                              <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700 ring-1 ring-amber-200/60 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/60">
-                                Wymagane 2 osoby
-                              </span>
-                              <span
-                                className={`font-semibold ${
-                                  (promotionAfternoonCounts[dayDateStr] ?? 0) >= REQUIRED_AFTERNOON_COUNT
-                                    ? "text-emerald-600 dark:text-emerald-300"
-                                    : "text-rose-600 dark:text-rose-300"
-                                }`}
-                              >
-                                Popołudnie: {promotionAfternoonCounts[dayDateStr] ?? 0}/{REQUIRED_AFTERNOON_COUNT}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
-                {employees.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-surface-500 dark:text-surface-400">
-                      <EmptyState
-                        icon={
-                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
-                        }
-                        title="Brak pracowników"
-                        description="Dodaj pracowników, aby tworzyć grafik zmian."
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  employees.map((employee) => {
-                    const employeeShifts = gridByEmployeeAndDay[employee.id] || {};
-                    const employeeAvail = availabilityByEmployeeAndDay[employee.id] || {};
-                    return (
-                      <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                        <td className="w-48 px-3 py-2 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
-                          <div className="flex items-center gap-2">
-                            <Avatar
-                              name={formatEmployeeName(employee)}
-                              src={employee.avatarUrl}
-                              size="sm"
-                            />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-medium text-sm text-surface-900 dark:text-surface-50 truncate">
-                                {formatEmployeeName(employee)}
-                              </span>
-                              {employee.position && (
-                                <span className="text-[10px] text-surface-500 dark:text-surface-400 truncate">
-                                  {employee.position}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        {dowOrder.map((dow, dayIdx) => {
-                          const dayShifts = employeeShifts[dow] || [];
-                          const dayAvail = employeeAvail[dow] || [];
-                          const dayDate = new Date(range.from);
-                          dayDate.setDate(dayDate.getDate() + dayIdx);
-                          const dayDateValue = dayDate.toISOString().slice(0, 10);
-                          return (
-                            <td 
-                              key={dow} 
-                              className={`px-2 py-2 align-top ${draggedShift ? 'hover:bg-brand-50/50 dark:hover:bg-brand-950/30' : ''}`}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, dayDateValue, employee.id)}
-                            >
-                              <div className="flex flex-col gap-1 min-h-[50px]">
-                                {/* Availability indicator */}
-                                {dayAvail.length > 0 && (
-                                  <div className="flex gap-0.5 mb-0.5" title={`Dostępność: ${dayAvail.map(a => `${formatMinutes(a.startMinutes)}-${formatMinutes(a.endMinutes)}`).join(', ')}`}>
-                                    {dayAvail.map((avail, i) => (
-                                      <div 
-                                        key={avail.id || i}
-                                        className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500"
-                                        title={`${formatMinutes(avail.startMinutes)}-${formatMinutes(avail.endMinutes)}`}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-                                {dayShifts.length === 0 ? (
-                                  <button
-                                    className="w-full h-full min-h-[50px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
-                                    onClick={() => openCreateModal(dayDateValue, employee.id)}
-                                    aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
-                                  >
-                                    <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                  </button>
-                                ) : (
-                                  <>
-                                    {dayShifts.map((shift) => {
-                                      const sourceShift = shifts.find((s) => s.id === shift.id);
-                                      return (
-                                        <div
-                                          key={shift.id}
-                                          draggable
-                                          onDragStart={(e) => handleDragStart(e, shift.id)}
-                                          className={`group relative rounded-md border px-1.5 py-1.5 shadow-sm hover:shadow-md transition-all text-xs cursor-move ${
-                                            shift.color 
-                                              ? '' 
-                                              : 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30'
-                                          }`}
-                                          style={shift.color ? {
-                                            backgroundColor: `${shift.color}20`,
-                                            borderColor: `${shift.color}50`,
-                                          } : undefined}
-                                        >
-                                          {/* Color indicator bar */}
-                                          {shift.color && (
-                                            <div 
-                                              className="absolute left-0 top-0 bottom-0 w-1 rounded-l-md"
-                                              style={{ backgroundColor: shift.color }}
-                                            />
-                                          )}
-                                          <div className={`flex items-start justify-between gap-0.5 ${shift.color ? 'ml-1.5' : ''}`}>
-                                            <div className="flex-1 min-w-0">
-                                              <div 
-                                                className="font-semibold text-[11px]"
-                                                style={shift.color ? { color: getContrastTextColor(shift.color + '30') === '#ffffff' ? shift.color : shift.color } : undefined}
-                                              >
-                                                <span className={shift.color ? '' : 'text-emerald-800 dark:text-emerald-200'}>
-                                                  {shift.start}–{shift.end}
-                                                </span>
-                                              </div>
-                                              {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
-                                                <div className="text-[9px] text-surface-600 dark:text-surface-300 truncate">
-                                                  {shift.locationName}
-                                                </div>
-                                              )}
-                                              {shift.position && (
-                                                <div className="text-[9px] uppercase tracking-wide text-surface-500 dark:text-surface-400 truncate">
-                                                  {shift.position}
-                                                </div>
-                                              )}
-                                              {shift.availabilityWarning && (
-                                                <div className="mt-0.5 rounded bg-amber-50 px-1 py-0.5 text-[8px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
-                                                  {shift.availabilityWarning}
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <button
-                                                className="text-[9px] text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium p-0.5"
-                                                onClick={() => sourceShift && openEditModal(sourceShift)}
-                                                aria-label="Edytuj zmianę"
-                                              >
-                                                ✎
-                                              </button>
-                                              <button
-                                                className="text-[9px] text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 font-medium p-0.5"
-                                                onClick={() => setDeleteTarget(sourceShift || null)}
-                                                aria-label="Usuń zmianę"
-                                              >
-                                                ✕
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                    <button
-                                      className="w-full rounded-md border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1 flex items-center justify-center group"
-                                      onClick={() => openCreateModal(dayDateValue, employee.id)}
-                                      aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
-                                    >
-                                      <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                      </svg>
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
+          <ScheduleGrid
+            range={range}
+            employees={employees}
+            shifts={shifts}
+            gridByEmployeeAndDay={gridByEmployeeAndDay}
+            availabilityIndicators={availabilityIndicators}
+            draggedShift={draggedShift}
+            scheduleMetadata={scheduleMetadata}
+            promotionAfternoonCounts={promotionAfternoonCounts}
+            onDragStart={handleDragStart}
+            onDropShift={handleDrop}
+            onOpenCreate={openCreateModal}
+            onOpenEdit={openEditModal}
+            onDeleteShift={(shift) => setDeleteTarget(shift)}
+          />
+        </>
       )}
 
-      {/* Availability is now shown as indicators in the schedule grid - no separate table needed */}
-
-      <Modal
+      <ShiftEditorModal
         open={editorOpen}
-        title={editingShift ? "Edytuj zmianę" : "Dodaj zmianę"}
-        description="Uzupełnij szczegóły zmiany i przypisz pracownika."
+        isEditing={!!editingShift}
+        form={form}
+        employees={employees}
+        locations={locations}
+        saving={saving}
+        formError={formError}
         onClose={() => setEditorOpen(false)}
-        footer={
-          <>
-            <button className="btn-secondary" onClick={() => setEditorOpen(false)}>
-              Anuluj
-            </button>
-            <button
-              className="btn-secondary"
-              type="button"
-              onClick={() => resetForm(form.date, form.employeeId)}
-              disabled={saving}
-            >
-              Wyczyść
-            </button>
-            <button className="btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? "Zapisywanie..." : "Zapisz"}
-            </button>
-          </>
-        }
-      >
-        {/* Quick shift templates */}
-        <div className="mb-4">
-          <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-2">Szybkie szablony:</p>
-          <div className="flex flex-wrap gap-2">
-            {SHIFT_TEMPLATES.map((template) => (
-              <button
-                key={template.name}
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:border-brand-400 dark:hover:border-brand-700"
-                style={{
-                  borderColor: template.color + '50',
-                  backgroundColor: template.color + '15',
-                  color: template.color,
-                }}
-                onClick={() => applyTemplate(template)}
-              >
-                <span 
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: template.color }}
-                />
-                {template.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        onReset={() => resetForm(form.date, form.employeeId)}
+        onSave={handleSave}
+        onFormChange={setForm}
+      />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Pracownik
-            <select
-              className="input"
-              value={form.employeeId}
-              onChange={(e) => setForm((prev) => ({ ...prev, employeeId: e.target.value }))}
-            >
-              <option value="">Wybierz pracownika</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {`${emp.firstName ?? ""} ${emp.lastName ?? ""}`.trim() || emp.email}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Lokalizacja
-            <select
-              className="input"
-              value={form.locationId ?? ""}
-              onChange={(e) => setForm((prev) => ({ ...prev, locationId: e.target.value || undefined }))}
-            >
-              <option value="">Brak lokalizacji</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Data
-            <input
-              type="date"
-              className="input"
-              value={form.date}
-              onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-            />
-          </label>
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Godzina startu
-            <input
-              type="time"
-              className="input"
-              value={form.startTime}
-              onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
-            />
-          </label>
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Godzina końca
-            <input
-              type="time"
-              className="input"
-              value={form.endTime}
-              onChange={(e) => setForm((prev) => ({ ...prev, endTime: e.target.value }))}
-            />
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-            Stanowisko / rola
-            <input
-              type="text"
-              className="input"
-              value={form.position}
-              onChange={(e) => setForm((prev) => ({ ...prev, position: e.target.value }))}
-              placeholder="np. Barista"
-            />
-          </label>
-          <div className="space-y-1">
-            <span className="text-sm font-medium text-surface-700 dark:text-surface-200">Kolor zmiany</span>
-            <div className="flex flex-wrap gap-2">
-              {SHIFT_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`w-7 h-7 rounded-md border-2 transition ${
-                    form.color === color 
-                      ? 'border-surface-900 dark:border-white ring-2 ring-brand-400' 
-                      : 'border-transparent hover:border-surface-300 dark:hover:border-surface-600'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setForm((prev) => ({ ...prev, color }))}
-                  title={color}
-                />
-              ))}
-              <button
-                type="button"
-                className={`w-7 h-7 rounded-md border-2 transition flex items-center justify-center ${
-                  !form.color 
-                    ? 'border-surface-900 dark:border-white ring-2 ring-brand-400 bg-surface-100 dark:bg-surface-800' 
-                    : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600 bg-surface-50 dark:bg-surface-900'
-                }`}
-                onClick={() => setForm((prev) => ({ ...prev, color: "" }))}
-                title="Brak koloru"
-              >
-                <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-          Notatki
-          <textarea
-            className="input min-h-[70px]"
-            value={form.notes}
-            onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-            placeholder="Dodatkowe instrukcje dla zmiany"
-          />
-        </label>
-
-        {formError && (
-          <p className="text-sm text-rose-600 dark:text-rose-300">{formError}</p>
-        )}
-      </Modal>
-
-      <Modal
+      <PublishScheduleModal
         open={publishOpen}
-        title="Opublikuj grafik"
-        description="Powiadom pracowników o opublikowaniu grafiku na wybrany tydzień."
+        range={range}
+        publishing={publishing}
         onClose={() => setPublishOpen(false)}
-        footer={
-          <>
-            <button className="btn-secondary" onClick={() => setPublishOpen(false)}>
-              Anuluj
-            </button>
-            <button className="btn-primary" onClick={handlePublish} disabled={publishing}>
-              {publishing ? "Publikowanie..." : "Wyślij powiadomienia"}
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
-          <p>
-            Zakres: <span className="font-semibold">{range.label}</span>
-          </p>
-          <p>Powiadomienia zostaną wysłane do wszystkich pracowników przypisanych do zmian w tym tygodniu.</p>
-        </div>
-      </Modal>
+        onPublish={handlePublish}
+      />
 
-      <Modal
+      <ClearWeekModal
         open={clearWeekOpen}
-        title="Wyczyść tydzień"
-        description="Usuń wszystkie zmiany z wybranego tygodnia. Ta akcja jest nieodwracalna."
+        range={range}
+        shiftCount={shifts.length}
+        clearing={clearing}
         onClose={() => setClearWeekOpen(false)}
-        footer={
-          <>
-            <button className="btn-secondary" onClick={() => setClearWeekOpen(false)}>
-              Anuluj
-            </button>
-            <button className="btn-danger" onClick={handleClearWeek} disabled={clearing}>
-              {clearing ? "Usuwanie..." : "Wyczyść tydzień"}
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
-          <p>
-            Zakres: <span className="font-semibold">{range.label}</span>
-          </p>
-          <p>
-            Liczba zmian do usunięcia: <span className="font-semibold">{shifts.length}</span>
-          </p>
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200">
-            ⚠️ Ostrzeżenie: Wszystkie zmiany z tego tygodnia zostaną trwale usunięte.
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleClearWeek}
+      />
+
+      <TemplatesDialog
+        open={templatesOpen}
+        templates={templates}
+        loading={loadingTemplates}
+        error={templatesError}
+        creating={creatingTemplate}
+        busy={bulkCreating}
+        applyingTemplateId={applyingTemplateId}
+        onClose={() => setTemplatesOpen(false)}
+        onCreateTemplate={handleCreateTemplate}
+        onApplyTemplate={handleApplyTemplate}
+      />
+
+      <AvailabilityOverrideModal
+        open={!!pendingAvailabilitySeverity}
+        severity={pendingAvailabilitySeverity ?? "partial"}
+        reason={availabilityOverrideReason}
+        onReasonChange={setAvailabilityOverrideReason}
+        onConfirm={handleAvailabilityConfirm}
+        onClose={() => {
+          setPendingAvailabilitySeverity(null);
+          setPendingAction(null);
+          setAvailabilityOverrideReason("");
+        }}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -1256,6 +887,16 @@ export default function GrafikPage() {
         cancelLabel="Anuluj"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={copyConfirmOpen}
+        title="Skopiować poprzedni tydzień?"
+        description={`Skopiujemy wszystkie zmiany z poprzedniego tygodnia do zakresu ${range.label}.`}
+        confirmLabel="Kopiuj"
+        cancelLabel="Anuluj"
+        onConfirm={handleCopyPreviousWeek}
+        onCancel={() => setCopyConfirmOpen(false)}
       />
     </div>
   );
