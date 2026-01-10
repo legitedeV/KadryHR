@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "ci:check": "npm run lint && npm run typecheck",
     "test": "node --loader ./ts-node-loader.mjs --test app/panel/grafik/page.test.tsx components/avatar.test.tsx"
   },
   "dependencies": {

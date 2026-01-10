@@ -22,6 +22,7 @@ frontend/.env
 !backend-v2/docs/FEATURE_GAP_ANALYSIS.md
 !backend-v2/docs/RUNTIME_DEPLOYMENT.md
 !backend-v2/docs/DEPLOYMENT_INSTRUCTIONS.md
+!frontend-v2/README.md
 
 .env
 backend/.env

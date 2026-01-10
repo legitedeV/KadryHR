@@ -12,6 +12,7 @@ NestJS + Prisma backend focused on multi-tenant scheduling/HR primitives (organi
    - Optional hardening: tune `DATABASE_MAX_RETRIES` / `DATABASE_RETRY_DELAY_MS` if your DB can be slow to accept connections (e.g. cold starts or managed networks).
    - Optional email: configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` to enable email notifications.
 3) Generate Prisma client: `npx prisma generate` (run `npx prisma db push` or `npm run prisma:migrate` to sync schema).
+   - Re-run `npm run prisma:generate` whenever `prisma/schema.prisma` or `prisma.config.ts` changes (build no longer regenerates Prisma on every run).
 4) Start dev server: `npm run start:dev` (port defaults to 3000).
 5) Checks: `npm run lint` · `npm run test` · `npm run build`.
 

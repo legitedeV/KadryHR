@@ -7,6 +7,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
   reactCompiler: true,
+  typescript: {
+    // Type checking runs in CI via npm run typecheck.
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Linting runs in CI via npm run lint.
+    ignoreDuringBuilds: true,
+  },
   turbopack: {
     // Specifies the working directory to avoid multi-lockfile warnings
     root: __dirname,
