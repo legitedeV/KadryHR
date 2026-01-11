@@ -250,19 +250,19 @@ export default function OrganisationSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <p className="section-label">Ustawienia</p>
-        <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
+        <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
           Organizacja
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Basic Information */}
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
@@ -316,9 +316,9 @@ export default function OrganisationSettingsPage() {
         </div>
 
         {/* Logo */}
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-violet-700 dark:from-violet-900/50 dark:to-violet-800/50 dark:text-violet-300">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-violet-700 dark:from-violet-900/50 dark:to-violet-800/50 dark:text-violet-300">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -363,9 +363,9 @@ export default function OrganisationSettingsPage() {
         </div>
 
         {/* Schedule Settings - Delivery Days */}
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 dark:from-emerald-900/50 dark:to-emerald-800/50 dark:text-emerald-300">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 dark:from-emerald-900/50 dark:to-emerald-800/50 dark:text-emerald-300">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -419,9 +419,9 @@ export default function OrganisationSettingsPage() {
         </div>
 
         {/* Schedule Settings - Promotion Cycle */}
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 dark:from-amber-900/50 dark:to-amber-800/50 dark:text-amber-300">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 dark:from-amber-900/50 dark:to-amber-800/50 dark:text-amber-300">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
@@ -481,9 +481,9 @@ export default function OrganisationSettingsPage() {
 
       {/* Members Management */}
       {user?.role === "OWNER" && (
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 dark:from-emerald-900/50 dark:to-emerald-800/50 dark:text-emerald-300">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 dark:from-emerald-900/50 dark:to-emerald-800/50 dark:text-emerald-300">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>

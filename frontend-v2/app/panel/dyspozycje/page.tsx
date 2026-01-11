@@ -476,19 +476,19 @@ function TeamAvailabilityTab({
             <table className="w-full">
               <thead className="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200/80 dark:border-surface-700/80">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Pracownik
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Stanowisko
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Lokalizacje
                   </th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-center px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Status
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Akcje
                   </th>
                 </tr>
@@ -500,7 +500,7 @@ function TeamAvailabilityTab({
                     className="hover:bg-surface-50/50 dark:hover:bg-surface-800/30 transition-colors cursor-pointer"
                     onClick={() => onEmployeeClick(emp.id)}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/50 dark:to-brand-800/50 flex items-center justify-center text-brand-700 dark:text-brand-300 font-semibold text-sm">
                           {emp.firstName.charAt(0)}{emp.lastName.charAt(0)}
@@ -517,10 +517,10 @@ function TeamAvailabilityTab({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-surface-600 dark:text-surface-300">
+                    <td className="px-3 py-2 text-sm text-surface-600 dark:text-surface-300">
                       {emp.position || "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-1">
                         {emp.locations.slice(0, 2).map((loc) => (
                           <span key={loc.id} className="badge badge-neutral text-xs">
@@ -537,7 +537,7 @@ function TeamAvailabilityTab({
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 py-2 text-center">
                       {emp.hasWeeklyDefault ? (
                         <span className="badge badge-success">
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -554,7 +554,7 @@ function TeamAvailabilityTab({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-2 text-right">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1103,7 +1103,7 @@ export default function DyspozycjePage() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
         <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
         </svg>
@@ -1113,11 +1113,11 @@ export default function DyspozycjePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-surface-900 dark:text-surface-50">
+          <h1 className="text-base font-bold text-surface-900 dark:text-surface-50">
             Dyspozycje
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">

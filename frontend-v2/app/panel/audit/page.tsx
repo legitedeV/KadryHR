@@ -206,11 +206,11 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="section-label">Administracja</p>
-          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
+          <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
             Audit Log
           </p>
         </div>
@@ -340,7 +340,7 @@ export default function AuditPage() {
 
       {/* Error State */}
       {error && !loading && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
           <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -359,22 +359,22 @@ export default function AuditPage() {
             <table className="min-w-full">
               <thead className="bg-surface-50/80 dark:bg-surface-900/80">
                 <tr className="border-b border-surface-200 dark:border-surface-800">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Data / Czas
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Użytkownik
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Akcja
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Zasób
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Opis
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Szczegóły
                   </th>
                 </tr>
@@ -413,7 +413,7 @@ export default function AuditPage() {
                       key={entry.id}
                       className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors"
                     >
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="text-sm font-medium text-surface-900 dark:text-surface-50">
                           {new Date(entry.createdAt).toLocaleDateString("pl-PL")}
                         </div>
@@ -421,7 +421,7 @@ export default function AuditPage() {
                           {new Date(entry.createdAt).toLocaleTimeString("pl-PL")}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs font-semibold text-surface-600 dark:text-surface-300">
                             {formatActorName(entry.actor).charAt(0).toUpperCase()}
@@ -438,22 +438,22 @@ export default function AuditPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <span className="badge badge-brand">
                           {actionLabels[entry.action] ?? entry.action}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <span className="text-sm text-surface-700 dark:text-surface-200">
                           {entityTypeLabels[entry.entityType] ?? entry.entityType}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <span className="text-sm text-surface-600 dark:text-surface-300">
                           {formatDescription(entry)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right">
                         <button
                           className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium"
                           onClick={() => setSelectedEntry(entry)}

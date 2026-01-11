@@ -287,18 +287,18 @@ export default function ProfilPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <p className="section-label">Profil</p>
-        <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
+        <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
           Dane zalogowanego użytkownika
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Basic Info */}
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
             <Avatar
               name={formatName(profile)}
               src={profile.avatarUrl}
@@ -368,9 +368,9 @@ export default function ProfilPage() {
         </div>
 
         {/* Security */}
-        <div className="card p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-12 w-12 rounded-2xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+        <div className="card p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-10 w-10 rounded-2xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -426,9 +426,9 @@ export default function ProfilPage() {
       </div>
 
       {/* Notification Preferences */}
-      <div className="card p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="h-12 w-12 rounded-2xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
+      <div className="card p-4">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="h-10 w-10 rounded-2xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>

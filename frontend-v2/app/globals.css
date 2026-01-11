@@ -552,6 +552,45 @@ body.light {
   background-clip: text;
 }
 
+/* Compact Panel Utilities */
+.panel-shell {
+  @apply px-4 py-4 lg:px-5 lg:py-4;
+}
+
+.panel-card {
+  @apply rounded-xl border border-surface-200/80 dark:border-surface-700/80 bg-white dark:bg-surface-900/50 p-4 shadow-sm;
+}
+
+.panel-card-header {
+  @apply px-4 py-2.5 border-b border-surface-200/80 dark:border-surface-700/80;
+}
+
+.panel-card-body {
+  @apply p-4;
+}
+
+.panel-table {
+  @apply text-sm;
+}
+
+.panel-table thead th {
+  @apply px-3 py-2 text-xs;
+}
+
+.panel-table tbody td {
+  @apply px-3 py-2 text-sm;
+}
+
+.panel-section-spacing {
+  @apply space-y-4;
+}
+
+.panel-text-base {
+  @apply text-sm;
+}
+
+.panel-heading {
+  @apply text-base font-bold;
 /* Compact panel utilities */
 .panel-card {
   @apply card p-4;

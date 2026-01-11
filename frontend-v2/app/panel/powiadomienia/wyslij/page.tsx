@@ -89,7 +89,7 @@ export default function CampaignComposerPage() {
   if (!canManage) {
     return (
       <div className="space-y-4">
-        <div className="card p-6">
+        <div className="card p-4">
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Nie masz uprawnień do wysyłania powiadomień.
           </p>
@@ -494,7 +494,7 @@ export default function CampaignComposerPage() {
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 max-w-md w-full mx-4 border border-slate-200 dark:border-slate-800">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-2">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50 mb-2">
               Potwierdź wysyłkę
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">

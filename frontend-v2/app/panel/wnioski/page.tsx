@@ -524,7 +524,7 @@ export default function WnioskiPage() {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
           <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -549,16 +549,16 @@ export default function WnioskiPage() {
               <table className="panel-table">
                 <thead>
                   <tr className="border-b border-surface-200 dark:border-surface-800">
-                    <th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                       Pracownik
                     </th>
-                    <th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                       Typ
                     </th>
-                    <th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                       Zakres dat
                     </th>
-                    <th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                       Status
                     </th>
                   </tr>
@@ -574,7 +574,7 @@ export default function WnioskiPage() {
                           : "hover:bg-surface-50/50 dark:hover:bg-surface-800/50"
                       }`}
                     >
-                      <td>
+                      <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <div className="h-7 w-7 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
                             {r.employeeName.charAt(0).toUpperCase()}
@@ -584,13 +584,13 @@ export default function WnioskiPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="text-surface-600 dark:text-surface-300">
+                      <td className="px-3 py-2 text-sm text-surface-600 dark:text-surface-300">
                         {mapRequestType(r.type)}
                       </td>
-                      <td className="text-surface-600 dark:text-surface-300">
+                      <td className="px-3 py-2 text-sm text-surface-600 dark:text-surface-300">
                         {formatDateRange(r.startDate, r.endDate)}
                       </td>
-                      <td>
+                      <td className="px-3 py-2">
                         <span className={statusBadgeClass(r.status)}>{mapStatus(r.status)}</span>
                       </td>
                     </tr>

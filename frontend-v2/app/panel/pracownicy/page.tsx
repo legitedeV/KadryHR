@@ -203,40 +203,40 @@ export default function PracownicyPage() {
             <table className="panel-table">
               <thead>
                 <tr className="border-b border-surface-200 dark:border-surface-800">
-                  <th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Imię i nazwisko
                   </th>
-                  <th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Stanowisko
                   </th>
-                  <th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Lokalizacja
                   </th>
-                  <th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Status
                   </th>
-                  <th className="text-right">
+                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Akcje
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
                 {employees.map((employee) => (
-                  <tr key={employee.id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-xs dark:from-brand-900/50 dark:to-accent-900/50 dark:text-brand-300">
+                  <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/50 dark:to-accent-900/50 dark:text-brand-300">
                           {formatEmployeeName(employee).charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-surface-900 dark:text-surface-100 text-sm">{formatEmployeeName(employee)}</span>
+                        <span className="font-medium text-sm text-surface-900 dark:text-surface-100">{formatEmployeeName(employee)}</span>
                       </div>
                     </td>
-                    <td className="text-surface-600 dark:text-surface-300">{employee.position ?? "Brak danych"}</td>
-                    <td className="text-surface-600 dark:text-surface-300">{formatLocations(employee.locations)}</td>
-                    <td>
+                    <td className="px-3 py-2.5 text-sm text-surface-600 dark:text-surface-300">{employee.position ?? "Brak danych"}</td>
+                    <td className="px-3 py-2.5 text-sm text-surface-600 dark:text-surface-300">{formatLocations(employee.locations)}</td>
+                    <td className="px-3 py-2.5">
                       <span className="badge badge-success">aktywny</span>
                     </td>
-                    <td className="text-right">
+                    <td className="px-3 py-2.5 text-right">
                       <div className="flex flex-wrap justify-end gap-2 text-xs">
                         <button className="btn-secondary px-2.5 py-1.5" onClick={() => handleEdit(employee)} aria-label="Edytuj">
                           Edytuj
