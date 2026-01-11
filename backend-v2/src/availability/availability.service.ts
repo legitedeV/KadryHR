@@ -1,14 +1,78 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, Weekday } from '@prisma/client';
+import { Prisma, Weekday, Role } from '@prisma/client';
+
+export interface EmployeeAvailabilitySummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  position: string | null;
+  locations: Array<{ id: string; name: string }>;
+  availabilityCount: number;
+  hasWeeklyDefault: boolean;
+}
+
+export interface TeamAvailabilityQuery {
+  search?: string;
+  locationId?: string;
+  role?: string;
+  page?: number;
+  perPage?: number;
+}
 
 @Injectable()
 export class AvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Validate time intervals for overlaps
+   */
+  private validateIntervals(
+    intervals: Array<{
+      startMinutes: number;
+      endMinutes: number;
+      weekday?: string;
+      date?: string;
+    }>,
+  ) {
+    // Group by weekday or date
+    const grouped: Record<string, Array<{ start: number; end: number }>> = {};
+
+    for (const interval of intervals) {
+      if (interval.endMinutes <= interval.startMinutes) {
+        throw new BadRequestException(
+          'Godzina końcowa musi być po godzinie początkowej',
+        );
+      }
+
+      const key = interval.weekday || interval.date || 'default';
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push({
+        start: interval.startMinutes,
+        end: interval.endMinutes,
+      });
+    }
+
+    // Check for overlaps within each day
+    for (const [key, slots] of Object.entries(grouped)) {
+      const sorted = [...slots].sort((a, b) => a.start - b.start);
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i].start < sorted[i - 1].end) {
+          throw new BadRequestException(
+            `Przedziały czasowe nakładają się (${key})`,
+          );
+        }
+      }
+    }
+  }
 
   /**
    * Lista dostępności w ramach organizacji z opcjonalnymi filtrami.
@@ -341,5 +405,249 @@ export class AvailabilityService {
     });
 
     return { success: true };
+  }
+
+  // ==========================================
+  // CURRENT USER AVAILABILITY (GET /availability/me)
+  // ==========================================
+
+  /**
+   * Get current user's availability
+   */
+  async getMyAvailability(organisationId: string, userId: string) {
+    const employee = await this.findEmployeeByUserId(organisationId, userId);
+    if (!employee) {
+      throw new NotFoundException('Employee profile not found');
+    }
+
+    const availability = await this.prisma.availability.findMany({
+      where: {
+        organisationId,
+        employeeId: employee.id,
+      },
+      orderBy: [{ weekday: 'asc' }, { date: 'asc' }, { startMinutes: 'asc' }],
+    });
+
+    return {
+      employeeId: employee.id,
+      availability,
+    };
+  }
+
+  /**
+   * Update current user's availability (default weekly pattern)
+   */
+  async updateMyAvailability(
+    organisationId: string,
+    userId: string,
+    availabilities: Array<{
+      weekday?: string;
+      date?: string;
+      startMinutes: number;
+      endMinutes: number;
+      notes?: string;
+    }>,
+  ) {
+    const employee = await this.findEmployeeByUserId(organisationId, userId);
+    if (!employee) {
+      throw new NotFoundException('Employee profile not found');
+    }
+
+    // Validate intervals before saving
+    this.validateIntervals(availabilities);
+
+    return this.bulkUpsertForEmployee(
+      organisationId,
+      employee.id,
+      availabilities,
+    );
+  }
+
+  // ==========================================
+  // TEAM AVAILABILITY (Admin endpoints)
+  // ==========================================
+
+  /**
+   * Get list of all employees with availability summary
+   */
+  async getTeamAvailability(
+    organisationId: string,
+    query: TeamAvailabilityQuery = {},
+  ): Promise<{ data: EmployeeAvailabilitySummary[]; total: number }> {
+    const page = query.page ?? 1;
+    const perPage = query.perPage ?? 20;
+    const skip = (page - 1) * perPage;
+
+    // Build where clause for employees
+    const whereClause: Prisma.EmployeeWhereInput = { organisationId };
+
+    if (query.search) {
+      whereClause.OR = [
+        { firstName: { contains: query.search, mode: 'insensitive' } },
+        { lastName: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.locationId) {
+      whereClause.locations = {
+        some: { locationId: query.locationId },
+      };
+    }
+
+    // Get employees with their availability counts
+    const [employees, total] = await Promise.all([
+      this.prisma.employee.findMany({
+        where: whereClause,
+        skip,
+        take: perPage,
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+        include: {
+          locations: {
+            include: {
+              location: { select: { id: true, name: true } },
+            },
+          },
+          availability: {
+            select: { id: true, weekday: true },
+          },
+          user: {
+            select: { role: true },
+          },
+        },
+      }),
+      this.prisma.employee.count({ where: whereClause }),
+    ]);
+
+    // Filter by role if specified (need user role)
+    let filteredEmployees = employees;
+    if (query.role) {
+      filteredEmployees = employees.filter(
+        (emp) => emp.user?.role === query.role,
+      );
+    }
+
+    const data: EmployeeAvailabilitySummary[] = filteredEmployees.map(
+      (emp) => ({
+        id: emp.id,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        email: emp.email,
+        position: emp.position,
+        locations: emp.locations.map((la) => ({
+          id: la.location.id,
+          name: la.location.name,
+        })),
+        availabilityCount: emp.availability.length,
+        hasWeeklyDefault: emp.availability.some((a) => a.weekday !== null),
+      }),
+    );
+
+    return { data, total };
+  }
+
+  /**
+   * Get detailed availability for a specific employee (admin only)
+   */
+  async getEmployeeAvailability(organisationId: string, employeeId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+      include: {
+        locations: {
+          include: {
+            location: { select: { id: true, name: true } },
+          },
+        },
+        user: {
+          select: { id: true, role: true, email: true },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const availability = await this.prisma.availability.findMany({
+      where: {
+        organisationId,
+        employeeId,
+      },
+      orderBy: [{ weekday: 'asc' }, { date: 'asc' }, { startMinutes: 'asc' }],
+    });
+
+    return {
+      employee: {
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        position: employee.position,
+        locations: employee.locations.map((la) => ({
+          id: la.location.id,
+          name: la.location.name,
+        })),
+        role: employee.user?.role ?? null,
+      },
+      availability,
+    };
+  }
+
+  /**
+   * Update availability for a specific employee (admin only)
+   */
+  async updateEmployeeAvailability(
+    organisationId: string,
+    employeeId: string,
+    availabilities: Array<{
+      weekday?: string;
+      date?: string;
+      startMinutes: number;
+      endMinutes: number;
+      notes?: string;
+    }>,
+  ) {
+    // Verify employee belongs to organisation
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // Validate intervals before saving
+    this.validateIntervals(availabilities);
+
+    return this.bulkUpsertForEmployee(
+      organisationId,
+      employeeId,
+      availabilities,
+    );
+  }
+
+  /**
+   * Get availability statistics for the team
+   */
+  async getTeamAvailabilityStats(organisationId: string) {
+    const [totalEmployees, employeesWithAvailability, activeWindows] =
+      await Promise.all([
+        this.prisma.employee.count({ where: { organisationId } }),
+        this.prisma.employee.count({
+          where: {
+            organisationId,
+            availability: { some: {} },
+          },
+        }),
+        this.findActiveWindows(organisationId),
+      ]);
+
+    return {
+      totalEmployees,
+      employeesWithAvailability,
+      employeesWithoutAvailability: totalEmployees - employeesWithAvailability,
+      hasActiveWindow: activeWindows.length > 0,
+      activeWindow: activeWindows[0] ?? null,
+    };
   }
 }

@@ -135,8 +135,12 @@ export class EmailTemplatesService {
     inviterName?: string | null;
     expiresIn?: string;
   }): { subject: string; text: string; html: string } {
-    const greeting = params.inviteeName ? `Cześć ${params.inviteeName}!` : 'Cześć!';
-    const inviterInfo = params.inviterName ? ` ${params.inviterName} zaprasza Cię do dołączenia.` : '';
+    const greeting = params.inviteeName
+      ? `Cześć ${params.inviteeName}!`
+      : 'Cześć!';
+    const inviterInfo = params.inviterName
+      ? ` ${params.inviterName} zaprasza Cię do dołączenia.`
+      : '';
 
     const content = `
       <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
@@ -150,7 +154,9 @@ export class EmailTemplatesService {
       </p>
       ${this.infoBox([
         { label: 'Organizacja', value: params.organisationName },
-        ...(params.expiresIn ? [{ label: 'Link ważny', value: params.expiresIn }] : []),
+        ...(params.expiresIn
+          ? [{ label: 'Link ważny', value: params.expiresIn }]
+          : []),
       ])}
       ${this.actionButton('Ustaw hasło i przejdź do panelu', params.invitationLink)}
       <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
@@ -161,7 +167,10 @@ export class EmailTemplatesService {
     return {
       subject: `Zaproszenie do ${params.organisationName} – KadryHR`,
       text: `${greeting} Zostałeś/aś zaproszony/a do organizacji ${params.organisationName} w KadryHR.${inviterInfo} Ustaw hasło: ${params.invitationLink}`,
-      html: this.baseTemplate(content, `Dołącz do ${params.organisationName} w KadryHR`),
+      html: this.baseTemplate(
+        content,
+        `Dołącz do ${params.organisationName} w KadryHR`,
+      ),
     };
   }
 
@@ -180,19 +189,26 @@ export class EmailTemplatesService {
   }): { subject: string; text: string; html: string } {
     const actionLabels = {
       assigned: { title: 'Nowa zmiana w grafiku', verb: 'przypisana' },
-      updated: { title: 'Zmiana w grafiku zaktualizowana', verb: 'zaktualizowana' },
+      updated: {
+        title: 'Zmiana w grafiku zaktualizowana',
+        verb: 'zaktualizowana',
+      },
       cancelled: { title: 'Zmiana w grafiku anulowana', verb: 'anulowana' },
     };
 
     const { title, verb } = actionLabels[params.action];
-    const greeting = params.employeeName ? `Cześć ${params.employeeName}!` : 'Cześć!';
+    const greeting = params.employeeName
+      ? `Cześć ${params.employeeName}!`
+      : 'Cześć!';
 
     const infoItems: Array<{ label: string; value: string }> = [
       { label: 'Data', value: params.shiftDate },
       { label: 'Godziny', value: params.shiftTime },
     ];
-    if (params.position) infoItems.push({ label: 'Stanowisko', value: params.position });
-    if (params.locationName) infoItems.push({ label: 'Lokalizacja', value: params.locationName });
+    if (params.position)
+      infoItems.push({ label: 'Stanowisko', value: params.position });
+    if (params.locationName)
+      infoItems.push({ label: 'Lokalizacja', value: params.locationName });
     if (params.notes) infoItems.push({ label: 'Uwagi', value: params.notes });
 
     const content = `
@@ -208,7 +224,10 @@ export class EmailTemplatesService {
     return {
       subject: `${title} – KadryHR`,
       text: `${greeting} Twoja zmiana została ${verb}: ${params.shiftDate}, ${params.shiftTime}${params.position ? ` (${params.position})` : ''}`,
-      html: this.baseTemplate(content, `Zmiana ${params.shiftDate} została ${verb}`),
+      html: this.baseTemplate(
+        content,
+        `Zmiana ${params.shiftDate} została ${verb}`,
+      ),
     };
   }
 
@@ -224,14 +243,20 @@ export class EmailTemplatesService {
     rejectionReason?: string | null;
     panelUrl?: string;
   }): { subject: string; text: string; html: string } {
-    const statusLabels: Record<string, { title: string; color: string; icon: string }> = {
+    const statusLabels: Record<
+      string,
+      { title: string; color: string; icon: string }
+    > = {
       APPROVED: { title: 'zatwierdzony', color: '#16a34a', icon: '✓' },
       REJECTED: { title: 'odrzucony', color: '#dc2626', icon: '✗' },
       CANCELLED: { title: 'anulowany', color: '#64748b', icon: '○' },
     };
 
-    const { title: statusTitle, color } = statusLabels[params.status] ?? statusLabels.CANCELLED;
-    const greeting = params.employeeName ? `Cześć ${params.employeeName}!` : 'Cześć!';
+    const { title: statusTitle, color } =
+      statusLabels[params.status] ?? statusLabels.CANCELLED;
+    const greeting = params.employeeName
+      ? `Cześć ${params.employeeName}!`
+      : 'Cześć!';
 
     const infoItems: Array<{ label: string; value: string }> = [
       { label: 'Typ urlopu', value: params.leaveType },
@@ -255,7 +280,10 @@ export class EmailTemplatesService {
     return {
       subject: `Wniosek urlopowy ${statusTitle} – KadryHR`,
       text: `${greeting} Twój wniosek urlopowy (${params.leaveType}) na okres ${params.startDate} – ${params.endDate} został ${statusTitle}.${params.rejectionReason ? ` Powód: ${params.rejectionReason}` : ''}`,
-      html: this.baseTemplate(content, `Twój wniosek urlopowy został ${statusTitle}`),
+      html: this.baseTemplate(
+        content,
+        `Twój wniosek urlopowy został ${statusTitle}`,
+      ),
     };
   }
 
@@ -268,7 +296,9 @@ export class EmailTemplatesService {
     organisationName?: string;
     panelUrl?: string;
   }): { subject: string; text: string; html: string } {
-    const greeting = params.employeeName ? `Cześć ${params.employeeName}!` : 'Cześć!';
+    const greeting = params.employeeName
+      ? `Cześć ${params.employeeName}!`
+      : 'Cześć!';
 
     const content = `
       <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
@@ -286,7 +316,10 @@ export class EmailTemplatesService {
     return {
       subject: `Nowy grafik na okres ${params.dateRange} – KadryHR`,
       text: `${greeting} Nowy grafik został opublikowany na okres ${params.dateRange}. Sprawdź swoje zmiany w panelu KadryHR.${params.panelUrl ? ` ${params.panelUrl}` : ''}`,
-      html: this.baseTemplate(content, `Sprawdź swój nowy grafik na ${params.dateRange}`),
+      html: this.baseTemplate(
+        content,
+        `Sprawdź swój nowy grafik na ${params.dateRange}`,
+      ),
     };
   }
 
@@ -297,7 +330,9 @@ export class EmailTemplatesService {
     recipientEmail: string;
     recipientName?: string;
   }): { subject: string; text: string; html: string } {
-    const greeting = params.recipientName ? `Cześć ${params.recipientName}!` : 'Cześć!';
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
 
     const content = `
       <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
@@ -317,7 +352,10 @@ export class EmailTemplatesService {
     return {
       subject: 'Powiadomienie testowe – KadryHR',
       text: `${greeting} To jest wiadomość testowa z systemu KadryHR. Jeśli widzisz tę wiadomość, to powiadomienia e-mail działają poprawnie!`,
-      html: this.baseTemplate(content, 'Twoje powiadomienia e-mail działają poprawnie!'),
+      html: this.baseTemplate(
+        content,
+        'Twoje powiadomienia e-mail działają poprawnie!',
+      ),
     };
   }
 
@@ -331,7 +369,9 @@ export class EmailTemplatesService {
     actionUrl?: string;
     actionLabel?: string;
   }): { subject: string; text: string; html: string } {
-    const greeting = params.recipientName ? `Cześć ${params.recipientName}!` : '';
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : '';
 
     const content = `
       <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">

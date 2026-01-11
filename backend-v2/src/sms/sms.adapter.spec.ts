@@ -105,7 +105,10 @@ describe('SmsAdapter', () => {
 
       const consoleAdapter = module.get<SmsAdapter>(SmsAdapter);
 
-      const result = await consoleAdapter.sendSms('+48123456789', 'Test message');
+      const result = await consoleAdapter.sendSms(
+        '+48123456789',
+        'Test message',
+      );
 
       expect(result.success).toBe(true);
       expect(result.skipped).toBe(true); // Console provider marks as skipped

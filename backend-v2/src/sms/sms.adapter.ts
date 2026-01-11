@@ -38,25 +38,37 @@ export class SmsAdapter {
   private readonly fromNumber: string;
 
   constructor(private readonly configService: ConfigService<AppConfig, true>) {
-    this.enabled = this.configService.get('sms.enabled', { infer: true }) ?? false;
-    this.provider = this.configService.get('sms.provider', { infer: true }) ?? 'console';
-    this.accountSid = this.configService.get('sms.accountSid', { infer: true }) ?? '';
-    this.authToken = this.configService.get('sms.authToken', { infer: true }) ?? '';
-    this.fromNumber = this.configService.get('sms.fromNumber', { infer: true }) ?? '';
+    this.enabled =
+      this.configService.get('sms.enabled', { infer: true }) ?? false;
+    this.provider =
+      this.configService.get('sms.provider', { infer: true }) ?? 'console';
+    this.accountSid =
+      this.configService.get('sms.accountSid', { infer: true }) ?? '';
+    this.authToken =
+      this.configService.get('sms.authToken', { infer: true }) ?? '';
+    this.fromNumber =
+      this.configService.get('sms.fromNumber', { infer: true }) ?? '';
 
     if (!this.enabled) {
-      this.logger.warn('[SmsAdapter] SMS disabled: SMS_ENABLED=false or not set');
+      this.logger.warn(
+        '[SmsAdapter] SMS disabled: SMS_ENABLED=false or not set',
+      );
       return;
     }
 
-    if (this.provider === 'twilio' && (!this.accountSid || !this.authToken || !this.fromNumber)) {
+    if (
+      this.provider === 'twilio' &&
+      (!this.accountSid || !this.authToken || !this.fromNumber)
+    ) {
       this.logger.warn(
         '[SmsAdapter] Twilio provider selected but missing configuration (SMS_ACCOUNT_SID/SMS_AUTH_TOKEN/SMS_FROM_NUMBER). SMS will be logged only.',
       );
     } else if (this.provider === 'twilio') {
       this.logger.log('[SmsAdapter] Twilio SMS provider configured');
     } else {
-      this.logger.log(`[SmsAdapter] Using ${this.provider} provider (messages will be logged)`);
+      this.logger.log(
+        `[SmsAdapter] Using ${this.provider} provider (messages will be logged)`,
+      );
     }
   }
 
@@ -113,7 +125,10 @@ export class SmsAdapter {
   /**
    * Send via Twilio API
    */
-  private async sendViaTwilio(to: string, message: string): Promise<SmsSendResult> {
+  private async sendViaTwilio(
+    to: string,
+    message: string,
+  ): Promise<SmsSendResult> {
     try {
       const url = `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`;
 
@@ -127,14 +142,20 @@ export class SmsAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: 'Basic ' + Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64'),
+          Authorization:
+            'Basic ' +
+            Buffer.from(`${this.accountSid}:${this.authToken}`).toString(
+              'base64',
+            ),
         },
         body: body.toString(),
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        this.logger.error(`Twilio API error: ${response.status} - ${errorData}`);
+        this.logger.error(
+          `Twilio API error: ${response.status} - ${errorData}`,
+        );
         return {
           success: false,
           error: `Twilio API error: ${response.status}`,
@@ -149,7 +170,8 @@ export class SmsAdapter {
         messageId: data.sid,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown SMS send error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown SMS send error';
       this.logger.error(`Failed to send SMS via Twilio: ${errorMessage}`);
       return {
         success: false,
@@ -161,7 +183,10 @@ export class SmsAdapter {
   /**
    * Console provider - logs the message (for development/testing)
    */
-  private async sendViaConsole(to: string, message: string): Promise<SmsSendResult> {
+  private async sendViaConsole(
+    to: string,
+    message: string,
+  ): Promise<SmsSendResult> {
     this.logger.log(`[SMS Console] To: ${to}`);
     this.logger.log(`[SMS Console] Message: ${message}`);
 
@@ -199,7 +224,9 @@ export class SmsAdapter {
 
     // Validate E.164 format (+ followed by 10-15 digits)
     if (!/^\+\d{10,15}$/.test(normalized)) {
-      this.logger.warn(`Invalid phone number format: ${phone} -> ${normalized}`);
+      this.logger.warn(
+        `Invalid phone number format: ${phone} -> ${normalized}`,
+      );
       return null;
     }
 
@@ -210,6 +237,9 @@ export class SmsAdapter {
    * Send test SMS
    */
   async sendTestSms(to: string): Promise<SmsSendResult> {
-    return this.sendSms(to, 'To jest testowa wiadomość SMS z systemu KadryHR. Test notification!');
+    return this.sendSms(
+      to,
+      'To jest testowa wiadomość SMS z systemu KadryHR. Test notification!',
+    );
   }
 }
