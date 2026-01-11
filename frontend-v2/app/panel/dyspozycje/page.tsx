@@ -613,9 +613,9 @@ function EmployeeDetailPanel({
 
   const [formData, setFormData] = useState<DayAvailability[]>(initialFormData);
 
-  // Reset form when availability changes (using a ref to track changes)
+  // Reset form when availability changes (using a key to track changes)
   const availabilityKey = useMemo(() => 
-    availability.map(a => `${a.id}-${a.weekday}`).join(','),
+    availability.map(a => `${a.id}-${a.weekday}-${a.startMinutes}-${a.endMinutes}`).join(','),
     [availability]
   );
   

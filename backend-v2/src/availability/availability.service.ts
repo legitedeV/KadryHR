@@ -495,6 +495,13 @@ export class AvailabilityService {
       };
     }
 
+    // Filter by role in the query if specified
+    if (query.role) {
+      whereClause.user = {
+        role: query.role as Role,
+      };
+    }
+
     // Get employees with their availability counts
     const [employees, total] = await Promise.all([
       this.prisma.employee.findMany({
@@ -519,29 +526,19 @@ export class AvailabilityService {
       this.prisma.employee.count({ where: whereClause }),
     ]);
 
-    // Filter by role if specified (need user role)
-    let filteredEmployees = employees;
-    if (query.role) {
-      filteredEmployees = employees.filter(
-        (emp) => emp.user?.role === query.role,
-      );
-    }
-
-    const data: EmployeeAvailabilitySummary[] = filteredEmployees.map(
-      (emp) => ({
-        id: emp.id,
-        firstName: emp.firstName,
-        lastName: emp.lastName,
-        email: emp.email,
-        position: emp.position,
-        locations: emp.locations.map((la) => ({
-          id: la.location.id,
-          name: la.location.name,
-        })),
-        availabilityCount: emp.availability.length,
-        hasWeeklyDefault: emp.availability.some((a) => a.weekday !== null),
-      }),
-    );
+    const data: EmployeeAvailabilitySummary[] = employees.map((emp) => ({
+      id: emp.id,
+      firstName: emp.firstName,
+      lastName: emp.lastName,
+      email: emp.email,
+      position: emp.position,
+      locations: emp.locations.map((la) => ({
+        id: la.location.id,
+        name: la.location.name,
+      })),
+      availabilityCount: emp.availability.length,
+      hasWeeklyDefault: emp.availability.some((a) => a.weekday !== null),
+    }));
 
     return { data, total };
   }
