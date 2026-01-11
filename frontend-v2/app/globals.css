@@ -591,6 +591,8 @@ body.light {
 
 .panel-heading {
   @apply text-base font-bold;
+}
+
 /* Compact panel utilities */
 .panel-card {
   @apply card p-4;
