@@ -49,6 +49,8 @@ enum NotificationType {
 enum NotificationChannel {
   IN_APP
   EMAIL
+  SMS
+  PUSH // Future-proof: web push / mobile push
 }
 
 enum NotificationDeliveryStatus {
@@ -69,6 +71,8 @@ enum NotificationRecipientStatus {
   DELIVERED_IN_APP
   EMAIL_SENT
   EMAIL_FAILED
+  SMS_SENT
+  SMS_FAILED
   SKIPPED
 }
 
@@ -504,6 +508,8 @@ model NotificationPreference {
   type            NotificationType
   inApp           Boolean           @default(true)
   email           Boolean           @default(false)
+  sms             Boolean           @default(false)
+  push            Boolean           @default(false) // Future: web/mobile push
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

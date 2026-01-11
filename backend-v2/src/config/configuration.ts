@@ -22,6 +22,13 @@ export interface AppConfig {
     from: string;
     enabled: boolean;
   };
+  sms: {
+    enabled: boolean;
+    provider: string;
+    accountSid: string;
+    authToken: string;
+    fromNumber: string;
+  };
   redis: {
     host: string;
     port: number;
@@ -52,6 +59,13 @@ export const configuration = (): AppConfig => ({
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.SMTP_FROM ?? '',
     enabled: (process.env.EMAIL_ENABLED ?? 'true') !== 'false',
+  },
+  sms: {
+    enabled: (process.env.SMS_ENABLED ?? 'false') === 'true',
+    provider: process.env.SMS_PROVIDER ?? 'console',
+    accountSid: process.env.SMS_ACCOUNT_SID ?? '',
+    authToken: process.env.SMS_AUTH_TOKEN ?? '',
+    fromNumber: process.env.SMS_FROM_NUMBER ?? '',
   },
   redis: {
     host: process.env.REDIS_HOST ?? 'localhost',

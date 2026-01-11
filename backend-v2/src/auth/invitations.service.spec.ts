@@ -22,19 +22,30 @@ const buildPrismaMock = () => {
   return prisma;
 };
 
+const buildEmailTemplatesMock = () => ({
+  invitationTemplate: jest.fn().mockReturnValue({
+    subject: 'Zaproszenie do Org – KadryHR',
+    text: 'Zostałeś zaproszony do Org',
+    html: '<p>Zaproszenie</p>',
+  }),
+});
+
 describe('InvitationsService.issueInvitation', () => {
   let prisma: any;
   let queueService: any;
+  let emailTemplates: any;
   let service: InvitationsService;
 
   beforeEach(() => {
     prisma = buildPrismaMock();
     queueService = { addEmailDeliveryJob: jest.fn() } as any;
+    emailTemplates = buildEmailTemplatesMock();
     service = new InvitationsService(
       prisma,
       queueService,
       { get: jest.fn() } as any,
       { login: jest.fn() } as any,
+      emailTemplates,
     );
   });
 

@@ -7,6 +7,8 @@ import {
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailAdapter } from '../email/email.adapter';
+import { EmailTemplatesService } from '../email/email-templates.service';
+import { SmsAdapter } from '../sms/sms.adapter';
 import { QueueService } from '../queue/queue.service';
 
 const mockPrisma = {
@@ -37,6 +39,24 @@ const mockEmail: Partial<EmailAdapter> = {
   sendEmail: jest.fn(),
 };
 
+const mockEmailTemplates: Partial<EmailTemplatesService> = {
+  testNotificationTemplate: jest.fn().mockReturnValue({
+    subject: 'Test',
+    text: 'Test message',
+    html: '<p>Test</p>',
+  }),
+  genericTemplate: jest.fn().mockReturnValue({
+    subject: 'Generic',
+    text: 'Generic message',
+    html: '<p>Generic</p>',
+  }),
+};
+
+const mockSms: Partial<SmsAdapter> = {
+  sendSms: jest.fn().mockResolvedValue({ success: true }),
+  isEnabled: jest.fn().mockReturnValue(false),
+};
+
 const mockQueue: Partial<QueueService> = {
   addEmailDeliveryJob: jest.fn(),
   isQueueAvailable: jest.fn(),
@@ -51,6 +71,8 @@ describe('NotificationsService', () => {
         NotificationsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: EmailAdapter, useValue: mockEmail },
+        { provide: EmailTemplatesService, useValue: mockEmailTemplates },
+        { provide: SmsAdapter, useValue: mockSms },
         { provide: QueueService, useValue: mockQueue },
       ],
     }).compile();
@@ -115,6 +137,7 @@ describe('NotificationsService', () => {
     mockPrisma.notificationPreference.findFirst.mockResolvedValue({
       inApp: false,
       email: true,
+      sms: false,
       type: NotificationType.TEST,
     });
 
@@ -148,6 +171,7 @@ describe('NotificationsService', () => {
     mockPrisma.notificationPreference.findFirst.mockResolvedValue({
       inApp: false,
       email: false,
+      sms: false,
       type: NotificationType.TEST,
     });
 
@@ -176,5 +200,45 @@ describe('NotificationsService', () => {
 
     expect(updated.readAt).toBeInstanceOf(Date);
     expect(mockPrisma.notification.update).toHaveBeenCalled();
+  });
+
+  it('sends SMS when preference is enabled and SMS adapter is enabled', async () => {
+    (mockSms.isEnabled as jest.Mock).mockReturnValue(true);
+    mockPrisma.notificationPreference.findFirst.mockResolvedValue({
+      inApp: true,
+      email: false,
+      sms: true,
+      type: NotificationType.SHIFT_ASSIGNMENT,
+    });
+    mockPrisma.notification.create.mockResolvedValue({
+      id: 'notif-2',
+      userId: 'user-1',
+      title: 'Shift assigned',
+      channels: [NotificationChannel.IN_APP, NotificationChannel.SMS],
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'demo@example.com',
+      employee: { phone: '+48123456789' },
+    });
+
+    await service.createNotification({
+      organisationId: 'org-1',
+      userId: 'user-1',
+      type: NotificationType.SHIFT_ASSIGNMENT,
+      title: 'Shift assigned',
+    });
+
+    expect(mockPrisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          channels: expect.arrayContaining([
+            NotificationChannel.IN_APP,
+            NotificationChannel.SMS,
+          ]),
+        }),
+      }),
+    );
+    expect(mockSms.sendSms).toHaveBeenCalled();
   });
 });

@@ -12,6 +12,7 @@ import { randomBytes, createHash } from 'crypto';
 import { InvitationStatus, Role } from '@prisma/client';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { EmailTemplatesService } from '../email/email-templates.service';
 
 interface InvitationContext {
   organisationId: string;
@@ -28,6 +29,7 @@ export class InvitationsService {
     private readonly queueService: QueueService,
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
+    private readonly emailTemplates: EmailTemplatesService,
   ) {}
 
   private hashToken(token: string) {
@@ -216,22 +218,24 @@ export class InvitationsService {
     });
 
     const invitationLink = this.buildInvitationLink(token);
-    const subject = 'Twoje konto w KadryHR';
-    const html = this.buildEmailTemplate({
+    const inviterName =
+      inviter?.firstName || inviter?.lastName
+        ? `${inviter?.firstName ?? ''} ${inviter?.lastName ?? ''}`.trim()
+        : null;
+
+    const emailTemplate = this.emailTemplates.invitationTemplate({
       organisationName: employee.organisation.name,
       invitationLink,
       inviteeName: `${employee.firstName} ${employee.lastName}`.trim(),
-      inviterName:
-        inviter?.firstName || inviter?.lastName
-          ? `${inviter?.firstName ?? ''} ${inviter?.lastName ?? ''}`.trim()
-          : null,
+      inviterName,
+      expiresIn: '24 godziny',
     });
 
     await this.queueService.addEmailDeliveryJob({
       to: targetEmail,
-      subject,
-      text: `Twoje konto w KadryHR zostało utworzone. Ustaw hasło: ${invitationLink}`,
-      html,
+      subject: emailTemplate.subject,
+      text: emailTemplate.text,
+      html: emailTemplate.html,
       organisationId: employee.organisationId,
       userId: user.id,
     });
@@ -312,52 +316,5 @@ export class InvitationsService {
     });
 
     return this.authService.login(invitation.invitedEmail, password, res);
-  }
-
-  private buildEmailTemplate(params: {
-    organisationName: string;
-    invitationLink: string;
-    inviteeName?: string;
-    inviterName?: string | null;
-  }) {
-    return `
-      <div style="font-family: Arial, sans-serif; color: #0f172a; background:#f8fafc; padding:24px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e2e8f0;">
-          <tr>
-            <td style="text-align:center;padding-bottom:16px;">
-              <div style="font-size:20px;font-weight:700;color:#0f172a;">KadryHR</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:18px;font-weight:600;padding-bottom:8px;">Twoje konto w KadryHR jest gotowe</td>
-          </tr>
-          <tr>
-            <td style="font-size:14px;line-height:22px;padding-bottom:16px;">
-              ${params.inviteeName ? `${params.inviteeName}, ` : ''}zapraszamy do organizacji <strong>${params.organisationName}</strong> w KadryHR.${
-                params.inviterName
-                  ? ` Zaproszenie wysłał(a): ${params.inviterName}.`
-                  : ''
-              }
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:16px 0;">
-              <a href="${params.invitationLink}" style="background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600;display:inline-block;">Ustaw hasło i przejdź do panelu</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:14px;line-height:22px;padding-bottom:12px;">
-              Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:<br />
-              <a href="${params.invitationLink}" style="color:#2563eb;">${params.invitationLink}</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:12px;line-height:18px;color:#475569;padding-top:12px;border-top:1px solid #e2e8f0;">
-              Wiadomość wysłana do Ciebie w imieniu organizacji ${params.organisationName}. Jeśli nie spodziewałeś/aś się tego zaproszenia, skontaktuj się ze swoim menedżerem.
-            </td>
-          </tr>
-        </table>
-      </div>
-    `;
   }
 }

@@ -13,6 +13,7 @@ import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { LeaveTypesModule } from './leave-types/leave-types.module';
 import { EmailModule } from './email/email.module';
+import { SmsModule } from './sms/sms.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PayrollModule } from './payroll/payroll.module';
@@ -35,6 +36,7 @@ import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates
     LeaveTypesModule,
     NotificationsModule,
     EmailModule,
+    SmsModule,
     NewsletterModule,
     ContractsModule,
     PayrollModule,

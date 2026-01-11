@@ -14,6 +14,8 @@ const STATUS_LABELS: Record<NotificationRecipientStatus, string> = {
   DELIVERED_IN_APP: "Dostarczone (App)",
   EMAIL_SENT: "Email wysłany",
   EMAIL_FAILED: "Email nieudany",
+  SMS_SENT: "SMS wysłany",
+  SMS_FAILED: "SMS nieudany",
   SKIPPED: "Pominięte",
 };
 
@@ -22,6 +24,8 @@ const STATUS_COLORS: Record<NotificationRecipientStatus, string> = {
   DELIVERED_IN_APP: "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900",
   EMAIL_SENT: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900",
   EMAIL_FAILED: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900",
+  SMS_SENT: "text-teal-600 bg-teal-100 dark:text-teal-300 dark:bg-teal-900",
+  SMS_FAILED: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900",
   SKIPPED: "text-orange-600 bg-orange-100 dark:text-orange-300 dark:bg-orange-900",
 };
 

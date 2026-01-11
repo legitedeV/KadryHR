@@ -156,9 +156,9 @@ export interface ScheduleTemplateDetail extends ScheduleTemplateRecord {
 }
 
 export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT" | "SCHEDULE_PUBLISHED" | "SWAP_STATUS" | "CUSTOM";
-export type NotificationChannel = "IN_APP" | "EMAIL";
+export type NotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "PUSH";
 export type NotificationCampaignStatus = "DRAFT" | "SENDING" | "SENT" | "FAILED";
-export type NotificationRecipientStatus = "PENDING" | "DELIVERED_IN_APP" | "EMAIL_SENT" | "EMAIL_FAILED" | "SKIPPED";
+export type NotificationRecipientStatus = "PENDING" | "DELIVERED_IN_APP" | "EMAIL_SENT" | "EMAIL_FAILED" | "SMS_SENT" | "SMS_FAILED" | "SKIPPED";
 
 export interface NotificationItem {
   id: string;
@@ -175,6 +175,8 @@ export interface NotificationPreference {
   type: NotificationType;
   inApp: boolean;
   email: boolean;
+  sms?: boolean;
+  push?: boolean; // Future: push notifications
 }
 
 export type NewsletterStatus =
@@ -986,12 +988,14 @@ export async function apiListNotifications(params: {
   take?: number;
   skip?: number;
   unreadOnly?: boolean;
+  type?: NotificationType;
 } = {}) {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams();
   if (params.take) search.set("take", String(params.take));
   if (params.skip) search.set("skip", String(params.skip));
   if (params.unreadOnly) search.set("unreadOnly", String(params.unreadOnly));
+  if (params.type) search.set("type", params.type);
 
   const query = search.toString();
   const response = await apiClient.request<{
