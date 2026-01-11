@@ -85,6 +85,14 @@ const testimonials = [
   },
 ];
 
+const trustedClients = [
+  {
+    name: "Forest Catering",
+    href: "https://www.forestcatering.pl/",
+    logo: "https://www.forestcatering.pl/modules/jscomposer/uploads/forest_logo_min.png",
+  },
+];
+
 export default function HomePage() {
   return (
     <div className="min-h-screen">
@@ -267,6 +275,38 @@ export default function HomePage() {
                 <p className="mt-4 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">“{item.quote}”</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 py-12">
+          <div className="card p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="section-label">Zaufali nam</p>
+                <h2 className="mt-2 text-2xl font-bold text-surface-900 dark:text-surface-50">
+                  Marki, które rozwijają zespoły z KadryHR
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-6">
+                {trustedClients.map((client) => (
+                  <a
+                    key={client.name}
+                    href={client.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-2xl border border-surface-200/70 bg-white/80 px-5 py-3 text-sm font-semibold text-surface-700 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated dark:border-surface-800/70 dark:bg-surface-900/60 dark:text-surface-100"
+                  >
+                    <img
+                      src={client.logo}
+                      alt={`${client.name} logo`}
+                      className="h-10 w-auto object-contain"
+                      loading="lazy"
+                    />
+                    <span>{client.name}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
