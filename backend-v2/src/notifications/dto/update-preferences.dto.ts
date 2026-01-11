@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsOptional,
   ValidateNested,
 } from 'class-validator';
 import { NotificationType } from '@prisma/client';
@@ -17,6 +18,14 @@ class PreferenceDto {
 
   @IsBoolean()
   email!: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  sms?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  push?: boolean; // Future: push notifications
 }
 
 export class UpdatePreferencesDto {

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailAdapter } from '../email/email.adapter';
+import { EmailTemplatesService } from '../email/email-templates.service';
+import { SmsAdapter } from '../sms/sms.adapter';
 import { QueueService } from '../queue/queue.service';
 import { NotificationType, NotificationChannel } from '@prisma/client';
 
@@ -38,6 +40,24 @@ describe('NotificationsService - Preference Filtering', () => {
     sendEmail: jest.fn().mockResolvedValue({ success: true }),
   };
 
+  const mockEmailTemplates = {
+    testNotificationTemplate: jest.fn().mockReturnValue({
+      subject: 'Test',
+      text: 'Test message',
+      html: '<p>Test</p>',
+    }),
+    genericTemplate: jest.fn().mockReturnValue({
+      subject: 'Generic',
+      text: 'Generic message',
+      html: '<p>Generic</p>',
+    }),
+  };
+
+  const mockSmsAdapter = {
+    sendSms: jest.fn().mockResolvedValue({ success: true }),
+    isEnabled: jest.fn().mockReturnValue(false),
+  };
+
   const mockQueueService = {
     addEmailDeliveryJob: jest.fn().mockResolvedValue(true),
     isQueueAvailable: jest.fn().mockReturnValue(false), // Default to sync
@@ -49,6 +69,8 @@ describe('NotificationsService - Preference Filtering', () => {
         NotificationsService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: EmailAdapter, useValue: mockEmailAdapter },
+        { provide: EmailTemplatesService, useValue: mockEmailTemplates },
+        { provide: SmsAdapter, useValue: mockSmsAdapter },
         { provide: QueueService, useValue: mockQueueService },
       ],
     }).compile();
@@ -107,6 +129,8 @@ describe('NotificationsService - Preference Filtering', () => {
         type: NotificationType.LEAVE_STATUS,
         inApp: true,
         email: false,
+        sms: false,
+        push: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -147,6 +171,8 @@ describe('NotificationsService - Preference Filtering', () => {
         type: NotificationType.LEAVE_STATUS,
         inApp: false,
         email: true,
+        sms: false,
+        push: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -213,6 +239,8 @@ describe('NotificationsService - Preference Filtering', () => {
         type: NotificationType.LEAVE_STATUS,
         inApp: true,
         email: true,
+        sms: false,
+        push: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -279,6 +307,8 @@ describe('NotificationsService - Preference Filtering', () => {
         type: NotificationType.LEAVE_STATUS,
         inApp: false,
         email: false,
+        sms: false,
+        push: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -352,6 +382,72 @@ describe('NotificationsService - Preference Filtering', () => {
       expect(
         mockPrismaService.notificationPreference.findFirst,
       ).not.toHaveBeenCalled();
+    });
+
+    it('should include SMS channel when sms preference is enabled and adapter is available', async () => {
+      mockSmsAdapter.isEnabled.mockReturnValue(true);
+
+      mockPrismaService.notificationPreference.findFirst.mockResolvedValue({
+        id: 'pref-1',
+        organisationId,
+        userId,
+        type: NotificationType.SHIFT_ASSIGNMENT,
+        inApp: true,
+        email: false,
+        sms: true,
+        push: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      mockPrismaService.notification.create.mockResolvedValue({
+        id: 'notif-1',
+        organisationId,
+        userId,
+        type: NotificationType.SHIFT_ASSIGNMENT,
+        title: 'Shift assigned',
+        body: null,
+        data: {},
+        channels: [NotificationChannel.IN_APP, NotificationChannel.SMS],
+        readAt: null,
+        createdAt: new Date(),
+      });
+
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: userId,
+        email: 'user@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        organisationId,
+        employee: { phone: '+48123456789' },
+      });
+
+      mockPrismaService.notificationDeliveryAttempt.create.mockResolvedValue({
+        id: 'attempt-1',
+        notificationId: 'notif-1',
+        channel: NotificationChannel.SMS,
+        status: 'SENT',
+        errorMessage: null,
+        createdAt: new Date(),
+      });
+
+      const result = await service.createNotification({
+        organisationId,
+        userId,
+        type: NotificationType.SHIFT_ASSIGNMENT,
+        title: 'Shift assigned',
+      });
+
+      expect(result).toBeDefined();
+      expect(mockPrismaService.notification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          channels: expect.arrayContaining([
+            NotificationChannel.IN_APP,
+            NotificationChannel.SMS,
+          ]),
+        }),
+      });
+      expect(mockSmsAdapter.sendSms).toHaveBeenCalled();
     });
   });
 });

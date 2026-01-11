@@ -213,7 +213,7 @@ export default function ProfilPage() {
   }, [emailPassword, newEmail]);
 
   const handleTogglePreference = useCallback(
-    async (type: string, field: "inApp" | "email", value: boolean) => {
+    async (type: string, field: "inApp" | "email" | "sms", value: boolean) => {
       const updated = preferences.map((p) =>
         p.type === type ? { ...p, [field]: value } : p
       );
@@ -454,6 +454,12 @@ export default function ProfilPage() {
                 <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                   E-mail
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <span className="flex items-center justify-center gap-1">
+                    SMS
+                    <span className="text-[9px] font-normal normal-case text-amber-600 dark:text-amber-400">(beta)</span>
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
@@ -494,11 +500,30 @@ export default function ProfilPage() {
                       />
                     </button>
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      disabled={savingPreferences}
+                      onClick={() => handleTogglePreference(pref.type, "sms", !pref.sms)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        pref.sms ? "bg-brand-500" : "bg-surface-200 dark:bg-surface-700"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          pref.sms ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-2">
+          💡 <strong>SMS:</strong> Wymaga skonfigurowanego numeru telefonu. Usługa w wersji beta.
+        </p>
       </div>
 
       {/* Edit Profile Modal */}
