@@ -114,8 +114,8 @@ export default function LokalizacjePage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Lokalizacje</p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Zarządzaj sklepami i oddziałami</p>
+          <p className="section-label">Lokalizacje</p>
+          <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">Zarządzaj sklepami i oddziałami</p>
         </div>
         {canManage && (
           <button
@@ -123,7 +123,7 @@ export default function LokalizacjePage() {
               setEditing(null);
               setShowForm(true);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700"
+            className="btn-primary px-2.5 py-1.5 text-sm"
           >
             + Dodaj lokalizację
           </button>
@@ -135,9 +135,9 @@ export default function LokalizacjePage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Szukaj lokalizacji lub adresu"
-          className="w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-brand-500 focus:ring dark:border-slate-800 dark:bg-slate-900"
+          className="input text-sm w-full max-w-xs"
         />
-        <p className="text-xs text-slate-500 dark:text-slate-400">Łącznie: {locations.length}</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400">Łącznie: {locations.length}</p>
       </div>
 
       {loading && <LocationsSkeleton />}
@@ -151,23 +151,23 @@ export default function LokalizacjePage() {
       {!loading && !error && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((loc) => (
-            <div key={loc.id} className="card flex flex-col gap-3 p-4">
+            <div key={loc.id} className="card flex flex-col gap-2 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{loc.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{loc.address || "Brak adresu"}</p>
+                  <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">{loc.name}</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">{loc.address || "Brak adresu"}</p>
                 </div>
                 {canManage && (
-                  <div className="flex gap-2 text-[11px] font-semibold">
+                  <div className="flex gap-1 text-xs">
                     <button
                       onClick={() => startEdit(loc)}
-                      className="rounded-lg border border-slate-200 px-3 py-1 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-900"
+                      className="btn-secondary px-2 py-1 text-xs"
                     >
                       Edytuj
                     </button>
                     <button
                       onClick={() => setShowDeleteId(loc.id)}
-                      className="rounded-lg border border-rose-200 px-3 py-1 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:text-rose-200 dark:hover:bg-rose-950"
+                      className="btn-danger px-2 py-1 text-xs"
                     >
                       Usuń
                     </button>
@@ -176,15 +176,15 @@ export default function LokalizacjePage() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-[11px] uppercase text-slate-500 dark:text-slate-400">Przypisani pracownicy</p>
+                <p className="text-xs uppercase text-surface-500 dark:text-surface-400">Przypisani pracownicy</p>
                 {loc.employees.length === 0 ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Brak przypisanych osób</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">Brak przypisanych osób</p>
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {loc.employees.map((emp) => (
                       <span
                         key={emp.id}
-                        className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        className="badge badge-neutral text-xs"
                       >
                         {formatName(emp)}
                       </span>
@@ -193,14 +193,14 @@ export default function LokalizacjePage() {
                 )}
               </div>
 
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              <p className="text-xs text-surface-400 dark:text-surface-500">
                 Utworzono: {new Date(loc.createdAt).toLocaleDateString("pl-PL")}
               </p>
             </div>
           ))}
 
           {filtered.length === 0 && (
-            <div className="sm:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+            <div className="sm:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-surface-200 bg-surface-50 p-6 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/50 dark:text-surface-300">
               Brak lokalizacji spełniających kryteria.
             </div>
           )}

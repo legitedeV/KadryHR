@@ -372,7 +372,7 @@ export default function WnioskiPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowBalances(!showBalances)}
-            className="btn-secondary px-3 py-2 text-sm"
+            className="btn-secondary px-2.5 py-1.5 text-sm"
           >
             <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -381,14 +381,14 @@ export default function WnioskiPage() {
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="btn-secondary px-3 py-2 text-sm"
+            className="btn-secondary px-2.5 py-1.5 text-sm"
           >
             <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
             Filtry
           </button>
-          <button onClick={openCreateModal} className="btn-primary px-3 py-2 text-sm">
+          <button onClick={openCreateModal} className="btn-primary px-2.5 py-1.5 text-sm">
             <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -399,32 +399,32 @@ export default function WnioskiPage() {
 
       {/* Leave Balances */}
       {showBalances && (
-        <div className="card p-4">
-          <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-4">
+        <div className="card p-3">
+          <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-3">
             Salda urlopowe (rok {new Date().getFullYear()})
           </h3>
           {balances.length === 0 ? (
             <p className="text-sm text-surface-500">Brak danych o saldach.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-surface-50 dark:bg-surface-800">
+              <table className="panel-table">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-surface-600 dark:text-surface-400">Pracownik</th>
-                    <th className="px-3 py-2 text-left font-medium text-surface-600 dark:text-surface-400">Typ urlopu</th>
-                    <th className="px-3 py-2 text-right font-medium text-surface-600 dark:text-surface-400">Przysługuje</th>
-                    <th className="px-3 py-2 text-right font-medium text-surface-600 dark:text-surface-400">Wykorzystano</th>
-                    <th className="px-3 py-2 text-right font-medium text-surface-600 dark:text-surface-400">Pozostało</th>
+                    <th>Pracownik</th>
+                    <th>Typ urlopu</th>
+                    <th className="text-right">Przysługuje</th>
+                    <th className="text-right">Wykorzystano</th>
+                    <th className="text-right">Pozostało</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
                   {balances.map((b) => (
                     <tr key={`${b.employeeId}-${b.leaveTypeId}`}>
-                      <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{b.employeeName}</td>
-                      <td className="px-3 py-2 text-surface-700 dark:text-surface-300">{b.leaveTypeName}</td>
-                      <td className="px-3 py-2 text-right text-surface-700 dark:text-surface-300">{b.allocated + b.adjustment} dni</td>
-                      <td className="px-3 py-2 text-right text-surface-700 dark:text-surface-300">{b.used} dni</td>
-                      <td className={`px-3 py-2 text-right font-semibold ${b.remaining > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <td className="text-surface-900 dark:text-surface-50">{b.employeeName}</td>
+                      <td className="text-surface-700 dark:text-surface-300">{b.leaveTypeName}</td>
+                      <td className="text-right text-surface-700 dark:text-surface-300">{b.allocated + b.adjustment} dni</td>
+                      <td className="text-right text-surface-700 dark:text-surface-300">{b.used} dni</td>
+                      <td className={`text-right font-semibold ${b.remaining > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {b.remaining} dni
                       </td>
                     </tr>
@@ -438,8 +438,8 @@ export default function WnioskiPage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="card p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1">
                 Status
@@ -498,11 +498,11 @@ export default function WnioskiPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-4">
-            <button onClick={applyFilters} className="btn-primary px-3 py-2 text-sm">
+          <div className="flex items-center gap-2 mt-3">
+            <button onClick={applyFilters} className="btn-primary px-2.5 py-1.5 text-sm">
               Zastosuj filtry
             </button>
-            <button onClick={clearFilters} className="btn-secondary px-3 py-2 text-sm">
+            <button onClick={clearFilters} className="btn-secondary px-2.5 py-1.5 text-sm">
               Wyczyść
             </button>
           </div>
@@ -537,7 +537,7 @@ export default function WnioskiPage() {
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Lista */}
           <div className="card lg:col-span-2 overflow-hidden">
             <div className="px-3 py-2 border-b border-surface-200 dark:border-surface-800 flex items-center justify-between">
@@ -546,8 +546,8 @@ export default function WnioskiPage() {
               </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+              <table className="panel-table">
+                <thead>
                   <tr className="border-b border-surface-200 dark:border-surface-800">
                     <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                       Pracownik
@@ -576,10 +576,10 @@ export default function WnioskiPage() {
                     >
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
+                          <div className="h-7 w-7 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
                             {r.employeeName.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-medium text-surface-900 dark:text-surface-100 text-sm">
+                          <span className="font-medium text-surface-900 dark:text-surface-100">
                             {r.employeeName}
                           </span>
                         </div>
@@ -625,11 +625,11 @@ export default function WnioskiPage() {
           </div>
 
           {/* Szczegóły */}
-          <div className="card p-6">
+          <div className="card p-4">
             {!selected ? (
-              <div className="flex flex-col items-center justify-center h-full py-10 text-center">
-                <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex flex-col items-center justify-center h-full py-8 text-center">
+                <div className="h-10 w-10 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path
                       strokeLinecap="round"
@@ -643,45 +643,45 @@ export default function WnioskiPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="section-label">Szczegóły wniosku</p>
-                    <p className="mt-2 text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <p className="mt-1 text-base font-bold text-surface-900 dark:text-surface-50">
                       {mapRequestType(selected.type)}
                     </p>
                   </div>
                   <span className={statusBadgeClass(selected.status)}>{mapStatus(selected.status)}</span>
                 </div>
 
-                <div className="space-y-3 rounded-xl bg-surface-50/50 dark:bg-surface-800/50 p-4">
-                  <div className="flex items-center gap-3">
+                <div className="space-y-2 rounded-xl bg-surface-50/50 dark:bg-surface-800/50 p-3">
+                  <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <div>
                       <p className="text-xs text-surface-500 dark:text-surface-400">Pracownik</p>
-                      <p className="font-semibold text-surface-900 dark:text-surface-50">{selected.employeeName}</p>
+                      <p className="font-semibold text-sm text-surface-900 dark:text-surface-50">{selected.employeeName}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <div>
                       <p className="text-xs text-surface-500 dark:text-surface-400">Data</p>
-                      <p className="font-semibold text-surface-900 dark:text-surface-50">
+                      <p className="font-semibold text-sm text-surface-900 dark:text-surface-50">
                         {formatDateRange(selected.startDate, selected.endDate)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
                       <p className="text-xs text-surface-500 dark:text-surface-400">Utworzono</p>
-                      <p className="font-semibold text-surface-900 dark:text-surface-50">
+                      <p className="font-semibold text-sm text-surface-900 dark:text-surface-50">
                         {new Date(selected.createdAt).toLocaleDateString("pl-PL")}
                       </p>
                     </div>
@@ -691,7 +691,7 @@ export default function WnioskiPage() {
                 {(selected.reason || selected.leaveType?.name) && (
                   <div>
                     <p className="section-label">Powód / szczegóły</p>
-                    <p className="mt-2 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
+                    <p className="mt-1 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
                       {selected.reason || selected.leaveType?.name || "Brak dodatkowych informacji."}
                     </p>
                   </div>
@@ -700,16 +700,16 @@ export default function WnioskiPage() {
                 {selected.rejectionReason && (
                   <div>
                     <p className="section-label">Powód odrzucenia</p>
-                    <p className="mt-2 text-sm text-rose-600 dark:text-rose-300 leading-relaxed">
+                    <p className="mt-1 text-sm text-rose-600 dark:text-rose-300 leading-relaxed">
                       {selected.rejectionReason}
                     </p>
                   </div>
                 )}
 
                 {/* Action buttons */}
-                <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-surface-200 dark:border-surface-700">
+                <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-surface-200 dark:border-surface-700">
                   {canEditSelected && (
-                    <button onClick={openEditModal} className="btn-secondary px-3 py-2 text-sm">
+                    <button onClick={openEditModal} className="btn-secondary px-2.5 py-1.5 text-sm">
                       <svg className="w-4 h-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>

@@ -200,8 +200,8 @@ export default function PracownicyPage() {
       {!loading && !error && (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-surface-50/80 dark:bg-surface-900/80">
+            <table className="panel-table">
+              <thead>
                 <tr className="border-b border-surface-200 dark:border-surface-800">
                   <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
                     Imię i nazwisko
@@ -238,11 +238,11 @@ export default function PracownicyPage() {
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex flex-wrap justify-end gap-2 text-xs">
-                        <button className="btn-secondary px-3" onClick={() => handleEdit(employee)} aria-label="Edytuj">
+                        <button className="btn-secondary px-2.5 py-1.5" onClick={() => handleEdit(employee)} aria-label="Edytuj">
                           Edytuj
                         </button>
                         <button
-                          className="btn-ghost px-3 text-brand-700 hover:text-brand-900 dark:text-brand-300"
+                          className="btn-ghost px-2.5 py-1.5 text-brand-700 hover:text-brand-900 dark:text-brand-300"
                           onClick={() => handleResendInvitation(employee.id)}
                           aria-label="Wyślij ponownie zaproszenie"
                         >

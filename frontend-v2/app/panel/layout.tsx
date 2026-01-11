@@ -296,13 +296,13 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <ThemeToggle />
-              <div className="hidden sm:flex items-center gap-3 text-sm">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
+              <div className="hidden sm:flex items-center gap-2 text-sm">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold text-xs dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
                   {user.email.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-surface-600 dark:text-surface-300">
+                <span className="text-surface-600 dark:text-surface-300 text-sm">
                   {user.email}
                 </span>
               </div>

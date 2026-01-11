@@ -24,22 +24,22 @@ echo "New HEAD: $NEW_REV"
 echo "==> Detecting changed files"
 CHANGED_FILES=$(git diff --name-only "$OLD_REV" "$NEW_REV")
 
-BACKEND_CHANGED="true"
+BACKEND_CHANGED="false"
 if echo "$CHANGED_FILES" | rg -q "^backend-v2/"; then
   BACKEND_CHANGED="true"
 fi
 
-FRONTEND_CHANGED="true"
+FRONTEND_CHANGED="false"
 if echo "$CHANGED_FILES" | rg -q "^frontend-v2/"; then
   FRONTEND_CHANGED="true"
 fi
 
-BACKEND_LOCK_CHANGED="true"
+BACKEND_LOCK_CHANGED="false"
 if echo "$CHANGED_FILES" | rg -q "^backend-v2/package-lock.json$"; then
   BACKEND_LOCK_CHANGED="true"
 fi
 
-FRONTEND_LOCK_CHANGED="true"
+FRONTEND_LOCK_CHANGED="false"
 if echo "$CHANGED_FILES" | rg -q "^frontend-v2/package-lock.json$"; then
   FRONTEND_LOCK_CHANGED="true"
 fi
@@ -56,7 +56,7 @@ if [ "$BACKEND_CHANGED" = "true" ]; then
 
   if [ "$BACKEND_LOCK_CHANGED" = "true" ]; then
     echo "==> Backend lockfile changed – running npm ci --omit=dev"
-    npm install
+    npm ci --omit=dev
   else
     echo "==> Backend lockfile unchanged – skipping npm ci"
   fi
@@ -84,10 +84,10 @@ if [ "$FRONTEND_CHANGED" = "true" ]; then
   cd "$FRONTEND_DIR"
 
   if [ "$FRONTEND_LOCK_CHANGED" = "true" ]; then
-    echo "==> Frontend lockfile changed – running npm install"
-    npm install
+    echo "==> Frontend lockfile changed – running npm ci --omit=dev"
+    npm ci --omit=dev
   else
-    echo "==> Frontend lockfile unchanged – skipping npm install"
+    echo "==> Frontend lockfile unchanged – skipping npm ci --omit=dev"
   fi
 
   echo "==> Building frontend"
