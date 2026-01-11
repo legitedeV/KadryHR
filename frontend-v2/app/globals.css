@@ -551,3 +551,36 @@ body.light {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* Compact panel utilities */
+.panel-card {
+  @apply card p-4;
+}
+
+.panel-card-compact {
+  @apply card p-3;
+}
+
+.panel-card-header {
+  @apply px-4 py-3 border-b border-surface-200 dark:border-surface-800;
+}
+
+.panel-table {
+  @apply min-w-full text-sm;
+}
+
+.panel-table thead {
+  @apply bg-surface-50/80 dark:bg-surface-900/80;
+}
+
+.panel-table th {
+  @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400;
+}
+
+.panel-table td {
+  @apply px-3 py-2 text-sm;
+}
+
+.panel-table tbody tr {
+  @apply hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors;
+}
