@@ -64,6 +64,9 @@ if [ "$BACKEND_CHANGED" = "true" ]; then
   echo "==> Running database migrations"
   npx prisma migrate deploy
 
+  echo "==> Generating Prisma client"
+  npx prisma generate
+
   echo "==> Building backend"
   npm run build
 
