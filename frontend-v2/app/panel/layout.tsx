@@ -108,7 +108,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex">
         {/* sidebar */}
         <aside className="hidden md:flex md:flex-col w-64 border-r border-surface-200/80 glass sidebar-glass dark:border-surface-800/80">
-          <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
+          <div className="h-14 flex items-center gap-3 px-4 border-b border-surface-100 dark:border-surface-800">
             <Logo
               variant="compact"
               size="xs"
@@ -118,8 +118,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               label="KadryHR"
             />
           </div>
-          <nav className="flex-1 py-6 px-4 space-y-1">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
+          <nav className="flex-1 py-4 px-3 space-y-1">
+            <p className="px-2.5 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
@@ -134,7 +134,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 h-9 ${
                     active
                       ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-900/70 dark:via-brand-800/40 dark:to-accent-900/50 dark:text-brand-100 dark:ring-brand-700/60"
                       : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
@@ -148,10 +148,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
-            <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="border-t border-surface-100 px-4 py-3 dark:border-surface-800">
+            <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -192,7 +192,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } bg-white dark:bg-surface-900 border-r border-surface-200/80 dark:border-surface-800/80`}>
-          <div className="h-16 flex items-center justify-between gap-3 px-5 border-b border-surface-100 dark:border-surface-800">
+          <div className="h-14 flex items-center justify-between gap-3 px-4 border-b border-surface-100 dark:border-surface-800">
             <Logo
               variant="compact"
               size="xs"
@@ -211,8 +211,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               </svg>
             </button>
           </div>
-          <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto" style={{ maxHeight: MOBILE_MENU_CONTENT_HEIGHT }}>
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
+          <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto" style={{ maxHeight: MOBILE_MENU_CONTENT_HEIGHT }}>
+            <p className="px-2.5 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
@@ -228,7 +228,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 h-9 ${
                     active
                       ? "bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700 shadow-sm ring-1 ring-brand-200/50 dark:from-brand-900/70 dark:via-brand-800/40 dark:to-accent-900/50 dark:text-brand-100 dark:ring-brand-700/60"
                       : "text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800/50 dark:hover:text-surface-200"
@@ -242,10 +242,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="border-t border-surface-100 px-5 py-4 dark:border-surface-800">
-            <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="border-t border-surface-100 px-4 py-3 dark:border-surface-800">
+            <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -276,7 +276,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
         {/* main area */}
         <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-surface-200/80 glass px-6 flex items-center justify-between gap-4 dark:border-surface-800/80">
+          <header className="h-14 border-b border-surface-200/80 glass px-4 flex items-center justify-between gap-4 dark:border-surface-800/80">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
@@ -291,25 +291,25 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
                   KadryHR · panel
                 </p>
-                <p className="text-base font-bold text-surface-900 dark:text-surface-50 truncate">
+                <p className="text-sm font-bold text-surface-900 dark:text-surface-50 truncate">
                   {titleByPath[pathname] ?? "Dashboard"}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <ThemeToggle />
-              <div className="hidden sm:flex items-center gap-3 text-sm">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
+              <div className="hidden sm:flex items-center gap-2 text-sm">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold text-xs dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
                   {user.email.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-surface-600 dark:text-surface-300">
+                <span className="text-surface-600 dark:text-surface-300 text-sm">
                   {user.email}
                 </span>
               </div>
             </div>
           </header>
 
-          <main className="flex-1 px-3 sm:px-4 lg:px-6 py-6 bg-gradient-to-b from-surface-50/80 to-surface-100/60 dark:from-surface-950 dark:to-surface-950">
+          <main className="flex-1 px-3 sm:px-4 py-4 bg-gradient-to-b from-surface-50/80 to-surface-100/60 dark:from-surface-950 dark:to-surface-950">
             <div className="max-w-[1600px] w-full mx-auto">{children}</div>
           </main>
         </div>
