@@ -76,15 +76,11 @@ export default function CampaignHistoryPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-            Powiadomienia
-          </p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-            Historia wysyłek
-          </p>
+          <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50">Historia wysyłek</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Powiadomienia</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Wszystkie kampanie: <span className="font-semibold">{campaigns.length}</span>
           </p>

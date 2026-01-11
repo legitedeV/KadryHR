@@ -241,15 +241,11 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <p className="section-label">
-            Powiadomienia
-          </p>
-          <p className="text-lg font-bold text-surface-900 dark:text-surface-50 mt-1">
-            Centrum powiadomień
-          </p>
+          <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Powiadomienia</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">Centrum powiadomień</p>
           <p className="text-xs text-surface-500 dark:text-surface-400">
             Nieprzeczytane: <span className="font-semibold text-surface-900 dark:text-surface-100">{unread}</span>
           </p>

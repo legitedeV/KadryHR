@@ -287,12 +287,10 @@ export default function ProfilPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <p className="section-label">Profil</p>
-        <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-          Dane zalogowanego użytkownika
-        </p>
+        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Profil</p>
+        <p className="text-sm text-surface-500 dark:text-surface-400">Dane zalogowanego użytkownika</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

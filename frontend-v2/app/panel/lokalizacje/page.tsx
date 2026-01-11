@@ -111,11 +111,11 @@ export default function LokalizacjePage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="section-label">Lokalizacje</p>
-          <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">Zarządzaj sklepami i oddziałami</p>
+          <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Lokalizacje</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">Zarządzaj sklepami i oddziałami</p>
         </div>
         {canManage && (
           <button
