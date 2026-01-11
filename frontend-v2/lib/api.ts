@@ -616,6 +616,114 @@ export async function apiDeleteAvailabilityWindow(windowId: string): Promise<{ s
   });
 }
 
+// Current user's availability API
+export interface MyAvailabilityResponse {
+  employeeId: string;
+  availability: AvailabilityRecord[];
+}
+
+export async function apiGetMyAvailability(): Promise<MyAvailabilityResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<MyAvailabilityResponse>(`${AVAILABILITY_PREFIX}/me`);
+}
+
+export async function apiUpdateMyAvailability(
+  availabilities: AvailabilityInput[],
+): Promise<AvailabilityRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityRecord[]>(`${AVAILABILITY_PREFIX}/me`, {
+    method: "PUT",
+    body: JSON.stringify({ availabilities }),
+  });
+}
+
+// Team availability API (admin only)
+export interface EmployeeAvailabilitySummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  position: string | null;
+  locations: Array<{ id: string; name: string }>;
+  availabilityCount: number;
+  hasWeeklyDefault: boolean;
+}
+
+export interface TeamAvailabilityResponse {
+  data: EmployeeAvailabilitySummary[];
+  total: number;
+}
+
+export interface TeamAvailabilityStatsResponse {
+  totalEmployees: number;
+  employeesWithAvailability: number;
+  employeesWithoutAvailability: number;
+  hasActiveWindow: boolean;
+  activeWindow: AvailabilityWindowRecord | null;
+}
+
+export interface EmployeeAvailabilityDetailResponse {
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    position: string | null;
+    locations: Array<{ id: string; name: string }>;
+    role: string | null;
+  };
+  availability: AvailabilityRecord[];
+}
+
+export async function apiGetTeamAvailabilityStats(): Promise<TeamAvailabilityStatsResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<TeamAvailabilityStatsResponse>(`${AVAILABILITY_PREFIX}/team/stats`);
+}
+
+export async function apiGetTeamAvailability(params: {
+  search?: string;
+  locationId?: string;
+  role?: string;
+  page?: number;
+  perPage?: number;
+}): Promise<TeamAvailabilityResponse> {
+  apiClient.hydrateFromStorage();
+  const searchParams = new URLSearchParams();
+  if (params.search) searchParams.set("search", params.search);
+  if (params.locationId) searchParams.set("locationId", params.locationId);
+  if (params.role) searchParams.set("role", params.role);
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.perPage) searchParams.set("perPage", String(params.perPage));
+  
+  const query = searchParams.toString();
+  return apiClient.request<TeamAvailabilityResponse>(
+    `${AVAILABILITY_PREFIX}/employees${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function apiGetEmployeeAvailability(
+  employeeId: string,
+): Promise<EmployeeAvailabilityDetailResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeAvailabilityDetailResponse>(
+    `${AVAILABILITY_PREFIX}/employee/${employeeId}`,
+  );
+}
+
+export async function apiUpdateEmployeeAvailability(
+  employeeId: string,
+  availabilities: AvailabilityInput[],
+): Promise<AvailabilityRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityRecord[]>(
+    `${AVAILABILITY_PREFIX}/employee/${employeeId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ availabilities }),
+    },
+  );
+}
+
 // Schedule Metadata API (delivery days, promotion labels)
 export async function apiGetScheduleMetadata(params: {
   from: string;

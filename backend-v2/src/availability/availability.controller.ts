@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseInterceptors,
   UseGuards,
@@ -32,6 +33,138 @@ import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 @Controller('availability')
 export class AvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}
+
+  // ==========================================
+  // CURRENT USER AVAILABILITY ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get current user's availability
+   */
+  @Get('me')
+  async getMyAvailability(@CurrentUser() user: AuthenticatedUser) {
+    return this.availabilityService.getMyAvailability(
+      user.organisationId,
+      user.id,
+    );
+  }
+
+  /**
+   * Update current user's availability
+   */
+  @Put('me')
+  @AuditLog({
+    action: 'AVAILABILITY_UPDATE_OWN',
+    entityType: 'availability',
+    captureBody: true,
+  })
+  async updateMyAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    dto: {
+      availabilities: Array<{
+        weekday?: string;
+        date?: string;
+        startMinutes: number;
+        endMinutes: number;
+        notes?: string;
+      }>;
+    },
+  ) {
+    return this.availabilityService.updateMyAvailability(
+      user.organisationId,
+      user.id,
+      dto.availabilities,
+    );
+  }
+
+  // ==========================================
+  // TEAM AVAILABILITY ENDPOINTS (Admin)
+  // ==========================================
+
+  /**
+   * Get team availability statistics
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('team/stats')
+  async getTeamStats(@CurrentUser() user: AuthenticatedUser) {
+    return this.availabilityService.getTeamAvailabilityStats(
+      user.organisationId,
+    );
+  }
+
+  /**
+   * Get list of employees with availability summary
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('employees')
+  async getTeamAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('search') search?: string,
+    @Query('locationId') locationId?: string,
+    @Query('role') role?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+  ) {
+    return this.availabilityService.getTeamAvailability(user.organisationId, {
+      search,
+      locationId,
+      role,
+      page: page ? parseInt(page, 10) : undefined,
+      perPage: perPage ? parseInt(perPage, 10) : undefined,
+    });
+  }
+
+  /**
+   * Get detailed availability for a specific employee
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('employee/:employeeId')
+  async getEmployeeAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.availabilityService.getEmployeeAvailability(
+      user.organisationId,
+      employeeId,
+    );
+  }
+
+  /**
+   * Update availability for a specific employee (admin only)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Put('employee/:employeeId')
+  @AuditLog({
+    action: 'AVAILABILITY_UPDATE_EMPLOYEE',
+    entityType: 'availability',
+    entityIdParam: 'employeeId',
+    captureBody: true,
+  })
+  async updateEmployeeAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('employeeId') employeeId: string,
+    @Body()
+    dto: {
+      availabilities: Array<{
+        weekday?: string;
+        date?: string;
+        startMinutes: number;
+        endMinutes: number;
+        notes?: string;
+      }>;
+    },
+  ) {
+    return this.availabilityService.updateEmployeeAvailability(
+      user.organisationId,
+      employeeId,
+      dto.availabilities,
+    );
+  }
+
+  // ==========================================
+  // GENERAL AVAILABILITY ENDPOINTS
+  // ==========================================
 
   @Get()
   async findAll(

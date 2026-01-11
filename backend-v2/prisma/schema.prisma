@@ -386,6 +386,9 @@ model Availability {
 
   @@index([organisationId])
   @@index([employeeId])
+  @@index([organisationId, employeeId])
+  @@index([employeeId, weekday])
+  @@index([employeeId, date])
 }
 
 model LeaveRequest {
