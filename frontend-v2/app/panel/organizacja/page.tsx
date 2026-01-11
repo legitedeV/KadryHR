@@ -250,12 +250,10 @@ export default function OrganisationSettingsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <p className="section-label">Ustawienia</p>
-        <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-          Organizacja
-        </p>
+        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Organizacja</p>
+        <p className="text-sm text-surface-500 dark:text-surface-400">Ustawienia</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

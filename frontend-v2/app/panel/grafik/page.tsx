@@ -806,63 +806,65 @@ export default function GrafikPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <ScheduleHeader
-        range={range}
-        shiftsCount={shifts.length}
-        onPrevWeek={() => handleWeekChange("prev")}
-        onNextWeek={() => handleWeekChange("next")}
-        onPublish={() => setPublishOpen(true)}
-        onClearWeek={() => setClearWeekOpen(true)}
-        onCopyPreviousWeek={() => setCopyConfirmOpen(true)}
-        onOpenTemplates={handleOpenTemplates}
-        copying={copyingWeek}
-        templatesLoading={loadingTemplates}
-      />
+    <div className="space-y-6">
+      <div className="card p-6 space-y-4">
+        <ScheduleHeader
+          range={range}
+          shiftsCount={shifts.length}
+          onPrevWeek={() => handleWeekChange("prev")}
+          onNextWeek={() => handleWeekChange("next")}
+          onPublish={() => setPublishOpen(true)}
+          onClearWeek={() => setClearWeekOpen(true)}
+          onCopyPreviousWeek={() => setCopyConfirmOpen(true)}
+          onOpenTemplates={handleOpenTemplates}
+          copying={copyingWeek}
+          templatesLoading={loadingTemplates}
+        />
 
-      {loading && (
-        <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Ładowanie grafiku...
-        </div>
-      )}
+        {loading && (
+          <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Ładowanie grafiku...
+          </div>
+        )}
 
-      {error && !loading && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
-          <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          {error}
-        </div>
-      )}
+        {error && !loading && (
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </div>
+        )}
 
-      {!loading && !error && (
-        <>
-          {formSuccess && (
-            <div className="text-sm text-emerald-700 dark:text-emerald-200">{formSuccess}</div>
-          )}
-          {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
-          <ScheduleGrid
-            range={range}
-            employees={employees}
-            shifts={shifts}
-            gridByEmployeeAndDay={gridByEmployeeAndDay}
-            availabilityIndicators={availabilityIndicators}
-            approvedLeavesByEmployeeAndDay={approvedLeavesByEmployeeAndDay}
-            draggedShift={draggedShift}
-            scheduleMetadata={scheduleMetadata}
-            promotionAfternoonCounts={promotionAfternoonCounts}
-            onDragStart={handleDragStart}
-            onDropShift={handleDrop}
-            onOpenCreate={openCreateModal}
-            onOpenEdit={openEditModal}
-            onDeleteShift={(shift) => setDeleteTarget(shift)}
-          />
-        </>
-      )}
+        {!loading && !error && (
+          <>
+            {formSuccess && (
+              <div className="text-sm text-emerald-700 dark:text-emerald-200">{formSuccess}</div>
+            )}
+            {formError && <div className="text-sm text-rose-600 dark:text-rose-300">{formError}</div>}
+            <ScheduleGrid
+              range={range}
+              employees={employees}
+              shifts={shifts}
+              gridByEmployeeAndDay={gridByEmployeeAndDay}
+              availabilityIndicators={availabilityIndicators}
+              approvedLeavesByEmployeeAndDay={approvedLeavesByEmployeeAndDay}
+              draggedShift={draggedShift}
+              scheduleMetadata={scheduleMetadata}
+              promotionAfternoonCounts={promotionAfternoonCounts}
+              onDragStart={handleDragStart}
+              onDropShift={handleDrop}
+              onOpenCreate={openCreateModal}
+              onOpenEdit={openEditModal}
+              onDeleteShift={(shift) => setDeleteTarget(shift)}
+            />
+          </>
+        )}
+      </div>
 
       <ShiftEditorModal
         open={editorOpen}

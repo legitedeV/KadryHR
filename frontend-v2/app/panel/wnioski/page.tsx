@@ -131,17 +131,21 @@ export default function WnioskiPage() {
   const [filters, setFilters] = useState<FilterState>(initialFilterState);
   const [showFilters, setShowFilters] = useState(false);
 
-  const loadRequests = useCallback(async () => {
+  const loadRequests = useCallback(async (overrideFilters?: FilterState) => {
     setLoading(true);
     setError(null);
     try {
+      const status = overrideFilters?.status ?? filters.status;
+      const employeeId = overrideFilters?.employeeId ?? filters.employeeId;
+      const from = overrideFilters?.from ?? filters.from;
+      const to = overrideFilters?.to ?? filters.to;
       const response = await apiListLeaveRequests({
         take: 100,
         skip: 0,
-        status: filters.status || undefined,
-        employeeId: filters.employeeId || undefined,
-        from: filters.from || undefined,
-        to: filters.to || undefined,
+        status: status || undefined,
+        employeeId: employeeId || undefined,
+        from: from || undefined,
+        to: to || undefined,
       });
       setRequests(response.data);
       if (response.data.length > 0 && !selectedId) {
@@ -360,14 +364,25 @@ export default function WnioskiPage() {
     setFilters(initialFilterState);
   };
 
+  const statusTabs: Array<{ key: RequestStatus | ""; label: string }> = [
+    { key: "", label: "Wszystkie" },
+    { key: "PENDING", label: "Oczekujące" },
+    { key: "APPROVED", label: "Zatwierdzone" },
+    { key: "REJECTED", label: "Odrzucone" },
+  ];
+
+  const handleStatusTab = (status: RequestStatus | "") => {
+    const nextFilters = { ...filters, status };
+    setFilters(nextFilters);
+    loadRequests(nextFilters);
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="section-label">Wnioski</p>
-          <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-            Lista wniosków pracowników
-          </p>
+          <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Wnioski</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">Lista wniosków pracowników</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -509,6 +524,22 @@ export default function WnioskiPage() {
         </div>
       )}
 
+      <div className="flex flex-wrap gap-2">
+        {statusTabs.map((tab) => (
+          <button
+            key={tab.key || "all"}
+            onClick={() => handleStatusTab(tab.key)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              filters.status === tab.key
+                ? "bg-brand-500 text-white shadow-sm"
+                : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {loading && (
         <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
           <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -540,87 +571,89 @@ export default function WnioskiPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Lista */}
           <div className="card lg:col-span-2 overflow-hidden">
-            <div className="px-3 py-2 border-b border-surface-200 dark:border-surface-800 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-surface-200 dark:border-surface-800 flex items-center justify-between">
               <p className="text-sm font-medium text-surface-900 dark:text-surface-100">
                 Wnioski ({requests.length})
               </p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="panel-table">
-                <thead>
-                  <tr className="border-b border-surface-200 dark:border-surface-800">
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                      Pracownik
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                      Typ
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                      Zakres dat
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
-                  {requests.map((r) => (
-                    <tr
-                      key={r.id}
-                      onClick={() => setSelectedId(r.id)}
-                      className={`cursor-pointer transition-colors ${
-                        selectedId === r.id
-                          ? "bg-brand-50/60 dark:bg-brand-950/30"
-                          : "hover:bg-surface-50/50 dark:hover:bg-surface-800/50"
-                      }`}
-                    >
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
-                            {r.employeeName.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-medium text-surface-900 dark:text-surface-100">
-                            {r.employeeName}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-sm text-surface-600 dark:text-surface-300">
-                        {mapRequestType(r.type)}
-                      </td>
-                      <td className="px-3 py-2 text-sm text-surface-600 dark:text-surface-300">
-                        {formatDateRange(r.startDate, r.endDate)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span className={statusBadgeClass(r.status)}>{mapStatus(r.status)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {requests.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-10 text-center">
-                        <EmptyState
-                          icon={
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                              />
-                            </svg>
-                          }
-                          title="Brak wniosków"
-                          description="Gdy pracownicy złożą wnioski, zobaczysz je na tej liście."
-                          action={
-                            <button onClick={openCreateModal} className="btn-primary px-3 py-2 text-sm">
-                              Dodaj pierwszy wniosek
-                            </button>
-                          }
+            <div className="space-y-3 p-4">
+              {requests.map((r) => (
+                <div
+                  key={r.id}
+                  onClick={() => setSelectedId(r.id)}
+                  className={`cursor-pointer rounded-2xl border px-4 py-3 transition ${
+                    selectedId === r.id
+                      ? "border-brand-200 bg-brand-50/50 shadow-sm dark:border-brand-700/60 dark:bg-brand-950/30"
+                      : "border-surface-200 bg-white hover:border-brand-200 dark:border-surface-800 dark:bg-surface-900"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
+                        {r.employeeName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-surface-900 dark:text-surface-100">{r.employeeName}</p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400">{mapRequestType(r.type)}</p>
+                      </div>
+                    </div>
+                    <span className={statusBadgeClass(r.status)}>{mapStatus(r.status)}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                      {formatDateRange(r.startDate, r.endDate)} · {r.leaveType?.name ?? r.reason ?? "Brak danych"}
+                    </p>
+                    {canManage && r.status === "PENDING" && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedId(r.id);
+                            setStatusAction("APPROVED");
+                            setStatusModalOpen(true);
+                          }}
+                          className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white"
+                        >
+                          Akceptuj
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedId(r.id);
+                            setStatusAction("REJECTED");
+                            setStatusModalOpen(true);
+                          }}
+                          className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                        >
+                          Odrzuć
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {requests.length === 0 && (
+                <div className="px-4 py-10 text-center">
+                  <EmptyState
+                    icon={
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                         />
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                      </svg>
+                    }
+                    title="Brak wniosków"
+                    description="Gdy pracownicy złożą wnioski, zobaczysz je na tej liście."
+                    action={
+                      <button onClick={openCreateModal} className="btn-primary px-3 py-2 text-sm">
+                        Dodaj pierwszy wniosek
+                      </button>
+                    }
+                  />
+                </div>
+              )}
             </div>
           </div>
 

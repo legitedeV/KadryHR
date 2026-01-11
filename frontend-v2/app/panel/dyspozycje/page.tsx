@@ -194,6 +194,7 @@ function MyAvailabilityTab({
   saving: boolean;
   onSave: () => Promise<void>;
 }) {
+  const [selectedDay, setSelectedDay] = useState<Weekday>("MONDAY");
   const addSlot = (weekday: Weekday) => {
     setFormData((prev) =>
       prev.map((day) => {
@@ -234,110 +235,145 @@ function MyAvailabilityTab({
     );
   };
 
+  const selectedData = formData.find((day) => day.weekday === selectedDay);
+  const selectedLabel = WEEKDAYS.find((day) => day.key === selectedDay)?.label ?? "Dzień";
+  const selectedSlots = selectedData?.slots ?? [];
+
   return (
     <div className="card p-6">
       <div className="flex items-center gap-4 mb-6">
-        <div className="h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
+        <div className="h-10 w-10 rounded-2xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
-          <p className="section-label">Preferowane godziny pracy</p>
-          <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+          <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Dyspozycje</p>
+          <p className="text-base font-semibold text-surface-900 dark:text-surface-50 mt-1">
             Domyślna tygodniowa dostępność
           </p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {WEEKDAYS.map(({ key, label }) => {
-          const dayData = formData.find((d) => d.weekday === key);
-          const slots = dayData?.slots || [];
-
-          return (
-            <div
-              key={key}
-              className="rounded-xl border border-surface-200/80 dark:border-surface-700/80 p-4 transition-colors hover:border-brand-200 dark:hover:border-brand-800/50"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-surface-900 dark:text-surface-50">
-                  {label}
-                </span>
-                <button
-                  type="button"
-                  className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium flex items-center gap-1"
-                  onClick={() => addSlot(key)}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Dodaj przedział
-                </button>
-              </div>
-
-              {slots.length === 0 ? (
-                <div className="text-sm text-surface-400 dark:text-surface-500 py-3 px-4 bg-surface-50/50 dark:bg-surface-800/30 rounded-lg text-center">
-                  Brak podanej dostępności
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        <div className="space-y-3">
+          {WEEKDAYS.map(({ key, label }) => {
+            const dayData = formData.find((d) => d.weekday === key);
+            const slots = dayData?.slots || [];
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedDay(key)}
+                className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                  selectedDay === key
+                    ? "border-brand-300 bg-brand-50/50 shadow-sm dark:border-brand-700/60 dark:bg-brand-950/40"
+                    : "border-surface-200 bg-white hover:border-brand-200 dark:border-surface-800 dark:bg-surface-900"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-surface-900 dark:text-surface-50">{label}</span>
+                  <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-surface-500 dark:bg-surface-800 dark:text-surface-300">
+                    {slots.length === 0 ? "Niedostępny" : `${slots.length} okna`}
+                  </span>
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {slots.map((slot, slotIndex) => (
-                    <div
-                      key={slotIndex}
-                      className="flex items-center gap-2 bg-surface-50 dark:bg-surface-800/50 rounded-lg px-3 py-2 border border-surface-200/80 dark:border-surface-700/80"
-                    >
-                      <input
-                        type="time"
-                        className="input py-1 px-2 text-sm w-24"
-                        value={slot.start}
-                        onChange={(e) => updateSlot(key, slotIndex, "start", e.target.value)}
-                      />
-                      <span className="text-surface-400 dark:text-surface-500">–</span>
-                      <input
-                        type="time"
-                        className="input py-1 px-2 text-sm w-24"
-                        value={slot.end}
-                        onChange={(e) => updateSlot(key, slotIndex, "end", e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                        onClick={() => removeSlot(key, slotIndex)}
-                        aria-label="Usuń przedział"
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {slots.length === 0 ? (
+                    <span className="text-xs text-surface-400">Brak godzin</span>
+                  ) : (
+                    slots.map((slot, slotIndex) => (
+                      <span
+                        key={slotIndex}
+                        className="rounded-full bg-surface-100 px-2.5 py-1 text-[10px] font-semibold text-surface-600 dark:bg-surface-800 dark:text-surface-300"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                        {slot.start}–{slot.end}
+                      </span>
+                    ))
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
 
-      <div className="flex justify-end mt-6 pt-4 border-t border-surface-200/80 dark:border-surface-700/80">
-        <button className="btn-primary" onClick={onSave} disabled={saving}>
-          {saving ? (
-            <>
-              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Zapisywanie...
-            </>
-          ) : (
-            <>
+        <div className="rounded-2xl border border-surface-200/80 bg-surface-50/60 p-5 dark:border-surface-800/60 dark:bg-surface-900/50">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Edytuj dzień</p>
+              <p className="text-base font-semibold text-surface-900 dark:text-surface-50">{selectedLabel}</p>
+            </div>
+            <button
+              type="button"
+              className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium flex items-center gap-1"
+              onClick={() => addSlot(selectedDay)}
+            >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Zapisz dyspozycje
-            </>
+              Dodaj przedział
+            </button>
+          </div>
+
+          {selectedSlots.length === 0 ? (
+            <div className="text-sm text-surface-400 dark:text-surface-500 py-6 px-4 bg-white/70 dark:bg-surface-800/40 rounded-2xl text-center">
+              Brak podanej dostępności
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {selectedSlots.map((slot, slotIndex) => (
+                <div
+                  key={slotIndex}
+                  className="flex flex-wrap items-center gap-3 bg-white dark:bg-surface-800/60 rounded-2xl px-4 py-3 border border-surface-200/80 dark:border-surface-700/80"
+                >
+                  <input
+                    type="time"
+                    className="input py-1 px-2 text-sm w-28"
+                    value={slot.start}
+                    onChange={(e) => updateSlot(selectedDay, slotIndex, "start", e.target.value)}
+                  />
+                  <span className="text-surface-400 dark:text-surface-500">–</span>
+                  <input
+                    type="time"
+                    className="input py-1 px-2 text-sm w-28"
+                    value={slot.end}
+                    onChange={(e) => updateSlot(selectedDay, slotIndex, "end", e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                    onClick={() => removeSlot(selectedDay, slotIndex)}
+                    aria-label="Usuń przedział"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
-        </button>
+
+          <div className="flex justify-end mt-6 pt-4 border-t border-surface-200/80 dark:border-surface-700/80">
+            <button className="btn-primary" onClick={onSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Zapisywanie...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Zapisz dyspozycje
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1113,13 +1149,11 @@ export default function DyspozycjePage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-base font-bold text-surface-900 dark:text-surface-50">
-            Dyspozycje
-          </h1>
+          <h1 className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Dyspozycje</h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
             Zarządzaj dostępnością {userIsAdmin ? "swojego zespołu" : "swoją"} do układania grafiku pracy
           </p>
@@ -1143,14 +1177,13 @@ export default function DyspozycjePage() {
 
       {/* Tabs (only for admins) */}
       {userIsAdmin && (
-        <div className="border-b border-surface-200/80 dark:border-surface-700/80">
-          <nav className="flex gap-6" aria-label="Tabs">
+        <div className="flex gap-2" aria-label="Tabs">
             <button
               onClick={() => setActiveTab("my")}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "my"
-                  ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                  : "border-transparent text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
+                  ? "bg-brand-500 text-white shadow-sm"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -1162,10 +1195,10 @@ export default function DyspozycjePage() {
             </button>
             <button
               onClick={() => setActiveTab("team")}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "team"
-                  ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                  : "border-transparent text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
+                  ? "bg-brand-500 text-white shadow-sm"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -1175,7 +1208,6 @@ export default function DyspozycjePage() {
                 Dyspozycyjność zespołu
               </span>
             </button>
-          </nav>
         </div>
       )}
 
