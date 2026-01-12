@@ -6,6 +6,7 @@ import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import {
   apiGetMe,
   apiGetActiveAvailabilityWindows,
+  apiGetAvailabilityWindows,
   apiGetMyAvailability,
   apiUpdateMyAvailability,
   apiGetTeamAvailability,
@@ -21,6 +22,7 @@ import {
   apiUpdateWindowSubmissionStatus,
   apiListLocations,
   apiCreateAvailabilityWindow,
+  apiCloseAvailabilityWindow,
   AvailabilityWindowRecord,
   AvailabilityRecord,
   AvailabilityInput,
@@ -75,6 +77,18 @@ function formatDateShort(date: string) {
     day: "numeric",
     month: "short",
   });
+}
+
+function getWindowStatus(window: AvailabilityWindowRecord) {
+  const now = new Date();
+  const deadline = new Date(window.deadline);
+  if (window.isOpen && !window.closedAt && deadline >= now) {
+    return { key: "active", label: "Aktywne", badge: "badge-success" };
+  }
+  if (window.closedAt || deadline < now) {
+    return { key: "closed", label: "Zakończone", badge: "badge-secondary" };
+  }
+  return { key: "upcoming", label: "Nadchodzące", badge: "badge-warning" };
 }
 
 function formatMonthLabel(date: Date) {
@@ -228,8 +242,7 @@ function WindowStatusCard({
             Składanie dyspozycji zamknięte
           </h3>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Aktualnie nie ma otwartego okresu składania dyspozycji.
-            {!adminView && " Możesz jednak edytować swoją domyślną dostępność."}
+            Aktualnie nie ma otwartego okna na składanie dyspozycji. Poczekaj na informację od pracodawcy.
           </p>
           {adminView && onOpenWindow && (
             <button
@@ -240,6 +253,98 @@ function WindowStatusCard({
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AvailabilityWindowsList({
+  windows,
+  loading,
+  onRequestClose,
+}: {
+  windows: AvailabilityWindowRecord[];
+  loading: boolean;
+  onRequestClose: (windowId: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="card p-5 text-sm text-surface-500 dark:text-surface-400">
+        Ładowanie okien dyspozycji...
+      </div>
+    );
+  }
+
+  if (windows.length === 0) {
+    return (
+      <EmptyState
+        title="Brak okien dyspozycji"
+        description="Utwórz nowe okno, aby pracownicy mogli przesyłać dyspozycje."
+      />
+    );
+  }
+
+  return (
+    <div className="card overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-200/80 dark:border-surface-700/80">
+        <h3 className="font-semibold text-surface-900 dark:text-surface-100">
+          Okna dyspozycji
+        </h3>
+        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          Zarządzaj terminami składania dyspozycji w organizacji.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-surface-50 dark:bg-surface-800/60 text-surface-500 dark:text-surface-400">
+            <tr>
+              <th className="text-left font-semibold px-5 py-3">Nazwa okna / opis</th>
+              <th className="text-left font-semibold px-5 py-3">Okres od–do</th>
+              <th className="text-left font-semibold px-5 py-3">Status</th>
+              <th className="text-right font-semibold px-5 py-3">Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {windows.map((window) => {
+              const status = getWindowStatus(window);
+              return (
+                <tr
+                  key={window.id}
+                  className="border-t border-surface-200/80 dark:border-surface-700/80"
+                >
+                  <td className="px-5 py-4">
+                    <div className="font-medium text-surface-900 dark:text-surface-100">
+                      {window.title}
+                    </div>
+                    <div className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                      Termin składania: {formatDate(window.deadline)}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-surface-700 dark:text-surface-300">
+                    {formatDate(window.startDate)} – {formatDate(window.endDate)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`badge ${status.badge}`}>{status.label}</span>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    {status.key === "active" ? (
+                      <button
+                        onClick={() => onRequestClose(window.id)}
+                        className="btn-secondary text-sm"
+                      >
+                        Zamknij okno dyspozycji
+                      </button>
+                    ) : (
+                      <span className="text-xs text-surface-400 dark:text-surface-500">
+                        —
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -1644,12 +1749,16 @@ export default function DyspozycjePage() {
   const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("my");
-  const [windows, setWindows] = useState<AvailabilityWindowRecord[]>([]);
+  const [activeWindows, setActiveWindows] = useState<AvailabilityWindowRecord[]>([]);
+  const [allWindows, setAllWindows] = useState<AvailabilityWindowRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [windowSubmission, setWindowSubmission] = useState<AvailabilityWindowSubmissionResponse | null>(null);
+  const [windowsLoading, setWindowsLoading] = useState(false);
+  const [closeWindowId, setCloseWindowId] = useState<string | null>(null);
+  const [closingWindow, setClosingWindow] = useState(false);
 
   // My availability state
   const [formData, setFormData] = useState<DayAvailability[]>(
@@ -1679,7 +1788,7 @@ export default function DyspozycjePage() {
   const [createWindowOpen, setCreateWindowOpen] = useState(false);
   const [creatingWindow, setCreatingWindow] = useState(false);
 
-  const activeWindow = windows.length > 0 ? windows[0] : null;
+  const activeWindow = activeWindows.length > 0 ? activeWindows[0] : null;
   const userIsAdmin = user ? isAdmin(user.role) : false;
 
   // Initial data load
@@ -1701,7 +1810,7 @@ export default function DyspozycjePage() {
         if (cancelled) return;
 
         setUser(userData);
-        setWindows(windowsData);
+        setActiveWindows(windowsData);
         setLocations(locationsData);
 
         // Initialize form with existing availability
@@ -1727,6 +1836,29 @@ export default function DyspozycjePage() {
             console.error(submissionError);
             if (!cancelled) {
               setWindowSubmission(null);
+            }
+          }
+        }
+
+        if (isAdmin(userData.role)) {
+          setWindowsLoading(true);
+          try {
+            const allWindowsData = await apiGetAvailabilityWindows();
+            if (!cancelled) {
+              setAllWindows(allWindowsData);
+            }
+          } catch (err) {
+            console.error(err);
+            if (!cancelled) {
+              pushToast({
+                title: "Błąd",
+                description: "Nie udało się pobrać listy okien dyspozycji",
+                variant: "error",
+              });
+            }
+          } finally {
+            if (!cancelled) {
+              setWindowsLoading(false);
             }
           }
         }
@@ -1779,6 +1911,33 @@ export default function DyspozycjePage() {
       cancelled = true;
     };
   }, [activeWindow?.id]);
+
+  const refreshWindows = useCallback(async () => {
+    try {
+      if (userIsAdmin) {
+        setWindowsLoading(true);
+      }
+      const [active, all] = await Promise.all([
+        apiGetActiveAvailabilityWindows(),
+        userIsAdmin ? apiGetAvailabilityWindows() : Promise.resolve([]),
+      ]);
+      setActiveWindows(active);
+      if (userIsAdmin) {
+        setAllWindows(all);
+      }
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się odświeżyć okien dyspozycji",
+        variant: "error",
+      });
+    } finally {
+      if (userIsAdmin) {
+        setWindowsLoading(false);
+      }
+    }
+  }, [userIsAdmin]);
 
   const loadTeamData = async () => {
     setTeamLoading(true);
@@ -2002,7 +2161,8 @@ export default function DyspozycjePage() {
         deadline: new Date(data.deadline).toISOString(),
         isOpen: true,
       });
-      setWindows([newWindow, ...windows]);
+      setActiveWindows([newWindow]);
+      setAllWindows([newWindow, ...allWindows]);
       setWindowSubmission(null);
       setCreateWindowOpen(false);
       pushToast({ title: "Sukces", description: "Okno składania dyspozycji zostało utworzone", variant: "success" });
@@ -2011,6 +2171,32 @@ export default function DyspozycjePage() {
       pushToast({ title: "Błąd", description: "Nie udało się utworzyć okna", variant: "error" });
     } finally {
       setCreatingWindow(false);
+    }
+  };
+
+  const windowToClose = closeWindowId ? allWindows.find((window) => window.id === closeWindowId) ?? null : null;
+
+  const handleCloseWindow = async () => {
+    if (!windowToClose) return;
+    setClosingWindow(true);
+    try {
+      await apiCloseAvailabilityWindow(windowToClose.id);
+      pushToast({
+        title: "Zamknięto okno",
+        description: "Okno dyspozycji zostało zamknięte.",
+        variant: "success",
+      });
+      await refreshWindows();
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się zamknąć okna dyspozycji",
+        variant: "error",
+      });
+    } finally {
+      setClosingWindow(false);
+      setCloseWindowId(null);
     }
   };
 
@@ -2109,6 +2295,14 @@ export default function DyspozycjePage() {
         onOpenWindow={() => setCreateWindowOpen(true)}
       />
 
+      {userIsAdmin && (
+        <AvailabilityWindowsList
+          windows={allWindows}
+          loading={windowsLoading}
+          onRequestClose={(windowId) => setCloseWindowId(windowId)}
+        />
+      )}
+
       {/* Tab Content */}
       {activeTab === "my" ? (
         activeWindow ? (
@@ -2118,13 +2312,22 @@ export default function DyspozycjePage() {
             saving={saving}
             onSave={handleSaveWindowAvailability}
           />
-        ) : (
+        ) : userIsAdmin ? (
           <MyAvailabilityTab
             formData={formData}
             setFormData={setFormData}
             saving={saving}
             onSave={handleSaveMyAvailability}
           />
+        ) : (
+          <div className="card p-5">
+            <h3 className="font-semibold text-surface-900 dark:text-surface-50">
+              Brak aktywnego okna dyspozycji
+            </h3>
+            <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
+              Aktualnie nie ma otwartego okna na składanie dyspozycji. Poczekaj na informację od pracodawcy.
+            </p>
+          </div>
         )
       ) : activeWindow ? (
         <WindowTeamAvailabilityTab
@@ -2169,6 +2372,31 @@ export default function DyspozycjePage() {
         onClose={() => setSelectedWindowEmployee(null)}
         onSave={handleSaveEmployeeAvailability}
       />
+
+      <Modal
+        open={!!windowToClose}
+        title="Zamknąć okno dyspozycji?"
+        description={windowToClose?.title}
+        onClose={() => setCloseWindowId(null)}
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setCloseWindowId(null)}>
+              Anuluj
+            </button>
+            <button
+              className="btn-primary"
+              onClick={handleCloseWindow}
+              disabled={closingWindow}
+            >
+              {closingWindow ? "Zamykanie..." : "Zamknij okno"}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-surface-600 dark:text-surface-300">
+          Czy na pewno chcesz zamknąć to okno? Pracownicy nie będą mogli już składać nowych dyspozycji w tym okresie.
+        </p>
+      </Modal>
 
       {/* Create Window Modal */}
       <CreateWindowModal

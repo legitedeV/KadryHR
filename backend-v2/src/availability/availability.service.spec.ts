@@ -17,6 +17,7 @@ const mockPrisma = {
   },
   availabilityWindow: {
     findFirst: jest.fn(),
+    count: jest.fn(),
     update: jest.fn(),
   },
   availabilitySubmission: {
@@ -99,6 +100,7 @@ describe('AvailabilityService', () => {
       endDate: new Date('2024-04-30'),
       deadline: new Date('2099-04-01'),
       isOpen: true,
+      closedAt: null,
       title: 'Kwiecień',
     };
 
@@ -138,7 +140,7 @@ describe('AvailabilityService', () => {
     expect(mockAuditService.record).toHaveBeenCalled();
   });
 
-  it('prevents closing an active window', async () => {
+  it('closes an active window and notifies employees', async () => {
     const window = {
       id: 'window-1',
       organisationId: 'org',
@@ -146,12 +148,38 @@ describe('AvailabilityService', () => {
       endDate: new Date('2024-04-30'),
       deadline: new Date('2099-04-01'),
       isOpen: true,
+      closedAt: null,
+      title: 'Kwiecień',
     };
 
     mockPrisma.availabilityWindow.findFirst.mockResolvedValue(window);
+    mockPrisma.availabilityWindow.update.mockResolvedValue({
+      ...window,
+      isOpen: false,
+      closedAt: new Date(),
+    });
+    mockPrisma.user.findMany.mockResolvedValue([
+      { id: 'employee-1', role: Role.EMPLOYEE },
+    ]);
+
+    await service.closeWindow('org', 'window-1', 'manager-1');
+
+    expect(mockPrisma.availabilityWindow.update).toHaveBeenCalled();
+    expect(mockNotificationsService.createNotification).toHaveBeenCalled();
+    expect(mockAuditService.record).toHaveBeenCalled();
+  });
+
+  it('prevents creating overlapping active windows', async () => {
+    mockPrisma.availabilityWindow.count.mockResolvedValue(1);
 
     await expect(
-      service.updateWindow('org', 'window-1', { isOpen: false }),
-    ).rejects.toThrow('Nie można zamknąć trwającego okna dyspozycji.');
+      service.createWindow('org', {
+        title: 'Maj',
+        startDate: '2024-05-01',
+        endDate: '2024-05-31',
+        deadline: '2099-05-01',
+        isOpen: true,
+      }),
+    ).rejects.toThrow('Istnieje już aktywne okno dyspozycji dla tej organizacji.');
   });
 });
