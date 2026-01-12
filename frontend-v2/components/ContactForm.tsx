@@ -92,20 +92,20 @@ export function ContactForm() {
     <form className="space-y-4" onSubmit={handleSubmit} aria-live="polite">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 text-sm">
-          <label className="block text-surface-700 dark:text-surface-200" htmlFor="lead-name">
+          <label className="block text-surface-200" htmlFor="lead-name">
             Imię i nazwisko
           </label>
           <input
             id="lead-name"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
-            className="w-full rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+            className="w-full rounded-xl border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-surface-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
             placeholder="np. Anna Kowalska"
             required
           />
         </div>
         <div className="space-y-2 text-sm">
-          <label className="block text-surface-700 dark:text-surface-200" htmlFor="lead-email">
+          <label className="block text-surface-200" htmlFor="lead-email">
             E-mail
           </label>
           <input
@@ -113,7 +113,7 @@ export function ContactForm() {
             type="email"
             value={form.email}
             onChange={(e) => updateField("email", e.target.value)}
-            className="w-full rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+            className="w-full rounded-xl border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-surface-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
             placeholder="twoj@firma.pl"
             required
           />
@@ -122,27 +122,27 @@ export function ContactForm() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 text-sm">
-          <label className="block text-surface-700 dark:text-surface-200" htmlFor="lead-company">
+          <label className="block text-surface-200" htmlFor="lead-company">
             Firma / sieć
           </label>
           <input
             id="lead-company"
             value={form.company}
             onChange={(e) => updateField("company", e.target.value)}
-            className="w-full rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+            className="w-full rounded-xl border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-surface-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
             placeholder="np. Sieć Marketów Nova"
             required
           />
         </div>
         <div className="space-y-2 text-sm">
-          <label className="block text-surface-700 dark:text-surface-200" htmlFor="lead-headcount">
+          <label className="block text-surface-200" htmlFor="lead-headcount">
             Liczba pracowników
           </label>
           <input
             id="lead-headcount"
             value={form.headcount}
             onChange={(e) => updateField("headcount", e.target.value)}
-            className="w-full rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+            className="w-full rounded-xl border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-surface-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
             placeholder="np. 120"
             inputMode="numeric"
           />
@@ -150,7 +150,7 @@ export function ContactForm() {
       </div>
 
       <div className="space-y-2 text-sm">
-        <label className="block text-surface-700 dark:text-surface-200" htmlFor="lead-message">
+        <label className="block text-surface-200" htmlFor="lead-message">
           Wiadomość
         </label>
         <textarea
@@ -158,7 +158,7 @@ export function ContactForm() {
           value={form.message}
           onChange={(e) => updateField("message", e.target.value)}
           rows={4}
-          className="w-full rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+          className="w-full rounded-xl border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-surface-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
           placeholder="Opisz specyfikę grafiku, liczbę lokalizacji i oczekiwania." 
         />
       </div>
@@ -174,7 +174,7 @@ export function ContactForm() {
         />
       </div>
 
-      <div className="space-y-3 text-sm text-surface-600 dark:text-surface-300">
+      <div className="space-y-3 text-sm text-surface-300">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -184,7 +184,7 @@ export function ContactForm() {
             required
           />
           <span>
-            Akceptuję <a href="/rodo" className="font-semibold text-brand-600 hover:text-brand-700">politykę prywatności</a>.
+            Akceptuję <a href="/polityka-prywatnosci" className="font-semibold text-brand-300 hover:text-brand-200">politykę prywatności</a>.
           </span>
         </label>
         <label className="flex items-start gap-3">
@@ -201,12 +201,12 @@ export function ContactForm() {
       </div>
 
       {status === "error" && error && (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-100">
+        <p className="rounded-xl border border-rose-800 bg-rose-950/40 px-3 py-2 text-xs text-rose-100">
           {error}
         </p>
       )}
       {status === "success" && (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
+        <p className="rounded-xl border border-emerald-800 bg-emerald-950/40 px-3 py-2 text-xs text-emerald-100">
           Dziękujemy! Wrócimy do Ciebie z propozycją terminu demo w ciągu 24h.
         </p>
       )}

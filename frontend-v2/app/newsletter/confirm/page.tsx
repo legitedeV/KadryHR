@@ -42,15 +42,15 @@ function NewsletterConfirmContent() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-4 py-16 text-slate-900 dark:from-slate-950 dark:to-slate-950 dark:text-slate-50">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-soft ring-1 ring-slate-100/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:ring-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-950 px-4 py-16 text-slate-50">
+      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-soft ring-1 ring-slate-800 backdrop-blur">
         <h1 className="text-3xl font-semibold">Potwierdzenie subskrypcji</h1>
         {status === "loading" && (
-          <p className="mt-4 text-slate-600 dark:text-slate-300">Potwierdzamy Twój adres e-mail...</p>
+          <p className="mt-4 text-slate-300">Potwierdzamy Twój adres e-mail...</p>
         )}
         {status === "success" && (
-          <div className="mt-4 space-y-3 text-slate-700 dark:text-slate-200">
-            <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+          <div className="mt-4 space-y-3 text-slate-200">
+            <p className="text-lg font-semibold text-emerald-200">
               Subskrypcja potwierdzona!
             </p>
             <p>Sprawdź skrzynkę – wysłaliśmy pierwszego maila z nowościami.</p>
@@ -63,7 +63,7 @@ function NewsletterConfirmContent() {
               </Link>
               <Link
                 href="/"
-                className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-brand-300 hover:text-brand-700 dark:border-slate-700 dark:text-slate-100"
+                className="rounded-full border border-slate-700 px-4 py-2 font-semibold text-slate-100 transition hover:-translate-y-0.5 hover:border-brand-400 hover:text-brand-200"
               >
                 Wróć na stronę główną
               </Link>
@@ -71,8 +71,8 @@ function NewsletterConfirmContent() {
           </div>
         )}
         {status === "error" && (
-          <div className="mt-4 space-y-3 text-slate-700 dark:text-slate-200">
-            <p className="text-lg font-semibold text-amber-700 dark:text-amber-200">Nie udało się potwierdzić.</p>
+          <div className="mt-4 space-y-3 text-slate-200">
+            <p className="text-lg font-semibold text-amber-200">Nie udało się potwierdzić.</p>
             <p>{error}</p>
             <Link
               href="/#newsletter"
@@ -89,10 +89,10 @@ function NewsletterConfirmContent() {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-4 py-16 text-slate-900 dark:from-slate-950 dark:to-slate-950 dark:text-slate-50">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-soft ring-1 ring-slate-100/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:ring-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-950 px-4 py-16 text-slate-50">
+      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-soft ring-1 ring-slate-800 backdrop-blur">
         <h1 className="text-3xl font-semibold">Potwierdzenie subskrypcji</h1>
-        <p className="mt-4 text-slate-600 dark:text-slate-300">Potwierdzamy Twój adres e-mail...</p>
+        <p className="mt-4 text-slate-300">Potwierdzamy Twój adres e-mail...</p>
       </div>
     </div>
   );

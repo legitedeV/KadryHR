@@ -33,32 +33,32 @@ export default function SecurityPage() {
       <MarketingHeader />
       <main className="mx-auto max-w-6xl px-6 py-16 space-y-12">
         <div className="space-y-4 max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Bezpieczeństwo</p>
-          <h1 className="text-4xl font-semibold text-surface-900 dark:text-surface-50">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Bezpieczeństwo</p>
+          <h1 className="text-4xl font-semibold text-surface-50">
             Zaufanie i zgodność od pierwszego dnia.
           </h1>
-          <p className="text-lg text-surface-600 dark:text-surface-300">
+          <p className="text-lg text-surface-300">
             KadryHR jest projektowany z myślą o ochronie danych kadrowych. Ułatwiamy spełnienie wymogów RODO oraz procedur wewnętrznych.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {sections.map((section) => (
-            <div key={section.title} className="rounded-3xl border border-surface-200/60 bg-white/70 p-6 shadow-sm dark:border-surface-800/60 dark:bg-surface-900/60">
-              <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-50">{section.title}</h2>
-              <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">{section.desc}</p>
+            <div key={section.title} className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-surface-50">{section.title}</h2>
+              <p className="mt-2 text-sm text-surface-300">{section.desc}</p>
             </div>
           ))}
         </div>
-        <div className="rounded-3xl border border-brand-200/60 bg-brand-50/60 p-6 dark:border-brand-800/60 dark:bg-brand-950/40">
-          <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-50">Dokumenty</h2>
-          <div className="mt-4 grid gap-3 text-sm text-surface-600 dark:text-surface-300 md:grid-cols-2">
-            <a href="/rodo" className="font-semibold text-brand-700 hover:text-brand-800">
-              RODO / Polityka prywatności
+        <div className="rounded-3xl border border-brand-800/60 bg-brand-950/40 p-6">
+          <h2 className="text-xl font-semibold text-surface-50">Dokumenty</h2>
+          <div className="mt-4 grid gap-3 text-sm text-surface-300 md:grid-cols-2">
+            <a href="/polityka-prywatnosci" className="font-semibold text-brand-300 hover:text-brand-200">
+              Polityka prywatności
             </a>
-            <a href="/cookies" className="font-semibold text-brand-700 hover:text-brand-800">
+            <a href="/cookies" className="font-semibold text-brand-300 hover:text-brand-200">
               Polityka cookies
             </a>
-            <a href="/terms" className="font-semibold text-brand-700 hover:text-brand-800">
+            <a href="/regulamin" className="font-semibold text-brand-300 hover:text-brand-200">
               Regulamin
             </a>
           </div>

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { label: "Produkt", href: "/#produkt" },
@@ -27,15 +26,15 @@ export function MarketingHeader() {
     <header
       className={`sticky top-0 z-30 border-b transition-all ${
         scrolled
-          ? "border-surface-200/60 bg-white/80 backdrop-blur dark:border-surface-800/60 dark:bg-surface-900/80"
+          ? "border-surface-800/60 bg-surface-950/80 backdrop-blur"
           : "border-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="group flex items-center gap-2">
-          <span className="text-xl font-semibold text-surface-900 transition-colors group-hover:text-brand-600 dark:text-surface-50 dark:group-hover:text-brand-300">
+          <span className="text-xl font-semibold text-surface-50 transition-colors group-hover:text-brand-300">
             KadryHR
-            <span className="text-brand-600 dark:text-brand-400">.pl</span>
+            <span className="text-brand-400">.pl</span>
           </span>
         </Link>
         <nav className="hidden items-center gap-8 text-sm md:flex">
@@ -43,13 +42,12 @@ export function MarketingHeader() {
             <Link
               key={link.label}
               href={link.href}
-              className="font-medium text-surface-600 transition-colors hover:text-brand-600 dark:text-surface-300 dark:hover:text-brand-400"
+              className="font-medium text-surface-300 transition-colors hover:text-brand-300"
             >
               {link.label}
             </Link>
           ))}
-          <div className="h-5 w-px bg-surface-200 dark:bg-surface-700" />
-          <ThemeToggle />
+          <div className="h-5 w-px bg-surface-700" />
           <Link href="/kontakt" className="btn-secondary">
             Umów demo
           </Link>
@@ -58,10 +56,9 @@ export function MarketingHeader() {
           </Link>
         </nav>
         <div className="flex items-center gap-3 md:hidden">
-          <ThemeToggle />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="rounded-xl border border-surface-200/60 bg-white/80 p-2 text-surface-600 shadow-sm backdrop-blur hover:text-surface-900 dark:border-surface-800/60 dark:bg-surface-900/70 dark:text-surface-300 dark:hover:text-surface-50"
+            className="rounded-xl border border-surface-800/60 bg-surface-900/70 p-2 text-surface-300 shadow-sm backdrop-blur hover:text-surface-50"
             aria-label="Toggle menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -77,13 +74,13 @@ export function MarketingHeader() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="border-t border-surface-200/50 bg-white/95 backdrop-blur dark:border-surface-800/50 dark:bg-surface-900/95 md:hidden">
+        <div className="border-t border-surface-800/50 bg-surface-950/95 backdrop-blur md:hidden">
           <nav className="mx-auto max-w-6xl space-y-3 px-6 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="block rounded-xl px-4 py-3 font-medium text-surface-600 transition-colors hover:bg-surface-100 hover:text-brand-600 dark:text-surface-300 dark:hover:bg-surface-800/50 dark:hover:text-brand-400"
+                className="block rounded-xl px-4 py-3 font-medium text-surface-300 transition-colors hover:bg-surface-800/50 hover:text-brand-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}

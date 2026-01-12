@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationsProvider } from "@/lib/notifications-context";
 
@@ -95,7 +94,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 animate-pulse" />
-          <p className="text-sm text-surface-500 dark:text-surface-400">Ładowanie panelu...</p>
+          <p className="text-sm text-surface-400">Ładowanie panelu...</p>
         </div>
       </div>
     );
@@ -105,10 +104,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
   return (
     <NotificationsProvider>
-      <div className="min-h-screen flex bg-surface-50 dark:bg-surface-950">
+      <div className="min-h-screen flex bg-surface-950">
         {/* sidebar */}
-        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-brand-50 via-white to-surface-50 border-r border-white/40 shadow-[12px_0_40px_rgba(15,23,42,0.08)] dark:from-slate-900 dark:via-slate-950 dark:to-slate-950 dark:border-slate-900/60">
-          <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100/80 dark:border-surface-800/60">
+        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
+          <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60">
             <Logo
               variant="compact"
               size="xs"
@@ -119,7 +118,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             />
           </div>
           <nav className="flex-1 py-6 px-4 space-y-1">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
+            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
@@ -136,8 +135,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={`flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-white text-brand-700 shadow-[0_8px_24px_rgba(59,130,246,0.2)] ring-1 ring-brand-200/60 dark:bg-slate-900 dark:text-brand-100 dark:ring-brand-700/60"
-                      : "text-surface-600 hover:bg-white/70 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-slate-900/60 dark:hover:text-surface-200"
+                      ? "bg-slate-900 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.15)] ring-1 ring-brand-700/60"
+                      : "text-surface-400 hover:bg-slate-900/60 hover:text-surface-200"
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -148,27 +147,27 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="border-t border-surface-100/80 px-5 py-4 dark:border-surface-800/60">
+          <div className="border-t border-surface-800/60 px-5 py-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
+                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-200 font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                  <div className="text-sm font-semibold text-surface-100">
                     {user.name}
                   </div>
-                  <div className="text-xs text-surface-500 dark:text-surface-400">{user.role}</div>
+                  <div className="text-xs text-surface-400">{user.role}</div>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="text-xs rounded-full border border-surface-200 px-3 py-1 font-medium text-surface-600 hover:bg-white hover:text-surface-900 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-colors"
+                className="text-xs rounded-full border border-surface-700 px-3 py-1 font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
               >
                 Wyloguj
               </button>
             </div>
-            <div className="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+            <div className="flex items-center gap-2 text-xs text-surface-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -189,8 +188,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         {/* Mobile menu sidebar */}
         <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } bg-gradient-to-b from-brand-50 via-white to-surface-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950 border-r border-surface-200/80 dark:border-surface-800/80`}>
-          <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-100 dark:border-surface-800">
+        } bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 border-r border-surface-800/80`}>
+          <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800">
             <Logo
               variant="compact"
               size="xs"
@@ -201,7 +200,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             />
             <button
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 text-surface-600 hover:text-surface-900 dark:text-surface-300 dark:hover:text-surface-50 transition-colors"
+              className="p-2 text-surface-300 hover:text-surface-50 transition-colors"
               aria-label="Close menu"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -210,7 +209,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
           <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto" style={{ maxHeight: MOBILE_MENU_CONTENT_HEIGHT }}>
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-3">
+            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
@@ -228,8 +227,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-white text-brand-700 shadow-[0_8px_24px_rgba(59,130,246,0.2)] ring-1 ring-brand-200/60 dark:bg-slate-900 dark:text-brand-100 dark:ring-brand-700/60"
-                      : "text-surface-600 hover:bg-white/70 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-slate-900/60 dark:hover:text-surface-200"
+                      ? "bg-slate-900 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.15)] ring-1 ring-brand-700/60"
+                      : "text-surface-400 hover:bg-slate-900/60 hover:text-surface-200"
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -240,29 +239,29 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="border-t border-surface-100 px-4 py-3 dark:border-surface-800">
+          <div className="border-t border-surface-800 px-4 py-3">
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-100 via-brand-50 to-accent-100 flex items-center justify-center text-brand-700 font-semibold dark:from-brand-900/60 dark:via-brand-800/40 dark:to-accent-900/60 dark:text-brand-200">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-200 font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                  <div className="text-sm font-semibold text-surface-100">
                     {user.name}
                   </div>
-                  <div className="text-xs text-surface-500 dark:text-surface-400">
+                  <div className="text-xs text-surface-400">
                     {user.role}
                   </div>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="text-xs rounded-lg border border-surface-200 px-2 py-1 font-medium text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-colors"
+                className="text-xs rounded-lg border border-surface-700 px-2 py-1 font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
               >
                 Wyloguj
               </button>
             </div>
-            <div className="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+            <div className="flex items-center gap-2 text-xs text-surface-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -274,11 +273,11 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
         {/* main area */}
         <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-surface-200/80 bg-white/80 px-4 lg:px-6 flex items-center justify-between gap-4 dark:border-surface-800/80 dark:bg-surface-950/70">
+          <header className="h-16 border-b border-surface-800/80 bg-surface-950/80 px-4 lg:px-6 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 -ml-2 text-surface-600 hover:text-surface-900 dark:text-surface-300 dark:hover:text-surface-50 transition-colors"
+                className="md:hidden p-2 -ml-2 text-surface-300 hover:text-surface-50 transition-colors"
                 aria-label="Open menu"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -286,10 +285,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 </svg>
               </button>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                <p className="text-xs font-medium text-surface-400">
                   KadryHR · panel
                 </p>
-                <p className="text-sm font-bold text-surface-900 dark:text-surface-50 truncate">
+                <p className="text-sm font-bold text-surface-50 truncate">
                   {titleByPath[pathname] ?? "Dashboard"}
                 </p>
               </div>
@@ -300,7 +299,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.5 5.5a7.5 7.5 0 0011.15 11.15z" />
                 </svg>
                 <input
-                  className="w-full rounded-full border border-surface-200 bg-white/90 py-2 pl-10 pr-4 text-sm text-surface-700 shadow-sm placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-surface-800 dark:bg-surface-950 dark:text-surface-200 dark:placeholder:text-surface-500"
+                  className="w-full rounded-full border border-surface-800 bg-surface-950 py-2 pl-10 pr-4 text-sm text-surface-200 shadow-sm placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-700/50"
                   placeholder="Szukaj pracownika, zmiany, lokalizacji..."
                 />
               </div>
@@ -308,23 +307,22 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-3">
               <Link
                 href="/panel/powiadomienia"
-                className="rounded-full border border-surface-200 bg-white/80 p-2 text-surface-600 transition hover:text-surface-900 dark:border-surface-800 dark:bg-surface-950 dark:text-surface-300 dark:hover:text-surface-50"
+                className="rounded-full border border-surface-800 bg-surface-950 p-2 text-surface-300 transition hover:text-surface-50"
                 aria-label="Powiadomienia"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
                 </svg>
               </Link>
-              <ThemeToggle />
-              <div className="hidden sm:flex items-center gap-3 rounded-full border border-surface-200 bg-white/80 px-3 py-1.5 dark:border-surface-800 dark:bg-surface-950">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold text-xs dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
+              <div className="hidden sm:flex items-center gap-3 rounded-full border border-surface-800 bg-surface-950 px-3 py-1.5">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-900/50 to-brand-800/50 flex items-center justify-center text-brand-300 font-semibold text-xs">
                   {user.email.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="text-xs font-semibold text-surface-700 dark:text-surface-200">
+                  <span className="text-xs font-semibold text-surface-200">
                     {user.email}
                   </span>
-                  <span className="text-[10px] text-surface-500 dark:text-surface-400">
+                  <span className="text-[10px] text-surface-400">
                     {user.role}
                   </span>
                 </div>
@@ -332,7 +330,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-gradient-to-b from-surface-50/80 to-white dark:from-surface-950 dark:to-surface-950">
+          <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-gradient-to-b from-surface-950 to-surface-950">
             <div className="max-w-[1600px] w-full mx-auto">{children}</div>
           </main>
         </div>

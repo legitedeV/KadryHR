@@ -3,7 +3,6 @@
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { apiAcceptInvitation, apiValidateInvitation } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 
@@ -90,65 +89,64 @@ function AcceptInvitationForm() {
               K
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">KadryHR</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Aktywuj swoje konto</p>
+              <h1 className="text-lg font-semibold text-slate-50">KadryHR</h1>
+              <p className="text-xs text-slate-400">Aktywuj swoje konto</p>
             </div>
           </div>
-          <ThemeToggle />
         </div>
 
         {validation ? (
-          <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <div className="rounded-xl bg-slate-900 p-3 text-xs text-slate-200">
             <p className="font-semibold">Zaproszenie do {validation.organisationName}</p>
             <p className="mt-1">Adres e-mail: {validation.invitedEmail}</p>
             <p className="mt-1">Ważne do: {expiresLabel ?? "—"}</p>
           </div>
         ) : (
-          <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <div className="rounded-xl bg-slate-900 p-3 text-xs text-slate-200">
             {error || "Sprawdzamy zaproszenie..."}
           </div>
         )}
 
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-1 text-sm text-left">
-            <label className="block text-slate-700 dark:text-slate-200">Nowe hasło</label>
+            <label className="block text-slate-200">Nowe hasło</label>
             <input
               type="password"
               required
               minLength={8}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
           <div className="space-y-1 text-sm text-left">
-            <label className="block text-slate-700 dark:text-slate-200">Potwierdź hasło</label>
+            <label className="block text-slate-200">Potwierdź hasło</label>
             <input
               type="password"
               required
               minLength={8}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
             {confirmPassword && password !== confirmPassword && (
-              <p className="text-[11px] text-rose-600">Hasła muszą być identyczne</p>
+              <p className="text-[11px] text-rose-300">Hasła muszą być identyczne</p>
             )}
           </div>
 
           <div className="space-y-1 text-sm text-left">
-            <label className="block text-slate-700 dark:text-slate-200">Telefon (opcjonalnie)</label>
+            <label className="block text-slate-200">Telefon (opcjonalnie)</label>
             <input
               type="tel"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:focus:border-brand-400 dark:focus:ring-brand-700/40"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+48 600 000 000"
             />
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-200">
+          <label className="flex items-center gap-2 text-xs text-slate-200">
             <input
               type="checkbox"
               checked={acceptTerms}
@@ -156,12 +154,13 @@ function AcceptInvitationForm() {
               className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
             />
             <span>
-              Akceptuję <Link href="/regulamin" className="underline">regulamin</Link> i politykę prywatności
+              Akceptuję <Link href="/regulamin" className="underline">regulamin</Link> i{" "}
+              <Link href="/polityka-prywatnosci" className="underline">politykę prywatności</Link>
             </span>
           </label>
 
           {error && (
-            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100">
+            <p className="text-xs text-rose-100 bg-rose-950/40 border border-rose-800 rounded-xl px-3 py-2">
               {error}
             </p>
           )}
@@ -175,7 +174,7 @@ function AcceptInvitationForm() {
           </button>
         </form>
 
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
+        <p className="text-[11px] text-slate-400 text-center">
           Masz pytania? Skontaktuj się z osobą, która Cię zaprosiła.
         </p>
       </div>
