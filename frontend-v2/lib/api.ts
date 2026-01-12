@@ -343,6 +343,9 @@ export interface EmployeeRecord {
   phone?: string | null;
   position?: string | null;
   locations: LocationSummary[];
+  isActive: boolean;
+  isDeleted: boolean;
+  employmentEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -363,6 +366,7 @@ export interface EmployeeQuery {
   take?: number;
   skip?: number;
   page?: number;
+  status?: "active" | "inactive" | "all";
 }
 
 export interface SaveEmployeePayload {
@@ -906,6 +910,7 @@ export async function apiListEmployees(
   if (params.search) searchParams.set("search", params.search);
   if (params.sortBy) searchParams.set("sortBy", params.sortBy);
   if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+  if (params.status) searchParams.set("status", params.status);
 
   const query = searchParams.toString();
   const response = await apiClient.request<PaginatedResponse<EmployeeResponse>>(
@@ -956,7 +961,16 @@ export async function apiUpdateEmployee(
 
 export async function apiDeleteEmployee(id: string) {
   apiClient.hydrateFromStorage();
-  await apiClient.request(`${EMPLOYEES_PREFIX}/${id}`, { method: "DELETE" });
+  const response = await apiClient.request<{ success: boolean; softDeleted: boolean; employee?: EmployeeResponse }>(
+    `${EMPLOYEES_PREFIX}/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
+  return {
+    ...response,
+    employee: response.employee ? mapEmployee(response.employee) : undefined,
+  };
 }
 
 export async function apiResendInvitation(employeeId: string) {
@@ -964,6 +978,22 @@ export async function apiResendInvitation(employeeId: string) {
   await apiClient.request(`${EMPLOYEES_PREFIX}/${employeeId}/resend-invitation`, {
     method: "POST",
   });
+}
+
+export async function apiDeactivateEmployee(id: string): Promise<EmployeeRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<EmployeeResponse>(`${EMPLOYEES_PREFIX}/${id}/deactivate`, {
+    method: "PATCH",
+  });
+  return mapEmployee(response);
+}
+
+export async function apiActivateEmployee(id: string): Promise<EmployeeRecord> {
+  apiClient.hydrateFromStorage();
+  const response = await apiClient.request<EmployeeResponse>(`${EMPLOYEES_PREFIX}/${id}/activate`, {
+    method: "PATCH",
+  });
+  return mapEmployee(response);
 }
 
 export async function apiListLocations(): Promise<LocationRecord[]> {
@@ -1407,6 +1437,9 @@ interface EmployeeResponse {
   phone?: string | null;
   position?: string | null;
   locations?: LocationSummary[];
+  isActive: boolean;
+  isDeleted: boolean;
+  employmentEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1517,6 +1550,9 @@ function mapEmployee(employee: EmployeeResponse): EmployeeRecord {
     phone: employee.phone ?? undefined,
     position: employee.position ?? undefined,
     locations: employee.locations ?? [],
+    isActive: employee.isActive,
+    isDeleted: employee.isDeleted,
+    employmentEndDate: employee.employmentEndDate ?? undefined,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,
   };

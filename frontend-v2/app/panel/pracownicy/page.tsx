@@ -5,7 +5,10 @@ import {
   EmployeeRecord,
   LocationRecord,
   SaveEmployeePayload,
+  apiActivateEmployee,
   apiCreateEmployee,
+  apiDeactivateEmployee,
+  apiDeleteEmployee,
   apiListEmployees,
   apiListLocations,
   apiResendInvitation,
@@ -14,6 +17,8 @@ import {
 import { getAccessToken } from "@/lib/auth";
 import { Modal } from "@/components/Modal";
 import { EmptyState } from "@/components/EmptyState";
+import { pushToast } from "@/lib/toast";
+import { usePermissions } from "@/lib/use-permissions";
 
 function formatEmployeeName(employee: EmployeeRecord) {
   const fullName = `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim();
@@ -27,6 +32,8 @@ function formatLocations(locations: EmployeeRecord["locations"]) {
 
 export default function PracownicyPage() {
   const hasSession = useMemo(() => !!getAccessToken(), []);
+  const { hasPermission } = usePermissions();
+  const canManageEmployees = hasPermission("EMPLOYEE_MANAGE");
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [loading, setLoading] = useState(hasSession);
@@ -38,6 +45,12 @@ export default function PracownicyPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
+  const [confirmAction, setConfirmAction] = useState<{
+    employee: EmployeeRecord;
+    action: "deactivate" | "activate" | "delete";
+  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [form, setForm] = useState<SaveEmployeePayload>({
     firstName: "",
     lastName: "",
@@ -51,11 +64,11 @@ export default function PracownicyPage() {
     if (!hasSession) return;
     let cancelled = false;
 
-    Promise.all([apiListEmployees({ take: 50, skip: 0 }), apiListLocations()])
-      .then(([employeeResponse, locationResponse]) => {
+    setLoading(true);
+    apiListEmployees({ take: 50, skip: 0, status: statusFilter })
+      .then((employeeResponse) => {
         if (cancelled) return;
         setEmployees(employeeResponse.data);
-        setLocations(locationResponse);
       })
       .catch((err) => {
         console.error(err);
@@ -70,9 +83,27 @@ export default function PracownicyPage() {
     return () => {
       cancelled = true;
     };
+  }, [hasSession, statusFilter]);
+
+  useEffect(() => {
+    if (!hasSession) return;
+    let cancelled = false;
+
+    apiListLocations()
+      .then((locationResponse) => {
+        if (cancelled) return;
+        setLocations(locationResponse);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [hasSession]);
 
-  const activeEmployees = employees.filter((employee) => employee.locations.length > 0);
+  const activeEmployees = employees.filter((employee) => employee.isActive && !employee.isDeleted);
   const invitedEmployees = employees.filter((employee) => employee.locations.length === 0);
 
   const resetForm = () => {
@@ -139,6 +170,94 @@ export default function PracownicyPage() {
     }
   };
 
+  const openConfirm = (employee: EmployeeRecord, action: "deactivate" | "activate" | "delete") => {
+    setConfirmAction({ employee, action });
+  };
+
+  const confirmConfig = confirmAction
+    ? {
+        title:
+          confirmAction.action === "delete"
+            ? "Usuń pracownika"
+            : confirmAction.action === "deactivate"
+              ? "Dezaktywuj pracownika"
+              : "Aktywuj ponownie pracownika",
+        description:
+          confirmAction.action === "delete"
+            ? "Czy na pewno chcesz usunąć pracownika? Dane historyczne (grafiki, wypłaty) mogą pozostać w systemie, ale pracownik nie będzie dostępny do dalszego planowania."
+            : confirmAction.action === "deactivate"
+              ? "Czy na pewno chcesz tymczasowo dezaktywować tego pracownika? Nie będzie można przypisywać go do grafiku ani logowania do systemu."
+              : "Czy na pewno chcesz ponownie aktywować tego pracownika? Będzie można przypisywać go do grafiku i logować się do systemu.",
+        confirmLabel:
+          confirmAction.action === "delete"
+            ? "Usuń"
+            : confirmAction.action === "deactivate"
+              ? "Dezaktywuj"
+              : "Aktywuj",
+      }
+    : null;
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    setActionLoading(true);
+    setSuccess(null);
+    setFormError(null);
+    try {
+      if (confirmAction.action === "deactivate") {
+        const updated = await apiDeactivateEmployee(confirmAction.employee.id);
+        setEmployees((prev) =>
+          prev.map((e) => (e.id === updated.id ? { ...e, ...updated, locations: e.locations } : e)),
+        );
+        pushToast({
+          title: "Pracownik dezaktywowany",
+          description: "Pracownik nie będzie już przypisywany do grafików ani logowania.",
+          variant: "success",
+        });
+      }
+
+      if (confirmAction.action === "activate") {
+        const updated = await apiActivateEmployee(confirmAction.employee.id);
+        setEmployees((prev) =>
+          prev.map((e) => (e.id === updated.id ? { ...e, ...updated, locations: e.locations } : e)),
+        );
+        pushToast({
+          title: "Pracownik aktywowany",
+          description: "Pracownik może ponownie korzystać z systemu.",
+          variant: "success",
+        });
+      }
+
+      if (confirmAction.action === "delete") {
+        const result = await apiDeleteEmployee(confirmAction.employee.id);
+        if (result.softDeleted && result.employee) {
+          const mapped = result.employee;
+          setEmployees((prev) =>
+            prev.map((e) =>
+              e.id === confirmAction.employee.id ? { ...e, ...mapped, locations: e.locations } : e,
+            ),
+          );
+          pushToast({
+            title: "Pracownik oznaczony jako usunięty",
+            description: "Historia została zachowana, pracownik jest nieaktywny.",
+            variant: "success",
+          });
+        } else {
+          setEmployees((prev) => prev.filter((e) => e.id !== confirmAction.employee.id));
+          pushToast({
+            title: "Pracownik usunięty",
+            description: "Pracownik został trwale usunięty.",
+            variant: "success",
+          });
+        }
+      }
+      setConfirmAction(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const toggleLocation = (locationId: string) => {
     setForm((prev) => {
       const alreadySelected = prev.locationIds?.includes(locationId);
@@ -167,9 +286,11 @@ export default function PracownicyPage() {
             </svg>
             Razem: <span className="font-semibold text-surface-900 dark:text-surface-100">{employees.length}</span>
           </div>
-          <button className="btn-primary" onClick={() => setCreateModalOpen(true)}>
-            Dodaj pracownika
-          </button>
+          {canManageEmployees && (
+            <button className="btn-primary" onClick={() => setCreateModalOpen(true)}>
+              Dodaj pracownika
+            </button>
+          )}
         </div>
       </div>
 
@@ -216,9 +337,35 @@ export default function PracownicyPage() {
             ))}
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-surface-500 dark:text-surface-400">Pokaż:</span>
+            {[
+              { label: "Aktywni", value: "active" },
+              { label: "Nieaktywni", value: "inactive" },
+              { label: "Wszyscy", value: "all" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                className={`rounded-full border px-3 py-1 font-semibold transition ${
+                  statusFilter === option.value
+                    ? "border-brand-400 bg-brand-50 text-brand-700 shadow-soft dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                    : "border-surface-200 bg-white text-surface-600 hover:border-brand-200 hover:text-brand-700 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200"
+                }`}
+                onClick={() => setStatusFilter(option.value as "active" | "inactive" | "all")}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {employees.map((employee) => (
-              <div key={employee.id} className="card p-5 flex flex-col gap-4">
+              <div
+                key={employee.id}
+                className={`card p-5 flex flex-col gap-4 ${
+                  !employee.isActive || employee.isDeleted ? "opacity-60 grayscale" : ""
+                }`}
+              >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/50 dark:to-accent-900/50 dark:text-brand-300">
                     {formatEmployeeName(employee).charAt(0).toUpperCase()}
@@ -237,22 +384,62 @@ export default function PracownicyPage() {
                   <span className="rounded-full bg-surface-100 px-3 py-1 text-[10px] font-semibold uppercase text-surface-600 dark:bg-surface-800 dark:text-surface-300">
                     {employee.position ?? "Pracownik"}
                   </span>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-semibold uppercase text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                    aktywny
-                  </span>
+                  {employee.isDeleted ? (
+                    <span className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-semibold uppercase text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
+                      usunięty
+                    </span>
+                  ) : employee.isActive ? (
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-semibold uppercase text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                      aktywny
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+                      nieaktywny
+                    </span>
+                  )}
                 </div>
-                <div className="mt-auto flex flex-wrap gap-2 text-xs">
-                  <button className="btn-secondary px-3 py-1.5 rounded-full" onClick={() => handleEdit(employee)} aria-label="Edytuj">
-                    Edytuj
-                  </button>
-                  <button
-                    className="btn-ghost px-3 py-1.5 rounded-full text-brand-700 hover:text-brand-900 dark:text-brand-300"
-                    onClick={() => handleResendInvitation(employee.id)}
-                    aria-label="Wyślij ponownie zaproszenie"
-                  >
-                    Wyślij zaproszenie
-                  </button>
-                </div>
+                {canManageEmployees && (
+                  <div className="mt-auto flex flex-wrap gap-2 text-xs">
+                    <button
+                      className="btn-secondary px-3 py-1.5 rounded-full"
+                      onClick={() => handleEdit(employee)}
+                      aria-label="Edytuj"
+                    >
+                      Edytuj
+                    </button>
+                    <button
+                      className="btn-ghost px-3 py-1.5 rounded-full text-brand-700 hover:text-brand-900 dark:text-brand-300"
+                      onClick={() => handleResendInvitation(employee.id)}
+                      aria-label="Wyślij ponownie zaproszenie"
+                    >
+                      Wyślij zaproszenie
+                    </button>
+                    {employee.isActive && !employee.isDeleted && (
+                      <button
+                        className="btn-ghost px-3 py-1.5 rounded-full text-amber-700 hover:text-amber-900 dark:text-amber-300"
+                        onClick={() => openConfirm(employee, "deactivate")}
+                      >
+                        Dezaktywuj
+                      </button>
+                    )}
+                    {(!employee.isActive || employee.isDeleted) && (
+                      <button
+                        className="btn-ghost px-3 py-1.5 rounded-full text-emerald-700 hover:text-emerald-900 dark:text-emerald-300"
+                        onClick={() => openConfirm(employee, "activate")}
+                      >
+                        Aktywuj ponownie
+                      </button>
+                    )}
+                    {!employee.isDeleted && (
+                      <button
+                        className="btn-ghost px-3 py-1.5 rounded-full text-rose-700 hover:text-rose-900 dark:text-rose-300"
+                        onClick={() => openConfirm(employee, "delete")}
+                      >
+                        Usuń
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             {employees.length === 0 && (
@@ -384,12 +571,33 @@ export default function PracownicyPage() {
             {formError}
           </div>
         )}
-        {success && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100">
-            {success}
-          </div>
-        )}
-      </Modal>
-    </div>
+      {success && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100">
+          {success}
+        </div>
+      )}
+    </Modal>
+
+    <Modal
+      open={!!confirmAction}
+      onClose={() => setConfirmAction(null)}
+      title={confirmConfig?.title ?? ""}
+      description={confirmConfig?.description ?? ""}
+      footer={
+        <Fragment>
+          <button className="btn-secondary" onClick={() => setConfirmAction(null)} disabled={actionLoading}>
+            Anuluj
+          </button>
+          <button
+            className={confirmAction?.action === "delete" ? "btn-danger" : "btn-primary"}
+            onClick={handleConfirmAction}
+            disabled={actionLoading}
+          >
+            {actionLoading ? "Przetwarzanie..." : confirmConfig?.confirmLabel}
+          </button>
+        </Fragment>
+      }
+    />
+  </div>
   );
 }

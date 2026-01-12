@@ -25,6 +25,7 @@ describe('AuthService', () => {
       },
       employee: {
         create: jest.fn(),
+        findFirst: jest.fn(),
       },
       auditLog: {
         create: jest.fn(),

@@ -279,7 +279,7 @@ export default function GrafikPage() {
     setError(null);
 
     Promise.all([
-      apiListEmployees({ take: 100, skip: 0 }),
+      apiListEmployees({ take: 100, skip: 0, status: "active" }),
       apiListLocations(),
       apiGetShifts({ from: range.from, to: range.to }),
       apiGetAvailability({ from: range.from, to: range.to }),

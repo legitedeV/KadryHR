@@ -15,6 +15,9 @@ const baseEmployee = {
   position: 'Kierownik',
   createdAt: new Date('2023-01-01T00:00:00Z'),
   updatedAt: new Date('2023-01-01T00:00:00Z'),
+  isActive: true,
+  isDeleted: false,
+  employmentEndDate: null,
 };
 
 const baseLocation = {
@@ -30,6 +33,7 @@ describe('EmployeesService', () => {
   let service: EmployeesService;
   let prisma: jest.Mocked<PrismaService>;
   let auditService: jest.Mocked<AuditService>;
+  let notificationsService: { createNotification: jest.Mock };
 
   beforeEach(() => {
     prisma = {
@@ -67,7 +71,15 @@ describe('EmployeesService', () => {
       record: jest.fn(),
     } as unknown as jest.Mocked<AuditService>;
 
-    service = new EmployeesService(prisma, auditService);
+    notificationsService = {
+      createNotification: jest.fn(),
+    };
+
+    service = new EmployeesService(
+      prisma,
+      auditService,
+      notificationsService as any,
+    );
   });
 
   it('returns paginated employees scoped to organisation with search', async () => {
@@ -167,5 +179,89 @@ describe('EmployeesService', () => {
     await expect(
       service.ensureEmployeeProfile('org-1', 'user-1'),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('deactivates an active employee', async () => {
+    prisma.employee.findFirst.mockResolvedValue({
+      ...baseEmployee,
+      isActive: true,
+      isDeleted: false,
+      employmentEndDate: null,
+      userId: 'user-1',
+    } as any);
+    prisma.employee.update.mockResolvedValue({
+      ...baseEmployee,
+      isActive: false,
+      employmentEndDate: new Date('2024-01-01T00:00:00Z'),
+    } as any);
+
+    const result = await service.deactivate('org-1', 'emp-1');
+
+    expect(result.isActive).toBe(false);
+    expect(prisma.employee.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'emp-1' },
+      }),
+    );
+    expect(notificationsService.createNotification).toHaveBeenCalled();
+  });
+
+  it('soft deletes employee with history', async () => {
+    prisma.employee.findFirst.mockResolvedValue({
+      id: 'emp-1',
+      isDeleted: false,
+      isActive: true,
+      employmentEndDate: null,
+      userId: 'user-1',
+      _count: {
+        shifts: 1,
+        scheduleTemplateShifts: 0,
+        documents: 0,
+        contracts: 0,
+        leaveRequests: 0,
+        leaveBalances: 0,
+        availability: 0,
+        availabilitySubmissions: 0,
+        locations: 0,
+      },
+    } as any);
+    prisma.employee.update.mockResolvedValue({
+      ...baseEmployee,
+      isActive: false,
+      isDeleted: true,
+    } as any);
+
+    const result = await service.remove('org-1', 'emp-1');
+
+    expect(result.softDeleted).toBe(true);
+    expect(prisma.employee.update).toHaveBeenCalled();
+  });
+
+  it('hard deletes employee without history', async () => {
+    prisma.employee.findFirst.mockResolvedValue({
+      id: 'emp-1',
+      isDeleted: false,
+      isActive: true,
+      employmentEndDate: null,
+      userId: null,
+      _count: {
+        shifts: 0,
+        scheduleTemplateShifts: 0,
+        documents: 0,
+        contracts: 0,
+        leaveRequests: 0,
+        leaveBalances: 0,
+        availability: 0,
+        availabilitySubmissions: 0,
+        locations: 0,
+      },
+    } as any);
+
+    const result = await service.remove('org-1', 'emp-1');
+
+    expect(prisma.employee.delete).toHaveBeenCalledWith({
+      where: { id: 'emp-1' },
+    });
+    expect(result.softDeleted).toBe(false);
   });
 });

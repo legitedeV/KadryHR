@@ -35,7 +35,7 @@ export default function LokalizacjePage() {
       try {
         const [locs, employeesRes] = await Promise.all([
           apiListLocations(),
-          apiListEmployees({ take: 200 }),
+          apiListEmployees({ take: 200, status: "active" }),
         ]);
         setLocations(locs);
         setEmployees(employeesRes.data);

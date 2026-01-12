@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmployeesService } from '../employees/employees.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { AvailabilitySubmissionStatus, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 const mockPrisma = {
   availability: {
@@ -68,6 +68,11 @@ describe('AvailabilityService', () => {
   });
 
   it('creates availability with valid range', async () => {
+    mockPrisma.employee.findFirst.mockResolvedValue({
+      id: 'emp',
+      isActive: true,
+      isDeleted: false,
+    });
     mockPrisma.availability.create.mockResolvedValue({ id: '1' });
 
     const result = await service.create('org', {
@@ -109,12 +114,14 @@ describe('AvailabilityService', () => {
       id: 'emp-1',
       firstName: 'Anna',
       lastName: 'Nowak',
+      isActive: true,
+      isDeleted: false,
     });
     mockPrisma.availabilitySubmission.findUnique.mockResolvedValue(null);
     mockPrisma.availability.create.mockResolvedValue({ id: 'avail-1' });
     mockPrisma.availabilitySubmission.upsert.mockResolvedValue({
       id: 'sub-1',
-      status: AvailabilitySubmissionStatus.SUBMITTED,
+      status: 'SUBMITTED',
       submittedAt: new Date('2024-03-01'),
     });
     mockPrisma.user.findMany.mockResolvedValue([
@@ -135,7 +142,7 @@ describe('AvailabilityService', () => {
       true,
     );
 
-    expect(result.status).toBe(AvailabilitySubmissionStatus.SUBMITTED);
+    expect(result.status).toBe('SUBMITTED');
     expect(mockNotificationsService.createNotification).toHaveBeenCalled();
     expect(mockAuditService.record).toHaveBeenCalled();
   });

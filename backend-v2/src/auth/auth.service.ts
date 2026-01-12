@@ -98,6 +98,25 @@ export class AuthService {
     return user;
   }
 
+  private async ensureEmployeeAccess(userId: string, organisationId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId, organisationId },
+      select: { isActive: true, isDeleted: true },
+    });
+
+    if (!employee) {
+      return;
+    }
+
+    if (employee.isDeleted) {
+      throw new UnauthorizedException('Konto pracownika zostało usunięte.');
+    }
+
+    if (!employee.isActive) {
+      throw new UnauthorizedException('Konto pracownika jest nieaktywne.');
+    }
+  }
+
   private async signTokens(payload: AuthenticatedUser) {
     const secret =
       this.configService.get<string>('app.jwt.secret') ?? 'changeme-access';
@@ -144,6 +163,7 @@ export class AuthService {
 
   async login(email: string, password: string, res: Response) {
     const user = await this.validateUser(email, password);
+    await this.ensureEmployeeAccess(user.id, user.organisationId);
     const payload = this.buildUserPayload(user);
     const { accessToken, refreshToken, refreshTokenTtl } =
       await this.signTokens(payload);
@@ -279,6 +299,8 @@ export class AuthService {
     if (!match) {
       throw new UnauthorizedException('Invalid refresh token');
     }
+
+    await this.ensureEmployeeAccess(user.id, user.organisationId);
 
     const payload = this.buildUserPayload(user);
     const { accessToken, refreshToken, refreshTokenTtl } =

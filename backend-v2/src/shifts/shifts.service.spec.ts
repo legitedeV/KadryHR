@@ -49,7 +49,11 @@ describe('ShiftsService', () => {
     service = module.get<ShiftsService>(ShiftsService);
     jest.clearAllMocks();
     mockNotifications.createNotification.mockResolvedValue(null);
-    mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
+    mockPrisma.employee.findFirst.mockResolvedValue({
+      id: 'emp-1',
+      isActive: true,
+      isDeleted: false,
+    });
     mockPrisma.location.findFirst.mockResolvedValue({ id: 'loc-1' });
     mockPrisma.shift.findFirst.mockResolvedValue(null);
     mockPrisma.availability.findMany.mockResolvedValue([]);
