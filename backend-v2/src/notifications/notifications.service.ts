@@ -17,6 +17,7 @@ const AVAILABLE_TYPES: NotificationType[] = [
   NotificationType.SHIFT_ASSIGNMENT,
   NotificationType.SCHEDULE_PUBLISHED,
   NotificationType.SWAP_STATUS,
+  NotificationType.AVAILABILITY_SUBMITTED,
   NotificationType.CUSTOM,
 ];
 
