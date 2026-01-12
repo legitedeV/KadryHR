@@ -20,6 +20,7 @@ import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import { UpdateLeaveRequestStatusDto } from './dto/update-leave-request-status.dto';
 import { FindLeaveRequestsQueryDto } from './dto/find-leave-requests-query.dto';
+import { EmployeesService } from '../employees/employees.service';
 
 type AccessScope = {
   restrictToEmployeeId?: string;
@@ -43,18 +44,11 @@ export class LeaveRequestsService {
     private readonly notificationsService: NotificationsService,
     private readonly auditService: AuditService,
     private readonly leaveBalanceService: LeaveBalanceService,
+    private readonly employeesService: EmployeesService,
   ) {}
 
   async findEmployeeForUser(organisationId: string, userId: string) {
-    const employee = await this.prisma.employee.findFirst({
-      where: { organisationId, userId },
-    });
-
-    if (!employee) {
-      throw new NotFoundException('Employee profile not found');
-    }
-
-    return employee;
+    return this.employeesService.ensureEmployeeProfile(organisationId, userId);
   }
 
   async findAll(

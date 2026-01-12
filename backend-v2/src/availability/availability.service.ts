@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Weekday, Role } from '@prisma/client';
+import { EmployeesService } from '../employees/employees.service';
 
 export interface EmployeeAvailabilitySummary {
   id: string;
@@ -28,7 +29,10 @@ export interface TeamAvailabilityQuery {
 
 @Injectable()
 export class AvailabilityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly employeesService: EmployeesService,
+  ) {}
 
   /**
    * Validate time intervals for overlaps
@@ -119,9 +123,7 @@ export class AvailabilityService {
    * Find employee by user ID
    */
   async findEmployeeByUserId(organisationId: string, userId: string) {
-    return this.prisma.employee.findFirst({
-      where: { organisationId, userId },
-    });
+    return this.employeesService.ensureEmployeeProfile(organisationId, userId);
   }
 
   /**

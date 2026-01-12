@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AvailabilityService } from './availability.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmployeesService } from '../employees/employees.service';
 
 const mockPrisma = {
   availability: {
@@ -12,6 +13,10 @@ const mockPrisma = {
   },
 };
 
+const mockEmployeesService = {
+  ensureEmployeeProfile: jest.fn(),
+};
+
 describe('AvailabilityService', () => {
   let service: AvailabilityService;
 
@@ -20,6 +25,7 @@ describe('AvailabilityService', () => {
       providers: [
         AvailabilityService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: EmployeesService, useValue: mockEmployeesService },
       ],
     }).compile();
 
