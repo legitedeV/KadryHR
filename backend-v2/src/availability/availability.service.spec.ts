@@ -46,6 +46,10 @@ const mockNotificationsService = {
   createNotification: jest.fn(),
 };
 
+const mockEmployeesService = {
+  ensureEmployeeProfile: jest.fn(),
+};
+
 describe('AvailabilityService', () => {
   let service: AvailabilityService;
 
