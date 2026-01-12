@@ -70,6 +70,7 @@ export interface ShiftSummaryItem {
 export interface AvailabilityRecord {
   id: string;
   employeeId: string;
+  availabilityWindowId?: string | null;
   date?: string | null;
   weekday?: string | null;
   startMinutes: number;
@@ -111,6 +112,25 @@ export interface AvailabilityInput {
   startMinutes: number;
   endMinutes: number;
   notes?: string;
+}
+
+export type AvailabilitySubmissionStatus = "DRAFT" | "SUBMITTED" | "REVIEWED" | "REOPENED";
+
+export interface AvailabilityWindowSubmissionResponse {
+  window: AvailabilityWindowRecord;
+  employeeId: string;
+  status: AvailabilitySubmissionStatus;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  reviewedByUserId?: string | null;
+  availability: AvailabilityRecord[];
+}
+
+export interface AvailabilityWindowTeamStats {
+  totalEmployees: number;
+  submittedCount: number;
+  reviewedCount: number;
+  pendingCount: number;
 }
 
 export interface ScheduleMetadata {
@@ -155,7 +175,14 @@ export interface ScheduleTemplateDetail extends ScheduleTemplateRecord {
   shifts: ScheduleTemplateShift[];
 }
 
-export type NotificationType = "TEST" | "LEAVE_STATUS" | "SHIFT_ASSIGNMENT" | "SCHEDULE_PUBLISHED" | "SWAP_STATUS" | "CUSTOM";
+export type NotificationType =
+  | "TEST"
+  | "LEAVE_STATUS"
+  | "SHIFT_ASSIGNMENT"
+  | "SCHEDULE_PUBLISHED"
+  | "SWAP_STATUS"
+  | "AVAILABILITY_SUBMITTED"
+  | "CUSTOM";
 export type NotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "PUSH";
 export type NotificationCampaignStatus = "DRAFT" | "SENDING" | "SENT" | "FAILED";
 export type NotificationRecipientStatus = "PENDING" | "DELIVERED_IN_APP" | "EMAIL_SENT" | "EMAIL_FAILED" | "SMS_SENT" | "SMS_FAILED" | "SKIPPED";
@@ -647,6 +674,9 @@ export interface EmployeeAvailabilitySummary {
   locations: Array<{ id: string; name: string }>;
   availabilityCount: number;
   hasWeeklyDefault: boolean;
+  submissionStatus?: AvailabilitySubmissionStatus;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
 }
 
 export interface TeamAvailabilityResponse {
@@ -660,6 +690,7 @@ export interface TeamAvailabilityStatsResponse {
   employeesWithoutAvailability: number;
   hasActiveWindow: boolean;
   activeWindow: AvailabilityWindowRecord | null;
+  activeWindowSubmissionStats?: AvailabilityWindowTeamStats | null;
 }
 
 export interface EmployeeAvailabilityDetailResponse {
@@ -720,6 +751,103 @@ export async function apiUpdateEmployeeAvailability(
     {
       method: "PUT",
       body: JSON.stringify({ availabilities }),
+    },
+  );
+}
+
+export async function apiGetMyWindowAvailability(
+  windowId: string,
+): Promise<AvailabilityWindowSubmissionResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowSubmissionResponse>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/me`,
+  );
+}
+
+export async function apiSaveMyWindowAvailability(
+  windowId: string,
+  payload: { availabilities: AvailabilityInput[]; submit?: boolean },
+): Promise<AvailabilityWindowSubmissionResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowSubmissionResponse>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/me`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiGetWindowTeamAvailabilityStats(
+  windowId: string,
+): Promise<AvailabilityWindowTeamStats> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowTeamStats>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/team/stats`,
+  );
+}
+
+export async function apiGetWindowTeamAvailability(
+  windowId: string,
+  params: {
+    search?: string;
+    locationId?: string;
+    role?: string;
+    page?: number;
+    perPage?: number;
+  },
+): Promise<TeamAvailabilityResponse> {
+  apiClient.hydrateFromStorage();
+  const searchParams = new URLSearchParams();
+  if (params.search) searchParams.set("search", params.search);
+  if (params.locationId) searchParams.set("locationId", params.locationId);
+  if (params.role) searchParams.set("role", params.role);
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.perPage) searchParams.set("perPage", String(params.perPage));
+  const query = searchParams.toString();
+  return apiClient.request<TeamAvailabilityResponse>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/team${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function apiGetWindowEmployeeAvailability(
+  windowId: string,
+  employeeId: string,
+): Promise<EmployeeAvailabilityDetailResponse & { status: AvailabilitySubmissionStatus; submittedAt?: string | null; reviewedAt?: string | null }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeAvailabilityDetailResponse & {
+    status: AvailabilitySubmissionStatus;
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
+  }>(`${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}`);
+}
+
+export async function apiUpdateWindowEmployeeAvailability(
+  windowId: string,
+  employeeId: string,
+  payload: { availabilities: AvailabilityInput[] },
+): Promise<{ employeeId: string; status: AvailabilitySubmissionStatus; reviewedAt?: string | null; availability: AvailabilityRecord[] }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ employeeId: string; status: AvailabilitySubmissionStatus; reviewedAt?: string | null; availability: AvailabilityRecord[] }>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiUpdateWindowSubmissionStatus(
+  windowId: string,
+  employeeId: string,
+  status: AvailabilitySubmissionStatus,
+): Promise<{ status: AvailabilitySubmissionStatus }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ status: AvailabilitySubmissionStatus }>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     },
   );
 }

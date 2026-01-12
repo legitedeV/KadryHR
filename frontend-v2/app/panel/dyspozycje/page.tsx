@@ -12,11 +12,21 @@ import {
   apiGetTeamAvailabilityStats,
   apiGetEmployeeAvailability,
   apiUpdateEmployeeAvailability,
+  apiGetMyWindowAvailability,
+  apiSaveMyWindowAvailability,
+  apiGetWindowTeamAvailability,
+  apiGetWindowTeamAvailabilityStats,
+  apiGetWindowEmployeeAvailability,
+  apiUpdateWindowEmployeeAvailability,
+  apiUpdateWindowSubmissionStatus,
   apiListLocations,
   apiCreateAvailabilityWindow,
   AvailabilityWindowRecord,
   AvailabilityRecord,
   AvailabilityInput,
+  AvailabilityWindowSubmissionResponse,
+  AvailabilitySubmissionStatus,
+  AvailabilityWindowTeamStats,
   User,
   Weekday,
   EmployeeAvailabilitySummary,
@@ -58,6 +68,52 @@ function formatDateShort(date: string) {
     day: "numeric",
     month: "short",
   });
+}
+
+function formatMonthLabel(date: Date) {
+  return date.toLocaleDateString("pl-PL", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function toDateKey(date: Date) {
+  return date.toISOString().split("T")[0];
+}
+
+function addDays(date: Date, days: number) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function startOfWeek(date: Date) {
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  return addDays(date, diff);
+}
+
+function buildCalendarWeeks(startDate: Date, endDate: Date) {
+  const weeks: Array<Array<Date | null>> = [];
+  let cursor = startOfWeek(startDate);
+  const lastDate = new Date(endDate);
+  lastDate.setHours(23, 59, 59, 999);
+
+  while (cursor <= lastDate) {
+    const week: Array<Date | null> = [];
+    for (let i = 0; i < 7; i += 1) {
+      const current = addDays(cursor, i);
+      if (current < startDate || current > endDate) {
+        week.push(null);
+      } else {
+        week.push(new Date(current));
+      }
+    }
+    weeks.push(week);
+    cursor = addDays(cursor, 7);
+  }
+
+  return weeks;
 }
 
 function formatMinutes(minutes: number): string {
@@ -175,6 +231,281 @@ function WindowStatusCard({
             >
               + Otwórz okno składania dyspozycji
             </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getSubmissionStatusLabel(status: AvailabilitySubmissionStatus) {
+  switch (status) {
+    case "SUBMITTED":
+      return { label: "Wysłano", tone: "badge-success" };
+    case "REVIEWED":
+      return { label: "Zweryfikowano", tone: "badge-info" };
+    case "REOPENED":
+      return { label: "Wymaga poprawek", tone: "badge-warning" };
+    default:
+      return { label: "Wersja robocza", tone: "badge-secondary" };
+  }
+}
+
+// Monthly Availability Tab Component
+function MonthlyAvailabilityTab({
+  window,
+  submission,
+  saving,
+  onSave,
+}: {
+  window: AvailabilityWindowRecord;
+  submission: AvailabilityWindowSubmissionResponse | null;
+  saving: boolean;
+  onSave: (availabilities: AvailabilityInput[], submit: boolean) => Promise<void>;
+}) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const initialData = useMemo(() => {
+    const map: Record<string, Array<{ start: string; end: string }>> = {};
+    (submission?.availability ?? []).forEach((entry) => {
+      if (!entry.date) return;
+      const key = entry.date.split("T")[0];
+      if (!map[key]) map[key] = [];
+      map[key].push({
+        start: formatMinutes(entry.startMinutes),
+        end: formatMinutes(entry.endMinutes),
+      });
+    });
+    return map;
+  }, [submission]);
+
+  const [calendarData, setCalendarData] = useState(initialData);
+
+  useEffect(() => {
+    setCalendarData(initialData);
+  }, [initialData]);
+
+  const status = submission?.status ?? "DRAFT";
+  const statusMeta = getSubmissionStatusLabel(status);
+  const isLocked = status === "SUBMITTED" || status === "REVIEWED";
+
+  const startDate = useMemo(() => new Date(window.startDate), [window.startDate]);
+  const endDate = useMemo(() => new Date(window.endDate), [window.endDate]);
+  const weeks = useMemo(() => buildCalendarWeeks(startDate, endDate), [startDate, endDate]);
+
+  useEffect(() => {
+    if (!selectedDate && weeks[0]?.[0]) {
+      setSelectedDate(toDateKey(weeks[0][0] as Date));
+    }
+  }, [selectedDate, weeks]);
+
+  const slotsForSelected = selectedDate ? calendarData[selectedDate] ?? [] : [];
+
+  const updateSlot = (slotIndex: number, field: "start" | "end", value: string) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots[slotIndex] = { ...slots[slotIndex], [field]: value };
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const addSlot = () => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: "08:00", end: "16:00" });
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const removeSlot = (slotIndex: number) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = (prev[selectedDate] ?? []).filter((_, idx) => idx !== slotIndex);
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const handleSave = async (submit: boolean) => {
+    const availabilities: AvailabilityInput[] = [];
+    for (const [date, slots] of Object.entries(calendarData)) {
+      for (const slot of slots) {
+        const startMinutes = parseTime(slot.start);
+        const endMinutes = parseTime(slot.end);
+        if (startMinutes >= endMinutes) {
+          pushToast({
+            title: "Błąd",
+            description: "Godzina początkowa musi być przed godziną końcową.",
+            variant: "error",
+          });
+          return;
+        }
+        availabilities.push({
+          date,
+          startMinutes,
+          endMinutes,
+        });
+      }
+    }
+
+    if (submit && availabilities.length === 0) {
+      pushToast({
+        title: "Brak dyspozycji",
+        description: "Dodaj przynajmniej jeden przedział przed wysłaniem.",
+        variant: "warning",
+      });
+      return;
+    }
+
+    await onSave(availabilities, submit);
+  };
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div className="card p-4 space-y-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="section-label">Miesięczna dyspozycja</p>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              {window.title} · {formatMonthLabel(startDate)}
+            </h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+              Zakres: {formatDateShort(window.startDate)} – {formatDateShort(window.endDate)} · Termin do{" "}
+              {formatDate(window.deadline)}
+            </p>
+          </div>
+          <span className={`badge ${statusMeta.tone}`}>{statusMeta.label}</span>
+        </div>
+
+        <div className="grid gap-2">
+          <div className="grid grid-cols-7 text-xs text-surface-500 dark:text-surface-400">
+            {WEEKDAYS.map((day) => (
+              <span key={day.key} className="text-center py-1">
+                {day.shortLabel}
+              </span>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {weeks.map((week, weekIndex) => (
+              <div key={weekIndex} className="grid grid-cols-7 gap-2">
+                {week.map((day, dayIndex) => {
+                  if (!day) {
+                    return <div key={dayIndex} className="h-20 rounded-xl bg-surface-50 dark:bg-surface-900/30" />;
+                  }
+                  const key = toDateKey(day);
+                  const slots = calendarData[key] ?? [];
+                  const isSelected = selectedDate === key;
+                  return (
+                    <button
+                      key={dayIndex}
+                      type="button"
+                      onClick={() => setSelectedDate(key)}
+                      className={`h-20 rounded-xl border text-left px-2 py-2 transition-colors ${
+                        isSelected
+                          ? "border-brand-500 bg-brand-50/60 dark:bg-brand-900/20"
+                          : "border-surface-200/80 dark:border-surface-700/80 hover:border-brand-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                          {day.getDate()}
+                        </span>
+                        {slots.length > 0 && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            {slots.length} slot
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
+                        {slots.length === 0
+                          ? "Brak dyspozycji"
+                          : slots.map((slot) => `${slot.start}-${slot.end}`).join(", ")}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-4 space-y-4">
+        <div>
+          <p className="section-label">Wybrany dzień</p>
+          <h4 className="text-base font-semibold text-surface-900 dark:text-surface-50">
+            {selectedDate ? formatDate(selectedDate) : "Wybierz dzień z kalendarza"}
+          </h4>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+            Dodaj dostępne godziny dla wybranego dnia.
+          </p>
+        </div>
+
+        {slotsForSelected.length === 0 ? (
+          <EmptyState
+            title="Brak dyspozycji"
+            description="Dodaj przedziały czasowe, aby zaznaczyć swoją dostępność."
+          />
+        ) : (
+          <div className="space-y-2">
+            {slotsForSelected.map((slot, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="time"
+                  className="input py-1 px-2 text-sm w-24"
+                  value={slot.start}
+                  onChange={(e) => updateSlot(idx, "start", e.target.value)}
+                  disabled={isLocked}
+                />
+                <span className="text-surface-400">–</span>
+                <input
+                  type="time"
+                  className="input py-1 px-2 text-sm w-24"
+                  value={slot.end}
+                  onChange={(e) => updateSlot(idx, "end", e.target.value)}
+                  disabled={isLocked}
+                />
+                {!isLocked && (
+                  <button
+                    type="button"
+                    className="text-rose-500 hover:text-rose-600 p-1"
+                    onClick={() => removeSlot(idx)}
+                  >
+                    Usuń
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isLocked && (
+          <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+            + Dodaj przedział
+          </button>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => handleSave(true)}
+            disabled={saving || isLocked}
+          >
+            {saving ? "Wysyłanie..." : "Wyślij dyspozycję"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => handleSave(false)}
+            disabled={saving || isLocked}
+          >
+            {saving ? "Zapisywanie..." : "Zapisz wersję roboczą"}
+          </button>
+          {isLocked && (
+            <p className="text-xs text-surface-500 dark:text-surface-400">
+              Dyspozycja została wysłana. Skontaktuj się z managerem, aby ją odblokować.
+            </p>
           )}
         </div>
       </div>
@@ -612,6 +943,134 @@ function TeamAvailabilityTab({
   );
 }
 
+function WindowTeamAvailabilityTab({
+  loading,
+  window,
+  stats,
+  employees,
+  onSelectEmployee,
+  onUpdateStatus,
+}: {
+  loading: boolean;
+  window: AvailabilityWindowRecord;
+  stats: AvailabilityWindowTeamStats | null;
+  employees: EmployeeAvailabilitySummary[];
+  onSelectEmployee: (employeeId: string) => void;
+  onUpdateStatus: (employeeId: string, status: AvailabilitySubmissionStatus) => void;
+}) {
+  if (loading) {
+    return <TeamTableSkeleton />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="card p-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="section-label">Status dyspozycji</p>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              {window.title}
+            </h3>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <div>
+              <p className="text-surface-400">Wysłane</p>
+              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                {stats?.submittedCount ?? "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-surface-400">Zweryfikowane</p>
+              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                {stats?.reviewedCount ?? "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-surface-400">Brak</p>
+              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                {stats?.pendingCount ?? "-"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-4">
+        {employees.length === 0 ? (
+          <EmptyState
+            title="Brak pracowników"
+            description="Dodaj pracowników, aby zobaczyć ich dyspozycje."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-xs text-surface-400 uppercase border-b border-surface-200/80 dark:border-surface-700/80">
+                  <th className="text-left py-2">Pracownik</th>
+                  <th className="text-left py-2">Status</th>
+                  <th className="text-left py-2">Wysłano</th>
+                  <th className="text-right py-2">Akcje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((employee) => {
+                  const status = employee.submissionStatus ?? "DRAFT";
+                  const meta = getSubmissionStatusLabel(status);
+                  return (
+                    <tr key={employee.id} className="border-b border-surface-100/60 dark:border-surface-800/60">
+                      <td className="py-3">
+                        <p className="font-medium text-surface-900 dark:text-surface-50">
+                          {employee.firstName} {employee.lastName}
+                        </p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                          {employee.position || employee.email || "-"}
+                        </p>
+                      </td>
+                      <td className="py-3">
+                        <span className={`badge ${meta.tone}`}>{meta.label}</span>
+                      </td>
+                      <td className="py-3 text-surface-500">
+                        {employee.submittedAt ? formatDateShort(employee.submittedAt) : "—"}
+                      </td>
+                      <td className="py-3 text-right space-x-2">
+                        <button
+                          type="button"
+                          className="text-brand-600 hover:text-brand-700 text-xs font-medium"
+                          onClick={() => onSelectEmployee(employee.id)}
+                        >
+                          Podgląd
+                        </button>
+                        {status === "SUBMITTED" && (
+                          <button
+                            type="button"
+                            className="text-emerald-600 hover:text-emerald-700 text-xs font-medium"
+                            onClick={() => onUpdateStatus(employee.id, "REVIEWED")}
+                          >
+                            Zweryfikuj
+                          </button>
+                        )}
+                        {(status === "SUBMITTED" || status === "REVIEWED") && (
+                          <button
+                            type="button"
+                            className="text-amber-600 hover:text-amber-700 text-xs font-medium"
+                            onClick={() => onUpdateStatus(employee.id, "REOPENED")}
+                          >
+                            Otwórz ponownie
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Employee Detail Side Panel
 function EmployeeDetailPanel({
   open,
@@ -797,6 +1256,225 @@ function EmployeeDetailPanel({
   );
 }
 
+function WindowEmployeeDetailPanel({
+  open,
+  employee,
+  availability,
+  window,
+  status,
+  loading,
+  saving,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  employee: EmployeeAvailabilityDetailResponse["employee"] | null;
+  availability: AvailabilityRecord[];
+  window: AvailabilityWindowRecord | null;
+  status: AvailabilitySubmissionStatus | null;
+  loading: boolean;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (availabilities: AvailabilityInput[]) => Promise<void>;
+}) {
+  const initialData = useMemo(() => {
+    const map: Record<string, Array<{ start: string; end: string }>> = {};
+    availability.forEach((entry) => {
+      if (!entry.date) return;
+      const key = entry.date.split("T")[0];
+      if (!map[key]) map[key] = [];
+      map[key].push({
+        start: formatMinutes(entry.startMinutes),
+        end: formatMinutes(entry.endMinutes),
+      });
+    });
+    return map;
+  }, [availability]);
+
+  const [calendarData, setCalendarData] = useState(initialData);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCalendarData(initialData);
+  }, [initialData]);
+
+  const windowStart = window ? new Date(window.startDate) : null;
+  const windowEnd = window ? new Date(window.endDate) : null;
+  const weeks = useMemo(() => {
+    if (!windowStart || !windowEnd) return [];
+    return buildCalendarWeeks(windowStart, windowEnd);
+  }, [windowStart, windowEnd]);
+
+  useEffect(() => {
+    if (!selectedDate && weeks[0]?.[0]) {
+      setSelectedDate(toDateKey(weeks[0][0] as Date));
+    }
+  }, [selectedDate, weeks]);
+
+  const slotsForSelected = selectedDate ? calendarData[selectedDate] ?? [] : [];
+
+  const updateSlot = (slotIndex: number, field: "start" | "end", value: string) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots[slotIndex] = { ...slots[slotIndex], [field]: value };
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const addSlot = () => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: "08:00", end: "16:00" });
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const removeSlot = (slotIndex: number) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = (prev[selectedDate] ?? []).filter((_, idx) => idx !== slotIndex);
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const handleSave = async () => {
+    const availabilities: AvailabilityInput[] = [];
+    for (const [date, slots] of Object.entries(calendarData)) {
+      for (const slot of slots) {
+        const startMinutes = parseTime(slot.start);
+        const endMinutes = parseTime(slot.end);
+        if (startMinutes >= endMinutes) {
+          pushToast({
+            title: "Błąd",
+            description: "Godzina początkowa musi być przed godziną końcową.",
+            variant: "error",
+          });
+          return;
+        }
+        availabilities.push({ date, startMinutes, endMinutes });
+      }
+    }
+
+    await onSave(availabilities);
+  };
+
+  if (!open) return null;
+
+  const statusMeta = status ? getSubmissionStatusLabel(status) : null;
+
+  return (
+    <Modal
+      open={open}
+      title={employee ? `${employee.firstName} ${employee.lastName}` : "Ładowanie..."}
+      description={employee?.position || employee?.email || undefined}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn-secondary" onClick={onClose}>
+            Anuluj
+          </button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
+            {saving ? "Zapisywanie..." : "Zapisz zmiany"}
+          </button>
+        </>
+      }
+    >
+      {loading ? (
+        <AvailabilitySkeleton />
+      ) : (
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+          {statusMeta && <span className={`badge ${statusMeta.tone}`}>{statusMeta.label}</span>}
+          <div className="grid gap-2">
+            <div className="grid grid-cols-7 text-xs text-surface-500 dark:text-surface-400">
+              {WEEKDAYS.map((day) => (
+                <span key={day.key} className="text-center py-1">
+                  {day.shortLabel}
+                </span>
+              ))}
+            </div>
+            <div className="space-y-2">
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-cols-7 gap-2">
+                  {week.map((day, dayIndex) => {
+                    if (!day) {
+                      return <div key={dayIndex} className="h-16 rounded-lg bg-surface-50 dark:bg-surface-900/30" />;
+                    }
+                    const key = toDateKey(day);
+                    const slots = calendarData[key] ?? [];
+                    const isSelected = selectedDate === key;
+                    return (
+                      <button
+                        key={dayIndex}
+                        type="button"
+                        onClick={() => setSelectedDate(key)}
+                        className={`h-16 rounded-lg border text-left px-2 py-2 transition-colors ${
+                          isSelected
+                            ? "border-brand-500 bg-brand-50/60 dark:bg-brand-900/20"
+                            : "border-surface-200/80 dark:border-surface-700/80 hover:border-brand-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-surface-900 dark:text-surface-50">
+                            {day.getDate()}
+                          </span>
+                          {slots.length > 0 && (
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                              {slots.length}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+              {selectedDate ? formatDate(selectedDate) : "Wybierz dzień"}
+            </h4>
+            {slotsForSelected.length === 0 ? (
+              <p className="text-xs text-surface-500">Brak dyspozycji</p>
+            ) : (
+              slotsForSelected.map((slot, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    className="input py-1 px-2 text-sm w-24"
+                    value={slot.start}
+                    onChange={(e) => updateSlot(idx, "start", e.target.value)}
+                  />
+                  <span className="text-surface-400">–</span>
+                  <input
+                    type="time"
+                    className="input py-1 px-2 text-sm w-24"
+                    value={slot.end}
+                    onChange={(e) => updateSlot(idx, "end", e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="text-rose-500 hover:text-rose-600 p-1"
+                    onClick={() => removeSlot(idx)}
+                  >
+                    Usuń
+                  </button>
+                </div>
+              ))
+            )}
+            <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+              + Dodaj przedział
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 // Create Window Modal
 function CreateWindowModal({
   open,
@@ -901,6 +1579,7 @@ export default function DyspozycjePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [windowSubmission, setWindowSubmission] = useState<AvailabilityWindowSubmissionResponse | null>(null);
 
   // My availability state
   const [formData, setFormData] = useState<DayAvailability[]>(
@@ -909,12 +1588,20 @@ export default function DyspozycjePage() {
 
   // Team availability state
   const [teamStats, setTeamStats] = useState<TeamAvailabilityStatsResponse | null>(null);
+  const [windowTeamStats, setWindowTeamStats] = useState<AvailabilityWindowTeamStats | null>(null);
   const [employees, setEmployees] = useState<EmployeeAvailabilitySummary[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
   const [filters, setFilters] = useState({ search: "", locationId: "", role: "" });
 
   // Employee detail panel state
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeAvailabilityDetailResponse | null>(null);
+  const [selectedWindowEmployee, setSelectedWindowEmployee] = useState<
+    (EmployeeAvailabilityDetailResponse & {
+      status: AvailabilitySubmissionStatus;
+      submittedAt?: string | null;
+      reviewedAt?: string | null;
+    }) | null
+  >(null);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeSaving, setEmployeeSaving] = useState(false);
 
@@ -940,7 +1627,7 @@ export default function DyspozycjePage() {
       apiGetMyAvailability(),
       apiListLocations(),
     ])
-      .then(([userData, windowsData, myAvailData, locationsData]) => {
+      .then(async ([userData, windowsData, myAvailData, locationsData]) => {
         if (cancelled) return;
 
         setUser(userData);
@@ -959,6 +1646,20 @@ export default function DyspozycjePage() {
           };
         });
         setFormData(newFormData);
+
+        if (windowsData[0]) {
+          try {
+            const submission = await apiGetMyWindowAvailability(windowsData[0].id);
+            if (!cancelled) {
+              setWindowSubmission(submission);
+            }
+          } catch (submissionError) {
+            console.error(submissionError);
+            if (!cancelled) {
+              setWindowSubmission(null);
+            }
+          }
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -978,20 +1679,57 @@ export default function DyspozycjePage() {
 
   // Load team data when switching to team tab
   useEffect(() => {
-    if (activeTab === "team" && userIsAdmin && !teamStats) {
+    if (activeTab === "team" && userIsAdmin) {
       loadTeamData();
     }
-  }, [activeTab, userIsAdmin, teamStats]);
+  }, [activeTab, userIsAdmin, activeWindow]);
+
+  useEffect(() => {
+    if (!activeWindow) {
+      setWindowSubmission(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    apiGetMyWindowAvailability(activeWindow.id)
+      .then((data) => {
+        if (!cancelled) {
+          setWindowSubmission(data);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelled) {
+          setWindowSubmission(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWindow?.id]);
 
   const loadTeamData = async () => {
     setTeamLoading(true);
     try {
-      const [statsData, employeesData] = await Promise.all([
-        apiGetTeamAvailabilityStats(),
-        apiGetTeamAvailability({ page: 1, perPage: 50 }),
-      ]);
-      setTeamStats(statsData);
-      setEmployees(employeesData.data);
+      if (activeWindow) {
+        const [statsData, employeesData] = await Promise.all([
+          apiGetWindowTeamAvailabilityStats(activeWindow.id),
+          apiGetWindowTeamAvailability(activeWindow.id, { page: 1, perPage: 50 }),
+        ]);
+        setWindowTeamStats(statsData);
+        setTeamStats(null);
+        setEmployees(employeesData.data);
+      } else {
+        const [statsData, employeesData] = await Promise.all([
+          apiGetTeamAvailabilityStats(),
+          apiGetTeamAvailability({ page: 1, perPage: 50 }),
+        ]);
+        setTeamStats(statsData);
+        setWindowTeamStats(null);
+        setEmployees(employeesData.data);
+      }
     } catch (err) {
       console.error(err);
       pushToast({ title: "Błąd", description: "Nie udało się pobrać danych zespołu", variant: "error" });
@@ -1004,20 +1742,31 @@ export default function DyspozycjePage() {
     if (!userIsAdmin) return;
     setTeamLoading(true);
     try {
-      const data = await apiGetTeamAvailability({
-        search: filters.search || undefined,
-        locationId: filters.locationId || undefined,
-        role: filters.role || undefined,
-        page: 1,
-        perPage: 50,
-      });
-      setEmployees(data.data);
+      if (activeWindow) {
+        const data = await apiGetWindowTeamAvailability(activeWindow.id, {
+          search: filters.search || undefined,
+          locationId: filters.locationId || undefined,
+          role: filters.role || undefined,
+          page: 1,
+          perPage: 50,
+        });
+        setEmployees(data.data);
+      } else {
+        const data = await apiGetTeamAvailability({
+          search: filters.search || undefined,
+          locationId: filters.locationId || undefined,
+          role: filters.role || undefined,
+          page: 1,
+          perPage: 50,
+        });
+        setEmployees(data.data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setTeamLoading(false);
     }
-  }, [userIsAdmin, filters.search, filters.locationId, filters.role]);
+  }, [userIsAdmin, filters.search, filters.locationId, filters.role, activeWindow]);
 
   // Reload team employees when filters change
   useEffect(() => {
@@ -1071,12 +1820,49 @@ export default function DyspozycjePage() {
     }
   }, [formData]);
 
+  const handleSaveWindowAvailability = useCallback(
+    async (availabilities: AvailabilityInput[], submit: boolean) => {
+      if (!activeWindow) return;
+      setSaving(true);
+      try {
+        const data = await apiSaveMyWindowAvailability(activeWindow.id, {
+          availabilities,
+          submit,
+        });
+        setWindowSubmission(data);
+        pushToast({
+          title: "Sukces",
+          description: submit
+            ? "Dyspozycja została wysłana."
+            : "Dyspozycja została zapisana jako wersja robocza.",
+          variant: "success",
+        });
+      } catch (err) {
+        console.error(err);
+        pushToast({
+          title: "Błąd",
+          description: "Nie udało się zapisać dyspozycji",
+          variant: "error",
+        });
+      } finally {
+        setSaving(false);
+      }
+    },
+    [activeWindow],
+  );
+
   const handleEmployeeClick = async (employeeId: string) => {
     setEmployeeLoading(true);
     setSelectedEmployee(null);
+    setSelectedWindowEmployee(null);
     try {
-      const data = await apiGetEmployeeAvailability(employeeId);
-      setSelectedEmployee(data);
+      if (activeWindow) {
+        const data = await apiGetWindowEmployeeAvailability(activeWindow.id, employeeId);
+        setSelectedWindowEmployee(data);
+      } else {
+        const data = await apiGetEmployeeAvailability(employeeId);
+        setSelectedEmployee(data);
+      }
     } catch (err) {
       console.error(err);
       pushToast({ title: "Błąd", description: "Nie udało się pobrać danych pracownika", variant: "error" });
@@ -1086,19 +1872,53 @@ export default function DyspozycjePage() {
   };
 
   const handleSaveEmployeeAvailability = async (availabilities: AvailabilityInput[]) => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee && !selectedWindowEmployee) return;
     setEmployeeSaving(true);
     try {
-      await apiUpdateEmployeeAvailability(selectedEmployee.employee.id, availabilities);
-      pushToast({ title: "Sukces", description: "Dyspozycje pracownika zostały zapisane", variant: "success" });
-      setSelectedEmployee(null);
-      // Reload team data
+      if (activeWindow && selectedWindowEmployee) {
+        await apiUpdateWindowEmployeeAvailability(activeWindow.id, selectedWindowEmployee.employee.id, {
+          availabilities,
+        });
+        pushToast({
+          title: "Sukces",
+          description: "Dyspozycje pracownika zostały zapisane i oznaczone jako zweryfikowane",
+          variant: "success",
+        });
+        setSelectedWindowEmployee(null);
+      } else if (selectedEmployee) {
+        await apiUpdateEmployeeAvailability(selectedEmployee.employee.id, availabilities);
+        pushToast({ title: "Sukces", description: "Dyspozycje pracownika zostały zapisane", variant: "success" });
+        setSelectedEmployee(null);
+      }
       loadTeamData();
     } catch (err) {
       console.error(err);
       pushToast({ title: "Błąd", description: "Nie udało się zapisać dyspozycji", variant: "error" });
     } finally {
       setEmployeeSaving(false);
+    }
+  };
+
+  const handleUpdateSubmissionStatus = async (
+    employeeId: string,
+    status: AvailabilitySubmissionStatus,
+  ) => {
+    if (!activeWindow) return;
+    try {
+      await apiUpdateWindowSubmissionStatus(activeWindow.id, employeeId, status);
+      pushToast({
+        title: "Zaktualizowano",
+        description: "Status dyspozycji został zmieniony.",
+        variant: "success",
+      });
+      loadTeamData();
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się zmienić statusu.",
+        variant: "error",
+      });
     }
   };
 
@@ -1113,6 +1933,7 @@ export default function DyspozycjePage() {
         isOpen: true,
       });
       setWindows([newWindow, ...windows]);
+      setWindowSubmission(null);
       setCreateWindowOpen(false);
       pushToast({ title: "Sukces", description: "Okno składania dyspozycji zostało utworzone", variant: "success" });
     } catch (err) {
@@ -1220,11 +2041,29 @@ export default function DyspozycjePage() {
 
       {/* Tab Content */}
       {activeTab === "my" ? (
-        <MyAvailabilityTab
-          formData={formData}
-          setFormData={setFormData}
-          saving={saving}
-          onSave={handleSaveMyAvailability}
+        activeWindow ? (
+          <MonthlyAvailabilityTab
+            window={activeWindow}
+            submission={windowSubmission}
+            saving={saving}
+            onSave={handleSaveWindowAvailability}
+          />
+        ) : (
+          <MyAvailabilityTab
+            formData={formData}
+            setFormData={setFormData}
+            saving={saving}
+            onSave={handleSaveMyAvailability}
+          />
+        )
+      ) : activeWindow ? (
+        <WindowTeamAvailabilityTab
+          window={activeWindow}
+          stats={windowTeamStats}
+          employees={employees}
+          loading={teamLoading}
+          onSelectEmployee={handleEmployeeClick}
+          onUpdateStatus={handleUpdateSubmissionStatus}
         />
       ) : (
         <TeamAvailabilityTab
@@ -1240,12 +2079,24 @@ export default function DyspozycjePage() {
 
       {/* Employee Detail Panel */}
       <EmployeeDetailPanel
-        open={!!selectedEmployee || employeeLoading}
+        open={!activeWindow && (!!selectedEmployee || employeeLoading)}
         employee={selectedEmployee?.employee || null}
         availability={selectedEmployee?.availability || []}
         loading={employeeLoading}
         saving={employeeSaving}
         onClose={() => setSelectedEmployee(null)}
+        onSave={handleSaveEmployeeAvailability}
+      />
+
+      <WindowEmployeeDetailPanel
+        open={!!activeWindow && (!!selectedWindowEmployee || employeeLoading)}
+        employee={selectedWindowEmployee?.employee || null}
+        availability={selectedWindowEmployee?.availability || []}
+        window={activeWindow}
+        status={selectedWindowEmployee?.status ?? null}
+        loading={employeeLoading}
+        saving={employeeSaving}
+        onClose={() => setSelectedWindowEmployee(null)}
         onSave={handleSaveEmployeeAvailability}
       />
 

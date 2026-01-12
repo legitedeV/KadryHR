@@ -23,6 +23,7 @@ const AVAILABLE_TYPES: NotificationType[] = [
   "SHIFT_ASSIGNMENT",
   "SCHEDULE_PUBLISHED",
   "SWAP_STATUS",
+  "AVAILABILITY_SUBMITTED",
   "CUSTOM",
 ];
 
@@ -43,6 +44,10 @@ const TYPE_COPY: Record<NotificationType, { label: string; description: string }
   SWAP_STATUS: {
     label: "Status zamiany",
     description: "Powiadomienia o zmianach w zamianach.",
+  },
+  AVAILABILITY_SUBMITTED: {
+    label: "Dyspozycja",
+    description: "Nowe dyspozycje przesyłane przez pracowników.",
   },
   CUSTOM: {
     label: "Niestandardowe",

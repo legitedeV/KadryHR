@@ -1,7 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
+import { AuditService } from '../audit/audit.service';
 
 const baseEmployee = {
   id: 'emp-1',
@@ -28,6 +29,7 @@ const baseLocation = {
 describe('EmployeesService', () => {
   let service: EmployeesService;
   let prisma: jest.Mocked<PrismaService>;
+  let auditService: jest.Mocked<AuditService>;
 
   beforeEach(() => {
     prisma = {
@@ -38,6 +40,9 @@ describe('EmployeesService', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+      },
+      user: {
+        findFirst: jest.fn(),
       },
       location: {
         findMany: jest.fn(),
@@ -58,7 +63,11 @@ describe('EmployeesService', () => {
       }),
     } as unknown as jest.Mocked<PrismaService>;
 
-    service = new EmployeesService(prisma);
+    auditService = {
+      record: jest.fn(),
+    } as unknown as jest.Mocked<AuditService>;
+
+    service = new EmployeesService(prisma, auditService);
   });
 
   it('returns paginated employees scoped to organisation with search', async () => {
@@ -94,5 +103,69 @@ describe('EmployeesService', () => {
     await expect(
       service.update('org-1', 'emp-missing', { firstName: 'John' }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('returns existing employee profile for user', async () => {
+    prisma.employee.findFirst.mockResolvedValue(baseEmployee as any);
+
+    const result = await service.ensureEmployeeProfile('org-1', 'user-1');
+
+    expect(result).toEqual(baseEmployee);
+    expect(prisma.employee.create).not.toHaveBeenCalled();
+    expect(auditService.record).not.toHaveBeenCalled();
+  });
+
+  it('creates employee profile for user when missing', async () => {
+    prisma.employee.findFirst.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      firstName: 'Eva',
+      lastName: 'Nowak',
+    } as any);
+    prisma.employee.create.mockResolvedValue({
+      ...baseEmployee,
+      id: 'emp-new',
+      userId: 'user-1',
+      firstName: 'Eva',
+      lastName: 'Nowak',
+      email: 'user@example.com',
+    } as any);
+
+    const result = await service.ensureEmployeeProfile('org-1', 'user-1');
+
+    expect(result.id).toBe('emp-new');
+    expect(prisma.employee.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organisationId: 'org-1',
+          userId: 'user-1',
+          firstName: 'Eva',
+          lastName: 'Nowak',
+          email: 'user@example.com',
+        }),
+      }),
+    );
+    expect(auditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organisationId: 'org-1',
+        actorUserId: 'user-1',
+        action: 'employee.profile.created',
+      }),
+    );
+  });
+
+  it('requires user profile names before creating employee profile', async () => {
+    prisma.employee.findFirst.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      firstName: null,
+      lastName: null,
+    } as any);
+
+    await expect(
+      service.ensureEmployeeProfile('org-1', 'user-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
