@@ -407,6 +407,16 @@ export class AvailabilityService {
       throw new NotFoundException('Availability window not found');
     }
 
+    if (
+      dto.isOpen === false &&
+      existing.isOpen &&
+      existing.deadline >= new Date()
+    ) {
+      throw new BadRequestException(
+        'Nie można zamknąć trwającego okna dyspozycji.',
+      );
+    }
+
     const startDate = dto.startDate
       ? new Date(dto.startDate)
       : existing.startDate;

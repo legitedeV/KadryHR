@@ -17,6 +17,7 @@ const mockPrisma = {
   },
   availabilityWindow: {
     findFirst: jest.fn(),
+    update: jest.fn(),
   },
   availabilitySubmission: {
     findUnique: jest.fn(),
@@ -44,10 +45,6 @@ const mockAuditService = {
 
 const mockNotificationsService = {
   createNotification: jest.fn(),
-};
-
-const mockEmployeesService = {
-  ensureEmployeeProfile: jest.fn(),
 };
 
 describe('AvailabilityService', () => {
@@ -139,5 +136,22 @@ describe('AvailabilityService', () => {
     expect(result.status).toBe(AvailabilitySubmissionStatus.SUBMITTED);
     expect(mockNotificationsService.createNotification).toHaveBeenCalled();
     expect(mockAuditService.record).toHaveBeenCalled();
+  });
+
+  it('prevents closing an active window', async () => {
+    const window = {
+      id: 'window-1',
+      organisationId: 'org',
+      startDate: new Date('2024-04-01'),
+      endDate: new Date('2024-04-30'),
+      deadline: new Date('2099-04-01'),
+      isOpen: true,
+    };
+
+    mockPrisma.availabilityWindow.findFirst.mockResolvedValue(window);
+
+    await expect(
+      service.updateWindow('org', 'window-1', { isOpen: false }),
+    ).rejects.toThrow('Nie można zamknąć trwającego okna dyspozycji.');
   });
 });

@@ -48,6 +48,13 @@ const WEEKDAYS: { key: Weekday; label: string; shortLabel: string }[] = [
   { key: "SUNDAY", label: "Niedziela", shortLabel: "Nd" },
 ];
 
+const AVAILABILITY_TEMPLATES: Array<{ key: string; label: string; start: string; end: string }> = [
+  { key: "morning", label: "Rano", start: "05:45", end: "15:00" },
+  { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
+  { key: "afternoon", label: "Popołudnie", start: "14:15", end: "23:15" },
+  { key: "custom", label: "Wybór samodzielny", start: "08:00", end: "16:00" },
+];
+
 interface DayAvailability {
   weekday: Weekday;
   slots: Array<{ start: string; end: string }>;
@@ -318,6 +325,17 @@ function MonthlyAvailabilityTab({
     });
   };
 
+  const addTemplateSlot = (templateKey: string) => {
+    if (!selectedDate) return;
+    const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
+    if (!template) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: template.start, end: template.end });
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
   const removeSlot = (slotIndex: number) => {
     if (!selectedDate) return;
     setCalendarData((prev) => {
@@ -480,9 +498,23 @@ function MonthlyAvailabilityTab({
         )}
 
         {!isLocked && (
-          <button type="button" className="btn-secondary w-full" onClick={addSlot}>
-            + Dodaj przedział
-          </button>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABILITY_TEMPLATES.map((template) => (
+                <button
+                  key={template.key}
+                  type="button"
+                  className="btn-secondary text-sm"
+                  onClick={() => addTemplateSlot(template.key)}
+                >
+                  {template.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+              + Dodaj przedział
+            </button>
+          </div>
         )}
 
         <div className="flex flex-col gap-2">
@@ -533,6 +565,20 @@ function MyAvailabilityTab({
         return {
           ...day,
           slots: [...day.slots, { start: "08:00", end: "16:00" }],
+        };
+      })
+    );
+  };
+
+  const addTemplateSlot = (weekday: Weekday, templateKey: string) => {
+    const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
+    if (!template) return;
+    setFormData((prev) =>
+      prev.map((day) => {
+        if (day.weekday !== weekday) return day;
+        return {
+          ...day,
+          slots: [...day.slots, { start: template.start, end: template.end }],
         };
       })
     );
@@ -633,16 +679,28 @@ function MyAvailabilityTab({
               <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Edytuj dzień</p>
               <p className="text-base font-semibold text-surface-900 dark:text-surface-50">{selectedLabel}</p>
             </div>
-            <button
-              type="button"
-              className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium flex items-center gap-1"
-              onClick={() => addSlot(selectedDay)}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Dodaj przedział
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {AVAILABILITY_TEMPLATES.map((template) => (
+                <button
+                  key={template.key}
+                  type="button"
+                  className="text-xs px-3 py-1 rounded-full border border-surface-200 text-surface-600 hover:border-brand-300 hover:text-brand-600 dark:border-surface-700 dark:text-surface-300"
+                  onClick={() => addTemplateSlot(selectedDay, template.key)}
+                >
+                  {template.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium flex items-center gap-1"
+                onClick={() => addSlot(selectedDay)}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Dodaj przedział
+              </button>
+            </div>
           </div>
 
           {selectedSlots.length === 0 ? (
@@ -1465,6 +1523,18 @@ function WindowEmployeeDetailPanel({
                 </div>
               ))
             )}
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABILITY_TEMPLATES.map((template) => (
+                <button
+                  key={template.key}
+                  type="button"
+                  className="btn-secondary text-sm"
+                  onClick={() => addTemplateSlot(template.key)}
+                >
+                  {template.label}
+                </button>
+              ))}
+            </div>
             <button type="button" className="btn-secondary w-full" onClick={addSlot}>
               + Dodaj przedział
             </button>
