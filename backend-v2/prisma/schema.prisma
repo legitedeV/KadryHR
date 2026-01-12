@@ -44,6 +44,7 @@ enum NotificationType {
   SCHEDULE_PUBLISHED
   SWAP_STATUS
   AVAILABILITY_SUBMITTED
+  AVAILABILITY_WINDOW_CLOSED
   CUSTOM
 }
 
@@ -657,6 +658,7 @@ model AvailabilityWindow {
   endDate        DateTime // Window covers availability until this date
   deadline       DateTime // Deadline for submitting availability
   isOpen         Boolean  @default(true)
+  closedAt       DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -667,6 +669,7 @@ model AvailabilityWindow {
   @@index([organisationId])
   @@index([deadline])
   @@index([isOpen])
+  @@index([closedAt])
 }
 
 model AvailabilitySubmission {

@@ -92,6 +92,7 @@ export interface AvailabilityWindowRecord {
   endDate: string;
   deadline: string;
   isOpen: boolean;
+  closedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -640,6 +641,13 @@ export async function apiDeleteAvailabilityWindow(windowId: string): Promise<{ s
   apiClient.hydrateFromStorage();
   return apiClient.request<{ success: boolean }>(`${AVAILABILITY_PREFIX}/windows/${windowId}`, {
     method: "DELETE",
+  });
+}
+
+export async function apiCloseAvailabilityWindow(windowId: string): Promise<AvailabilityWindowRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AvailabilityWindowRecord>(`${AVAILABILITY_PREFIX}/windows/${windowId}/close`, {
+    method: "PATCH",
   });
 }
 
