@@ -68,6 +68,22 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   EMAIL_ENABLED?: string;
+
+  @IsOptional()
+  @IsString()
+  LEADS_DEFAULT_ORGANISATION_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  LEADS_NOTIFICATION_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
+  LEADS_AUTO_REPLY_ENABLED?: string;
+
+  @IsOptional()
+  @IsString()
+  LEADS_IP_HASH_SALT?: string;
 }
 
 export const validateEnv = (config: Record<string, unknown>) => {

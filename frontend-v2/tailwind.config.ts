@@ -11,18 +11,19 @@ const config: Config = {
     extend: {
       colors: {
         surface: colors.zinc,
-        accent: colors.fuchsia,
+        accent: colors.emerald,
         brand: {
-          50: "#f4fbff",
-          100: "#e4f4ff",
-          200: "#c4e6ff",
-          300: "#9bd3ff",
-          400: "#6cb6ff",
-          500: "#428fff",
-          600: "#2c6be6",
-          700: "#214fba",
-          800: "#1f4294",
-          900: "#1d3877"
+          50: "#effaf4",
+          100: "#d8f5e6",
+          200: "#b2ebcc",
+          300: "#7fddb0",
+          400: "#45c992",
+          500: "#1ea574",
+          600: "#168460",
+          700: "#12684f",
+          800: "#0f5341",
+          900: "#0d4536",
+          950: "#05281f"
         }
       },
       borderRadius: {
