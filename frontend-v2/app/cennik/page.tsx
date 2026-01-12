@@ -1,41 +1,45 @@
 import Link from "next/link";
+import Script from "next/script";
 import { MarketingHeader } from "@/components/MarketingHeader";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { pricingFaq, pricingPlans } from "@/components/landing/pricing-data";
+import type { Metadata } from "next";
 
-const plans = [
+export const metadata: Metadata = {
+  title: "Cennik",
+  description:
+    "Porównaj plany KadryHR dla retail i zespołów zmianowych. Jasne ceny per użytkownik oraz pełne wsparcie wdrożenia.",
+  alternates: { canonical: "/cennik" },
+};
+
+const comparisonRows = [
   {
-    name: "Starter",
-    price: "49 zł / msc",
-    desc: "Dla pojedynczego sklepu lub kiosku",
-    features: [
-      "Grafik tygodniowy i dzienny",
-      "Podgląd nieobecności",
-      "Powiadomienia e-mail",
-      "Wsparcie na czacie",
-    ],
+    label: "Grafiki miesięczne i tygodniowe",
+    values: [true, true, true, true],
   },
   {
-    name: "Pro",
-    price: "99 zł / msc",
-    badge: "Najpopularniejszy",
-    desc: "Dla kilku lokalizacji i małych franczyz",
-    features: [
-      "Wnioski urlopowe i zamiany zmian",
-      "Eksport godzin do Excela",
-      "Proste raporty godzinowe",
-      "Priorytetowe wsparcie",
-    ],
-    highlighted: true,
+    label: "Dyspozycyjność i urlopy",
+    values: [true, true, true, true],
   },
   {
-    name: "Enterprise",
-    price: "Indywidualnie",
-    desc: "Dla sieci >10 lokalizacji",
-    features: [
-      "SSO i separacja danych",
-      "Zaawansowane uprawnienia",
-      "Dostosowanie pod proces",
-      "Onboarding z dedykowanym opiekunem",
-    ],
+    label: "RCP (QR/kiosk)",
+    values: [true, true, true, true],
+  },
+  {
+    label: "Szablony grafiku i normy",
+    values: [false, true, true, true],
+  },
+  {
+    label: "Raporty kosztowe i KPI",
+    values: [false, true, true, true],
+  },
+  {
+    label: "Integracje kadrowo-płacowe",
+    values: [false, false, true, true],
+  },
+  {
+    label: "SSO i SLA",
+    values: [false, false, false, true],
   },
 ];
 
@@ -44,29 +48,28 @@ export default function PricingPage() {
     <div className="min-h-screen">
       <MarketingHeader />
       <main className="mx-auto max-w-6xl px-6 py-16 space-y-16">
-        <div className="space-y-4 text-center max-w-2xl mx-auto">
+        <div className="space-y-4 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/60 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800/50">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Cennik
+            Cennik KadryHR
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-surface-50">
-            Proste plany. Bez umów terminowych.
+          <h1 className="text-4xl font-semibold tracking-tight text-surface-900 dark:text-surface-50">
+            Jasne plany, elastyczna skala.
           </h1>
           <p className="text-lg text-surface-600 dark:text-surface-300 leading-relaxed">
-            Startujesz za darmo przez 14 dni, potem możesz wybrać plan starter
-            lub pro. W każdej chwili zmienisz lub anulujesz pakiet.
+            Płacisz za aktywnych użytkowników. Otrzymujesz pełen moduł grafiku, czasu pracy i urlopów bez ukrytych kosztów.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {plans.map((plan) => (
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          {pricingPlans.map((plan) => (
             <div
               key={plan.name}
               className={`relative flex flex-col gap-6 p-8 rounded-3xl transition-all duration-300 ${
                 plan.highlighted
-                  ? "bg-gradient-to-b from-brand-50 to-white ring-2 ring-brand-200 shadow-glow dark:from-brand-950/50 dark:to-surface-900 dark:ring-brand-700"
+                  ? "bg-gradient-to-b from-brand-50 to-white ring-2 ring-brand-200 shadow-soft dark:from-brand-950/50 dark:to-surface-900 dark:ring-brand-700"
                   : "card-hover"
               }`}
             >
@@ -78,16 +81,12 @@ export default function PricingPage() {
                 </div>
               )}
               <div className="space-y-3">
-                <h2 className="text-xl font-bold text-surface-900 dark:text-surface-50">{plan.name}</h2>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-surface-900 dark:text-surface-50">{plan.price.split(" ")[0]}</span>
-                  {plan.price.includes("zł") && (
-                    <span className="text-surface-500 dark:text-surface-400">{plan.price.split(" ").slice(1).join(" ")}</span>
-                  )}
+                <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-50">{plan.name}</h2>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-semibold text-surface-900 dark:text-surface-50">{plan.price}</span>
+                  <span className="text-surface-500 dark:text-surface-400 text-sm">{plan.cadence}</span>
                 </div>
-                <p className="text-sm text-surface-600 dark:text-surface-300">
-                  {plan.desc}
-                </p>
+                <p className="text-sm text-surface-600 dark:text-surface-300">{plan.desc}</p>
               </div>
               <ul className="flex-1 space-y-3">
                 {plan.features.map((feat) => (
@@ -99,43 +98,69 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/login"
-                className={plan.highlighted ? "btn-primary w-full justify-center py-3" : "btn-secondary w-full justify-center py-3"}
-              >
-                Wypróbuj
+              <Link href="/kontakt" className={plan.highlighted ? "btn-primary w-full justify-center py-3" : "btn-secondary w-full justify-center py-3"}>
+                Umów demo
               </Link>
             </div>
           ))}
         </div>
 
-        <div className="card p-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between bg-gradient-to-r from-surface-50 to-brand-50/30 dark:from-surface-900 dark:to-brand-950/30">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
-                Masz więcej niż 10 lokalizacji?
-              </p>
-              <p className="text-sm text-surface-600 dark:text-surface-300 mt-1">
-                Przygotujemy ofertę pod Twój proces – z onboardingiem dla zespołu.
-              </p>
-            </div>
+        <div className="rounded-3xl border border-surface-200/60 bg-white/70 p-6 shadow-sm dark:border-surface-800/60 dark:bg-surface-900/60">
+          <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-50">Porównanie planów</h2>
+          <div className="mt-6 overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="text-left text-surface-500 dark:text-surface-400">
+                <tr>
+                  <th className="py-3 pr-4">Funkcja</th>
+                  {pricingPlans.map((plan) => (
+                    <th key={plan.name} className="py-3 pr-4">{plan.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row.label} className="border-t border-surface-200/60 dark:border-surface-800/60">
+                    <td className="py-3 pr-4 text-surface-700 dark:text-surface-200">{row.label}</td>
+                    {row.values.map((value, index) => (
+                      <td key={`${row.label}-${index}`} className="py-3 pr-4">
+                        {value ? (
+                          <span className="text-emerald-600">✔</span>
+                        ) : (
+                          <span className="text-surface-300">—</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <Link
-            href="/kontakt"
-            className="btn-secondary"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Umów demo
-          </Link>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {pricingFaq.map((item) => (
+            <div key={item.question} className="rounded-2xl border border-surface-200/60 bg-surface-50/70 p-4 dark:border-surface-800/60 dark:bg-surface-800/60">
+              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">{item.question}</p>
+              <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">{item.answer}</p>
+            </div>
+          ))}
         </div>
       </main>
+      <LandingFooter />
+      <Script id="faq-jsonld" type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: pricingFaq.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.answer,
+            },
+          })),
+        })}
+      </Script>
     </div>
   );
 }

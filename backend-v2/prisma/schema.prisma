@@ -13,6 +13,14 @@ enum Role {
   EMPLOYEE
 }
 
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  WON
+  LOST
+}
+
 enum Weekday {
   MONDAY
   TUESDAY
@@ -481,6 +489,53 @@ model LeaveBalance {
   @@index([organisationId])
   @@index([employeeId])
   @@index([leaveTypeId])
+}
+
+model Lead {
+  id               String     @id @default(uuid())
+  organisationId   String?
+  email            String
+  name             String
+  company          String
+  headcount        Int?
+  message          String?
+  consentMarketing Boolean
+  consentPrivacy   Boolean
+  utmSource        String?
+  utmCampaign      String?
+  status           LeadStatus @default(NEW)
+  ipHash           String?
+  userAgent        String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  audits       LeadAuditLog[]
+
+  @@index([organisationId])
+  @@index([status])
+  @@index([email])
+}
+
+model LeadAuditLog {
+  id             String   @id @default(uuid())
+  leadId         String
+  organisationId String?
+  actorUserId    String?
+  action         String
+  before         Json?
+  after          Json?
+  ipHash         String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  lead         Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  actor        User?         @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+  @@index([organisationId])
+  @@index([actorUserId])
 }
 
 model AuditLog {
