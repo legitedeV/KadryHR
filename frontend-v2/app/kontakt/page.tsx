@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { MarketingHeader } from "@/components/MarketingHeader";
 import { ContactForm } from "@/components/ContactForm";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -88,7 +89,9 @@ export default function ContactPage() {
                 Podaj podstawowe informacje, a my wrócimy z propozycją terminu.
               </p>
             </div>
-            <ContactForm />
+            <Suspense fallback={<div className="text-sm text-surface-500">Ładujemy formularz…</div>}>
+              <ContactForm />
+            </Suspense>
           </div>
         </div>
       </main>

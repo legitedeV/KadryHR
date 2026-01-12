@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ContactForm } from "@/components/ContactForm";
 
 export function ContactSection() {
@@ -29,7 +30,9 @@ export function ContactSection() {
             </div>
           </div>
           <div className="rounded-3xl border border-surface-200/60 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-surface-800/60 dark:bg-surface-900/60">
-            <ContactForm />
+            <Suspense fallback={<div className="text-sm text-surface-500">Ładujemy formularz…</div>}>
+              <ContactForm />
+            </Suspense>
           </div>
         </div>
       </div>
