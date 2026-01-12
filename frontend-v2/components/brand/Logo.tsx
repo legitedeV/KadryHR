@@ -17,19 +17,10 @@ type LogoProps = {
   label?: string;
 };
 
-const assets: Record<LogoVariant, { light: string; dark: string }> = {
-  full: {
-    light: "/brand/kadryhr-logo-full-light.svg",
-    dark: "/brand/kadryhr-logo-full-dark.svg",
-  },
-  compact: {
-    light: "/brand/kadryhr-logo-compact-light.svg",
-    dark: "/brand/kadryhr-logo-compact-dark.svg",
-  },
-  icon: {
-    light: "/brand/kadryhr-logo-mark.svg",
-    dark: "/brand/kadryhr-logo-mark.svg",
-  },
+const assets: Record<LogoVariant, string> = {
+  full: "/brand/kadryhr-logo-full-dark.svg",
+  compact: "/brand/kadryhr-logo-compact-dark.svg",
+  icon: "/brand/kadryhr-logo-mark.svg",
 };
 
 const baseDimensions: Record<LogoVariant, { width: number; height: number }> = {
@@ -76,24 +67,16 @@ export function Logo({
     >
       <div className="relative">
         <Image
-          src={asset.light}
+          src={asset}
           alt={altText}
           width={width}
           height={height}
           priority={priority}
-          className="block h-auto w-auto select-none dark:hidden"
-        />
-        <Image
-          src={asset.dark}
-          alt={altText}
-          width={width}
-          height={height}
-          priority={priority}
-          className="hidden h-auto w-auto select-none dark:block"
+          className="block h-auto w-auto select-none"
         />
       </div>
       {showTagline ? (
-        <p className="text-xs font-medium text-surface-600 dark:text-surface-300 leading-tight">
+        <p className="text-xs font-medium text-surface-300 leading-tight">
           Kadry i płace bez tajemnic
         </p>
       ) : null}
@@ -104,7 +87,7 @@ export function Logo({
     return (
       <Link
         href={asLink}
-        className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-surface-900"
+        className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
       >
         {content}
       </Link>
@@ -131,7 +114,7 @@ export function LogoMark({ size = "md", className, asLink, alt = "KadryHR", aria
       <Link
         href={asLink}
         aria-label={ariaLabel ?? alt}
-        className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-surface-900"
+        className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
       >
         {mark}
       </Link>

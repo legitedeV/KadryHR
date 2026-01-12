@@ -19,6 +19,15 @@ const nextConfig = {
     // Specifies the working directory to avoid multi-lockfile warnings
     root: __dirname,
   },
+  async redirects() {
+    return [
+      { source: "/pricing", destination: "/cennik", permanent: true },
+      { source: "/contact", destination: "/kontakt", permanent: true },
+      { source: "/privacy", destination: "/polityka-prywatnosci", permanent: true },
+      { source: "/rodo", destination: "/polityka-prywatnosci", permanent: true },
+      { source: "/terms", destination: "/regulamin", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

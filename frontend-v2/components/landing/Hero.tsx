@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Reveal } from "@/components/motion/Reveal";
 
 const highlights = [
   "Grafiki miesięczne z dyspozycyjnością w jednym widoku",
@@ -14,16 +15,16 @@ export function Hero() {
         <div className="noise-overlay" aria-hidden="true" />
       </div>
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 md:grid-cols-[1.1fr_0.9fr]">
-        <div className="relative z-10 space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-brand-50/80 px-4 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/70 dark:bg-brand-950/40 dark:text-brand-200 dark:ring-brand-800/50">
+        <Reveal className="relative z-10 space-y-8" delay={100}>
+          <div className="inline-flex items-center gap-2 rounded-full bg-brand-950/40 px-4 py-1.5 text-xs font-semibold text-brand-200 ring-1 ring-brand-800/50">
             <span className="h-2 w-2 rounded-full bg-brand-500" />
             KadryHR dla retail i zespołów zmianowych
           </div>
           <div className="space-y-5">
-            <h1 className="text-4xl font-semibold leading-tight text-surface-900 dark:text-surface-50 md:text-5xl">
+            <h1 className="text-4xl font-semibold leading-tight text-surface-50 md:text-5xl">
               Grafiki, czas pracy i urlopy domknięte w jednym, przewidywalnym rytmie.
             </h1>
-            <p className="text-lg text-surface-600 dark:text-surface-300">
+            <p className="text-lg text-surface-300">
               KadryHR porządkuje grafikowanie w sklepach i sieciach usługowych: mniej telefonów, mniej kolizji,
               szybsze rozliczenia i stały wgląd w obsadę na każdej zmianie.
             </p>
@@ -37,7 +38,7 @@ export function Hero() {
               Zobacz jak działa
             </Link>
           </div>
-          <div className="grid gap-3 text-sm text-surface-600 dark:text-surface-300">
+          <div className="grid gap-3 text-sm text-surface-300">
             {highlights.map((item) => (
               <div key={item} className="flex items-start gap-3">
                 <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-brand-500" />
@@ -45,25 +46,25 @@ export function Hero() {
               </div>
             ))}
           </div>
-        </div>
-        <div className="relative z-10">
-          <div className="relative mx-auto max-w-md rounded-[28px] border border-white/40 bg-white/80 p-5 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-surface-900/70">
-            <div className="absolute -left-12 top-10 hidden h-32 w-32 rounded-full bg-brand-200/60 blur-3xl md:block" />
-            <div className="absolute -right-12 bottom-10 hidden h-32 w-32 rounded-full bg-brand-300/50 blur-3xl md:block" />
+        </Reveal>
+        <Reveal className="relative z-10" delay={220}>
+          <div className="relative mx-auto max-w-md rounded-[28px] border border-white/10 bg-surface-900/70 p-5 shadow-soft backdrop-blur-xl">
+            <div className="absolute -left-12 top-10 hidden h-32 w-32 rounded-full bg-brand-900/40 blur-3xl md:block" />
+            <div className="absolute -right-12 bottom-10 hidden h-32 w-32 rounded-full bg-brand-900/40 blur-3xl md:block" />
             <div className="space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Panel managera</p>
-                  <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-brand-300">Panel managera</p>
+                  <p className="text-lg font-semibold text-surface-50">
                     Widzisz cały miesiąc w 2 minuty
                   </p>
                 </div>
-                <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-950/40 dark:text-brand-200">
+                <span className="rounded-full bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-200">
                   Live
                 </span>
               </div>
-              <div className="rounded-2xl border border-surface-200/70 bg-white/90 p-4 shadow-sm dark:border-surface-700/60 dark:bg-surface-900/80">
-                <div className="flex items-center justify-between text-xs text-surface-500 dark:text-surface-400">
+              <div className="rounded-2xl border border-surface-700/60 bg-surface-900/80 p-4 shadow-sm">
+                <div className="flex items-center justify-between text-xs text-surface-400">
                   <span>Sklep Gdańsk Wrzeszcz</span>
                   <span>Październik 2026</span>
                 </div>
@@ -79,8 +80,8 @@ export function Hero() {
                   ].map((day, index) => (
                     <div key={day} className="text-center text-surface-400">
                       {day}
-                      <div className={`mt-2 h-10 rounded-lg ${index % 2 === 0 ? "bg-brand-100/70 dark:bg-brand-900/40" : "bg-surface-100 dark:bg-surface-800/70"}`}>
-                        <div className="p-1 text-[10px] font-semibold text-surface-700 dark:text-surface-200">
+                      <div className={`mt-2 h-10 rounded-lg ${index % 2 === 0 ? "bg-brand-900/40" : "bg-surface-800/70"}`}>
+                        <div className="p-1 text-[10px] font-semibold text-surface-200">
                           {index % 2 === 0 ? "Pełna obsada" : "3 luki"}
                         </div>
                       </div>
@@ -89,24 +90,24 @@ export function Hero() {
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-surface-200/70 bg-surface-50/80 p-4 dark:border-surface-700/60 dark:bg-surface-800/60">
-                  <p className="text-xs font-semibold text-surface-500 dark:text-surface-300">
+                <div className="rounded-2xl border border-surface-700/60 bg-surface-800/60 p-4">
+                  <p className="text-xs font-semibold text-surface-300">
                     Dyspozycyjność
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-surface-900 dark:text-surface-50">
+                  <p className="mt-2 text-sm font-semibold text-surface-50">
                     92% odpowiedzi w 24h
                   </p>
                 </div>
-                <div className="rounded-2xl border border-surface-200/70 bg-surface-50/80 p-4 dark:border-surface-700/60 dark:bg-surface-800/60">
-                  <p className="text-xs font-semibold text-surface-500 dark:text-surface-300">
+                <div className="rounded-2xl border border-surface-700/60 bg-surface-800/60 p-4">
+                  <p className="text-xs font-semibold text-surface-300">
                     Czas pracy
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-surface-900 dark:text-surface-50">
+                  <p className="mt-2 text-sm font-semibold text-surface-50">
                     1 klik → raport miesiąca
                   </p>
                 </div>
               </div>
-              <div className="rounded-2xl border border-brand-200/60 bg-brand-50/70 p-4 text-sm text-brand-800 dark:border-brand-800/50 dark:bg-brand-950/40 dark:text-brand-100">
+              <div className="rounded-2xl border border-brand-800/50 bg-brand-950/40 p-4 text-sm text-brand-100">
                 „Zamknięcie miesiąca zajmuje nam teraz 2 godziny zamiast całego dnia.”
               </div>
             </div>
@@ -124,7 +125,7 @@ export function Hero() {
               <path d="M50 280 C200 240, 260 320, 380 280" />
             </g>
           </svg>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

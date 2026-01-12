@@ -3,7 +3,6 @@
 import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/brand/Logo";
 
@@ -47,8 +46,8 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-900/20" />
-        <div className="absolute -right-32 bottom-1/4 h-64 w-64 rounded-full bg-accent-200/30 blur-3xl dark:bg-accent-900/20" />
+        <div className="absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-brand-900/40 blur-3xl" />
+        <div className="absolute -right-32 bottom-1/4 h-64 w-64 rounded-full bg-accent-900/30 blur-3xl" />
       </div>
 
       <div className="w-full max-w-md card p-8 shadow-elevated">
@@ -61,16 +60,15 @@ function LoginForm() {
               className="max-w-[200px]"
               align="column"
             />
-            <div className="text-xs text-surface-500 dark:text-surface-400">
+            <div className="text-xs text-surface-400">
               Kadry i płace bez tajemnic
             </div>
           </div>
-          <ThemeToggle />
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="block text-sm font-medium text-surface-200">
               E-mail
             </label>
             <div className="relative">
@@ -96,7 +94,7 @@ function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="block text-sm font-medium text-surface-200">
               Hasło
             </label>
             <div className="relative">
@@ -122,7 +120,7 @@ function LoginForm() {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+            <div className="flex items-center gap-2 rounded-xl bg-rose-950/50 px-4 py-3 text-sm text-rose-200 ring-1 ring-rose-800/50">
               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
@@ -154,17 +152,17 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-surface-200 dark:border-surface-800 space-y-2 text-center text-sm text-surface-500 dark:text-surface-400">
+        <div className="mt-8 pt-6 border-t border-surface-800 space-y-2 text-center text-sm text-surface-400">
           <p>
             Nie masz konta?{" "}
-            <Link href="/register" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+            <Link href="/register" className="font-medium text-brand-400 hover:text-brand-300">
               Zarejestruj się
             </Link>
             .
           </p>
           <p>
             Wróć na{" "}
-            <Link href="/" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+            <Link href="/" className="font-medium text-brand-400 hover:text-brand-300">
               stronę startową
             </Link>
             .

@@ -46,22 +46,22 @@ export function CookieBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-4xl rounded-3xl border border-surface-200/70 bg-white/90 p-5 shadow-soft backdrop-blur dark:border-surface-800/70 dark:bg-surface-900/90">
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-4xl rounded-3xl border border-surface-800/70 bg-surface-900/90 p-5 shadow-soft backdrop-blur">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+          <p className="text-sm font-semibold text-surface-50">
             Szanujemy Twoją prywatność
           </p>
-          <p className="text-sm text-surface-600 dark:text-surface-300">
+          <p className="text-sm text-surface-300">
             Używamy plików cookie do działania serwisu, analityki i komunikacji marketingowej. Możesz zarządzać preferencjami.
           </p>
-          <div className="flex flex-wrap gap-3 text-xs text-surface-500">
-            <a href="/cookies" className="font-semibold text-brand-600 hover:text-brand-700">
+          <div className="flex flex-wrap gap-3 text-xs text-surface-400">
+            <a href="/cookies" className="font-semibold text-brand-300 hover:text-brand-200">
               Polityka cookies
             </a>
             <span>·</span>
-            <a href="/rodo" className="font-semibold text-brand-600 hover:text-brand-700">
-              RODO
+            <a href="/polityka-prywatnosci" className="font-semibold text-brand-300 hover:text-brand-200">
+              Polityka prywatności
             </a>
           </div>
         </div>
@@ -104,7 +104,7 @@ export function CookieBanner() {
         </div>
       </div>
       {showPreferences && (
-        <div className="mt-5 grid gap-3 rounded-2xl border border-surface-200/60 bg-surface-50/80 p-4 text-sm text-surface-600 dark:border-surface-800/60 dark:bg-surface-800/70 dark:text-surface-200">
+        <div className="mt-5 grid gap-3 rounded-2xl border border-surface-800/60 bg-surface-800/70 p-4 text-sm text-surface-200">
           <label className="flex items-start gap-3">
             <input type="checkbox" checked readOnly className="mt-1 h-4 w-4 rounded border-surface-300 text-brand-600" />
             <span>
