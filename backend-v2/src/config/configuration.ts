@@ -33,6 +33,12 @@ export interface AppConfig {
     host: string;
     port: number;
   };
+  leads: {
+    defaultOrganisationId: string;
+    notificationEmail: string;
+    autoReplyEnabled: boolean;
+    ipHashSalt: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -70,5 +76,11 @@ export const configuration = (): AppConfig => ({
   redis: {
     host: process.env.REDIS_HOST ?? 'localhost',
     port: Number(process.env.REDIS_PORT ?? 6379),
+  },
+  leads: {
+    defaultOrganisationId: process.env.LEADS_DEFAULT_ORGANISATION_ID ?? '',
+    notificationEmail: process.env.LEADS_NOTIFICATION_EMAIL ?? '',
+    autoReplyEnabled: (process.env.LEADS_AUTO_REPLY_ENABLED ?? 'true') !== 'false',
+    ipHashSalt: process.env.LEADS_IP_HASH_SALT ?? 'kadryhr-leads',
   },
 });
