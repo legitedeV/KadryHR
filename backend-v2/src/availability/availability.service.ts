@@ -105,11 +105,39 @@ export class AvailabilityService {
   private ensureWindowOpen(window: {
     isOpen: boolean;
     deadline: Date;
+    closedAt?: Date | null;
   }) {
     const now = new Date();
-    if (!window.isOpen || window.deadline < now) {
+    if (!window.isOpen || window.deadline < now || window.closedAt) {
       throw new BadRequestException(
         'Okno składania dyspozycji jest zamknięte',
+      );
+    }
+  }
+
+  private async ensureNoActiveWindow(
+    organisationId: string,
+    deadline: Date,
+    excludeId?: string,
+  ) {
+    const now = new Date();
+    if (deadline < now) {
+      return;
+    }
+
+    const existing = await this.prisma.availabilityWindow.count({
+      where: {
+        organisationId,
+        isOpen: true,
+        closedAt: null,
+        deadline: { gte: now },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+
+    if (existing > 0) {
+      throw new BadRequestException(
+        'Istnieje już aktywne okno dyspozycji dla tej organizacji.',
       );
     }
   }
@@ -331,6 +359,7 @@ export class AvailabilityService {
       where: {
         organisationId,
         isOpen: true,
+        closedAt: null,
         deadline: { gte: now },
       },
       orderBy: { deadline: 'asc' },
@@ -368,9 +397,14 @@ export class AvailabilityService {
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
     const deadline = new Date(dto.deadline);
+    const isOpen = dto.isOpen ?? true;
 
     if (startDate >= endDate) {
       throw new BadRequestException('startDate must be before endDate');
+    }
+
+    if (isOpen) {
+      await this.ensureNoActiveWindow(organisationId, deadline);
     }
 
     return this.prisma.availabilityWindow.create({
@@ -380,7 +414,8 @@ export class AvailabilityService {
         startDate,
         endDate,
         deadline,
-        isOpen: dto.isOpen ?? true,
+        isOpen,
+        closedAt: null,
       },
     });
   }
@@ -407,24 +442,31 @@ export class AvailabilityService {
       throw new NotFoundException('Availability window not found');
     }
 
-    if (
-      dto.isOpen === false &&
-      existing.isOpen &&
-      existing.deadline >= new Date()
-    ) {
-      throw new BadRequestException(
-        'Nie można zamknąć trwającego okna dyspozycji.',
-      );
-    }
-
     const startDate = dto.startDate
       ? new Date(dto.startDate)
       : existing.startDate;
     const endDate = dto.endDate ? new Date(dto.endDate) : existing.endDate;
+    const deadline = dto.deadline ? new Date(dto.deadline) : existing.deadline;
+    const isOpen = dto.isOpen ?? existing.isOpen;
 
     if (startDate >= endDate) {
       throw new BadRequestException('startDate must be before endDate');
     }
+
+    if (isOpen) {
+      await this.ensureNoActiveWindow(organisationId, deadline, windowId);
+    }
+
+    const now = new Date();
+    const shouldClose = existing.isOpen && dto.isOpen === false;
+    const shouldReopen = !existing.isOpen && dto.isOpen === true;
+    const closedAt = shouldReopen
+      ? null
+      : shouldClose
+        ? now
+        : existing.closedAt ?? null;
+    const effectiveDeadline =
+      shouldClose && deadline > now ? now : deadline;
 
     return this.prisma.availabilityWindow.update({
       where: { id: windowId },
@@ -432,10 +474,86 @@ export class AvailabilityService {
         title: dto.title ?? existing.title,
         startDate,
         endDate,
-        deadline: dto.deadline ? new Date(dto.deadline) : existing.deadline,
-        isOpen: dto.isOpen ?? existing.isOpen,
+        deadline: effectiveDeadline,
+        isOpen,
+        closedAt,
       },
     });
+  }
+
+  /**
+   * Close an availability window manually
+   */
+  async closeWindow(
+    organisationId: string,
+    windowId: string,
+    actorUserId: string,
+  ) {
+    const window = await this.prisma.availabilityWindow.findFirst({
+      where: { id: windowId, organisationId },
+    });
+
+    if (!window) {
+      throw new NotFoundException('Availability window not found');
+    }
+
+    const now = new Date();
+    if (!window.isOpen || window.deadline < now || window.closedAt) {
+      throw new BadRequestException(
+        'To okno dyspozycji jest już zamknięte.',
+      );
+    }
+
+    const updated = await this.prisma.availabilityWindow.update({
+      where: { id: windowId },
+      data: {
+        isOpen: false,
+        closedAt: now,
+        deadline: window.deadline > now ? now : window.deadline,
+      },
+    });
+
+    const employees = await this.prisma.user.findMany({
+      where: {
+        organisationId,
+        role: Role.EMPLOYEE,
+      },
+    });
+
+    await Promise.all(
+      employees.map((employee) =>
+        this.notificationsService.createNotification({
+          organisationId,
+          userId: employee.id,
+          type: NotificationType.AVAILABILITY_WINDOW_CLOSED,
+          title: 'Okno dyspozycji zamknięte',
+          body: `Okno \"${updated.title}\" zostało zamknięte. Nie można już składać nowych dyspozycji.`,
+          data: {
+            windowId: updated.id,
+          },
+        }),
+      ),
+    );
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'availability.window.closed',
+      entityType: 'availability_window',
+      entityId: updated.id,
+      before: {
+        isOpen: window.isOpen,
+        deadline: window.deadline,
+        closedAt: window.closedAt,
+      },
+      after: {
+        isOpen: updated.isOpen,
+        deadline: updated.deadline,
+        closedAt: updated.closedAt,
+      },
+    });
+
+    return updated;
   }
 
   /**
