@@ -505,6 +505,28 @@ export class AvailabilityController {
   }
 
   /**
+   * Close an availability window (managers/admins only)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Patch('windows/:windowId/close')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_CLOSE',
+    entityType: 'availability_window',
+    entityIdParam: 'windowId',
+    fetchBefore: true,
+  })
+  async closeWindow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+  ) {
+    return this.availabilityService.closeWindow(
+      user.organisationId,
+      windowId,
+      user.id,
+    );
+  }
+
+  /**
    * Delete an availability window (managers/admins only)
    */
   @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)

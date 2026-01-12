@@ -13,6 +13,7 @@ describe('Availability Window Submissions (e2e)', () => {
   let windowId: string;
   let employeeToken: string;
   let employeeId: string;
+  let managerToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -47,6 +48,18 @@ describe('Availability Window Submissions (e2e)', () => {
       },
     });
 
+    await prisma.user.create({
+      data: {
+        id: 'availability-manager-user',
+        email: 'manager-availability@example.com',
+        passwordHash,
+        role: Role.MANAGER,
+        organisationId,
+        firstName: 'Marek',
+        lastName: 'Kowalski',
+      },
+    });
+
     const employee = await prisma.employee.create({
       data: {
         organisationId,
@@ -76,6 +89,13 @@ describe('Availability Window Submissions (e2e)', () => {
       .expect(200);
 
     employeeToken = loginRes.body.accessToken;
+
+    const managerLoginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'manager-availability@example.com', password })
+      .expect(200);
+
+    managerToken = managerLoginRes.body.accessToken;
   });
 
   afterAll(async () => {
@@ -108,5 +128,23 @@ describe('Availability Window Submissions (e2e)', () => {
       where: { organisationId, windowId, employeeId },
     });
     expect(submission?.status).toBe(AvailabilitySubmissionStatus.SUBMITTED);
+  });
+
+  it('closes an active window and blocks new submissions', async () => {
+    await request(app.getHttpServer())
+      .patch(`/availability/windows/${windowId}/close`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/availability/windows/${windowId}/me`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({
+        availabilities: [
+          { date: '2024-04-05', startMinutes: 480, endMinutes: 960 },
+        ],
+        submit: true,
+      })
+      .expect(400);
   });
 });
