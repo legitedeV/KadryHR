@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class EmployeesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * Mapuje użytkownika (User) na powiązanego Employee w danej organizacji.
@@ -17,6 +25,61 @@ export class EmployeesService {
         userId,
       },
     });
+  }
+
+  async ensureEmployeeProfile(organisationId: string, userId: string) {
+    const existing = await this.findByUser(organisationId, userId);
+
+    if (existing) {
+      return existing;
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, organisationId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const firstName = user.firstName?.trim();
+    const lastName = user.lastName?.trim();
+
+    if (!firstName || !lastName) {
+      throw new BadRequestException(
+        'Uzupełnij imię i nazwisko w profilu użytkownika, aby utworzyć profil pracownika',
+      );
+    }
+
+    const created = await this.prisma.employee.create({
+      data: {
+        organisationId,
+        userId: user.id,
+        firstName,
+        lastName,
+        email: user.email,
+      },
+    });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId: userId,
+      action: 'employee.profile.created',
+      entityType: 'employee',
+      entityId: created.id,
+      after: {
+        userId: user.id,
+        createdFromUserProfile: true,
+      },
+    });
+
+    return created;
   }
 
   /**
