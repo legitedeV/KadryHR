@@ -304,6 +304,12 @@ export class ShiftsService {
     if (!employee) {
       throw new NotFoundException('Employee not found');
     }
+    if (employee.isDeleted) {
+      throw new BadRequestException('Pracownik został usunięty.');
+    }
+    if (!employee.isActive) {
+      throw new BadRequestException('Pracownik jest nieaktywny.');
+    }
     return employee;
   }
 
@@ -505,6 +511,8 @@ export class ShiftsService {
         id: { in: employeeIds },
         organisationId,
         userId: { not: null },
+        isActive: true,
+        isDeleted: false,
       },
       select: {
         userId: true,

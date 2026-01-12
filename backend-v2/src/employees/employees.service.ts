@@ -3,16 +3,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { NotificationType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EmployeesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -135,6 +137,28 @@ export class EmployeesService {
       ];
     }
 
+    if (query.status && query.status !== 'all') {
+      if (query.status === 'active') {
+        where.isActive = true;
+        where.isDeleted = false;
+      }
+
+      if (query.status === 'inactive') {
+        const existingAnd = Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+            ? [where.AND]
+            : [];
+
+        where.AND = [
+          ...existingAnd,
+          {
+            OR: [{ isActive: false }, { isDeleted: true }],
+          },
+        ];
+      }
+    }
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.employee.findMany({
         where,
@@ -231,17 +255,166 @@ export class EmployeesService {
   async remove(organisationId: string, employeeId: string) {
     const existing = await this.prisma.employee.findFirst({
       where: { id: employeeId, organisationId },
+      select: {
+        id: true,
+        isDeleted: true,
+        isActive: true,
+        employmentEndDate: true,
+        userId: true,
+        _count: {
+          select: {
+            shifts: true,
+            scheduleTemplateShifts: true,
+            documents: true,
+            contracts: true,
+            leaveRequests: true,
+            leaveBalances: true,
+            availability: true,
+            availabilitySubmissions: true,
+            locations: true,
+          },
+        },
+      },
     });
 
     if (!existing) {
       throw new NotFoundException('Employee not found');
     }
 
-    await this.prisma.employee.delete({
-      where: { id: employeeId },
+    const hasHistory =
+      existing._count.shifts > 0 ||
+      existing._count.scheduleTemplateShifts > 0 ||
+      existing._count.documents > 0 ||
+      existing._count.contracts > 0 ||
+      existing._count.leaveRequests > 0 ||
+      existing._count.leaveBalances > 0 ||
+      existing._count.availability > 0 ||
+      existing._count.availabilitySubmissions > 0;
+
+    if (hasHistory) {
+      const data: Prisma.EmployeeUpdateInput = {
+        isDeleted: true,
+        isActive: false,
+      };
+
+      if (!existing.employmentEndDate) {
+        data.employmentEndDate = new Date();
+      }
+
+      const updated = await this.prisma.employee.update({
+        where: { id: employeeId },
+        data,
+      });
+
+      if (existing.userId) {
+        await this.notificationsService.createNotification({
+          organisationId,
+          userId: existing.userId,
+          type: NotificationType.CUSTOM,
+          title: 'Twoje konto pracownika zostało dezaktywowane',
+          body: 'Twoje konto zostało oznaczone jako usunięte. Zachowaliśmy historię grafików i dokumentów.',
+        });
+      }
+
+      return { success: true, softDeleted: true, employee: updated };
+    }
+
+    await this.prisma.employee.delete({ where: { id: employeeId } });
+
+    if (existing.userId) {
+      await this.notificationsService.createNotification({
+        organisationId,
+        userId: existing.userId,
+        type: NotificationType.CUSTOM,
+        title: 'Twoje konto pracownika zostało usunięte',
+        body: 'Twoje konto zostało trwale usunięte z organizacji.',
+      });
+    }
+
+    return { success: true, softDeleted: false };
+  }
+
+  async deactivate(organisationId: string, employeeId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+      select: {
+        id: true,
+        isActive: true,
+        isDeleted: true,
+        employmentEndDate: true,
+        userId: true,
+      },
     });
 
-    return { success: true };
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    if (employee.isDeleted) {
+      throw new BadRequestException('Pracownik jest już usunięty.');
+    }
+
+    const data: Prisma.EmployeeUpdateInput = {
+      isActive: false,
+    };
+
+    if (!employee.employmentEndDate) {
+      data.employmentEndDate = new Date();
+    }
+
+    const updated = await this.prisma.employee.update({
+      where: { id: employeeId },
+      data,
+    });
+
+    if (employee.userId) {
+      await this.notificationsService.createNotification({
+        organisationId,
+        userId: employee.userId,
+        type: NotificationType.CUSTOM,
+        title: 'Twoje konto pracownika zostało dezaktywowane',
+        body: 'Nie możesz logować się do systemu ani być przypisywany(a) do grafiku.',
+      });
+    }
+
+    return updated;
+  }
+
+  async activate(organisationId: string, employeeId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+      select: {
+        id: true,
+        isActive: true,
+        isDeleted: true,
+        userId: true,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const updated = await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: {
+        isActive: true,
+        isDeleted: false,
+        employmentEndDate: null,
+      },
+    });
+
+    if (employee.userId) {
+      await this.notificationsService.createNotification({
+        organisationId,
+        userId: employee.userId,
+        type: NotificationType.CUSTOM,
+        title: 'Twoje konto pracownika zostało ponownie aktywowane',
+        body: 'Możesz ponownie logować się do systemu i być przypisywany(a) do grafiku.',
+      });
+    }
+
+    return updated;
   }
 }
 

@@ -180,6 +180,42 @@ export class EmployeesController {
   }
 
   /**
+   * Dezaktywacja pracownika – tylko OWNER/MANAGER.
+   */
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
+  @Patch(':id/deactivate')
+  @AuditLog({
+    action: 'EMPLOYEE_DEACTIVATE',
+    entityType: 'employee',
+    entityIdParam: 'id',
+    fetchBefore: true,
+  })
+  async deactivate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.employeesService.deactivate(user.organisationId, id);
+  }
+
+  /**
+   * Ponowna aktywacja pracownika – tylko OWNER/MANAGER.
+   */
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
+  @Patch(':id/activate')
+  @AuditLog({
+    action: 'EMPLOYEE_ACTIVATE',
+    entityType: 'employee',
+    entityIdParam: 'id',
+    fetchBefore: true,
+  })
+  async activate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.employeesService.activate(user.organisationId, id);
+  }
+
+  /**
    * Usunięcie pracownika – tylko OWNER/MANAGER.
    */
   @RequirePermissions(Permission.EMPLOYEE_MANAGE)

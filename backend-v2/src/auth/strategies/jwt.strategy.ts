@@ -35,6 +35,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId: user.id, organisationId: user.organisationId },
+      select: { isActive: true, isDeleted: true },
+    });
+
+    if (employee?.isDeleted) {
+      throw new UnauthorizedException('Konto pracownika zostało usunięte.');
+    }
+
+    if (employee && !employee.isActive) {
+      throw new UnauthorizedException('Konto pracownika jest nieaktywne.');
+    }
+
     return {
       ...user,
       permissions: getPermissionsForRole(user.role),

@@ -187,13 +187,47 @@ export class AvailabilityService {
    * Find employee by user ID
    */
   async findEmployeeByUserId(organisationId: string, userId: string) {
-    return this.employeesService.ensureEmployeeProfile(organisationId, userId);
+    const employee = await this.employeesService.ensureEmployeeProfile(
+      organisationId,
+      userId,
+    );
+    this.ensureEmployeeActive(employee);
+    return employee;
+  }
+
+  private ensureEmployeeActive(employee: {
+    isActive: boolean;
+    isDeleted: boolean;
+  }) {
+    if (employee.isDeleted) {
+      throw new BadRequestException('Pracownik został usunięty.');
+    }
+    if (!employee.isActive) {
+      throw new BadRequestException('Pracownik jest nieaktywny.');
+    }
+  }
+
+  private async ensureEmployeeActiveById(
+    organisationId: string,
+    employeeId: string,
+  ) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+      select: { id: true, isActive: true, isDeleted: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    this.ensureEmployeeActive(employee);
   }
 
   /**
    * Tworzenie rekordu dostępności.
    */
   async create(organisationId: string, dto: any) {
+    await this.ensureEmployeeActiveById(organisationId, dto.employeeId);
     if (
       typeof dto.startMinutes === 'number' &&
       typeof dto.endMinutes === 'number' &&
@@ -237,10 +271,13 @@ export class AvailabilityService {
       throw new NotFoundException('Availability not found');
     }
 
+    const targetEmployeeId = dto.employeeId ?? existing.employeeId;
+    await this.ensureEmployeeActiveById(organisationId, targetEmployeeId);
+
     return this.prisma.availability.update({
       where: { id },
       data: {
-        employeeId: dto.employeeId ?? existing.employeeId,
+        employeeId: targetEmployeeId,
         date: dto.date ?? existing.date,
         weekday: dto.weekday ?? existing.weekday,
         startMinutes:
@@ -298,6 +335,7 @@ export class AvailabilityService {
       notes?: string;
     }>,
   ) {
+    await this.ensureEmployeeActiveById(organisationId, employeeId);
     // Delete existing availability for this employee in the date range
     // For weekday-based availability, we'll delete any with matching weekdays
     const weekdays = availabilities
@@ -1277,6 +1315,8 @@ export class AvailabilityService {
     if (!employee) {
       throw new NotFoundException('Employee not found');
     }
+
+    this.ensureEmployeeActive(employee);
 
     // Validate intervals before saving
     this.validateIntervals(availabilities);

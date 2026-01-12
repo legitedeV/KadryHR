@@ -14,12 +14,14 @@ import { InvitationsService } from '../auth/invitations.service';
 describe('EmployeesController audit logging (integration)', () => {
   let app: INestApplication;
   let auditService: { log: jest.Mock };
-  let employeesService: { create: jest.Mock };
+  let employeesService: { create: jest.Mock; deactivate: jest.Mock; activate: jest.Mock };
 
   beforeEach(async () => {
     auditService = { log: jest.fn().mockResolvedValue({ id: 'audit-1' }) };
     employeesService = {
       create: jest.fn().mockResolvedValue({ id: 'emp-1', firstName: 'Jan' }),
+      deactivate: jest.fn().mockResolvedValue({ id: 'emp-1', isActive: false }),
+      activate: jest.fn().mockResolvedValue({ id: 'emp-1', isActive: true }),
     };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -83,6 +85,38 @@ describe('EmployeesController audit logging (integration)', () => {
         organisationId: 'org-1',
         actorUserId: 'user-1',
         action: 'EMPLOYEE_CREATE',
+        entityType: 'employee',
+      }),
+    );
+  });
+
+  it('logs audit entry when deactivating an employee', async () => {
+    await request(app.getHttpServer())
+      .patch('/employees/emp-1/deactivate')
+      .expect(200);
+
+    expect(employeesService.deactivate).toHaveBeenCalledWith('org-1', 'emp-1');
+    expect(auditService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organisationId: 'org-1',
+        actorUserId: 'user-1',
+        action: 'EMPLOYEE_DEACTIVATE',
+        entityType: 'employee',
+      }),
+    );
+  });
+
+  it('logs audit entry when activating an employee', async () => {
+    await request(app.getHttpServer())
+      .patch('/employees/emp-1/activate')
+      .expect(200);
+
+    expect(employeesService.activate).toHaveBeenCalledWith('org-1', 'emp-1');
+    expect(auditService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organisationId: 'org-1',
+        actorUserId: 'user-1',
+        action: 'EMPLOYEE_ACTIVATE',
         entityType: 'employee',
       }),
     );
