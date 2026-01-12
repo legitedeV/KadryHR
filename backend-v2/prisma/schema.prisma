@@ -43,6 +43,7 @@ enum NotificationType {
   SHIFT_ASSIGNMENT
   SCHEDULE_PUBLISHED
   SWAP_STATUS
+  AVAILABILITY_SUBMITTED
   CUSTOM
 }
 
@@ -83,6 +84,13 @@ enum InvitationStatus {
   REVOKED
 }
 
+enum AvailabilitySubmissionStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  REOPENED
+}
+
 enum NewsletterSubscriptionStatus {
   PENDING_CONFIRMATION
   ACTIVE
@@ -113,6 +121,7 @@ model Organisation {
   locationAssignments LocationAssignment[]
   shifts      Shift[]
   availability Availability[]
+  availabilitySubmissions AvailabilitySubmission[]
   availabilityWindows AvailabilityWindow[]
   leaveRequests LeaveRequest[]
   leaveTypes  LeaveType[]
@@ -153,6 +162,8 @@ model User {
   createdCampaigns NotificationCampaign[]
   campaignRecipients NotificationRecipient[]
   scheduleTemplatesCreated ScheduleTemplate[] @relation("ScheduleTemplateCreatedBy")
+  availabilitySubmissions AvailabilitySubmission[] @relation("AvailabilitySubmissionSubmittedBy")
+  availabilityReviews AvailabilitySubmission[] @relation("AvailabilitySubmissionReviewedBy")
 
   @@index([organisationId])
 }
@@ -180,6 +191,7 @@ model Employee {
   contracts    EmploymentContract[]
   documents    EmployeeDocument[]
   leaveBalances LeaveBalance[]
+  availabilitySubmissions AvailabilitySubmission[]
 
   @@index([organisationId])
 }
@@ -373,6 +385,7 @@ model Availability {
   id             String    @id @default(uuid())
   organisationId String
   employeeId     String
+  availabilityWindowId String?
   date           DateTime?
   weekday        Weekday?
   startMinutes   Int
@@ -383,12 +396,15 @@ model Availability {
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  window       AvailabilityWindow? @relation(fields: [availabilityWindowId], references: [id], onDelete: SetNull)
 
   @@index([organisationId])
   @@index([employeeId])
   @@index([organisationId, employeeId])
   @@index([employeeId, weekday])
   @@index([employeeId, date])
+  @@index([availabilityWindowId])
+  @@index([availabilityWindowId, employeeId])
 }
 
 model LeaveRequest {
@@ -645,10 +661,38 @@ model AvailabilityWindow {
   updatedAt      DateTime @updatedAt
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  availability Availability[]
+  submissions AvailabilitySubmission[]
 
   @@index([organisationId])
   @@index([deadline])
   @@index([isOpen])
+}
+
+model AvailabilitySubmission {
+  id             String                      @id @default(uuid())
+  organisationId String
+  windowId       String
+  employeeId     String
+  status         AvailabilitySubmissionStatus @default(DRAFT)
+  submittedAt    DateTime?
+  submittedByUserId String?
+  reviewedAt     DateTime?
+  reviewedByUserId String?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  window       AvailabilityWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  submittedBy  User?        @relation("AvailabilitySubmissionSubmittedBy", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy   User?        @relation("AvailabilitySubmissionReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([windowId, employeeId])
+  @@index([organisationId])
+  @@index([windowId])
+  @@index([employeeId])
+  @@index([status])
 }
 
 // Task 2: Role Permissions for granular access control

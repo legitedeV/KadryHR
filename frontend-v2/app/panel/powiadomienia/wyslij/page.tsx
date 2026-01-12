@@ -23,6 +23,7 @@ const TYPE_OPTIONS: { value: NotificationType; label: string }[] = [
   { value: "SHIFT_ASSIGNMENT", label: "Grafik / zmiany" },
   { value: "SCHEDULE_PUBLISHED", label: "Opublikowany grafik" },
   { value: "SWAP_STATUS", label: "Status zamiany" },
+  { value: "AVAILABILITY_SUBMITTED", label: "Dyspozycja pracownika" },
 ];
 
 const CHANNEL_OPTIONS: { value: NotificationChannel; label: string }[] = [

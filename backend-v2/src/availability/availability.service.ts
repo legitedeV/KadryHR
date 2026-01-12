@@ -5,8 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, Weekday, Role } from '@prisma/client';
+import {
+  AvailabilitySubmissionStatus,
+  NotificationType,
+  Prisma,
+  Role,
+  Weekday,
+} from '@prisma/client';
 import { EmployeesService } from '../employees/employees.service';
+import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface EmployeeAvailabilitySummary {
   id: string;
@@ -17,6 +25,9 @@ export interface EmployeeAvailabilitySummary {
   locations: Array<{ id: string; name: string }>;
   availabilityCount: number;
   hasWeeklyDefault: boolean;
+  submissionStatus?: AvailabilitySubmissionStatus;
+  submittedAt?: Date | null;
+  reviewedAt?: Date | null;
 }
 
 export interface TeamAvailabilityQuery {
@@ -32,6 +43,8 @@ export class AvailabilityService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly employeesService: EmployeesService,
+    private readonly auditService: AuditService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -75,6 +88,29 @@ export class AvailabilityService {
           );
         }
       }
+    }
+  }
+
+  private ensureDateWithinWindow(date: Date, window: { startDate: Date; endDate: Date }) {
+    const start = new Date(window.startDate);
+    const end = new Date(window.endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    if (date < start || date > end) {
+      throw new BadRequestException('Podana data jest poza zakresem okna');
+    }
+  }
+
+  private ensureWindowOpen(window: {
+    isOpen: boolean;
+    deadline: Date;
+  }) {
+    const now = new Date();
+    if (!window.isOpen || window.deadline < now) {
+      throw new BadRequestException(
+        'Okno składania dyspozycji jest zamknięte',
+      );
     }
   }
 
@@ -246,6 +282,7 @@ export class AvailabilityService {
           organisationId,
           employeeId,
           weekday: { in: weekdays },
+          availabilityWindowId: null,
         },
       });
     }
@@ -257,6 +294,7 @@ export class AvailabilityService {
           data: {
             organisationId,
             employeeId,
+            availabilityWindowId: null,
             date: avail.date ?? null,
             weekday: (avail.weekday as Weekday) ?? null,
             startMinutes: avail.startMinutes,
@@ -426,6 +464,7 @@ export class AvailabilityService {
       where: {
         organisationId,
         employeeId: employee.id,
+        availabilityWindowId: null,
       },
       orderBy: [{ weekday: 'asc' }, { date: 'asc' }, { startMinutes: 'asc' }],
     });
@@ -463,6 +502,500 @@ export class AvailabilityService {
       employee.id,
       availabilities,
     );
+  }
+
+  // ==========================================
+  // AVAILABILITY WINDOW SUBMISSIONS
+  // ==========================================
+
+  async getWindowAvailabilityForEmployee(
+    organisationId: string,
+    userId: string,
+    windowId: string,
+  ) {
+    const window = await this.findWindowById(organisationId, windowId);
+    const employee = await this.findEmployeeByUserId(organisationId, userId);
+
+    const [submission, availability] = await Promise.all([
+      this.prisma.availabilitySubmission.findUnique({
+        where: {
+          windowId_employeeId: { windowId, employeeId: employee.id },
+        },
+      }),
+      this.prisma.availability.findMany({
+        where: {
+          organisationId,
+          employeeId: employee.id,
+          availabilityWindowId: windowId,
+        },
+        orderBy: [{ date: 'asc' }, { startMinutes: 'asc' }],
+      }),
+    ]);
+
+    return {
+      window,
+      employeeId: employee.id,
+      status: submission?.status ?? AvailabilitySubmissionStatus.DRAFT,
+      submittedAt: submission?.submittedAt ?? null,
+      reviewedAt: submission?.reviewedAt ?? null,
+      reviewedByUserId: submission?.reviewedByUserId ?? null,
+      availability,
+    };
+  }
+
+  async saveWindowAvailabilityForEmployee(
+    organisationId: string,
+    userId: string,
+    windowId: string,
+    availabilities: Array<{
+      date: string;
+      startMinutes: number;
+      endMinutes: number;
+      notes?: string;
+    }>,
+    submit?: boolean,
+  ) {
+    const window = await this.findWindowById(organisationId, windowId);
+    this.ensureWindowOpen(window);
+
+    if (submit && availabilities.length === 0) {
+      throw new BadRequestException(
+        'Nie można wysłać pustej dyspozycji.',
+      );
+    }
+
+    const employee = await this.findEmployeeByUserId(organisationId, userId);
+    const existing = await this.prisma.availabilitySubmission.findUnique({
+      where: {
+        windowId_employeeId: { windowId, employeeId: employee.id },
+      },
+    });
+
+    if (
+      existing &&
+      [AvailabilitySubmissionStatus.SUBMITTED, AvailabilitySubmissionStatus.REVIEWED].includes(
+        existing.status,
+      )
+    ) {
+      throw new BadRequestException(
+        'Dyspozycja została już wysłana i oczekuje na zatwierdzenie.',
+      );
+    }
+
+    this.validateIntervals(availabilities);
+
+    for (const entry of availabilities) {
+      const entryDate = new Date(entry.date);
+      if (Number.isNaN(entryDate.getTime())) {
+        throw new BadRequestException('Nieprawidłowa data dyspozycji.');
+      }
+      this.ensureDateWithinWindow(entryDate, window);
+    }
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      await tx.availability.deleteMany({
+        where: {
+          organisationId,
+          employeeId: employee.id,
+          availabilityWindowId: windowId,
+        },
+      });
+
+      const availability = await Promise.all(
+        availabilities.map((entry) =>
+          tx.availability.create({
+            data: {
+              organisationId,
+              employeeId: employee.id,
+              availabilityWindowId: windowId,
+              date: new Date(entry.date),
+              startMinutes: entry.startMinutes,
+              endMinutes: entry.endMinutes,
+              notes: entry.notes ?? null,
+            },
+          }),
+        ),
+      );
+
+      const status = submit
+        ? AvailabilitySubmissionStatus.SUBMITTED
+        : existing?.status ?? AvailabilitySubmissionStatus.DRAFT;
+
+      const submission = await tx.availabilitySubmission.upsert({
+        where: {
+          windowId_employeeId: { windowId, employeeId: employee.id },
+        },
+        update: {
+          status,
+          submittedAt: submit ? new Date() : existing?.submittedAt ?? null,
+          submittedByUserId: submit ? userId : existing?.submittedByUserId ?? null,
+          reviewedAt: submit ? null : existing?.reviewedAt ?? null,
+          reviewedByUserId: submit ? null : existing?.reviewedByUserId ?? null,
+        },
+        create: {
+          organisationId,
+          windowId,
+          employeeId: employee.id,
+          status,
+          submittedAt: submit ? new Date() : null,
+          submittedByUserId: submit ? userId : null,
+        },
+      });
+
+      return { availability, submission };
+    });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId: userId,
+      action: submit ? 'availability.submission.submitted' : 'availability.submission.saved',
+      entityType: 'availability_submission',
+      entityId: created.submission.id,
+      after: {
+        windowId,
+        employeeId: employee.id,
+        status: created.submission.status,
+      },
+    });
+
+    if (submit) {
+      const managers = await this.prisma.user.findMany({
+        where: {
+          organisationId,
+          role: { in: [Role.OWNER, Role.MANAGER, Role.ADMIN] },
+        },
+      });
+
+      await Promise.all(
+        managers.map((manager) =>
+          this.notificationsService.createNotification({
+            organisationId,
+            userId: manager.id,
+            type: NotificationType.AVAILABILITY_SUBMITTED,
+            title: 'Nowa dyspozycja',
+            body: `${employee.firstName} ${employee.lastName} przesłał(a) dyspozycję na ${window.title}.`,
+            data: {
+              windowId,
+              employeeId: employee.id,
+            },
+          }),
+        ),
+      );
+    }
+
+    return {
+      window,
+      employeeId: employee.id,
+      status: created.submission.status,
+      submittedAt: created.submission.submittedAt,
+      reviewedAt: created.submission.reviewedAt ?? null,
+      reviewedByUserId: created.submission.reviewedByUserId ?? null,
+      availability: created.availability,
+    };
+  }
+
+  async getWindowTeamAvailabilityStats(
+    organisationId: string,
+    windowId: string,
+  ) {
+    const [totalEmployees, submittedCount, reviewedCount] = await Promise.all([
+      this.prisma.employee.count({ where: { organisationId } }),
+      this.prisma.availabilitySubmission.count({
+        where: {
+          organisationId,
+          windowId,
+          status: AvailabilitySubmissionStatus.SUBMITTED,
+        },
+      }),
+      this.prisma.availabilitySubmission.count({
+        where: {
+          organisationId,
+          windowId,
+          status: AvailabilitySubmissionStatus.REVIEWED,
+        },
+      }),
+    ]);
+
+    return {
+      totalEmployees,
+      submittedCount,
+      reviewedCount,
+      pendingCount: totalEmployees - submittedCount - reviewedCount,
+    };
+  }
+
+  async getWindowTeamAvailability(
+    organisationId: string,
+    windowId: string,
+    query: TeamAvailabilityQuery = {},
+  ): Promise<{ data: EmployeeAvailabilitySummary[]; total: number }> {
+    const page = query.page ?? 1;
+    const perPage = query.perPage ?? 20;
+    const skip = (page - 1) * perPage;
+
+    const whereClause: Prisma.EmployeeWhereInput = { organisationId };
+
+    if (query.search) {
+      whereClause.OR = [
+        { firstName: { contains: query.search, mode: 'insensitive' } },
+        { lastName: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.locationId) {
+      whereClause.locations = {
+        some: { locationId: query.locationId },
+      };
+    }
+
+    if (query.role) {
+      whereClause.user = {
+        role: query.role as Role,
+      };
+    }
+
+    const [employees, total] = await Promise.all([
+      this.prisma.employee.findMany({
+        where: whereClause,
+        skip,
+        take: perPage,
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+        include: {
+          locations: {
+            include: {
+              location: { select: { id: true, name: true } },
+            },
+          },
+          availabilitySubmissions: {
+            where: { windowId },
+            select: {
+              status: true,
+              submittedAt: true,
+              reviewedAt: true,
+            },
+            take: 1,
+          },
+          user: {
+            select: { role: true },
+          },
+        },
+      }),
+      this.prisma.employee.count({ where: whereClause }),
+    ]);
+
+    const data: EmployeeAvailabilitySummary[] = employees.map((emp) => ({
+      id: emp.id,
+      firstName: emp.firstName,
+      lastName: emp.lastName,
+      email: emp.email,
+      position: emp.position,
+      locations: emp.locations.map((la) => ({
+        id: la.location.id,
+        name: la.location.name,
+      })),
+      availabilityCount: 0,
+      hasWeeklyDefault: false,
+      submissionStatus:
+        emp.availabilitySubmissions[0]?.status ??
+        AvailabilitySubmissionStatus.DRAFT,
+      submittedAt: emp.availabilitySubmissions[0]?.submittedAt ?? null,
+      reviewedAt: emp.availabilitySubmissions[0]?.reviewedAt ?? null,
+    }));
+
+    return { data, total };
+  }
+
+  async getWindowEmployeeAvailability(
+    organisationId: string,
+    windowId: string,
+    employeeId: string,
+  ) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+      include: {
+        locations: {
+          include: {
+            location: { select: { id: true, name: true } },
+          },
+        },
+        user: {
+          select: { id: true, role: true, email: true },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const [availability, submission] = await Promise.all([
+      this.prisma.availability.findMany({
+        where: {
+          organisationId,
+          employeeId,
+          availabilityWindowId: windowId,
+        },
+        orderBy: [{ date: 'asc' }, { startMinutes: 'asc' }],
+      }),
+      this.prisma.availabilitySubmission.findUnique({
+        where: {
+          windowId_employeeId: { windowId, employeeId },
+        },
+      }),
+    ]);
+
+    return {
+      employee: {
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        position: employee.position,
+        locations: employee.locations.map((la) => ({
+          id: la.location.id,
+          name: la.location.name,
+        })),
+        role: employee.user?.role ?? null,
+      },
+      status: submission?.status ?? AvailabilitySubmissionStatus.DRAFT,
+      submittedAt: submission?.submittedAt ?? null,
+      reviewedAt: submission?.reviewedAt ?? null,
+      availability,
+    };
+  }
+
+  async updateWindowAvailabilityForEmployee(
+    organisationId: string,
+    windowId: string,
+    employeeId: string,
+    availabilities: Array<{
+      date: string;
+      startMinutes: number;
+      endMinutes: number;
+      notes?: string;
+    }>,
+    actorUserId: string,
+  ) {
+    const window = await this.findWindowById(organisationId, windowId);
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, organisationId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    this.validateIntervals(availabilities);
+
+    for (const entry of availabilities) {
+      this.ensureDateWithinWindow(new Date(entry.date), window);
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.availability.deleteMany({
+        where: {
+          organisationId,
+          employeeId,
+          availabilityWindowId: windowId,
+        },
+      });
+
+      const availability = await Promise.all(
+        availabilities.map((entry) =>
+          tx.availability.create({
+            data: {
+              organisationId,
+              employeeId,
+              availabilityWindowId: windowId,
+              date: new Date(entry.date),
+              startMinutes: entry.startMinutes,
+              endMinutes: entry.endMinutes,
+              notes: entry.notes ?? null,
+            },
+          }),
+        ),
+      );
+
+      const submission = await tx.availabilitySubmission.upsert({
+        where: {
+          windowId_employeeId: { windowId, employeeId },
+        },
+        update: {
+          status: AvailabilitySubmissionStatus.REVIEWED,
+          reviewedAt: new Date(),
+          reviewedByUserId: actorUserId,
+        },
+        create: {
+          organisationId,
+          windowId,
+          employeeId,
+          status: AvailabilitySubmissionStatus.REVIEWED,
+          reviewedAt: new Date(),
+          reviewedByUserId: actorUserId,
+        },
+      });
+
+      return { availability, submission };
+    });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'availability.submission.admin_updated',
+      entityType: 'availability_submission',
+      entityId: result.submission.id,
+      after: { windowId, employeeId, status: result.submission.status },
+    });
+
+    return {
+      employeeId,
+      status: result.submission.status,
+      availability: result.availability,
+      reviewedAt: result.submission.reviewedAt ?? null,
+    };
+  }
+
+  async updateSubmissionStatus(
+    organisationId: string,
+    windowId: string,
+    employeeId: string,
+    status: AvailabilitySubmissionStatus,
+    actorUserId: string,
+  ) {
+    const submission = await this.prisma.availabilitySubmission.findUnique({
+      where: { windowId_employeeId: { windowId, employeeId } },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    const updated = await this.prisma.availabilitySubmission.update({
+      where: { id: submission.id },
+      data: {
+        status,
+        reviewedAt:
+          status === AvailabilitySubmissionStatus.REVIEWED ? new Date() : null,
+        reviewedByUserId:
+          status === AvailabilitySubmissionStatus.REVIEWED ? actorUserId : null,
+      },
+    });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'availability.submission.status_updated',
+      entityType: 'availability_submission',
+      entityId: updated.id,
+      after: {
+        status,
+        windowId,
+        employeeId,
+      },
+    });
+
+    return updated;
   }
 
   // ==========================================
@@ -518,6 +1051,7 @@ export class AvailabilityService {
             },
           },
           availability: {
+            where: { availabilityWindowId: null },
             select: { id: true, weekday: true },
           },
           user: {
@@ -571,6 +1105,7 @@ export class AvailabilityService {
       where: {
         organisationId,
         employeeId,
+        availabilityWindowId: null,
       },
       orderBy: [{ weekday: 'asc' }, { date: 'asc' }, { startMinutes: 'asc' }],
     });
@@ -635,18 +1170,27 @@ export class AvailabilityService {
         this.prisma.employee.count({
           where: {
             organisationId,
-            availability: { some: {} },
+            availability: { some: { availabilityWindowId: null } },
           },
         }),
         this.findActiveWindows(organisationId),
       ]);
+
+    const activeWindow = activeWindows[0] ?? null;
+    const activeWindowSubmissionStats = activeWindow
+      ? await this.getWindowTeamAvailabilityStats(
+          organisationId,
+          activeWindow.id,
+        )
+      : null;
 
     return {
       totalEmployees,
       employeesWithAvailability,
       employeesWithoutAvailability: totalEmployees - employeesWithAvailability,
       hasActiveWindow: activeWindows.length > 0,
-      activeWindow: activeWindows[0] ?? null,
+      activeWindow,
+      activeWindowSubmissionStats,
     };
   }
 }
