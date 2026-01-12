@@ -97,7 +97,10 @@ function formatMonthLabel(date: Date) {
 }
 
 function toDateKey(date: Date) {
-  return date.toISOString().split("T")[0];
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function addDays(date: Date, days: number) {
@@ -378,7 +381,7 @@ function MonthlyAvailabilityTab({
     const map: Record<string, Array<{ start: string; end: string }>> = {};
     (submission?.availability ?? []).forEach((entry) => {
       if (!entry.date) return;
-      const key = entry.date.split("T")[0];
+      const key = toDateKey(new Date(entry.date));
       if (!map[key]) map[key] = [];
       map[key].push({
         start: formatMinutes(entry.startMinutes),
@@ -563,10 +566,31 @@ function MonthlyAvailabilityTab({
         </div>
 
         {slotsForSelected.length === 0 ? (
-          <EmptyState
-            title="Brak dyspozycji"
-            description="Dodaj przedziały czasowe, aby zaznaczyć swoją dostępność."
-          />
+          <div className="space-y-4">
+            <EmptyState
+              title="Brak dyspozycji"
+              description="Dodaj przedziały czasowe, aby zaznaczyć swoją dostępność."
+            />
+            {!isLocked && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {AVAILABILITY_TEMPLATES.map((template) => (
+                    <button
+                      key={template.key}
+                      type="button"
+                      className="btn-secondary text-sm"
+                      onClick={() => addTemplateSlot(template.key)}
+                    >
+                      {template.label}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+                  + Dodaj przedział
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-2">
             {slotsForSelected.map((slot, idx) => (
@@ -600,7 +624,7 @@ function MonthlyAvailabilityTab({
           </div>
         )}
 
-        {!isLocked && (
+        {!isLocked && slotsForSelected.length > 0 && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               {AVAILABILITY_TEMPLATES.map((template) => (
