@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LeaveStatus, LeaveCategory, Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditService } from '../audit/audit.service';
+import { EmployeesService } from '../employees/employees.service';
 
 const mockPrisma = {
   leaveRequest: {
@@ -13,9 +14,6 @@ const mockPrisma = {
     count: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
-  },
-  employee: {
-    findFirst: jest.fn(),
   },
   leaveType: {
     findFirst: jest.fn(),
@@ -39,6 +37,10 @@ const mockLeaveBalanceService = {
   adjustBalance: jest.fn(),
 };
 
+const mockEmployeesService = {
+  ensureEmployeeProfile: jest.fn(),
+};
+
 describe('LeaveRequestsService', () => {
   let service: LeaveRequestsService;
 
@@ -50,12 +52,13 @@ describe('LeaveRequestsService', () => {
         { provide: NotificationsService, useValue: mockNotifications },
         { provide: AuditService, useValue: mockAudit },
         { provide: LeaveBalanceService, useValue: mockLeaveBalanceService },
+        { provide: EmployeesService, useValue: mockEmployeesService },
       ],
     }).compile();
 
     service = module.get(LeaveRequestsService);
     jest.clearAllMocks();
-    mockPrisma.employee.findFirst.mockResolvedValue({ id: 'emp-1' });
+    mockEmployeesService.ensureEmployeeProfile.mockResolvedValue({ id: 'emp-1' });
     mockNotifications.createNotification.mockResolvedValue(null);
     mockPrisma.leaveRequest.findMany.mockResolvedValue([]);
     mockPrisma.leaveRequest.count.mockResolvedValue(0);
@@ -95,7 +98,9 @@ describe('LeaveRequestsService', () => {
   });
 
   it('enforces employee scope for self-service users', async () => {
-    mockPrisma.employee.findFirst.mockResolvedValueOnce({ id: 'emp-self' });
+    mockEmployeesService.ensureEmployeeProfile.mockResolvedValueOnce({
+      id: 'emp-self',
+    });
 
     await service.create(
       'org-1',

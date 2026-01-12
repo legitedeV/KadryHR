@@ -6,17 +6,27 @@ import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import {
   apiGetMe,
   apiGetActiveAvailabilityWindows,
-  apiGetMyAvailability,
-  apiUpdateMyAvailability,
+  apiGetAvailabilityWindows,
   apiGetTeamAvailability,
   apiGetTeamAvailabilityStats,
   apiGetEmployeeAvailability,
   apiUpdateEmployeeAvailability,
+  apiGetMyWindowAvailability,
+  apiSaveMyWindowAvailability,
+  apiGetWindowTeamAvailability,
+  apiGetWindowTeamAvailabilityStats,
+  apiGetWindowEmployeeAvailability,
+  apiUpdateWindowEmployeeAvailability,
+  apiUpdateWindowSubmissionStatus,
   apiListLocations,
   apiCreateAvailabilityWindow,
+  apiCloseAvailabilityWindow,
   AvailabilityWindowRecord,
   AvailabilityRecord,
   AvailabilityInput,
+  AvailabilityWindowSubmissionResponse,
+  AvailabilitySubmissionStatus,
+  AvailabilityWindowTeamStats,
   User,
   Weekday,
   EmployeeAvailabilitySummary,
@@ -36,6 +46,13 @@ const WEEKDAYS: { key: Weekday; label: string; shortLabel: string }[] = [
   { key: "FRIDAY", label: "Piątek", shortLabel: "Pt" },
   { key: "SATURDAY", label: "Sobota", shortLabel: "So" },
   { key: "SUNDAY", label: "Niedziela", shortLabel: "Nd" },
+];
+
+const AVAILABILITY_TEMPLATES: Array<{ key: string; label: string; start: string; end: string }> = [
+  { key: "morning", label: "Rano", start: "05:45", end: "15:00" },
+  { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
+  { key: "afternoon", label: "Popołudnie", start: "14:15", end: "23:15" },
+  { key: "custom", label: "Wybór samodzielny", start: "08:00", end: "16:00" },
 ];
 
 interface DayAvailability {
@@ -58,6 +75,67 @@ function formatDateShort(date: string) {
     day: "numeric",
     month: "short",
   });
+}
+
+function getWindowStatus(window: AvailabilityWindowRecord) {
+  const now = new Date();
+  const deadline = new Date(window.deadline);
+  if (window.isOpen && !window.closedAt && deadline >= now) {
+    return { key: "active", label: "Aktywne", badge: "badge-success" };
+  }
+  if (window.closedAt || deadline < now) {
+    return { key: "closed", label: "Zakończone", badge: "badge-secondary" };
+  }
+  return { key: "upcoming", label: "Nadchodzące", badge: "badge-warning" };
+}
+
+function formatMonthLabel(date: Date) {
+  return date.toLocaleDateString("pl-PL", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function startOfWeek(date: Date) {
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  return addDays(date, diff);
+}
+
+function buildCalendarWeeks(startDate: Date, endDate: Date) {
+  const weeks: Array<Array<Date | null>> = [];
+  let cursor = startOfWeek(startDate);
+  const lastDate = new Date(endDate);
+  lastDate.setHours(23, 59, 59, 999);
+
+  while (cursor <= lastDate) {
+    const week: Array<Date | null> = [];
+    for (let i = 0; i < 7; i += 1) {
+      const current = addDays(cursor, i);
+      if (current < startDate || current > endDate) {
+        week.push(null);
+      } else {
+        week.push(new Date(current));
+      }
+    }
+    weeks.push(week);
+    cursor = addDays(cursor, 7);
+  }
+
+  return weeks;
 }
 
 function formatMinutes(minutes: number): string {
@@ -165,8 +243,7 @@ function WindowStatusCard({
             Składanie dyspozycji zamknięte
           </h3>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Aktualnie nie ma otwartego okresu składania dyspozycji.
-            {!adminView && " Możesz jednak edytować swoją domyślną dostępność."}
+            Aktualnie nie ma otwartego okna na składanie dyspozycji. Poczekaj na informację od pracodawcy.
           </p>
           {adminView && onOpenWindow && (
             <button
@@ -182,162 +259,414 @@ function WindowStatusCard({
   );
 }
 
-// My Availability Tab Component
-function MyAvailabilityTab({
-  formData,
-  setFormData,
+function AvailabilityWindowsList({
+  windows,
+  loading,
+  onRequestClose,
+}: {
+  windows: AvailabilityWindowRecord[];
+  loading: boolean;
+  onRequestClose: (windowId: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="card p-5 text-sm text-surface-500 dark:text-surface-400">
+        Ładowanie okien dyspozycji...
+      </div>
+    );
+  }
+
+  if (windows.length === 0) {
+    return (
+      <EmptyState
+        title="Brak okien dyspozycji"
+        description="Utwórz nowe okno, aby pracownicy mogli przesyłać dyspozycje."
+      />
+    );
+  }
+
+  return (
+    <div className="card overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-200/80 dark:border-surface-700/80">
+        <h3 className="font-semibold text-surface-900 dark:text-surface-100">
+          Okna dyspozycji
+        </h3>
+        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          Zarządzaj terminami składania dyspozycji w organizacji.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-surface-50 dark:bg-surface-800/60 text-surface-500 dark:text-surface-400">
+            <tr>
+              <th className="text-left font-semibold px-5 py-3">Nazwa okna / opis</th>
+              <th className="text-left font-semibold px-5 py-3">Okres od–do</th>
+              <th className="text-left font-semibold px-5 py-3">Status</th>
+              <th className="text-right font-semibold px-5 py-3">Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {windows.map((window) => {
+              const status = getWindowStatus(window);
+              return (
+                <tr
+                  key={window.id}
+                  className="border-t border-surface-200/80 dark:border-surface-700/80"
+                >
+                  <td className="px-5 py-4">
+                    <div className="font-medium text-surface-900 dark:text-surface-100">
+                      {window.title}
+                    </div>
+                    <div className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                      Termin składania: {formatDate(window.deadline)}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-surface-700 dark:text-surface-300">
+                    {formatDate(window.startDate)} – {formatDate(window.endDate)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`badge ${status.badge}`}>{status.label}</span>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    {status.key === "active" ? (
+                      <button
+                        onClick={() => onRequestClose(window.id)}
+                        className="btn-secondary text-sm"
+                      >
+                        Zamknij okno dyspozycji
+                      </button>
+                    ) : (
+                      <span className="text-xs text-surface-400 dark:text-surface-500">
+                        —
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function getSubmissionStatusLabel(status: AvailabilitySubmissionStatus) {
+  switch (status) {
+    case "SUBMITTED":
+      return { label: "Wysłano", tone: "badge-success" };
+    case "REVIEWED":
+      return { label: "Zweryfikowano", tone: "badge-info" };
+    case "REOPENED":
+      return { label: "Wymaga poprawek", tone: "badge-warning" };
+    default:
+      return { label: "Wersja robocza", tone: "badge-secondary" };
+  }
+}
+
+// Monthly Availability Tab Component
+function MonthlyAvailabilityTab({
+  window,
+  submission,
   saving,
   onSave,
 }: {
-  formData: DayAvailability[];
-  setFormData: React.Dispatch<React.SetStateAction<DayAvailability[]>>;
+  window: AvailabilityWindowRecord;
+  submission: AvailabilityWindowSubmissionResponse | null;
   saving: boolean;
-  onSave: () => Promise<void>;
+  onSave: (availabilities: AvailabilityInput[], submit: boolean) => Promise<void>;
 }) {
-  const addSlot = (weekday: Weekday) => {
-    setFormData((prev) =>
-      prev.map((day) => {
-        if (day.weekday !== weekday) return day;
-        return {
-          ...day,
-          slots: [...day.slots, { start: "08:00", end: "16:00" }],
-        };
-      })
-    );
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const initialData = useMemo(() => {
+    const map: Record<string, Array<{ start: string; end: string }>> = {};
+    (submission?.availability ?? []).forEach((entry) => {
+      if (!entry.date) return;
+      const key = toDateKey(new Date(entry.date));
+      if (!map[key]) map[key] = [];
+      map[key].push({
+        start: formatMinutes(entry.startMinutes),
+        end: formatMinutes(entry.endMinutes),
+      });
+    });
+    return map;
+  }, [submission]);
+
+  const [calendarData, setCalendarData] = useState(initialData);
+
+  useEffect(() => {
+    setCalendarData(initialData);
+  }, [initialData]);
+
+  const status = submission?.status ?? "DRAFT";
+  const statusMeta = getSubmissionStatusLabel(status);
+  const isLocked = status === "SUBMITTED" || status === "REVIEWED";
+
+  const startDate = useMemo(() => new Date(window.startDate), [window.startDate]);
+  const endDate = useMemo(() => new Date(window.endDate), [window.endDate]);
+  const weeks = useMemo(() => buildCalendarWeeks(startDate, endDate), [startDate, endDate]);
+
+  useEffect(() => {
+    if (!selectedDate && weeks[0]?.[0]) {
+      setSelectedDate(toDateKey(weeks[0][0] as Date));
+    }
+  }, [selectedDate, weeks]);
+
+  const slotsForSelected = selectedDate ? calendarData[selectedDate] ?? [] : [];
+
+  const updateSlot = (slotIndex: number, field: "start" | "end", value: string) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots[slotIndex] = { ...slots[slotIndex], [field]: value };
+      return { ...prev, [selectedDate]: slots };
+    });
   };
 
-  const updateSlot = (
-    weekday: Weekday,
-    slotIndex: number,
-    field: "start" | "end",
-    value: string
-  ) => {
-    setFormData((prev) =>
-      prev.map((day) => {
-        if (day.weekday !== weekday) return day;
-        const newSlots = [...day.slots];
-        newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
-        return { ...day, slots: newSlots };
-      })
-    );
+  const addSlot = () => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: "08:00", end: "16:00" });
+      return { ...prev, [selectedDate]: slots };
+    });
   };
 
-  const removeSlot = (weekday: Weekday, slotIndex: number) => {
-    setFormData((prev) =>
-      prev.map((day) => {
-        if (day.weekday !== weekday) return day;
-        return {
-          ...day,
-          slots: day.slots.filter((_, i) => i !== slotIndex),
-        };
-      })
-    );
+  const addTemplateSlot = (templateKey: string) => {
+    if (!selectedDate) return;
+    const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
+    if (!template) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: template.start, end: template.end });
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const removeSlot = (slotIndex: number) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = (prev[selectedDate] ?? []).filter((_, idx) => idx !== slotIndex);
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const handleSave = async (submit: boolean) => {
+    const availabilities: AvailabilityInput[] = [];
+    for (const [date, slots] of Object.entries(calendarData)) {
+      for (const slot of slots) {
+        const startMinutes = parseTime(slot.start);
+        const endMinutes = parseTime(slot.end);
+        if (startMinutes >= endMinutes) {
+          pushToast({
+            title: "Błąd",
+            description: "Godzina początkowa musi być przed godziną końcową.",
+            variant: "error",
+          });
+          return;
+        }
+        availabilities.push({
+          date,
+          startMinutes,
+          endMinutes,
+        });
+      }
+    }
+
+    if (submit && availabilities.length === 0) {
+      pushToast({
+        title: "Brak dyspozycji",
+        description: "Dodaj przynajmniej jeden przedział przed wysłaniem.",
+        variant: "warning",
+      });
+      return;
+    }
+
+    await onSave(availabilities, submit);
   };
 
   return (
-    <div className="card p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+    <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div className="card p-4 space-y-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="section-label">Miesięczna dyspozycja</p>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              {window.title} · {formatMonthLabel(startDate)}
+            </h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+              Zakres: {formatDateShort(window.startDate)} – {formatDateShort(window.endDate)} · Termin do{" "}
+              {formatDate(window.deadline)}
+            </p>
+          </div>
+          <span className={`badge ${statusMeta.tone}`}>{statusMeta.label}</span>
         </div>
+
+        <div className="grid gap-2">
+          <div className="grid grid-cols-7 text-xs text-surface-500 dark:text-surface-400">
+            {WEEKDAYS.map((day) => (
+              <span key={day.key} className="text-center py-1">
+                {day.shortLabel}
+              </span>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {weeks.map((week, weekIndex) => (
+              <div key={weekIndex} className="grid grid-cols-7 gap-2">
+                {week.map((day, dayIndex) => {
+                  if (!day) {
+                    return <div key={dayIndex} className="h-20 rounded-xl bg-surface-50 dark:bg-surface-900/30" />;
+                  }
+                  const key = toDateKey(day);
+                  const slots = calendarData[key] ?? [];
+                  const isSelected = selectedDate === key;
+                  return (
+                    <button
+                      key={dayIndex}
+                      type="button"
+                      onClick={() => setSelectedDate(key)}
+                      className={`h-20 rounded-xl border text-left px-2 py-2 transition-colors ${
+                        isSelected
+                          ? "border-brand-500 bg-brand-50/60 dark:bg-brand-900/20"
+                          : "border-surface-200/80 dark:border-surface-700/80 hover:border-brand-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                          {day.getDate()}
+                        </span>
+                        {slots.length > 0 && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            {slots.length} slot
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
+                        {slots.length === 0
+                          ? "Brak dyspozycji"
+                          : slots.map((slot) => `${slot.start}-${slot.end}`).join(", ")}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-4 space-y-4">
         <div>
-          <p className="section-label">Preferowane godziny pracy</p>
-          <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-            Domyślna tygodniowa dostępność
+          <p className="section-label">Wybrany dzień</p>
+          <h4 className="text-base font-semibold text-surface-900 dark:text-surface-50">
+            {selectedDate ? formatDate(selectedDate) : "Wybierz dzień z kalendarza"}
+          </h4>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+            Dodaj dostępne godziny dla wybranego dnia.
           </p>
         </div>
-      </div>
 
-      <div className="space-y-3">
-        {WEEKDAYS.map(({ key, label }) => {
-          const dayData = formData.find((d) => d.weekday === key);
-          const slots = dayData?.slots || [];
-
-          return (
-            <div
-              key={key}
-              className="rounded-xl border border-surface-200/80 dark:border-surface-700/80 p-4 transition-colors hover:border-brand-200 dark:hover:border-brand-800/50"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-surface-900 dark:text-surface-50">
-                  {label}
-                </span>
-                <button
-                  type="button"
-                  className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium flex items-center gap-1"
-                  onClick={() => addSlot(key)}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Dodaj przedział
-                </button>
-              </div>
-
-              {slots.length === 0 ? (
-                <div className="text-sm text-surface-400 dark:text-surface-500 py-3 px-4 bg-surface-50/50 dark:bg-surface-800/30 rounded-lg text-center">
-                  Brak podanej dostępności
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {slots.map((slot, slotIndex) => (
-                    <div
-                      key={slotIndex}
-                      className="flex items-center gap-2 bg-surface-50 dark:bg-surface-800/50 rounded-lg px-3 py-2 border border-surface-200/80 dark:border-surface-700/80"
+        {slotsForSelected.length === 0 ? (
+          <div className="space-y-4">
+            <EmptyState
+              title="Brak dyspozycji"
+              description="Dodaj przedziały czasowe, aby zaznaczyć swoją dostępność."
+            />
+            {!isLocked && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {AVAILABILITY_TEMPLATES.map((template) => (
+                    <button
+                      key={template.key}
+                      type="button"
+                      className="btn-secondary text-sm"
+                      onClick={() => addTemplateSlot(template.key)}
                     >
-                      <input
-                        type="time"
-                        className="input py-1 px-2 text-sm w-24"
-                        value={slot.start}
-                        onChange={(e) => updateSlot(key, slotIndex, "start", e.target.value)}
-                      />
-                      <span className="text-surface-400 dark:text-surface-500">–</span>
-                      <input
-                        type="time"
-                        className="input py-1 px-2 text-sm w-24"
-                        value={slot.end}
-                        onChange={(e) => updateSlot(key, slotIndex, "end", e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                        onClick={() => removeSlot(key, slotIndex)}
-                        aria-label="Usuń przedział"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                      {template.label}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+                  + Dodaj przedział
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {slotsForSelected.map((slot, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="time"
+                  className="input py-1 px-2 text-sm w-24"
+                  value={slot.start}
+                  onChange={(e) => updateSlot(idx, "start", e.target.value)}
+                  disabled={isLocked}
+                />
+                <span className="text-surface-400">–</span>
+                <input
+                  type="time"
+                  className="input py-1 px-2 text-sm w-24"
+                  value={slot.end}
+                  onChange={(e) => updateSlot(idx, "end", e.target.value)}
+                  disabled={isLocked}
+                />
+                {!isLocked && (
+                  <button
+                    type="button"
+                    className="text-rose-500 hover:text-rose-600 p-1"
+                    onClick={() => removeSlot(idx)}
+                  >
+                    Usuń
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-      <div className="flex justify-end mt-6 pt-4 border-t border-surface-200/80 dark:border-surface-700/80">
-        <button className="btn-primary" onClick={onSave} disabled={saving}>
-          {saving ? (
-            <>
-              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Zapisywanie...
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              Zapisz dyspozycje
-            </>
+        {!isLocked && slotsForSelected.length > 0 && (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABILITY_TEMPLATES.map((template) => (
+                <button
+                  key={template.key}
+                  type="button"
+                  className="btn-secondary text-sm"
+                  onClick={() => addTemplateSlot(template.key)}
+                >
+                  {template.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+              + Dodaj przedział
+            </button>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => handleSave(true)}
+            disabled={saving || isLocked}
+          >
+            {saving ? "Wysyłanie..." : "Wyślij dyspozycję"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => handleSave(false)}
+            disabled={saving || isLocked}
+          >
+            {saving ? "Zapisywanie..." : "Zapisz wersję roboczą"}
+          </button>
+          {isLocked && (
+            <p className="text-xs text-surface-500 dark:text-surface-400">
+              Dyspozycja została wysłana. Skontaktuj się z managerem, aby ją odblokować.
+            </p>
           )}
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -576,6 +905,134 @@ function TeamAvailabilityTab({
   );
 }
 
+function WindowTeamAvailabilityTab({
+  loading,
+  window,
+  stats,
+  employees,
+  onSelectEmployee,
+  onUpdateStatus,
+}: {
+  loading: boolean;
+  window: AvailabilityWindowRecord;
+  stats: AvailabilityWindowTeamStats | null;
+  employees: EmployeeAvailabilitySummary[];
+  onSelectEmployee: (employeeId: string) => void;
+  onUpdateStatus: (employeeId: string, status: AvailabilitySubmissionStatus) => void;
+}) {
+  if (loading) {
+    return <TeamTableSkeleton />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="card p-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="section-label">Status dyspozycji</p>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              {window.title}
+            </h3>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <div>
+              <p className="text-surface-400">Wysłane</p>
+              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                {stats?.submittedCount ?? "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-surface-400">Zweryfikowane</p>
+              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                {stats?.reviewedCount ?? "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-surface-400">Brak</p>
+              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+                {stats?.pendingCount ?? "-"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-4">
+        {employees.length === 0 ? (
+          <EmptyState
+            title="Brak pracowników"
+            description="Dodaj pracowników, aby zobaczyć ich dyspozycje."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-xs text-surface-400 uppercase border-b border-surface-200/80 dark:border-surface-700/80">
+                  <th className="text-left py-2">Pracownik</th>
+                  <th className="text-left py-2">Status</th>
+                  <th className="text-left py-2">Wysłano</th>
+                  <th className="text-right py-2">Akcje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((employee) => {
+                  const status = employee.submissionStatus ?? "DRAFT";
+                  const meta = getSubmissionStatusLabel(status);
+                  return (
+                    <tr key={employee.id} className="border-b border-surface-100/60 dark:border-surface-800/60">
+                      <td className="py-3">
+                        <p className="font-medium text-surface-900 dark:text-surface-50">
+                          {employee.firstName} {employee.lastName}
+                        </p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                          {employee.position || employee.email || "-"}
+                        </p>
+                      </td>
+                      <td className="py-3">
+                        <span className={`badge ${meta.tone}`}>{meta.label}</span>
+                      </td>
+                      <td className="py-3 text-surface-500">
+                        {employee.submittedAt ? formatDateShort(employee.submittedAt) : "—"}
+                      </td>
+                      <td className="py-3 text-right space-x-2">
+                        <button
+                          type="button"
+                          className="text-brand-600 hover:text-brand-700 text-xs font-medium"
+                          onClick={() => onSelectEmployee(employee.id)}
+                        >
+                          Podgląd
+                        </button>
+                        {status === "SUBMITTED" && (
+                          <button
+                            type="button"
+                            className="text-emerald-600 hover:text-emerald-700 text-xs font-medium"
+                            onClick={() => onUpdateStatus(employee.id, "REVIEWED")}
+                          >
+                            Zweryfikuj
+                          </button>
+                        )}
+                        {(status === "SUBMITTED" || status === "REVIEWED") && (
+                          <button
+                            type="button"
+                            className="text-amber-600 hover:text-amber-700 text-xs font-medium"
+                            onClick={() => onUpdateStatus(employee.id, "REOPENED")}
+                          >
+                            Otwórz ponownie
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Employee Detail Side Panel
 function EmployeeDetailPanel({
   open,
@@ -761,6 +1218,237 @@ function EmployeeDetailPanel({
   );
 }
 
+function WindowEmployeeDetailPanel({
+  open,
+  employee,
+  availability,
+  window,
+  status,
+  loading,
+  saving,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  employee: EmployeeAvailabilityDetailResponse["employee"] | null;
+  availability: AvailabilityRecord[];
+  window: AvailabilityWindowRecord | null;
+  status: AvailabilitySubmissionStatus | null;
+  loading: boolean;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (availabilities: AvailabilityInput[]) => Promise<void>;
+}) {
+  const initialData = useMemo(() => {
+    const map: Record<string, Array<{ start: string; end: string }>> = {};
+    availability.forEach((entry) => {
+      if (!entry.date) return;
+      const key = entry.date.split("T")[0];
+      if (!map[key]) map[key] = [];
+      map[key].push({
+        start: formatMinutes(entry.startMinutes),
+        end: formatMinutes(entry.endMinutes),
+      });
+    });
+    return map;
+  }, [availability]);
+
+  const [calendarData, setCalendarData] = useState(initialData);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCalendarData(initialData);
+  }, [initialData]);
+
+  const windowStart = window ? new Date(window.startDate) : null;
+  const windowEnd = window ? new Date(window.endDate) : null;
+  const weeks = useMemo(() => {
+    if (!windowStart || !windowEnd) return [];
+    return buildCalendarWeeks(windowStart, windowEnd);
+  }, [windowStart, windowEnd]);
+
+  useEffect(() => {
+    if (!selectedDate && weeks[0]?.[0]) {
+      setSelectedDate(toDateKey(weeks[0][0] as Date));
+    }
+  }, [selectedDate, weeks]);
+
+  const slotsForSelected = selectedDate ? calendarData[selectedDate] ?? [] : [];
+
+  const updateSlot = (slotIndex: number, field: "start" | "end", value: string) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots[slotIndex] = { ...slots[slotIndex], [field]: value };
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const addSlot = () => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: "08:00", end: "16:00" });
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const removeSlot = (slotIndex: number) => {
+    if (!selectedDate) return;
+    setCalendarData((prev) => {
+      const slots = (prev[selectedDate] ?? []).filter((_, idx) => idx !== slotIndex);
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const handleSave = async () => {
+    const availabilities: AvailabilityInput[] = [];
+    for (const [date, slots] of Object.entries(calendarData)) {
+      for (const slot of slots) {
+        const startMinutes = parseTime(slot.start);
+        const endMinutes = parseTime(slot.end);
+        if (startMinutes >= endMinutes) {
+          pushToast({
+            title: "Błąd",
+            description: "Godzina początkowa musi być przed godziną końcową.",
+            variant: "error",
+          });
+          return;
+        }
+        availabilities.push({ date, startMinutes, endMinutes });
+      }
+    }
+
+    await onSave(availabilities);
+  };
+
+  if (!open) return null;
+
+  const statusMeta = status ? getSubmissionStatusLabel(status) : null;
+
+  return (
+    <Modal
+      open={open}
+      title={employee ? `${employee.firstName} ${employee.lastName}` : "Ładowanie..."}
+      description={employee?.position || employee?.email || undefined}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn-secondary" onClick={onClose}>
+            Anuluj
+          </button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
+            {saving ? "Zapisywanie..." : "Zapisz zmiany"}
+          </button>
+        </>
+      }
+    >
+      {loading ? (
+        <AvailabilitySkeleton />
+      ) : (
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+          {statusMeta && <span className={`badge ${statusMeta.tone}`}>{statusMeta.label}</span>}
+          <div className="grid gap-2">
+            <div className="grid grid-cols-7 text-xs text-surface-500 dark:text-surface-400">
+              {WEEKDAYS.map((day) => (
+                <span key={day.key} className="text-center py-1">
+                  {day.shortLabel}
+                </span>
+              ))}
+            </div>
+            <div className="space-y-2">
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-cols-7 gap-2">
+                  {week.map((day, dayIndex) => {
+                    if (!day) {
+                      return <div key={dayIndex} className="h-16 rounded-lg bg-surface-50 dark:bg-surface-900/30" />;
+                    }
+                    const key = toDateKey(day);
+                    const slots = calendarData[key] ?? [];
+                    const isSelected = selectedDate === key;
+                    return (
+                      <button
+                        key={dayIndex}
+                        type="button"
+                        onClick={() => setSelectedDate(key)}
+                        className={`h-16 rounded-lg border text-left px-2 py-2 transition-colors ${
+                          isSelected
+                            ? "border-brand-500 bg-brand-50/60 dark:bg-brand-900/20"
+                            : "border-surface-200/80 dark:border-surface-700/80 hover:border-brand-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-surface-900 dark:text-surface-50">
+                            {day.getDate()}
+                          </span>
+                          {slots.length > 0 && (
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                              {slots.length}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+              {selectedDate ? formatDate(selectedDate) : "Wybierz dzień"}
+            </h4>
+            {slotsForSelected.length === 0 ? (
+              <p className="text-xs text-surface-500">Brak dyspozycji</p>
+            ) : (
+              slotsForSelected.map((slot, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    className="input py-1 px-2 text-sm w-24"
+                    value={slot.start}
+                    onChange={(e) => updateSlot(idx, "start", e.target.value)}
+                  />
+                  <span className="text-surface-400">–</span>
+                  <input
+                    type="time"
+                    className="input py-1 px-2 text-sm w-24"
+                    value={slot.end}
+                    onChange={(e) => updateSlot(idx, "end", e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="text-rose-500 hover:text-rose-600 p-1"
+                    onClick={() => removeSlot(idx)}
+                  >
+                    Usuń
+                  </button>
+                </div>
+              ))
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABILITY_TEMPLATES.map((template) => (
+                <button
+                  key={template.key}
+                  type="button"
+                  className="btn-secondary text-sm"
+                  onClick={() => addTemplateSlot(template.key)}
+                >
+                  {template.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+              + Dodaj przedział
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 // Create Window Modal
 function CreateWindowModal({
   open,
@@ -860,25 +1548,33 @@ export default function DyspozycjePage() {
   const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("my");
-  const [windows, setWindows] = useState<AvailabilityWindowRecord[]>([]);
+  const [activeWindows, setActiveWindows] = useState<AvailabilityWindowRecord[]>([]);
+  const [allWindows, setAllWindows] = useState<AvailabilityWindowRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // My availability state
-  const [formData, setFormData] = useState<DayAvailability[]>(
-    WEEKDAYS.map((w) => ({ weekday: w.key, slots: [] }))
-  );
+  const [windowSubmission, setWindowSubmission] = useState<AvailabilityWindowSubmissionResponse | null>(null);
+  const [windowsLoading, setWindowsLoading] = useState(false);
+  const [closeWindowId, setCloseWindowId] = useState<string | null>(null);
+  const [closingWindow, setClosingWindow] = useState(false);
 
   // Team availability state
   const [teamStats, setTeamStats] = useState<TeamAvailabilityStatsResponse | null>(null);
+  const [windowTeamStats, setWindowTeamStats] = useState<AvailabilityWindowTeamStats | null>(null);
   const [employees, setEmployees] = useState<EmployeeAvailabilitySummary[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
   const [filters, setFilters] = useState({ search: "", locationId: "", role: "" });
 
   // Employee detail panel state
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeAvailabilityDetailResponse | null>(null);
+  const [selectedWindowEmployee, setSelectedWindowEmployee] = useState<
+    (EmployeeAvailabilityDetailResponse & {
+      status: AvailabilitySubmissionStatus;
+      submittedAt?: string | null;
+      reviewedAt?: string | null;
+    }) | null
+  >(null);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeSaving, setEmployeeSaving] = useState(false);
 
@@ -886,7 +1582,7 @@ export default function DyspozycjePage() {
   const [createWindowOpen, setCreateWindowOpen] = useState(false);
   const [creatingWindow, setCreatingWindow] = useState(false);
 
-  const activeWindow = windows.length > 0 ? windows[0] : null;
+  const activeWindow = activeWindows.length > 0 ? activeWindows[0] : null;
   const userIsAdmin = user ? isAdmin(user.role) : false;
 
   // Initial data load
@@ -901,28 +1597,51 @@ export default function DyspozycjePage() {
     Promise.all([
       apiGetMe(),
       apiGetActiveAvailabilityWindows(),
-      apiGetMyAvailability(),
       apiListLocations(),
     ])
-      .then(([userData, windowsData, myAvailData, locationsData]) => {
+      .then(async ([userData, windowsData, locationsData]) => {
         if (cancelled) return;
 
         setUser(userData);
-        setWindows(windowsData);
+        setActiveWindows(windowsData);
         setLocations(locationsData);
 
-        // Initialize form with existing availability
-        const newFormData = WEEKDAYS.map((w) => {
-          const dayAvail = myAvailData.availability.filter((a) => a.weekday === w.key);
-          return {
-            weekday: w.key,
-            slots: dayAvail.map((a) => ({
-              start: formatMinutes(a.startMinutes),
-              end: formatMinutes(a.endMinutes),
-            })),
-          };
-        });
-        setFormData(newFormData);
+        if (windowsData[0]) {
+          try {
+            const submission = await apiGetMyWindowAvailability(windowsData[0].id);
+            if (!cancelled) {
+              setWindowSubmission(submission);
+            }
+          } catch (submissionError) {
+            console.error(submissionError);
+            if (!cancelled) {
+              setWindowSubmission(null);
+            }
+          }
+        }
+
+        if (isAdmin(userData.role)) {
+          setWindowsLoading(true);
+          try {
+            const allWindowsData = await apiGetAvailabilityWindows();
+            if (!cancelled) {
+              setAllWindows(allWindowsData);
+            }
+          } catch (err) {
+            console.error(err);
+            if (!cancelled) {
+              pushToast({
+                title: "Błąd",
+                description: "Nie udało się pobrać listy okien dyspozycji",
+                variant: "error",
+              });
+            }
+          } finally {
+            if (!cancelled) {
+              setWindowsLoading(false);
+            }
+          }
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -942,20 +1661,84 @@ export default function DyspozycjePage() {
 
   // Load team data when switching to team tab
   useEffect(() => {
-    if (activeTab === "team" && userIsAdmin && !teamStats) {
+    if (activeTab === "team" && userIsAdmin) {
       loadTeamData();
     }
-  }, [activeTab, userIsAdmin, teamStats]);
+  }, [activeTab, userIsAdmin, activeWindow]);
+
+  useEffect(() => {
+    if (!activeWindow) {
+      setWindowSubmission(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    apiGetMyWindowAvailability(activeWindow.id)
+      .then((data) => {
+        if (!cancelled) {
+          setWindowSubmission(data);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelled) {
+          setWindowSubmission(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWindow?.id]);
+
+  const refreshWindows = useCallback(async () => {
+    try {
+      if (userIsAdmin) {
+        setWindowsLoading(true);
+      }
+      const [active, all] = await Promise.all([
+        apiGetActiveAvailabilityWindows(),
+        userIsAdmin ? apiGetAvailabilityWindows() : Promise.resolve([]),
+      ]);
+      setActiveWindows(active);
+      if (userIsAdmin) {
+        setAllWindows(all);
+      }
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się odświeżyć okien dyspozycji",
+        variant: "error",
+      });
+    } finally {
+      if (userIsAdmin) {
+        setWindowsLoading(false);
+      }
+    }
+  }, [userIsAdmin]);
 
   const loadTeamData = async () => {
     setTeamLoading(true);
     try {
-      const [statsData, employeesData] = await Promise.all([
-        apiGetTeamAvailabilityStats(),
-        apiGetTeamAvailability({ page: 1, perPage: 50 }),
-      ]);
-      setTeamStats(statsData);
-      setEmployees(employeesData.data);
+      if (activeWindow) {
+        const [statsData, employeesData] = await Promise.all([
+          apiGetWindowTeamAvailabilityStats(activeWindow.id),
+          apiGetWindowTeamAvailability(activeWindow.id, { page: 1, perPage: 50 }),
+        ]);
+        setWindowTeamStats(statsData);
+        setTeamStats(null);
+        setEmployees(employeesData.data);
+      } else {
+        const [statsData, employeesData] = await Promise.all([
+          apiGetTeamAvailabilityStats(),
+          apiGetTeamAvailability({ page: 1, perPage: 50 }),
+        ]);
+        setTeamStats(statsData);
+        setWindowTeamStats(null);
+        setEmployees(employeesData.data);
+      }
     } catch (err) {
       console.error(err);
       pushToast({ title: "Błąd", description: "Nie udało się pobrać danych zespołu", variant: "error" });
@@ -968,20 +1751,31 @@ export default function DyspozycjePage() {
     if (!userIsAdmin) return;
     setTeamLoading(true);
     try {
-      const data = await apiGetTeamAvailability({
-        search: filters.search || undefined,
-        locationId: filters.locationId || undefined,
-        role: filters.role || undefined,
-        page: 1,
-        perPage: 50,
-      });
-      setEmployees(data.data);
+      if (activeWindow) {
+        const data = await apiGetWindowTeamAvailability(activeWindow.id, {
+          search: filters.search || undefined,
+          locationId: filters.locationId || undefined,
+          role: filters.role || undefined,
+          page: 1,
+          perPage: 50,
+        });
+        setEmployees(data.data);
+      } else {
+        const data = await apiGetTeamAvailability({
+          search: filters.search || undefined,
+          locationId: filters.locationId || undefined,
+          role: filters.role || undefined,
+          page: 1,
+          perPage: 50,
+        });
+        setEmployees(data.data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setTeamLoading(false);
     }
-  }, [userIsAdmin, filters.search, filters.locationId, filters.role]);
+  }, [userIsAdmin, filters.search, filters.locationId, filters.role, activeWindow]);
 
   // Reload team employees when filters change
   useEffect(() => {
@@ -990,57 +1784,49 @@ export default function DyspozycjePage() {
     }
   }, [activeTab, userIsAdmin, loadTeamEmployees]);
 
-  const handleSaveMyAvailability = useCallback(async () => {
-    // Validate slots
-    for (const day of formData) {
-      for (const slot of day.slots) {
-        const startMins = parseTime(slot.start);
-        const endMins = parseTime(slot.end);
-        if (startMins >= endMins) {
-          pushToast({
-            title: "Błąd",
-            description: `Godzina początkowa musi być przed godziną końcową (${WEEKDAYS.find((w) => w.key === day.weekday)?.label})`,
-            variant: "error",
-          });
-          return;
-        }
+  const handleSaveWindowAvailability = useCallback(
+    async (availabilities: AvailabilityInput[], submit: boolean) => {
+      if (!activeWindow) return;
+      setSaving(true);
+      try {
+        const data = await apiSaveMyWindowAvailability(activeWindow.id, {
+          availabilities,
+          submit,
+        });
+        setWindowSubmission(data);
+        pushToast({
+          title: "Sukces",
+          description: submit
+            ? "Dyspozycja została wysłana."
+            : "Dyspozycja została zapisana jako wersja robocza.",
+          variant: "success",
+        });
+      } catch (err) {
+        console.error(err);
+        pushToast({
+          title: "Błąd",
+          description: "Nie udało się zapisać dyspozycji",
+          variant: "error",
+        });
+      } finally {
+        setSaving(false);
       }
-    }
-
-    const availabilities: AvailabilityInput[] = formData.flatMap((day) =>
-      day.slots.map((slot) => ({
-        weekday: day.weekday,
-        startMinutes: parseTime(slot.start),
-        endMinutes: parseTime(slot.end),
-      }))
-    );
-
-    setSaving(true);
-    try {
-      await apiUpdateMyAvailability(availabilities);
-      pushToast({
-        title: "Sukces",
-        description: "Dyspozycje zostały zapisane",
-        variant: "success",
-      });
-    } catch (err) {
-      console.error(err);
-      pushToast({
-        title: "Błąd",
-        description: "Nie udało się zapisać dyspozycji",
-        variant: "error",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [formData]);
+    },
+    [activeWindow],
+  );
 
   const handleEmployeeClick = async (employeeId: string) => {
     setEmployeeLoading(true);
     setSelectedEmployee(null);
+    setSelectedWindowEmployee(null);
     try {
-      const data = await apiGetEmployeeAvailability(employeeId);
-      setSelectedEmployee(data);
+      if (activeWindow) {
+        const data = await apiGetWindowEmployeeAvailability(activeWindow.id, employeeId);
+        setSelectedWindowEmployee(data);
+      } else {
+        const data = await apiGetEmployeeAvailability(employeeId);
+        setSelectedEmployee(data);
+      }
     } catch (err) {
       console.error(err);
       pushToast({ title: "Błąd", description: "Nie udało się pobrać danych pracownika", variant: "error" });
@@ -1050,19 +1836,53 @@ export default function DyspozycjePage() {
   };
 
   const handleSaveEmployeeAvailability = async (availabilities: AvailabilityInput[]) => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee && !selectedWindowEmployee) return;
     setEmployeeSaving(true);
     try {
-      await apiUpdateEmployeeAvailability(selectedEmployee.employee.id, availabilities);
-      pushToast({ title: "Sukces", description: "Dyspozycje pracownika zostały zapisane", variant: "success" });
-      setSelectedEmployee(null);
-      // Reload team data
+      if (activeWindow && selectedWindowEmployee) {
+        await apiUpdateWindowEmployeeAvailability(activeWindow.id, selectedWindowEmployee.employee.id, {
+          availabilities,
+        });
+        pushToast({
+          title: "Sukces",
+          description: "Dyspozycje pracownika zostały zapisane i oznaczone jako zweryfikowane",
+          variant: "success",
+        });
+        setSelectedWindowEmployee(null);
+      } else if (selectedEmployee) {
+        await apiUpdateEmployeeAvailability(selectedEmployee.employee.id, availabilities);
+        pushToast({ title: "Sukces", description: "Dyspozycje pracownika zostały zapisane", variant: "success" });
+        setSelectedEmployee(null);
+      }
       loadTeamData();
     } catch (err) {
       console.error(err);
       pushToast({ title: "Błąd", description: "Nie udało się zapisać dyspozycji", variant: "error" });
     } finally {
       setEmployeeSaving(false);
+    }
+  };
+
+  const handleUpdateSubmissionStatus = async (
+    employeeId: string,
+    status: AvailabilitySubmissionStatus,
+  ) => {
+    if (!activeWindow) return;
+    try {
+      await apiUpdateWindowSubmissionStatus(activeWindow.id, employeeId, status);
+      pushToast({
+        title: "Zaktualizowano",
+        description: "Status dyspozycji został zmieniony.",
+        variant: "success",
+      });
+      loadTeamData();
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się zmienić statusu.",
+        variant: "error",
+      });
     }
   };
 
@@ -1076,7 +1896,9 @@ export default function DyspozycjePage() {
         deadline: new Date(data.deadline).toISOString(),
         isOpen: true,
       });
-      setWindows([newWindow, ...windows]);
+      setActiveWindows([newWindow]);
+      setAllWindows([newWindow, ...allWindows]);
+      setWindowSubmission(null);
       setCreateWindowOpen(false);
       pushToast({ title: "Sukces", description: "Okno składania dyspozycji zostało utworzone", variant: "success" });
     } catch (err) {
@@ -1084,6 +1906,32 @@ export default function DyspozycjePage() {
       pushToast({ title: "Błąd", description: "Nie udało się utworzyć okna", variant: "error" });
     } finally {
       setCreatingWindow(false);
+    }
+  };
+
+  const windowToClose = closeWindowId ? allWindows.find((window) => window.id === closeWindowId) ?? null : null;
+
+  const handleCloseWindow = async () => {
+    if (!windowToClose) return;
+    setClosingWindow(true);
+    try {
+      await apiCloseAvailabilityWindow(windowToClose.id);
+      pushToast({
+        title: "Zamknięto okno",
+        description: "Okno dyspozycji zostało zamknięte.",
+        variant: "success",
+      });
+      await refreshWindows();
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się zamknąć okna dyspozycji",
+        variant: "error",
+      });
+    } finally {
+      setClosingWindow(false);
+      setCloseWindowId(null);
     }
   };
 
@@ -1113,13 +1961,11 @@ export default function DyspozycjePage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-base font-bold text-surface-900 dark:text-surface-50">
-            Dyspozycje
-          </h1>
+          <h1 className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Dyspozycje</h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
             Zarządzaj dostępnością {userIsAdmin ? "swojego zespołu" : "swoją"} do układania grafiku pracy
           </p>
@@ -1143,14 +1989,13 @@ export default function DyspozycjePage() {
 
       {/* Tabs (only for admins) */}
       {userIsAdmin && (
-        <div className="border-b border-surface-200/80 dark:border-surface-700/80">
-          <nav className="flex gap-6" aria-label="Tabs">
+        <div className="flex gap-2" aria-label="Tabs">
             <button
               onClick={() => setActiveTab("my")}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "my"
-                  ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                  : "border-transparent text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
+                  ? "bg-brand-500 text-white shadow-sm"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -1162,10 +2007,10 @@ export default function DyspozycjePage() {
             </button>
             <button
               onClick={() => setActiveTab("team")}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "team"
-                  ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                  : "border-transparent text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
+                  ? "bg-brand-500 text-white shadow-sm"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -1175,7 +2020,6 @@ export default function DyspozycjePage() {
                 Dyspozycyjność zespołu
               </span>
             </button>
-          </nav>
         </div>
       )}
 
@@ -1186,13 +2030,41 @@ export default function DyspozycjePage() {
         onOpenWindow={() => setCreateWindowOpen(true)}
       />
 
+      {userIsAdmin && (
+        <AvailabilityWindowsList
+          windows={allWindows}
+          loading={windowsLoading}
+          onRequestClose={(windowId) => setCloseWindowId(windowId)}
+        />
+      )}
+
       {/* Tab Content */}
       {activeTab === "my" ? (
-        <MyAvailabilityTab
-          formData={formData}
-          setFormData={setFormData}
-          saving={saving}
-          onSave={handleSaveMyAvailability}
+        activeWindow ? (
+          <MonthlyAvailabilityTab
+            window={activeWindow}
+            submission={windowSubmission}
+            saving={saving}
+            onSave={handleSaveWindowAvailability}
+          />
+        ) : (
+          <div className="card p-5">
+            <h3 className="font-semibold text-surface-900 dark:text-surface-50">
+              Brak aktywnego okna dyspozycji
+            </h3>
+            <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
+              Aktualnie nie ma otwartego okna na składanie dyspozycji. Poczekaj na informację od pracodawcy.
+            </p>
+          </div>
+        )
+      ) : activeWindow ? (
+        <WindowTeamAvailabilityTab
+          window={activeWindow}
+          stats={windowTeamStats}
+          employees={employees}
+          loading={teamLoading}
+          onSelectEmployee={handleEmployeeClick}
+          onUpdateStatus={handleUpdateSubmissionStatus}
         />
       ) : (
         <TeamAvailabilityTab
@@ -1208,7 +2080,7 @@ export default function DyspozycjePage() {
 
       {/* Employee Detail Panel */}
       <EmployeeDetailPanel
-        open={!!selectedEmployee || employeeLoading}
+        open={!activeWindow && (!!selectedEmployee || employeeLoading)}
         employee={selectedEmployee?.employee || null}
         availability={selectedEmployee?.availability || []}
         loading={employeeLoading}
@@ -1216,6 +2088,43 @@ export default function DyspozycjePage() {
         onClose={() => setSelectedEmployee(null)}
         onSave={handleSaveEmployeeAvailability}
       />
+
+      <WindowEmployeeDetailPanel
+        open={!!activeWindow && (!!selectedWindowEmployee || employeeLoading)}
+        employee={selectedWindowEmployee?.employee || null}
+        availability={selectedWindowEmployee?.availability || []}
+        window={activeWindow}
+        status={selectedWindowEmployee?.status ?? null}
+        loading={employeeLoading}
+        saving={employeeSaving}
+        onClose={() => setSelectedWindowEmployee(null)}
+        onSave={handleSaveEmployeeAvailability}
+      />
+
+      <Modal
+        open={!!windowToClose}
+        title="Zamknąć okno dyspozycji?"
+        description={windowToClose?.title}
+        onClose={() => setCloseWindowId(null)}
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setCloseWindowId(null)}>
+              Anuluj
+            </button>
+            <button
+              className="btn-primary"
+              onClick={handleCloseWindow}
+              disabled={closingWindow}
+            >
+              {closingWindow ? "Zamykanie..." : "Zamknij okno"}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-surface-600 dark:text-surface-300">
+          Czy na pewno chcesz zamknąć to okno? Pracownicy nie będą mogli już składać nowych dyspozycji w tym okresie.
+        </p>
+      </Modal>
 
       {/* Create Window Modal */}
       <CreateWindowModal

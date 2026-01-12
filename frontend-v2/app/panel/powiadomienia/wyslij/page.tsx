@@ -23,6 +23,7 @@ const TYPE_OPTIONS: { value: NotificationType; label: string }[] = [
   { value: "SHIFT_ASSIGNMENT", label: "Grafik / zmiany" },
   { value: "SCHEDULE_PUBLISHED", label: "Opublikowany grafik" },
   { value: "SWAP_STATUS", label: "Status zamiany" },
+  { value: "AVAILABILITY_SUBMITTED", label: "Dyspozycja pracownika" },
 ];
 
 const CHANNEL_OPTIONS: { value: NotificationChannel; label: string }[] = [
@@ -234,15 +235,10 @@ export default function CampaignComposerPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase text-slate-500 dark:text-slate-400">
-          Powiadomienia
-        </p>
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-          Wyślij powiadomienie
-        </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50">Wyślij powiadomienie</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Twórz i wysyłaj powiadomienia do użytkowników w organizacji
         </p>
       </div>

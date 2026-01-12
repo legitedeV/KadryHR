@@ -72,7 +72,7 @@ export function ScheduleGrid({
     .filter((promo) => promo.count < REQUIRED_AFTERNOON_COUNT) ?? [];
 
   return (
-    <div className="card p-4 lg:p-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="badge badge-success flex items-center gap-2">
@@ -153,7 +153,7 @@ export function ScheduleGrid({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80 -mx-1 lg:-mx-2">
+      <div className="overflow-x-auto rounded-2xl border border-surface-200/80 dark:border-surface-800/80 -mx-1 lg:-mx-2">
         <table className="min-w-full w-full table-fixed">
           <thead className="bg-surface-50/80 dark:bg-surface-900/80">
             <tr className="border-b border-surface-200 dark:border-surface-800">
@@ -278,26 +278,26 @@ export function ScheduleGrid({
                           }}
                           onDrop={(event) => onDropShift(event, dayDateValue, employee.id)}
                         >
-                          <div className="flex flex-col gap-1 min-h-[50px]">
-                            <div className="flex items-center justify-between">
-                              {dayIndicator && (
-                                <div className="flex items-center gap-1 text-[9px] text-surface-500" title={availabilityTooltip}>
-                                  <span className={`h-2 w-2 rounded-full ${availabilityDotColor(dayIndicator.status)}`} />
-                                  <span className="sr-only">{dayAvailabilityLabel}</span>
-                                </div>
-                              )}
-                              {hasApprovedLeave && (
-                                <span 
-                                  className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-amber-500 text-white"
-                                  title={dayLeaves[0].leaveType?.name || "Urlop"}
-                                >
-                                  URLOP
-                                </span>
-                              )}
-                            </div>
-                            {dayShifts.length === 0 ? (
-                              <button
-                                className="w-full h-full min-h-[50px] rounded-lg border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
+                            <div className="flex flex-col gap-2 min-h-[54px]">
+                              <div className="flex items-center justify-between">
+                                {dayIndicator && (
+                                  <div className="flex items-center gap-1 text-[9px] text-surface-500" title={availabilityTooltip}>
+                                    <span className={`h-2 w-2 rounded-full ${availabilityDotColor(dayIndicator.status)}`} />
+                                    <span className="sr-only">{dayAvailabilityLabel}</span>
+                                  </div>
+                                )}
+                                {hasApprovedLeave && (
+                                  <span 
+                                    className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-amber-500 text-white"
+                                    title={dayLeaves[0].leaveType?.name || "Urlop"}
+                                  >
+                                    URLOP
+                                  </span>
+                                )}
+                              </div>
+                              {dayShifts.length === 0 ? (
+                                <button
+                                className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
                                 onClick={() => onOpenCreate(dayDateValue, employee.id)}
                                 aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                               >
@@ -314,10 +314,10 @@ export function ScheduleGrid({
                                       key={shift.id}
                                       draggable
                                       onDragStart={(event) => onDragStart(shift.id, event)}
-                                      className={`group relative rounded-md border px-1.5 py-1.5 shadow-sm hover:shadow-md transition-all text-xs cursor-move ${
+                                      className={`group relative rounded-full border px-2.5 py-2 shadow-sm hover:shadow-md transition-all text-xs cursor-move ${
                                         shift.color
                                           ? ""
-                                          : "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30"
+                                          : "border-emerald-200 bg-emerald-50/70 dark:border-emerald-800/50 dark:bg-emerald-950/30"
                                       }`}
                                       style={
                                         shift.color
@@ -331,8 +331,9 @@ export function ScheduleGrid({
                                           style={{ backgroundColor: shift.color }}
                                         />
                                       )}
-                                      <div className={`flex items-start justify-between gap-0.5 ${shift.color ? "ml-1.5" : ""}`}>
-                                        <div className="flex-1 min-w-0">
+                                      <div className={`flex items-center justify-between gap-2 ${shift.color ? "ml-1.5" : ""}`}>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <Avatar name={shift.employeeName} src={shift.employeeAvatar} size="sm" className="h-6 w-6 text-[10px]" />
                                           <div
                                             className="font-semibold text-[11px]"
                                             style={
@@ -344,22 +345,22 @@ export function ScheduleGrid({
                                             <span className={shift.color ? "" : "text-emerald-800 dark:text-emerald-200"}>
                                               {shift.start}–{shift.end}
                                             </span>
+                                            {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
+                                              <div className="text-[9px] text-surface-600 dark:text-surface-300 truncate">
+                                                {shift.locationName}
+                                              </div>
+                                            )}
+                                            {shift.position && (
+                                              <div className="text-[9px] uppercase tracking-wide text-surface-500 dark:text-surface-400 truncate">
+                                                {shift.position}
+                                              </div>
+                                            )}
+                                            {shift.availabilityWarning && (
+                                              <div className="mt-0.5 rounded bg-amber-50 px-1 py-0.5 text-[8px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
+                                                {shift.availabilityWarning}
+                                              </div>
+                                            )}
                                           </div>
-                                          {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
-                                            <div className="text-[9px] text-surface-600 dark:text-surface-300 truncate">
-                                              {shift.locationName}
-                                            </div>
-                                          )}
-                                          {shift.position && (
-                                            <div className="text-[9px] uppercase tracking-wide text-surface-500 dark:text-surface-400 truncate">
-                                              {shift.position}
-                                            </div>
-                                          )}
-                                          {shift.availabilityWarning && (
-                                            <div className="mt-0.5 rounded bg-amber-50 px-1 py-0.5 text-[8px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
-                                              {shift.availabilityWarning}
-                                            </div>
-                                          )}
                                         </div>
                                         <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button
@@ -382,12 +383,12 @@ export function ScheduleGrid({
                                   );
                                 })}
                                 <button
-                                  className="w-full rounded-md border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1 flex items-center justify-center group"
-                                  onClick={() => onOpenCreate(dayDateValue, employee.id)}
-                                  aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
-                                >
-                                  <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                className="w-full rounded-2xl border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1 flex items-center justify-center group"
+                                onClick={() => onOpenCreate(dayDateValue, employee.id)}
+                                aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
+                              >
+                                <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                   </svg>
                                 </button>
                               </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import {
   EmployeeRecord,
@@ -87,22 +87,6 @@ function getWeekRange() {
   };
 }
 
-// Get next 3 days from today
-function getNext3Days(): { date: string; dayName: string; dayNumber: string }[] {
-  const result = [];
-  const now = new Date();
-  for (let i = 0; i < 3; i++) {
-    const date = new Date(now);
-    date.setDate(now.getDate() + i);
-    result.push({
-      date: date.toISOString().slice(0, 10),
-      dayName: date.toLocaleDateString("pl-PL", { weekday: "short" }),
-      dayNumber: date.toLocaleDateString("pl-PL", { day: "numeric", month: "short" }),
-    });
-  }
-  return result;
-}
-
 // Get next 7 days for upcoming leaves
 function getNext7DaysRange() {
   const now = new Date();
@@ -110,6 +94,58 @@ function getNext7DaysRange() {
   next7.setDate(now.getDate() + 7);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   return { from: fmt(now), to: fmt(next7) };
+}
+
+function getShiftTone(shift: ShiftView): { className: string; style?: CSSProperties } {
+  if (shift.color) {
+    return {
+      className: "border",
+      style: {
+        backgroundColor: `${shift.color}22`,
+        borderColor: `${shift.color}55`,
+      },
+    };
+  }
+  const timeParts = parseTimeLabel(shift.start);
+  const hour = timeParts ? timeParts[0] : 8;
+  if (hour < 12) return { className: "bg-amber-50 border-amber-200/80 text-amber-900 dark:bg-amber-950/30 dark:border-amber-800/60 dark:text-amber-200" };
+  if (hour < 17) return { className: "bg-sky-50 border-sky-200/70 text-sky-900 dark:bg-sky-950/30 dark:border-sky-800/60 dark:text-sky-200" };
+  return { className: "bg-violet-50 border-violet-200/70 text-violet-900 dark:bg-violet-950/30 dark:border-violet-800/60 dark:text-violet-200" };
+}
+
+function getWeekDays(range: { from: string }) {
+  const days: { label: string; date: string }[] = [];
+  const start = new Date(range.from);
+  for (let i = 0; i < 7; i += 1) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    days.push({
+      label: day.toLocaleDateString("pl-PL", { weekday: "short" }),
+      date: day.toISOString().slice(0, 10),
+    });
+  }
+  return days;
+}
+
+function buildChartSeries(shifts: ShiftView[], range: { from: string }) {
+  const days = getWeekDays(range);
+  const totals = days.map((day) => {
+    const dayHours = shifts
+      .filter((s) => s.date === day.date)
+      .reduce((sum, s) => {
+        const startParts = parseTimeLabel(s.start);
+        const endParts = parseTimeLabel(s.end);
+        if (!startParts || !endParts) return sum;
+        const [sh, sm] = startParts;
+        const [eh, em] = endParts;
+        let mins = eh * 60 + em - (sh * 60 + sm);
+        if (mins < 0) mins += 24 * 60;
+        return sum + mins / 60;
+      }, 0);
+    return { ...day, value: Number(dayHours.toFixed(1)) };
+  });
+  const maxValue = Math.max(1, ...totals.map((t) => t.value));
+  return { totals, maxValue };
 }
 
 export default function DashboardPage() {
@@ -120,6 +156,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(
     hasSession ? null : "Zaloguj się, aby zobaczyć dashboard.",
   );
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     if (!hasSession) return;
@@ -186,17 +223,16 @@ export default function DashboardPage() {
   const { shifts, employees, requests, upcomingLeaves } = data;
   const todaysDate = new Date().toISOString().slice(0, 10);
   const todaysShifts = shifts.filter((s) => s.date === todaysDate);
-  const unassigned = shifts.filter((s) => s.status === "UNASSIGNED");
-  const pendingRequests = requests.filter((r) => r.status === "PENDING");
-  const assignedEmployees = employees.filter((e) => e.locations.length > 0).length;
+  const assignedEmployees = employees.filter((e) => e.locations.length > 0);
+  const pendingEmployees = employees.filter((e) => e.locations.length === 0);
+  const todaysLeaves = upcomingLeaves.filter((leave) => {
+    const start = new Date(leave.startDate).toISOString().slice(0, 10);
+    const end = new Date(leave.endDate).toISOString().slice(0, 10);
+    return todaysDate >= start && todaysDate <= end;
+  });
+  const onLeaveIds = new Set(todaysLeaves.map((leave) => leave.employee?.id).filter(Boolean));
+  const onLeaveEmployees = employees.filter((employee) => onLeaveIds.has(employee.id));
   
-  // 3-day preview data
-  const next3Days = getNext3Days();
-  const shiftsByDay = next3Days.map(day => ({
-    ...day,
-    shifts: shifts.filter(s => s.date === day.date),
-  }));
-
   const totalHoursWeek = shifts.reduce((sum, s) => {
     const startParts = parseTimeLabel(s.start);
     const endParts = parseTimeLabel(s.end);
@@ -213,319 +249,279 @@ export default function DashboardPage() {
     return sum + mins / 60;
   }, 0);
 
+  const { totals: chartTotals, maxValue } = buildChartSeries(shifts, range);
+  const todaysHours = chartTotals.find((day) => day.date === todaysDate)?.value ?? 0;
+  const upcomingRequests = requests.slice(0, 3);
+
+  const employeeTabs = [
+    { key: "all", label: "Wszyscy", data: employees },
+    { key: "active", label: "Aktywni", data: assignedEmployees },
+    { key: "leave", label: "Na urlopie", data: onLeaveEmployees },
+    { key: "pending", label: "Pending", data: pendingEmployees },
+  ];
+  const activeEmployees = employeeTabs.find((tab) => tab.key === activeTab)?.data ?? employees;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="section-label">Podsumowanie tygodnia</p>
-          <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-            Zakres: {range.label}
-          </p>
+          <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Dashboard</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">Tydzień pracy: {range.label}</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-          Łącznie pracowników: <span className="font-semibold text-surface-900 dark:text-surface-100">{employees.length}</span>
+        <div className="flex items-center gap-3 text-sm text-surface-600 dark:text-surface-300">
+          <span className="rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-surface-200/80 dark:bg-surface-900 dark:ring-surface-700/60">
+            Łącznie pracowników: <strong className="text-surface-900 dark:text-surface-100">{employees.length}</strong>
+          </span>
+          <span className="rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-surface-200/80 dark:bg-surface-900 dark:ring-surface-700/60">
+            Plan godzin: <strong className="text-surface-900 dark:text-surface-100">{Math.round(totalHoursWeek)} h</strong>
+          </span>
         </div>
       </div>
 
-      {/* stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card-hover p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-surface-600 dark:text-surface-400">Dzisiejsze zmiany</p>
-          </div>
-          <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{todaysShifts.length}</p>
-          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-            {unassigned.length > 0 ? `${unassigned.length} nieobsadzonych w tygodniu` : "Brak nieobsadzonych zmian"}
-          </p>
-        </div>
-
-        <div className="card-hover p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-surface-600 dark:text-surface-400">Zmiany w tygodniu</p>
-          </div>
-          <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{shifts.length}</p>
-          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">Łącznie godzin: {Math.round(totalHoursWeek)} h</p>
-        </div>
-
-        <div className="card-hover p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-surface-600 dark:text-surface-400">Wnioski oczekujące</p>
-          </div>
-          <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{pendingRequests.length}</p>
-          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-            Wszystkich wniosków w tym tygodniu: {requests.length}
-          </p>
-        </div>
-
-        <div className="card-hover p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-900/50 dark:text-violet-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-surface-600 dark:text-surface-400">Zespół</p>
-          </div>
-          <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{employees.length}</p>
-          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-            {assignedEmployees} z przypisaniem do lokalizacji
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* today shifts */}
-        <div className="card p-4 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="section-label">Dzisiejsza obsada</p>
-              <p className="text-sm font-bold text-surface-900 dark:text-surface-50 mt-1">
-                {new Date(todaysDate).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
-              </p>
-            </div>
-          </div>
-          {todaysShifts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <div className="h-12 w-12 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
-                <svg className="w-6 h-6 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
+        <div className="space-y-6">
+          <div className="card p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Today&apos;s schedule</p>
+                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">
+                  {new Date(todaysDate).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
               </div>
-              <p className="text-sm text-surface-500 dark:text-surface-400">Brak zmian na dzisiaj.</p>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                {todaysShifts.length} zm.
+              </span>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {todaysShifts.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between rounded-xl border border-surface-200/80 bg-surface-50/50 px-3 py-2 transition-all duration-200 hover:border-brand-200/50 dark:border-surface-700/80 dark:bg-surface-800/50 dark:hover:border-brand-700/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${s.status === "UNASSIGNED" ? "bg-rose-500" : "bg-emerald-500"}`} />
-                    <div>
-                      <p className="font-medium text-sm text-surface-900 dark:text-surface-50">
-                        {s.start}–{s.end} · {s.employeeName || "NIEOBSADZONA"}
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              {todaysShifts.length === 0 ? (
+                <div className="w-full rounded-2xl border border-dashed border-surface-200 bg-surface-50 px-6 py-8 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/40 dark:text-surface-400">
+                  Brak zmian zaplanowanych na dzisiaj.
+                </div>
+              ) : (
+                todaysShifts.map((shift) => {
+                  const tone = getShiftTone(shift);
+                  return (
+                    <div
+                      key={shift.id}
+                      className={`min-w-[220px] rounded-2xl border px-4 py-3 shadow-sm ${tone.className}`}
+                      style={tone.style}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.02em] text-slate-500">
+                        {shift.start}–{shift.end}
                       </p>
-                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{s.locationName}</p>
+                      <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 mt-1">
+                        {shift.employeeName}
+                      </p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">{shift.locationName}</p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Employees & Roles</p>
+                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">
+                  Zespół w organizacji
+                </p>
+              </div>
+              <div className="flex gap-2 overflow-x-auto">
+                {employeeTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      activeTab === tab.key
+                        ? "bg-brand-500 text-white shadow-sm"
+                        : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
+                    }`}
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    {tab.label} ({tab.data.length})
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              {activeEmployees.length === 0 ? (
+                <div className="w-full rounded-2xl border border-dashed border-surface-200 bg-surface-50 px-6 py-8 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/40 dark:text-surface-400">
+                  Brak pracowników w tym widoku.
+                </div>
+              ) : (
+                activeEmployees.map((employee) => (
+                  <div key={employee.id} className="min-w-[240px] rounded-2xl border border-surface-200 bg-white px-4 py-3 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={`${employee.firstName} ${employee.lastName}`} src={employee.avatarUrl} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 truncate">
+                          {employee.firstName} {employee.lastName}
+                        </p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400 truncate">{employee.email ?? "Brak emaila"}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="rounded-full bg-surface-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-surface-600 dark:bg-surface-800 dark:text-surface-300">
+                        {employee.position ?? "Pracownik"}
+                      </span>
+                      <div className="flex items-center gap-2 text-surface-500">
+                        <a
+                          href="/panel/pracownicy"
+                          className="rounded-full border border-surface-200 p-1.5 text-xs hover:text-brand-600 dark:border-surface-800 dark:hover:text-brand-300"
+                          aria-label="Zobacz profil"
+                        >
+                          👁
+                        </a>
+                        {employee.phone && (
+                          <a
+                            href={`tel:${employee.phone}`}
+                            className="rounded-full border border-surface-200 p-1.5 text-xs hover:text-brand-600 dark:border-surface-800 dark:hover:text-brand-300"
+                            aria-label="Zadzwoń"
+                          >
+                            📞
+                          </a>
+                        )}
+                        {employee.email && (
+                          <a
+                            href={`mailto:${employee.email}`}
+                            className="rounded-full border border-surface-200 p-1.5 text-xs hover:text-brand-600 dark:border-surface-800 dark:hover:text-brand-300"
+                            aria-label="Wyślij email"
+                          >
+                            ✉️
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <span className={`badge ${s.status === "UNASSIGNED" ? "badge-error" : "badge-success"}`}>
-                    {s.status === "UNASSIGNED" ? "nieobsadzona" : "obsadzona"}
-                  </span>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Work time statistics</p>
+                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">Plan godzin</p>
+              </div>
+              <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                Dziś: {todaysHours} h
+              </span>
+            </div>
+            <div className="mt-4">
+              <svg viewBox="0 0 300 120" className="w-full h-28">
+                <defs>
+                  <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.05" />
+                  </linearGradient>
+                </defs>
+                <polyline
+                  fill="none"
+                  stroke="#60a5fa"
+                  strokeWidth="3"
+                  points={chartTotals
+                    .map((point, idx) => {
+                      const x = (idx / (chartTotals.length - 1)) * 280 + 10;
+                      const y = 100 - (point.value / maxValue) * 70;
+                      return `${x},${y}`;
+                    })
+                    .join(" ")}
+                />
+                <polygon
+                  fill="url(#hoursGradient)"
+                  points={`10,100 ${chartTotals
+                    .map((point, idx) => {
+                      const x = (idx / (chartTotals.length - 1)) * 280 + 10;
+                      const y = 100 - (point.value / maxValue) * 70;
+                      return `${x},${y}`;
+                    })
+                    .join(" ")} 290,100`}
+                />
+              </svg>
+              <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-wide text-surface-400">
+                {chartTotals.map((day) => (
+                  <span key={day.date}>{day.label}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Analytics</p>
+            <p className="text-base font-semibold text-surface-900 dark:text-surface-50 mt-1">Szybkie statystyki</p>
+            <div className="mt-4 space-y-4">
+              {[
+                { label: "Na urlopie dzisiaj", value: todaysLeaves.length, max: employees.length || 1 },
+                { label: "Zaplanowani dzisiaj", value: todaysShifts.length, max: employees.length || 1 },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between text-sm text-surface-600 dark:text-surface-300">
+                    <span>{item.label}</span>
+                    <strong className="text-surface-900 dark:text-surface-100">{item.value}</strong>
+                  </div>
+                  <div className="mt-2 h-2 w-full rounded-full bg-surface-100 dark:bg-surface-800">
+                    <div
+                      className="h-2 rounded-full bg-brand-500"
+                      style={{ width: `${Math.min(100, (item.value / item.max) * 100)}%` }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* requests */}
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="section-label">Wnioski pracowników</p>
-              <p className="text-sm font-bold text-surface-900 dark:text-surface-50 mt-1">Do akceptacji</p>
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Requests</p>
+                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">Ostatnie wnioski</p>
+              </div>
+              <a href="/panel/wnioski" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                Zobacz wszystkie
+              </a>
             </div>
-          </div>
-          <div className="space-y-2 max-h-80 overflow-auto pr-1">
-            {pendingRequests.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <div className="h-8 w-8 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-2">
-                  <svg className="w-5 h-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+            <div className="mt-4 space-y-3">
+              {upcomingRequests.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-surface-200 bg-surface-50 px-6 py-6 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/40 dark:text-surface-400">
+                  Brak wniosków do wyświetlenia.
                 </div>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Brak oczekujących wniosków.</p>
-              </div>
-            )}
-            {pendingRequests.map((r) => (
-              <div
-                key={r.id}
-                className="rounded-xl border border-surface-200/80 bg-surface-50/50 px-3 py-2 dark:border-surface-700/80 dark:bg-surface-800/50"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-sm text-surface-900 dark:text-surface-50">{mapRequestType(r.type)}</p>
-                  <span className="badge badge-warning">oczekuje</span>
-                </div>
-                <p className="text-sm text-surface-600 dark:text-surface-300 mt-1">{r.employeeName}</p>
-                <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                  {formatDateRange(r.startDate, r.endDate)} · {r.leaveType?.name ?? r.reason ?? "Brak dodatkowych danych"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Upcoming Leaves Widget */}
-      <div className="card p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 dark:from-amber-900/50 dark:to-amber-800/50 dark:text-amber-300">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="section-label">Urlopy</p>
-            <p className="text-sm font-bold text-surface-900 dark:text-surface-50 mt-1">
-              Najbliższe 7 dni
-            </p>
-          </div>
-          <span className={`badge ${upcomingLeaves.length > 0 ? "badge-warning" : "badge-success"}`}>
-            {upcomingLeaves.length} {upcomingLeaves.length === 1 ? "osoba" : "osób"}
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {upcomingLeaves.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-4 text-center">
-              <svg className="w-8 h-8 text-surface-300 dark:text-surface-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-surface-500 dark:text-surface-400 text-sm">Brak zatwierdzonych urlopów w najbliższym tygodniu</p>
-            </div>
-          ) : (
-            upcomingLeaves.slice(0, 5).map((leave) => (
-              <div key={leave.id} className="rounded-lg bg-amber-50/50 dark:bg-amber-950/30 p-2">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-sm text-surface-900 dark:text-surface-50">
-                    {leave.employee?.firstName} {leave.employee?.lastName}
-                  </p>
-                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500 text-white">
-                    {leave.leaveType?.name || "Urlop"}
-                  </span>
-                </div>
-                <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                  {formatDateRange(leave.startDate, leave.endDate)}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* 3-Day Schedule Preview */}
-      <div className="card p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 dark:from-brand-900/50 dark:to-brand-800/50 dark:text-brand-300">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div>
-            <p className="section-label">Podgląd grafiku</p>
-            <p className="text-sm font-bold text-surface-900 dark:text-surface-50 mt-1">
-              Najbliższe 3 dni
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {shiftsByDay.map((day, idx) => (
-            <div 
-              key={day.date} 
-              className={`rounded-xl border p-3 ${
-                idx === 0 
-                  ? 'border-brand-200 bg-brand-50/30 dark:border-brand-800 dark:bg-brand-950/20' 
-                  : 'border-surface-200/80 bg-surface-50/50 dark:border-surface-700/80 dark:bg-surface-800/50'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${
-                    idx === 0 
-                      ? 'text-brand-600 dark:text-brand-400' 
-                      : 'text-surface-500 dark:text-surface-400'
-                  }`}>
-                    {day.dayName}
-                  </p>
-                  <p className="text-sm font-bold text-surface-900 dark:text-surface-50">
-                    {day.dayNumber}
-                  </p>
-                </div>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  day.shifts.length > 0 
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' 
-                    : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'
-                }`}>
-                  {day.shifts.length} {day.shifts.length === 1 ? 'zmiana' : day.shifts.length > 1 && day.shifts.length < 5 ? 'zmiany' : 'zmian'}
-                </span>
-              </div>
-
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {day.shifts.length === 0 ? (
-                  <div className="flex items-center justify-center py-4 text-center">
-                    <p className="text-xs text-surface-400 dark:text-surface-500">Brak zmian</p>
-                  </div>
-                ) : (
-                  day.shifts.slice(0, 5).map((shift) => (
-                    <div 
-                      key={shift.id} 
-                      className="flex items-center gap-2 rounded-lg border border-surface-200/60 bg-white px-2 py-1.5 dark:border-surface-700/60 dark:bg-surface-900/50"
-                      style={shift.color ? { borderLeftColor: shift.color, borderLeftWidth: '3px' } : undefined}
-                    >
-                      <Avatar 
-                        name={shift.employeeName} 
-                        src={shift.employeeAvatar} 
-                        size="sm" 
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-surface-900 dark:text-surface-50 truncate">
-                          {shift.employeeName}
-                        </p>
-                        <p className="text-[10px] text-surface-500 dark:text-surface-400">
-                          {shift.start}–{shift.end}
-                        </p>
-                      </div>
+              ) : (
+                upcomingRequests.map((request) => (
+                  <div key={request.id} className="rounded-2xl border border-surface-200 bg-white px-4 py-3 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                        {request.employeeName}
+                      </p>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+                        {mapRequestType(request.type)}
+                      </span>
                     </div>
-                  ))
-                )}
-                {day.shifts.length > 5 && (
-                  <p className="text-xs text-center text-surface-400 dark:text-surface-500 pt-1">
-                    +{day.shifts.length - 5} więcej...
-                  </p>
-                )}
-              </div>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                      {formatDateRange(request.startDate, request.endDate)} · {request.leaveType?.name ?? request.reason ?? "Brak danych"}
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <a
+                        href="/panel/wnioski"
+                        className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white"
+                      >
+                        Akceptuj
+                      </a>
+                      <a
+                        href="/panel/wnioski"
+                        className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                      >
+                        Odrzuć
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          ))}
-        </div>
-
-        <div className="mt-3 text-center">
-          <a 
-            href="/panel/grafik" 
-            className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
-          >
-            Przejdź do pełnego grafiku →
-          </a>
+          </div>
         </div>
       </div>
     </div>

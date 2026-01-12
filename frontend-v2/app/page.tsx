@@ -1,89 +1,10 @@
-import Link from "next/link";
-import { LeadCaptureForm } from "@/components/LeadCaptureForm";
 import { MarketingHeader } from "@/components/MarketingHeader";
-
-const heroStats = [
-  { label: "Oszczędność czasu", value: "-8h / tydzień" },
-  { label: "Powiadomienia", value: "real-time" },
-  { label: "Obsada", value: "2 kliknięcia" },
-];
-
-const highlightCards = [
-  {
-    title: "Grafik, który sam pilnuje obsady",
-    desc: "System przypomina o lukach, zmianach promocji i wymaganiach kadrowych.",
-    icon: "🧭",
-  },
-  {
-    title: "Wnioski i zamiany bez chaosu",
-    desc: "Pracownicy wnioskują w telefonie, menedżer zatwierdza jednym ruchem.",
-    icon: "⚡",
-  },
-  {
-    title: "Powiadomienia omni-channel",
-    desc: "In-app + e-mail. Zawsze wiesz, kto dostał wiadomość.",
-    icon: "📣",
-  },
-  {
-    title: "Raporty gotowe do rozliczeń",
-    desc: "Eksport godzin i trendów w kilka sekund.",
-    icon: "📊",
-  },
-];
-
-const workflowSteps = [
-  {
-    title: "Zaplanuj tydzień",
-    desc: "Przeciągnij zmiany, użyj szablonów i zapisz w 30 sekund.",
-    accent: "01",
-  },
-  {
-    title: "Wyślij i potwierdź",
-    desc: "Automatyczne powiadomienia informują zespół o każdej zmianie.",
-    accent: "02",
-  },
-  {
-    title: "Pilnuj wymagań",
-    desc: "Widzisz alerty o brakach obsady i dniach promocji.",
-    accent: "03",
-  },
-];
-
-const experienceTiles = [
-  {
-    title: "Live staffing",
-    desc: "W czasie rzeczywistym wiesz, kto jest przypisany do zmian.",
-    tag: "🔔"
-  },
-  {
-    title: "Organizacja na autopilocie",
-    desc: "Automatyczny podział na lokalizacje i role.",
-    tag: "🧩"
-  },
-  {
-    title: "Mobilne centrum dowodzenia",
-    desc: "Działasz z telefonu, tabletów i kioskowych ekranów.",
-    tag: "📱"
-  },
-];
-
-const testimonials = [
-  {
-    name: "Karolina, Żabka",
-    quote: "Nigdy nie mieliśmy tak spokojnych wtorków. System przypomina o 2 osobach na popołudniu.",
-    emoji: "🌟",
-  },
-  {
-    name: "Michał, kawiarnia",
-    quote: "Wnioski urlopowe zatwierdzam w minutę, a obsada sama się pilnuje.",
-    emoji: "☕",
-  },
-  {
-    name: "Agnieszka, franczyza",
-    quote: "KadryHR ogarnia grafiki w trzech lokalizacjach bez telefonów od pracowników.",
-    emoji: "🏪",
-  },
-];
+import { CTASection } from "@/components/landing/CTASection";
+import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
+import { Hero } from "@/components/landing/Hero";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LogosStrip } from "@/components/landing/LogosStrip";
+import { SecondaryHero } from "@/components/landing/SecondaryHero";
 
 const trustedClients = [
   {
@@ -95,7 +16,7 @@ const trustedClients = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f8f9ff]">
       <MarketingHeader />
 
       <main className="relative overflow-hidden">
@@ -339,6 +260,7 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+      <LandingFooter />
     </div>
   );
 }

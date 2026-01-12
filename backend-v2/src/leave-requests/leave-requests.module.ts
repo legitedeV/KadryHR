@@ -5,9 +5,10 @@ import { LeaveBalanceService } from './leave-balance.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditModule } from '../audit/audit.module';
+import { EmployeesModule } from '../employees/employees.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, AuditModule],
+  imports: [PrismaModule, NotificationsModule, AuditModule, EmployeesModule],
   controllers: [LeaveRequestsController],
   providers: [LeaveRequestsService, LeaveBalanceService],
   exports: [LeaveRequestsService, LeaveBalanceService],

@@ -25,6 +25,8 @@ import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import { QueryAvailabilityDto } from './dto/query-availability.dto';
 import { CreateAvailabilityWindowDto } from './dto/create-availability-window.dto';
 import { UpdateAvailabilityWindowDto } from './dto/update-availability-window.dto';
+import { SubmitAvailabilityWindowDto } from './dto/submit-availability-window.dto';
+import { UpdateAvailabilitySubmissionStatusDto } from './dto/update-availability-submission-status.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 
@@ -75,6 +77,142 @@ export class AvailabilityController {
       user.organisationId,
       user.id,
       dto.availabilities,
+    );
+  }
+
+  // ==========================================
+  // AVAILABILITY WINDOW SUBMISSIONS (Employee)
+  // ==========================================
+
+  @Get('windows/:windowId/me')
+  async getMyWindowAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+  ) {
+    return this.availabilityService.getWindowAvailabilityForEmployee(
+      user.organisationId,
+      user.id,
+      windowId,
+    );
+  }
+
+  @Put('windows/:windowId/me')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_SUBMISSION',
+    entityType: 'availability_submission',
+    captureBody: true,
+  })
+  async submitMyWindowAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+    @Body() dto: SubmitAvailabilityWindowDto,
+  ) {
+    return this.availabilityService.saveWindowAvailabilityForEmployee(
+      user.organisationId,
+      user.id,
+      windowId,
+      dto.availabilities,
+      dto.submit,
+    );
+  }
+
+  // ==========================================
+  // AVAILABILITY WINDOW SUBMISSIONS (Admin)
+  // ==========================================
+
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('windows/:windowId/team/stats')
+  async getWindowTeamStats(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+  ) {
+    return this.availabilityService.getWindowTeamAvailabilityStats(
+      user.organisationId,
+      windowId,
+    );
+  }
+
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('windows/:windowId/team')
+  async getWindowTeamAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+    @Query('search') search?: string,
+    @Query('locationId') locationId?: string,
+    @Query('role') role?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+  ) {
+    return this.availabilityService.getWindowTeamAvailability(
+      user.organisationId,
+      windowId,
+      {
+        search,
+        locationId,
+        role,
+        page: page ? parseInt(page, 10) : undefined,
+        perPage: perPage ? parseInt(perPage, 10) : undefined,
+      },
+    );
+  }
+
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Get('windows/:windowId/employee/:employeeId')
+  async getWindowEmployeeAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.availabilityService.getWindowEmployeeAvailability(
+      user.organisationId,
+      windowId,
+      employeeId,
+    );
+  }
+
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Put('windows/:windowId/employee/:employeeId')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_ADMIN_UPDATE',
+    entityType: 'availability_submission',
+    entityIdParam: 'employeeId',
+    captureBody: true,
+  })
+  async updateWindowEmployeeAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+    @Param('employeeId') employeeId: string,
+    @Body() dto: SubmitAvailabilityWindowDto,
+  ) {
+    return this.availabilityService.updateWindowAvailabilityForEmployee(
+      user.organisationId,
+      windowId,
+      employeeId,
+      dto.availabilities,
+      user.id,
+    );
+  }
+
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Patch('windows/:windowId/employee/:employeeId/status')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_STATUS_UPDATE',
+    entityType: 'availability_submission',
+    entityIdParam: 'employeeId',
+    captureBody: true,
+  })
+  async updateWindowSubmissionStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+    @Param('employeeId') employeeId: string,
+    @Body() dto: UpdateAvailabilitySubmissionStatusDto,
+  ) {
+    return this.availabilityService.updateSubmissionStatus(
+      user.organisationId,
+      windowId,
+      employeeId,
+      dto.status,
+      user.id,
     );
   }
 
@@ -363,6 +501,28 @@ export class AvailabilityController {
       user.organisationId,
       windowId,
       dto,
+    );
+  }
+
+  /**
+   * Close an availability window (managers/admins only)
+   */
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
+  @Patch('windows/:windowId/close')
+  @AuditLog({
+    action: 'AVAILABILITY_WINDOW_CLOSE',
+    entityType: 'availability_window',
+    entityIdParam: 'windowId',
+    fetchBefore: true,
+  })
+  async closeWindow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('windowId') windowId: string,
+  ) {
+    return this.availabilityService.closeWindow(
+      user.organisationId,
+      windowId,
+      user.id,
     );
   }
 

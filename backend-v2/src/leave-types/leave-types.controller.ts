@@ -18,7 +18,6 @@ import { CreateLeaveTypeDto } from './dto/create-leave-type.dto';
 import { UpdateLeaveTypeDto } from './dto/update-leave-type.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
 @Controller('leave-types')
 export class LeaveTypesController {
   constructor(private readonly leaveTypesService: LeaveTypesService) {}
@@ -29,6 +28,7 @@ export class LeaveTypesController {
   }
 
   @Post()
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateLeaveTypeDto,
@@ -37,6 +37,7 @@ export class LeaveTypesController {
   }
 
   @Patch(':id')
+  @Roles(Role.OWNER, Role.MANAGER, Role.ADMIN)
   update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
