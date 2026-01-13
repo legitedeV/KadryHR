@@ -28,14 +28,14 @@ export function ScheduleHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Grafik</p>
-        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50 mt-1">
+        <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Grafik</p>
+        <p className="text-2xl font-semibold text-surface-50 mt-1">
           Tydzień: {range.label}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-sm text-surface-600 dark:text-surface-300">
-        <span className="rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-surface-200/80 dark:bg-surface-900 dark:ring-surface-700/60">
-          Łącznie zmian: <strong className="text-surface-900 dark:text-surface-100">{shiftsCount}</strong>
+      <div className="flex flex-wrap items-center gap-3 text-sm text-surface-300">
+        <span className="panel-pill">
+          Łącznie zmian: <strong className="text-surface-100">{shiftsCount}</strong>
         </span>
         <div className="flex items-center gap-2">
           <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onPrevWeek} aria-label="Poprzedni tydzień">

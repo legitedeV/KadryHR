@@ -3,14 +3,14 @@
 import { useMemo, useState } from "react";
 
 const COLOR_CLASSES = [
-  "bg-amber-100 text-amber-800",
+  "bg-brand-100 text-brand-800",
   "bg-emerald-100 text-emerald-800",
-  "bg-blue-100 text-blue-800",
-  "bg-indigo-100 text-indigo-800",
+  "bg-amber-100 text-amber-800",
+  "bg-lime-100 text-lime-800",
+  "bg-green-100 text-green-800",
   "bg-rose-100 text-rose-800",
-  "bg-teal-100 text-teal-800",
-  "bg-violet-100 text-violet-800",
-  "bg-sky-100 text-sky-800",
+  "bg-orange-100 text-orange-800",
+  "bg-accent-100 text-accent-800",
 ];
 
 function hashString(value: string) {

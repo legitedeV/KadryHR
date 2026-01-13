@@ -99,7 +99,7 @@ function getNext7DaysRange() {
 function getShiftTone(shift: ShiftView): { className: string; style?: CSSProperties } {
   if (shift.color) {
     return {
-      className: "border",
+      className: "border text-surface-100",
       style: {
         backgroundColor: `${shift.color}22`,
         borderColor: `${shift.color}55`,
@@ -108,9 +108,9 @@ function getShiftTone(shift: ShiftView): { className: string; style?: CSSPropert
   }
   const timeParts = parseTimeLabel(shift.start);
   const hour = timeParts ? timeParts[0] : 8;
-  if (hour < 12) return { className: "bg-amber-50 border-amber-200/80 text-amber-900 dark:bg-amber-950/30 dark:border-amber-800/60 dark:text-amber-200" };
-  if (hour < 17) return { className: "bg-sky-50 border-sky-200/70 text-sky-900 dark:bg-sky-950/30 dark:border-sky-800/60 dark:text-sky-200" };
-  return { className: "bg-violet-50 border-violet-200/70 text-violet-900 dark:bg-violet-950/30 dark:border-violet-800/60 dark:text-violet-200" };
+  if (hour < 12) return { className: "bg-amber-500/10 border-amber-400/30 text-amber-100" };
+  if (hour < 17) return { className: "bg-brand-500/10 border-brand-400/30 text-brand-100" };
+  return { className: "bg-accent-500/10 border-accent-400/30 text-accent-100" };
 }
 
 function getWeekDays(range: { from: string }) {
@@ -265,36 +265,36 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Dashboard</p>
-          <p className="text-sm text-surface-500 dark:text-surface-400">Tydzień pracy: {range.label}</p>
+          <p className="text-2xl font-semibold text-surface-50">Dashboard</p>
+          <p className="text-sm text-surface-400">Tydzień pracy: {range.label}</p>
         </div>
-        <div className="flex items-center gap-3 text-sm text-surface-600 dark:text-surface-300">
-          <span className="rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-surface-200/80 dark:bg-surface-900 dark:ring-surface-700/60">
-            Łącznie pracowników: <strong className="text-surface-900 dark:text-surface-100">{employees.length}</strong>
+        <div className="flex items-center gap-3 text-sm text-surface-300">
+          <span className="panel-pill">
+            Łącznie pracowników: <strong className="text-surface-100">{employees.length}</strong>
           </span>
-          <span className="rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-surface-200/80 dark:bg-surface-900 dark:ring-surface-700/60">
-            Plan godzin: <strong className="text-surface-900 dark:text-surface-100">{Math.round(totalHoursWeek)} h</strong>
+          <span className="panel-pill">
+            Plan godzin: <strong className="text-surface-100">{Math.round(totalHoursWeek)} h</strong>
           </span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
         <div className="space-y-6">
-          <div className="card p-6">
+          <div className="panel-card p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Today&apos;s schedule</p>
-                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Today&apos;s schedule</p>
+                <p className="text-base font-semibold text-surface-50">
                   {new Date(todaysDate).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200">
                 {todaysShifts.length} zm.
               </span>
             </div>
             <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
               {todaysShifts.length === 0 ? (
-                <div className="w-full rounded-2xl border border-dashed border-surface-200 bg-surface-50 px-6 py-8 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/40 dark:text-surface-400">
+                <div className="w-full rounded-2xl border border-dashed border-surface-800/70 bg-surface-900/40 px-6 py-8 text-center text-sm text-surface-400">
                   Brak zmian zaplanowanych na dzisiaj.
                 </div>
               ) : (
@@ -306,13 +306,13 @@ export default function DashboardPage() {
                       className={`min-w-[220px] rounded-2xl border px-4 py-3 shadow-sm ${tone.className}`}
                       style={tone.style}
                     >
-                      <p className="text-xs font-semibold uppercase tracking-[0.02em] text-slate-500">
+                      <p className="text-xs font-semibold uppercase tracking-[0.02em] text-surface-300">
                         {shift.start}–{shift.end}
                       </p>
-                      <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 mt-1">
+                      <p className="text-sm font-semibold text-surface-100 mt-1">
                         {shift.employeeName}
                       </p>
-                      <p className="text-xs text-surface-500 dark:text-surface-400">{shift.locationName}</p>
+                      <p className="text-xs text-surface-300">{shift.locationName}</p>
                     </div>
                   );
                 })
@@ -320,11 +320,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="panel-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Employees & Roles</p>
-                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Employees & Roles</p>
+                <p className="text-base font-semibold text-surface-50">
                   Zespół w organizacji
                 </p>
               </div>
@@ -335,7 +335,7 @@ export default function DashboardPage() {
                     className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                       activeTab === tab.key
                         ? "bg-brand-500 text-white shadow-sm"
-                        : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
+                        : "bg-surface-900/70 text-surface-300 hover:bg-surface-900/90"
                     }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
@@ -346,29 +346,29 @@ export default function DashboardPage() {
             </div>
             <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
               {activeEmployees.length === 0 ? (
-                <div className="w-full rounded-2xl border border-dashed border-surface-200 bg-surface-50 px-6 py-8 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/40 dark:text-surface-400">
+                <div className="w-full rounded-2xl border border-dashed border-surface-800/70 bg-surface-900/40 px-6 py-8 text-center text-sm text-surface-400">
                   Brak pracowników w tym widoku.
                 </div>
               ) : (
                 activeEmployees.map((employee) => (
-                  <div key={employee.id} className="min-w-[240px] rounded-2xl border border-surface-200 bg-white px-4 py-3 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+                  <div key={employee.id} className="min-w-[240px] rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-3">
                       <Avatar name={`${employee.firstName} ${employee.lastName}`} src={employee.avatarUrl} size="sm" />
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 truncate">
+                        <p className="text-sm font-semibold text-surface-50 truncate">
                           {employee.firstName} {employee.lastName}
                         </p>
-                        <p className="text-xs text-surface-500 dark:text-surface-400 truncate">{employee.email ?? "Brak emaila"}</p>
+                        <p className="text-xs text-surface-400 truncate">{employee.email ?? "Brak emaila"}</p>
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="rounded-full bg-surface-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-surface-600 dark:bg-surface-800 dark:text-surface-300">
+                      <span className="rounded-full bg-surface-800/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-surface-300">
                         {employee.position ?? "Pracownik"}
                       </span>
-                      <div className="flex items-center gap-2 text-surface-500">
+                      <div className="flex items-center gap-2 text-surface-400">
                         <a
                           href="/panel/pracownicy"
-                          className="rounded-full border border-surface-200 p-1.5 text-xs hover:text-brand-600 dark:border-surface-800 dark:hover:text-brand-300"
+                          className="rounded-full border border-surface-800/70 p-1.5 text-xs hover:text-brand-300"
                           aria-label="Zobacz profil"
                         >
                           👁
@@ -376,7 +376,7 @@ export default function DashboardPage() {
                         {employee.phone && (
                           <a
                             href={`tel:${employee.phone}`}
-                            className="rounded-full border border-surface-200 p-1.5 text-xs hover:text-brand-600 dark:border-surface-800 dark:hover:text-brand-300"
+                            className="rounded-full border border-surface-800/70 p-1.5 text-xs hover:text-brand-300"
                             aria-label="Zadzwoń"
                           >
                             📞
@@ -385,7 +385,7 @@ export default function DashboardPage() {
                         {employee.email && (
                           <a
                             href={`mailto:${employee.email}`}
-                            className="rounded-full border border-surface-200 p-1.5 text-xs hover:text-brand-600 dark:border-surface-800 dark:hover:text-brand-300"
+                            className="rounded-full border border-surface-800/70 p-1.5 text-xs hover:text-brand-300"
                             aria-label="Wyślij email"
                           >
                             ✉️
@@ -401,13 +401,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="card p-6">
+          <div className="panel-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Work time statistics</p>
-                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">Plan godzin</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Work time statistics</p>
+                <p className="text-base font-semibold text-surface-50">Plan godzin</p>
               </div>
-              <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+              <span className="rounded-full bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-200">
                 Dziś: {todaysHours} h
               </span>
             </div>
@@ -415,13 +415,13 @@ export default function DashboardPage() {
               <svg viewBox="0 0 300 120" className="w-full h-28">
                 <defs>
                   <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.05" />
+                    <stop offset="0%" stopColor="#1ea574" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#1ea574" stopOpacity="0.05" />
                   </linearGradient>
                 </defs>
                 <polyline
                   fill="none"
-                  stroke="#60a5fa"
+                  stroke="#1ea574"
                   strokeWidth="3"
                   points={chartTotals
                     .map((point, idx) => {
@@ -450,20 +450,20 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="card p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Analytics</p>
-            <p className="text-base font-semibold text-surface-900 dark:text-surface-50 mt-1">Szybkie statystyki</p>
+          <div className="panel-card p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Analytics</p>
+            <p className="text-base font-semibold text-surface-50 mt-1">Szybkie statystyki</p>
             <div className="mt-4 space-y-4">
               {[
                 { label: "Na urlopie dzisiaj", value: todaysLeaves.length, max: employees.length || 1 },
                 { label: "Zaplanowani dzisiaj", value: todaysShifts.length, max: employees.length || 1 },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className="flex items-center justify-between text-sm text-surface-600 dark:text-surface-300">
+                  <div className="flex items-center justify-between text-sm text-surface-300">
                     <span>{item.label}</span>
-                    <strong className="text-surface-900 dark:text-surface-100">{item.value}</strong>
+                    <strong className="text-surface-100">{item.value}</strong>
                   </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-surface-100 dark:bg-surface-800">
+                  <div className="mt-2 h-2 w-full rounded-full bg-surface-800/80">
                     <div
                       className="h-2 rounded-full bg-brand-500"
                       style={{ width: `${Math.min(100, (item.value / item.max) * 100)}%` }}
@@ -474,45 +474,45 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="panel-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-slate-500">Requests</p>
-                <p className="text-base font-semibold text-surface-900 dark:text-surface-50">Ostatnie wnioski</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Requests</p>
+                <p className="text-base font-semibold text-surface-50">Ostatnie wnioski</p>
               </div>
-              <a href="/panel/wnioski" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+              <a href="/panel/wnioski" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
                 Zobacz wszystkie
               </a>
             </div>
             <div className="mt-4 space-y-3">
               {upcomingRequests.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-surface-200 bg-surface-50 px-6 py-6 text-center text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-900/40 dark:text-surface-400">
+                <div className="rounded-2xl border border-dashed border-surface-800/70 bg-surface-900/40 px-6 py-6 text-center text-sm text-surface-400">
                   Brak wniosków do wyświetlenia.
                 </div>
               ) : (
                 upcomingRequests.map((request) => (
-                  <div key={request.id} className="rounded-2xl border border-surface-200 bg-white px-4 py-3 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+                  <div key={request.id} className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                      <p className="text-sm font-semibold text-surface-50">
                         {request.employeeName}
                       </p>
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+                      <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-amber-200">
                         {mapRequestType(request.type)}
                       </span>
                     </div>
-                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                    <p className="text-xs text-surface-400 mt-1">
                       {formatDateRange(request.startDate, request.endDate)} · {request.leaveType?.name ?? request.reason ?? "Brak danych"}
                     </p>
                     <div className="mt-3 flex items-center gap-2">
                       <a
                         href="/panel/wnioski"
-                        className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white"
+                        className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-semibold text-white"
                       >
                         Akceptuj
                       </a>
                       <a
                         href="/panel/wnioski"
-                        className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                        className="rounded-full bg-rose-500/15 px-3 py-1 text-xs font-semibold text-rose-200"
                       >
                         Odrzuć
                       </a>

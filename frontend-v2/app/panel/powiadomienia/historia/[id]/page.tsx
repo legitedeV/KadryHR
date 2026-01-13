@@ -22,7 +22,7 @@ const STATUS_LABELS: Record<NotificationRecipientStatus, string> = {
 const STATUS_COLORS: Record<NotificationRecipientStatus, string> = {
   PENDING: "text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800",
   DELIVERED_IN_APP: "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900",
-  EMAIL_SENT: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900",
+  EMAIL_SENT: "text-brand-700 bg-brand-100/80 dark:text-brand-200 dark:bg-brand-900/50",
   EMAIL_FAILED: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900",
   SMS_SENT: "text-teal-600 bg-teal-100 dark:text-teal-300 dark:bg-teal-900",
   SMS_FAILED: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900",
@@ -255,8 +255,8 @@ export default function CampaignDetailsPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-blue-600 dark:text-blue-400">Email wysłany:</span>
-                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                <span className="text-brand-600 dark:text-brand-300">Email wysłany:</span>
+                <span className="font-semibold text-brand-600 dark:text-brand-300">
                   {campaign.stats.emailSent}
                 </span>
               </div>
