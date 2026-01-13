@@ -77,7 +77,7 @@ function formatJsonValue(value: unknown, depth = 0): ReactNode {
   }
 
   if (typeof value === "number") {
-    return <span className="text-blue-600 dark:text-blue-400">{value}</span>;
+    return <span className="text-brand-600 dark:text-brand-300">{value}</span>;
   }
 
   if (typeof value === "string") {
@@ -112,7 +112,7 @@ function formatJsonValue(value: unknown, depth = 0): ReactNode {
       <div className={depth > 0 ? "ml-4" : ""}>
         {entries.map(([key, val]) => (
           <div key={key} className="flex flex-wrap">
-            <span className="text-violet-600 dark:text-violet-400 font-medium mr-2">{key}:</span>
+            <span className="text-brand-600 dark:text-brand-300 font-medium mr-2">{key}:</span>
             {formatJsonValue(val, depth + 1)}
           </div>
         ))}

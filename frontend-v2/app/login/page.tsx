@@ -44,13 +44,14 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 panel-shell relative overflow-hidden">
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-brand-900/40 blur-3xl" />
-        <div className="absolute -right-32 bottom-1/4 h-64 w-64 rounded-full bg-accent-900/30 blur-3xl" />
+        <div className="hero-aurora" />
+        <div className="floating-orb orb-slow -left-28 top-12 h-52 w-52 bg-brand-700/40" />
+        <div className="floating-orb orb-fast -right-24 bottom-16 h-44 w-44 bg-accent-700/30" />
       </div>
 
-      <div className="w-full max-w-md card p-8 shadow-elevated">
+      <div className="w-full max-w-md panel-card p-8 shadow-elevated">
         <div className="flex items-start justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <Logo

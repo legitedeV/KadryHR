@@ -532,7 +532,7 @@ export default function WnioskiPage() {
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               filters.status === tab.key
                 ? "bg-brand-500 text-white shadow-sm"
-                : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
+                : "bg-surface-900/70 text-surface-300 hover:bg-surface-900/90"
             }`}
           >
             {tab.label}
@@ -570,9 +570,9 @@ export default function WnioskiPage() {
       {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Lista */}
-          <div className="card lg:col-span-2 overflow-hidden">
-            <div className="px-5 py-4 border-b border-surface-200 dark:border-surface-800 flex items-center justify-between">
-              <p className="text-sm font-medium text-surface-900 dark:text-surface-100">
+          <div className="panel-card lg:col-span-2 overflow-hidden">
+            <div className="px-5 py-4 border-b border-surface-800/80 flex items-center justify-between">
+              <p className="text-sm font-medium text-surface-100">
                 Wnioski ({requests.length})
               </p>
             </div>
@@ -583,24 +583,24 @@ export default function WnioskiPage() {
                   onClick={() => setSelectedId(r.id)}
                   className={`cursor-pointer rounded-2xl border px-4 py-3 transition ${
                     selectedId === r.id
-                      ? "border-brand-200 bg-brand-50/50 shadow-sm dark:border-brand-700/60 dark:bg-brand-950/30"
-                      : "border-surface-200 bg-white hover:border-brand-200 dark:border-surface-800 dark:bg-surface-900"
+                      ? "border-brand-500/60 bg-brand-500/10 shadow-sm"
+                      : "border-surface-800/70 bg-surface-900/70 hover:border-brand-500/40"
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-600 font-semibold text-xs dark:text-surface-300">
+                      <div className="h-9 w-9 rounded-2xl bg-surface-800/80 flex items-center justify-center text-surface-200 font-semibold text-xs">
                         {r.employeeName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-semibold text-surface-900 dark:text-surface-100">{r.employeeName}</p>
-                        <p className="text-xs text-surface-500 dark:text-surface-400">{mapRequestType(r.type)}</p>
+                        <p className="font-semibold text-surface-100">{r.employeeName}</p>
+                        <p className="text-xs text-surface-400">{mapRequestType(r.type)}</p>
                       </div>
                     </div>
                     <span className={statusBadgeClass(r.status)}>{mapStatus(r.status)}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                    <p className="text-xs text-surface-400">
                       {formatDateRange(r.startDate, r.endDate)} · {r.leaveType?.name ?? r.reason ?? "Brak danych"}
                     </p>
                     {canManage && r.status === "PENDING" && (
@@ -612,7 +612,7 @@ export default function WnioskiPage() {
                             setStatusAction("APPROVED");
                             setStatusModalOpen(true);
                           }}
-                          className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white"
+                          className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-semibold text-white"
                         >
                           Akceptuj
                         </button>
@@ -623,7 +623,7 @@ export default function WnioskiPage() {
                             setStatusAction("REJECTED");
                             setStatusModalOpen(true);
                           }}
-                          className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                          className="rounded-full bg-rose-500/15 px-3 py-1 text-xs font-semibold text-rose-200"
                         >
                           Odrzuć
                         </button>
