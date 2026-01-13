@@ -616,6 +616,25 @@ body[data-landing-scroll="true"] {
   scroll-behavior: smooth;
 }
 
+body[data-viewport-width="md"] .landing-section,
+body[data-viewport-width="lg"] .landing-section {
+  padding-top: 5rem !important;
+  padding-bottom: 5rem !important;
+}
+
+body[data-viewport-height="short"] .landing-section {
+  padding-top: 4.5rem !important;
+  padding-bottom: 4.5rem !important;
+}
+
+.hero-title {
+  font-size: clamp(2.35rem, 2.6vw, 3.1rem);
+}
+
+.hero-lede {
+  font-size: clamp(1rem, 1.15vw, 1.2rem);
+}
+
 .hero-layer {
   opacity: 0;
   transform: translate3d(0, 18px, 0);

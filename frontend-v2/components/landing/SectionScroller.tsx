@@ -13,8 +13,36 @@ export function SectionScroller({ children, className }: SectionScrollerProps) {
   const lockRef = useRef(false);
 
   useEffect(() => {
-    if (prefersReducedMotion()) return;
-    if (!window.matchMedia("(pointer: fine)").matches) return;
+    const updateViewport = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const widthTier =
+        width < 768 ? "sm" :
+          width < 1024 ? "md" :
+            width < 1280 ? "lg" :
+              width < 1536 ? "xl" : "2xl";
+      const heightTier = height < 800 ? "short" : height < 950 ? "medium" : "tall";
+      document.body.dataset.viewportWidth = widthTier;
+      document.body.dataset.viewportHeight = heightTier;
+    };
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+
+    if (prefersReducedMotion()) {
+      return () => {
+        window.removeEventListener("resize", updateViewport);
+        delete document.body.dataset.viewportWidth;
+        delete document.body.dataset.viewportHeight;
+      };
+    }
+    if (!window.matchMedia("(pointer: fine)").matches) {
+      return () => {
+        window.removeEventListener("resize", updateViewport);
+        delete document.body.dataset.viewportWidth;
+        delete document.body.dataset.viewportHeight;
+      };
+    }
 
     const sections = Array.from(document.querySelectorAll<HTMLElement>(".landing-section"));
     if (sections.length === 0) return;
@@ -57,8 +85,11 @@ export function SectionScroller({ children, className }: SectionScrollerProps) {
 
     return () => {
       window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("resize", updateViewport);
       observer.disconnect();
       delete document.body.dataset.landingScroll;
+      delete document.body.dataset.viewportWidth;
+      delete document.body.dataset.viewportHeight;
     };
   }, []);
 

@@ -76,10 +76,10 @@ export function Hero() {
             KadryHR dla retail i zespołów zmianowych
           </div>
           <div className="space-y-5">
-            <h1 className="text-4xl font-semibold leading-tight text-surface-50 md:text-5xl">
+            <h1 className="hero-title text-4xl font-semibold leading-tight text-surface-50 md:text-5xl">
               Grafiki, czas pracy i urlopy domknięte w jednym, przewidywalnym rytmie.
             </h1>
-            <p className="text-lg text-surface-300">
+            <p className="hero-lede text-lg text-surface-300">
               KadryHR porządkuje grafikowanie w sklepach i sieciach usługowych: mniej telefonów, mniej kolizji,
               szybsze rozliczenia i stały wgląd w obsadę na każdej zmianie.
             </p>
