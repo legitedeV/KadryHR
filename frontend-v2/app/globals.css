@@ -592,19 +592,40 @@ body::before {
 
 .reveal {
   opacity: 0;
-  transform: translate3d(0, 16px, 0);
+  transform: translate3d(0, var(--reveal-distance, 16px), 0) scale(var(--reveal-scale, 0.98));
   filter: blur(6px);
-  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity var(--reveal-duration, 700ms) cubic-bezier(0.22, 1, 0.36, 1),
+    transform var(--reveal-duration, 700ms) cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--reveal-duration, 700ms) cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform, filter;
 }
 
 .reveal-visible {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0) scale(1);
   filter: blur(0);
+}
+
+.landing-section {
+  scroll-snap-align: start;
+  scroll-margin-top: 96px;
+}
+
+body[data-landing-scroll="true"] {
+  scroll-behavior: smooth;
+}
+
+.hero-layer {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-hero-loaded="true"] .hero-layer {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 @keyframes topo-move {
