@@ -104,10 +104,15 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
   return (
     <NotificationsProvider>
-      <div className="min-h-screen flex bg-surface-950">
+      <div className="min-h-screen flex panel-shell relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="hero-aurora" />
+          <div className="floating-orb orb-slow -left-32 top-1/4 h-56 w-56 bg-brand-700/25" />
+          <div className="floating-orb orb-fast -right-28 bottom-10 h-48 w-48 bg-accent-700/20" />
+        </div>
         {/* sidebar */}
-        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
-          <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60">
+        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
+          <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
             <Logo
               variant="compact"
               size="xs"
@@ -133,16 +138,19 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-slate-900 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.15)] ring-1 ring-brand-700/60"
-                      : "text-surface-400 hover:bg-slate-900/60 hover:text-surface-200"
+                      ? "bg-brand-900/40 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.18)] ring-1 ring-brand-700/60"
+                      : "text-surface-400 hover:bg-surface-900/60 hover:text-surface-100"
                   }`}
                 >
+                  {active && (
+                    <span className="absolute left-2 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-brand-400/80" />
+                  )}
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                   </svg>
-                  <span>{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -150,7 +158,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-800/60 px-5 py-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-200 font-semibold">
+                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-100 font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -162,7 +170,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               </div>
               <button
                 onClick={handleLogout}
-                className="text-xs rounded-full border border-surface-700 px-3 py-1 font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                className="text-xs rounded-full border border-surface-700/70 px-3 py-1 font-medium text-surface-300 hover:bg-surface-800/70 hover:text-surface-100 transition-colors"
               >
                 Wyloguj
               </button>
@@ -188,7 +196,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         {/* Mobile menu sidebar */}
         <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 border-r border-surface-800/80`}>
+        } bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/80`}>
           <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800">
             <Logo
               variant="compact"
@@ -225,16 +233,19 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-slate-900 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.15)] ring-1 ring-brand-700/60"
-                      : "text-surface-400 hover:bg-slate-900/60 hover:text-surface-200"
+                      ? "bg-brand-900/40 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.18)] ring-1 ring-brand-700/60"
+                      : "text-surface-400 hover:bg-surface-900/60 hover:text-surface-100"
                   }`}
                 >
+                  {active && (
+                    <span className="absolute left-2 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-brand-400/80" />
+                  )}
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                   </svg>
-                  <span>{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -242,7 +253,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-800 px-4 py-3">
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-200 font-semibold">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-100 font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -254,12 +265,12 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-xs rounded-lg border border-surface-700 px-2 py-1 font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
-              >
-                Wyloguj
-              </button>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs rounded-lg border border-surface-700/70 px-2 py-1 font-medium text-surface-300 hover:bg-surface-800/70 hover:text-surface-100 transition-colors"
+                >
+                  Wyloguj
+                </button>
             </div>
             <div className="flex items-center gap-2 text-xs text-surface-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -273,7 +284,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
         {/* main area */}
         <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-surface-800/80 bg-surface-950/80 px-4 lg:px-6 flex items-center justify-between gap-4">
+          <header className="h-16 border-b border-surface-800/80 bg-surface-950/70 px-4 lg:px-6 flex items-center justify-between gap-4 backdrop-blur">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
@@ -299,7 +310,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.5 5.5a7.5 7.5 0 0011.15 11.15z" />
                 </svg>
                 <input
-                  className="w-full rounded-full border border-surface-800 bg-surface-950 py-2 pl-10 pr-4 text-sm text-surface-200 shadow-sm placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-700/50"
+                  className="panel-input pl-10"
                   placeholder="Szukaj pracownika, zmiany, lokalizacji..."
                 />
               </div>
@@ -307,15 +318,15 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-3">
               <Link
                 href="/panel/powiadomienia"
-                className="rounded-full border border-surface-800 bg-surface-950 p-2 text-surface-300 transition hover:text-surface-50"
+                className="rounded-full border border-surface-800/70 bg-surface-950/70 p-2 text-surface-300 transition hover:text-surface-50"
                 aria-label="Powiadomienia"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
                 </svg>
               </Link>
-              <div className="hidden sm:flex items-center gap-3 rounded-full border border-surface-800 bg-surface-950 px-3 py-1.5">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-900/50 to-brand-800/50 flex items-center justify-center text-brand-300 font-semibold text-xs">
+              <div className="hidden sm:flex items-center gap-3 rounded-full border border-surface-800/70 bg-surface-950/70 px-3 py-1.5">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-900/50 to-brand-800/50 flex items-center justify-center text-brand-200 font-semibold text-xs">
                   {user.email.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col leading-tight">
@@ -330,7 +341,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-gradient-to-b from-surface-950 to-surface-950">
+          <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-gradient-to-b from-surface-950 via-surface-950/95 to-surface-950">
             <div className="max-w-[1600px] w-full mx-auto">{children}</div>
           </main>
         </div>

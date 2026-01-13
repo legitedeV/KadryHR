@@ -87,7 +87,7 @@ export function ScheduleGrid({
             </svg>
             nieobsadzona
           </span>
-          <span className="text-xs text-surface-500 dark:text-surface-400">
+          <span className="text-xs text-surface-400">
             <span className="inline-flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-emerald-400" /> dostępny
             </span>
@@ -104,7 +104,7 @@ export function ScheduleGrid({
       </div>
 
       {promotionWarnings.length > 0 && (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/15 px-4 py-3 text-sm text-amber-200">
           <div className="flex items-start gap-2">
             <svg className="mt-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -135,7 +135,7 @@ export function ScheduleGrid({
       )}
 
       {employees.length > 0 && shifts.length === 0 && (
-        <div className="rounded-xl border border-dashed border-surface-200/80 bg-surface-50/40 dark:border-surface-800/80 dark:bg-surface-900/40">
+        <div className="rounded-xl border border-dashed border-surface-800/70 bg-surface-900/40">
           <EmptyState
             icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -153,11 +153,11 @@ export function ScheduleGrid({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-surface-200/80 dark:border-surface-800/80 -mx-1 lg:-mx-2">
+      <div className="overflow-x-auto rounded-2xl border border-surface-800/80 -mx-1 lg:-mx-2">
         <table className="min-w-full w-full table-fixed">
-          <thead className="bg-surface-50/80 dark:bg-surface-900/80">
-            <tr className="border-b border-surface-200 dark:border-surface-800">
-              <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 sticky left-0 bg-surface-50/80 dark:bg-surface-900/80 z-10">
+          <thead className="bg-surface-900/70">
+            <tr className="border-b border-surface-800">
+              <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-400 sticky left-0 bg-surface-900/70 z-10">
                 Pracownik
               </th>
               {dowLabels.map((dayLabel, idx) => {
@@ -169,7 +169,7 @@ export function ScheduleGrid({
                 const promotionInfo = scheduleMetadata?.promotionDays?.find((p) => p.date === dayDateStr);
 
                 return (
-                  <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-400">
                     <div className="flex flex-col items-center gap-1">
                       {isDeliveryDay && (
                         <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-white">
@@ -188,19 +188,19 @@ export function ScheduleGrid({
                         </span>
                       )}
                       <span>{dayLabel}</span>
-                      <span className="font-normal text-[10px] text-surface-400 dark:text-surface-500">
+                      <span className="font-normal text-[10px] text-surface-500">
                         {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
                       </span>
                       {promotionInfo?.type === "ZMIANA_PROMOCJI" && (
                         <div className="mt-1 flex flex-col items-center gap-0.5 text-[9px]">
-                          <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700 ring-1 ring-amber-200/60 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/60">
+                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-200 ring-1 ring-amber-400/30">
                             Wymagane 2 osoby
                           </span>
                           <span
                             className={`font-semibold ${
                               (promotionAfternoonCounts[dayDateStr] ?? 0) >= REQUIRED_AFTERNOON_COUNT
-                                ? "text-emerald-600 dark:text-emerald-300"
-                                : "text-rose-600 dark:text-rose-300"
+                                ? "text-emerald-300"
+                                : "text-rose-300"
                             }`}
                           >
                             Popołudnie: {promotionAfternoonCounts[dayDateStr] ?? 0}/{REQUIRED_AFTERNOON_COUNT}
@@ -213,10 +213,10 @@ export function ScheduleGrid({
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
+          <tbody className="divide-y divide-surface-800/80 bg-surface-900/60">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-surface-500 dark:text-surface-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-surface-400">
                   <EmptyState
                     icon={
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -233,16 +233,16 @@ export function ScheduleGrid({
                 const employeeShifts = gridByEmployeeAndDay[employee.id] || {};
                 const employeeAvail = availabilityIndicators[employee.id] || {};
                 return (
-                  <tr key={employee.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                    <td className="w-48 px-3 py-2 sticky left-0 bg-white dark:bg-surface-900/50 z-10 border-r border-surface-100 dark:border-surface-800">
+                  <tr key={employee.id} className="hover:bg-surface-800/40 transition-colors">
+                    <td className="w-48 px-3 py-2 sticky left-0 bg-surface-900/70 z-10 border-r border-surface-800/80">
                       <div className="flex items-center gap-2">
                         <Avatar name={formatEmployeeName(employee)} src={employee.avatarUrl} size="sm" />
                         <div className="flex flex-col min-w-0">
-                          <span className="font-medium text-sm text-surface-900 dark:text-surface-50 truncate">
+                          <span className="font-medium text-sm text-surface-50 truncate">
                             {formatEmployeeName(employee)}
                           </span>
                           {employee.position && (
-                            <span className="text-[10px] text-surface-500 dark:text-surface-400 truncate">
+                            <span className="text-[10px] text-surface-400 truncate">
                               {employee.position}
                             </span>
                           )}
@@ -271,7 +271,7 @@ export function ScheduleGrid({
                       return (
                         <td
                           key={dow}
-                          className={`px-2 py-2 align-top ${draggedShift ? "hover:bg-brand-50/50 dark:hover:bg-brand-950/30" : ""} ${hasApprovedLeave ? "bg-amber-50/30 dark:bg-amber-950/20" : ""}`}
+                          className={`px-2 py-2 align-top ${draggedShift ? "hover:bg-brand-500/10" : ""} ${hasApprovedLeave ? "bg-amber-500/10" : ""}`}
                           onDragOver={(event) => {
                             event.preventDefault();
                             event.dataTransfer.dropEffect = "move";
@@ -281,13 +281,13 @@ export function ScheduleGrid({
                             <div className="flex flex-col gap-2 min-h-[54px]">
                               <div className="flex items-center justify-between">
                                 {dayIndicator && (
-                                  <div className="flex items-center gap-1 text-[9px] text-surface-500" title={availabilityTooltip}>
+                                  <div className="flex items-center gap-1 text-[9px] text-surface-400" title={availabilityTooltip}>
                                     <span className={`h-2 w-2 rounded-full ${availabilityDotColor(dayIndicator.status)}`} />
                                     <span className="sr-only">{dayAvailabilityLabel}</span>
                                   </div>
                                 )}
                                 {hasApprovedLeave && (
-                                  <span 
+                                  <span
                                     className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-amber-500 text-white"
                                     title={dayLeaves[0].leaveType?.name || "Urlop"}
                                   >
@@ -297,15 +297,15 @@ export function ScheduleGrid({
                               </div>
                               {dayShifts.length === 0 ? (
                                 <button
-                                className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors flex items-center justify-center group"
-                                onClick={() => onOpenCreate(dayDateValue, employee.id)}
-                                aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
-                              >
-                                <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                </svg>
-                              </button>
-                            ) : (
+                                  className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-surface-800/70 hover:border-brand-500/60 hover:bg-brand-500/10 transition-colors flex items-center justify-center group"
+                                  onClick={() => onOpenCreate(dayDateValue, employee.id)}
+                                  aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
+                                >
+                                  <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </button>
+                              ) : (
                               <>
                                 {dayShifts.map((shift) => {
                                   const sourceShift = shifts.find((s) => s.id === shift.id);
@@ -317,7 +317,7 @@ export function ScheduleGrid({
                                       className={`group relative rounded-full border px-2.5 py-2 shadow-sm hover:shadow-md transition-all text-xs cursor-move ${
                                         shift.color
                                           ? ""
-                                          : "border-emerald-200 bg-emerald-50/70 dark:border-emerald-800/50 dark:bg-emerald-950/30"
+                                          : "border-emerald-500/30 bg-emerald-500/10"
                                       }`}
                                       style={
                                         shift.color
@@ -342,21 +342,21 @@ export function ScheduleGrid({
                                                 : undefined
                                             }
                                           >
-                                            <span className={shift.color ? "" : "text-emerald-800 dark:text-emerald-200"}>
+                                            <span className={shift.color ? "" : "text-emerald-200"}>
                                               {shift.start}–{shift.end}
                                             </span>
                                             {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
-                                              <div className="text-[9px] text-surface-600 dark:text-surface-300 truncate">
+                                              <div className="text-[9px] text-surface-300 truncate">
                                                 {shift.locationName}
                                               </div>
                                             )}
                                             {shift.position && (
-                                              <div className="text-[9px] uppercase tracking-wide text-surface-500 dark:text-surface-400 truncate">
+                                              <div className="text-[9px] uppercase tracking-wide text-surface-400 truncate">
                                                 {shift.position}
                                               </div>
                                             )}
                                             {shift.availabilityWarning && (
-                                              <div className="mt-0.5 rounded bg-amber-50 px-1 py-0.5 text-[8px] text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:ring-amber-800/70">
+                                              <div className="mt-0.5 rounded bg-amber-500/15 px-1 py-0.5 text-[8px] text-amber-200 ring-1 ring-amber-400/30">
                                                 {shift.availabilityWarning}
                                               </div>
                                             )}
@@ -364,14 +364,14 @@ export function ScheduleGrid({
                                         </div>
                                         <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button
-                                            className="text-[9px] text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium p-0.5"
+                                            className="text-[9px] text-brand-300 hover:text-brand-200 font-medium p-0.5"
                                             onClick={() => sourceShift && onOpenEdit(sourceShift)}
                                             aria-label="Edytuj zmianę"
                                           >
                                             ✎
                                           </button>
                                           <button
-                                            className="text-[9px] text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 font-medium p-0.5"
+                                            className="text-[9px] text-rose-300 hover:text-rose-200 font-medium p-0.5"
                                             onClick={() => sourceShift && onDeleteShift(sourceShift)}
                                             aria-label="Usuń zmianę"
                                           >
@@ -383,11 +383,11 @@ export function ScheduleGrid({
                                   );
                                 })}
                                 <button
-                                className="w-full rounded-2xl border border-dashed border-surface-200 hover:border-brand-300 hover:bg-brand-50/30 dark:border-surface-700 dark:hover:border-brand-700 dark:hover:bg-brand-950/20 transition-colors py-1 flex items-center justify-center group"
-                                onClick={() => onOpenCreate(dayDateValue, employee.id)}
-                                aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
-                              >
-                                <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-600 dark:text-surface-500 dark:group-hover:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  className="w-full rounded-2xl border border-dashed border-surface-800/70 hover:border-brand-500/60 hover:bg-brand-500/10 transition-colors py-1 flex items-center justify-center group"
+                                  onClick={() => onOpenCreate(dayDateValue, employee.id)}
+                                  aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
+                                >
+                                  <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                   </svg>
                                 </button>

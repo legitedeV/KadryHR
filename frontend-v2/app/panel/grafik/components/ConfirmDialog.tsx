@@ -35,11 +35,11 @@ export function ConfirmDialog({
       aria-label={title}
       className="fixed inset-0 z-[80] flex items-center justify-center"
     >
-      <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-surface-200/80 bg-white p-6 shadow-elevated ring-1 ring-surface-200 dark:border-surface-800 dark:bg-surface-900 dark:ring-surface-700">
+      <div className="absolute inset-0 bg-surface-900/50 backdrop-blur-sm" aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-md panel-card p-6">
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">{title}</h2>
-          <p className="text-sm text-surface-600 dark:text-surface-300">{description}</p>
+          <h2 className="text-lg font-semibold text-surface-50">{title}</h2>
+          <p className="text-sm text-surface-300">{description}</p>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
           <button type="button" className="btn-secondary" onClick={onCancel} aria-label={cancelLabel}>
