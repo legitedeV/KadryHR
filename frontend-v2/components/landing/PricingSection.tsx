@@ -38,7 +38,11 @@ export function PricingSection() {
                   <span className="text-4xl font-semibold text-surface-50">
                     {plan.price}
                   </span>
-                  <span className="ml-2 text-sm text-surface-400">{plan.cadence}</span>
+                  {plan.cadence && (
+                    <span className={`text-sm text-surface-400 ${plan.price === "Wycena" ? "block mt-1" : "ml-2"}`}>
+                      {plan.cadence}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-surface-300">{plan.desc}</p>
                 <ul className="space-y-3 text-sm text-surface-300">

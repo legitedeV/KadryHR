@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "./prefersReducedMotion";
 
 type CountUpProps = {
@@ -22,55 +22,63 @@ export function CountUp({
   decimals = 0,
   className,
 }: CountUpProps) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(value);
+  const [hasAnimated, setHasAnimated] = useState(false);
   const ref = useRef<HTMLSpanElement | null>(null);
-  const startedRef = useRef(false);
-  const reducedMotion = useMemo(() => prefersReducedMotion(), []);
 
   useEffect(() => {
-    if (reducedMotion) {
+    // Show immediate value if reduced motion is preferred
+    if (prefersReducedMotion()) {
       setDisplayValue(value);
+      setHasAnimated(true);
       return;
     }
 
     const element = ref.current;
     if (!element || typeof IntersectionObserver === "undefined") {
       setDisplayValue(value);
+      setHasAnimated(true);
       return;
     }
 
+    // Reset for animation
+    setDisplayValue(0);
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting || startedRef.current) return;
-        startedRef.current = true;
+        if (!entry.isIntersecting || hasAnimated) return;
+        
+        setHasAnimated(true);
         const start = performance.now();
 
         const animate = (now: number) => {
           const elapsed = now - start;
           const progress = Math.min(elapsed / duration, 1);
           const eased = easeOutCubic(progress);
-          setDisplayValue(value * eased);
+          setDisplayValue(Math.round(value * eased * 100) / 100);
           if (progress < 1) {
             requestAnimationFrame(animate);
+          } else {
+            setDisplayValue(value);
           }
         };
 
         requestAnimationFrame(animate);
       },
-      { threshold: 0.4 },
+      { threshold: 0.3 },
     );
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [duration, reducedMotion, value]);
+  }, [duration, hasAnimated, value]);
 
-  const formatted = useMemo(() => {
+  const formatted = (() => {
     const formatter = new Intl.NumberFormat("pl-PL", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     });
-    return formatter.format(displayValue);
-  }, [decimals, displayValue]);
+    return formatter.format(Math.round(displayValue));
+  })();
 
   return (
     <span ref={ref} className={className}>
