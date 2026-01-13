@@ -240,37 +240,45 @@ body::before {
 .btn-hero-outline {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.btn-hero-outline:hover {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
 }
 
 .hero-aurora {
   position: absolute;
-  inset: -40% -20% auto -20%;
-  height: 70%;
+  inset: -50% -30% auto -30%;
+  height: 80%;
   background:
-    radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.35), transparent 55%),
-    radial-gradient(circle at 80% 30%, rgba(217, 70, 239, 0.32), transparent 60%),
-    radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.25), transparent 60%);
-  filter: blur(40px);
-  animation: aurora 18s ease-in-out infinite alternate;
+    radial-gradient(ellipse at 15% 20%, rgba(56, 189, 248, 0.4), transparent 50%),
+    radial-gradient(ellipse at 85% 25%, rgba(34, 197, 94, 0.35), transparent 55%),
+    radial-gradient(ellipse at 50% 70%, rgba(168, 85, 247, 0.25), transparent 55%),
+    radial-gradient(ellipse at 30% 50%, rgba(16, 185, 129, 0.3), transparent 50%);
+  filter: blur(50px);
+  animation: aurora 20s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
 .floating-orb {
   position: absolute;
   border-radius: 999px;
-  filter: blur(0px);
+  filter: blur(2px);
   animation: float 12s ease-in-out infinite;
-  opacity: 0.75;
+  opacity: 0.8;
+  transition: transform 0.3s ease-out;
 }
 
 .floating-orb.orb-slow {
-  animation-duration: 18s;
+  animation-duration: 20s;
 }
 
 .floating-orb.orb-fast {
-  animation-duration: 9s;
+  animation-duration: 8s;
 }
 
 .glass-panel {
@@ -282,23 +290,36 @@ body::before {
 
 @keyframes aurora {
   0% {
-    transform: translate3d(-5%, -5%, 0) scale(1);
+    transform: translate3d(-3%, -3%, 0) scale(1);
+    opacity: 1;
   }
-  50% {
-    transform: translate3d(5%, 5%, 0) scale(1.05);
+  33% {
+    transform: translate3d(4%, 2%, 0) scale(1.03);
+    opacity: 0.9;
+  }
+  66% {
+    transform: translate3d(-2%, 5%, 0) scale(1.05);
+    opacity: 0.95;
   }
   100% {
-    transform: translate3d(-2%, 8%, 0) scale(1);
+    transform: translate3d(3%, -2%, 0) scale(1.02);
+    opacity: 1;
   }
 }
 
 @keyframes float {
   0%,
   100% {
-    transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(5px, -15px, 0) scale(1.02);
   }
   50% {
-    transform: translate3d(0, -18px, 0);
+    transform: translate3d(-3px, -20px, 0) scale(1);
+  }
+  75% {
+    transform: translate3d(-5px, -10px, 0) scale(0.98);
   }
 }
 
