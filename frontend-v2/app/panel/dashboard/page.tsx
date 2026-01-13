@@ -109,8 +109,8 @@ function getShiftTone(shift: ShiftView): { className: string; style?: CSSPropert
   const timeParts = parseTimeLabel(shift.start);
   const hour = timeParts ? timeParts[0] : 8;
   if (hour < 12) return { className: "bg-amber-500/10 border-amber-400/30 text-amber-100" };
-  if (hour < 17) return { className: "bg-sky-500/10 border-sky-400/30 text-sky-100" };
-  return { className: "bg-violet-500/10 border-violet-400/30 text-violet-100" };
+  if (hour < 17) return { className: "bg-brand-500/10 border-brand-400/30 text-brand-100" };
+  return { className: "bg-accent-500/10 border-accent-400/30 text-accent-100" };
 }
 
 function getWeekDays(range: { from: string }) {
@@ -415,13 +415,13 @@ export default function DashboardPage() {
               <svg viewBox="0 0 300 120" className="w-full h-28">
                 <defs>
                   <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.05" />
+                    <stop offset="0%" stopColor="#1ea574" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#1ea574" stopOpacity="0.05" />
                   </linearGradient>
                 </defs>
                 <polyline
                   fill="none"
-                  stroke="#60a5fa"
+                  stroke="#1ea574"
                   strokeWidth="3"
                   points={chartTotals
                     .map((point, idx) => {

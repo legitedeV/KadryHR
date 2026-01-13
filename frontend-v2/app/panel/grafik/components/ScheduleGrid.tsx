@@ -181,7 +181,7 @@ export function ScheduleGrid({
                           className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
                             promotionInfo.type === "ZMIANA_PROMOCJI"
                               ? "bg-amber-500 text-white"
-                              : "bg-violet-500 text-white"
+                              : "bg-brand-500 text-white"
                           }`}
                         >
                           {promotionInfo.type === "ZMIANA_PROMOCJI" ? "ZMIANA PROMOCJI" : "MAŁA PROMOCJA"}

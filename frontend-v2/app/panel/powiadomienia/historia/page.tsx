@@ -14,7 +14,7 @@ const STATUS_LABELS: Record<NotificationCampaignStatus, string> = {
 
 const STATUS_COLORS: Record<NotificationCampaignStatus, string> = {
   DRAFT: "text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800",
-  SENDING: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900",
+  SENDING: "text-brand-700 bg-brand-100/80 dark:text-brand-200 dark:bg-brand-900/50",
   SENT: "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900",
   FAILED: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900",
 };
