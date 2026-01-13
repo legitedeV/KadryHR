@@ -76,7 +76,7 @@ export function ScheduleHeader({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
-            className="input h-9 w-full max-w-[280px] rounded-full bg-surface-900/70 px-3 text-xs sm:w-64"
+            className="input h-9 w-full min-w-[160px] max-w-[220px] rounded-full bg-surface-900/70 px-3 text-xs sm:w-56"
             value={selectedLocationId}
             onChange={(event) => onLocationChange(event.target.value)}
             aria-label="Filtruj po lokalizacji"

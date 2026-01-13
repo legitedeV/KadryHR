@@ -178,18 +178,7 @@ export function ScheduleGrid({
       )}
 
       {employees.length > 0 && shifts.length === 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-800/70 bg-surface-900/50 px-4 py-3 text-sm text-surface-200">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-800/70 text-surface-300">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </span>
-            <div>
-              <p className="font-semibold text-surface-50">Brak zmian w tym tygodniu</p>
-              <p className="text-xs text-surface-400">Dodaj pierwszą zmianę, aby rozpocząć planowanie grafiku.</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-end">
           <button className="btn-primary px-4 py-2" onClick={() => onOpenCreate()}>
             Dodaj zmianę
           </button>
