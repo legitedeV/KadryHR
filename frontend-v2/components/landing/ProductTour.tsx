@@ -55,7 +55,7 @@ export function ProductTour() {
   const activeStep = useMemo(() => steps[activeIndex], [activeIndex]);
 
   return (
-    <section className="px-6 py-20" id="product-tour">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="product-tour">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-12 md:grid md:grid-cols-[0.9fr_1.1fr]">
           <Reveal className="space-y-5" delay={80} distance={18}>

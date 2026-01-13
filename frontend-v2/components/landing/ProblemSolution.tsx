@@ -40,7 +40,7 @@ const solutions = [
 
 export function ProblemSolution() {
   return (
-    <section className="px-6 py-16" id="funkcje">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="funkcje">
       <div className="mx-auto max-w-6xl space-y-12">
         <div className="grid gap-10 md:grid-cols-2">
           <Reveal className="space-y-4" delay={80} distance={18}>

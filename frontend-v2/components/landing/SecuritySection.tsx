@@ -21,7 +21,7 @@ const items = [
 
 export function SecuritySection() {
   return (
-    <section className="px-6 py-20" id="bezpieczenstwo">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="bezpieczenstwo">
       <div className="mx-auto max-w-6xl space-y-10">
         <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
           <Reveal className="space-y-4" delay={80} distance={18}>

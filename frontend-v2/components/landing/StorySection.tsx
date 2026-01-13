@@ -55,7 +55,7 @@ export function StorySection() {
   }, [reducedMotion]);
 
   return (
-    <section className="px-6 py-20" id="story">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="story">
       <div className="mx-auto max-w-6xl">
         <Reveal className="max-w-2xl space-y-4" delay={80} distance={18}>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Historia wdrożenia</p>

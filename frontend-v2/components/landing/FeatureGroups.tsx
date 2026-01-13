@@ -55,7 +55,7 @@ const groups = [
 
 export function FeatureGroups() {
   return (
-    <section className="px-6 py-20" id="planowanie">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="planowanie">
       <div className="mx-auto max-w-6xl space-y-12">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <Reveal className="space-y-3" delay={80} distance={18}>

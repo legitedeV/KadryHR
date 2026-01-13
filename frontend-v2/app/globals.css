@@ -607,6 +607,15 @@ body::before {
   filter: blur(0);
 }
 
+.landing-section {
+  scroll-snap-align: start;
+  scroll-margin-top: 96px;
+}
+
+body[data-landing-scroll="true"] {
+  scroll-behavior: smooth;
+}
+
 .hero-layer {
   opacity: 0;
   transform: translate3d(0, 18px, 0);

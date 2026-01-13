@@ -4,7 +4,7 @@ import { Reveal } from "@/components/motion/Reveal";
 
 export function ContactSection() {
   return (
-    <section className="px-6 py-20" id="kontakt">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="kontakt">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 md:grid-cols-[1fr_1.1fr]">
           <Reveal className="space-y-6" delay={80} distance={18}>

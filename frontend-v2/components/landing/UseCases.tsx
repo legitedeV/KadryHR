@@ -43,7 +43,7 @@ export function UseCases() {
   const [active, setActive] = useState(cases[0]);
 
   return (
-    <section className="px-6 py-20" id="dla-kogo">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="dla-kogo">
       <div className="mx-auto max-w-6xl space-y-12">
         <Reveal className="space-y-4" delay={80} distance={18}>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Dla kogo</p>

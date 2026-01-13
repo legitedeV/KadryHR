@@ -10,13 +10,14 @@ import { PricingSection } from "@/components/landing/PricingSection";
 import { SecuritySection } from "@/components/landing/SecuritySection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { SectionScroller } from "@/components/landing/SectionScroller";
 import Script from "next/script";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen">
       <MarketingHeader />
-      <main>
+      <SectionScroller>
         <Hero />
         <ProblemSolution />
         <ProductTour />
@@ -27,7 +28,7 @@ export default function HomePage() {
         <PricingSection />
         <SecuritySection />
         <ContactSection />
-      </main>
+      </SectionScroller>
       <LandingFooter />
       <Script id="schema-ld" type="application/ld+json">
         {JSON.stringify({

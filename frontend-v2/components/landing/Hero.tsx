@@ -56,7 +56,7 @@ export function Hero() {
 
   return (
     <section
-      className="relative overflow-hidden px-6 pb-16 pt-20 md:pt-28"
+      className="landing-section relative min-h-[90vh] overflow-hidden px-6 pb-16 pt-20 md:pt-28"
       id="produkt"
       data-hero-loaded={loaded}
     >
