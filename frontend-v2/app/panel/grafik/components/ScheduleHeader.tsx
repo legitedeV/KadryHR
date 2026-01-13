@@ -37,24 +37,19 @@ export function ScheduleHeader({
   templatesLoading,
 }: ScheduleHeaderProps) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Grafik pracy</p>
-          <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50 mt-1">
-            {range.label}
-          </p>
-        </div>
+    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Grafik pracy</p>
+        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">
+          {range.label}
+        </p>
         <div className="flex flex-wrap items-center gap-2 text-sm text-surface-300">
           <span className="panel-pill">
             Łącznie zmian: <strong className="text-surface-900 dark:text-surface-100">{shiftsCount}</strong>
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-surface-800/70 bg-surface-900/70 px-3 py-1 text-xs text-surface-300">
-            Tydzień roboczy
-          </span>
         </div>
       </div>
-      <div className="flex flex-col gap-3 lg:items-end">
+      <div className="flex flex-col gap-3 xl:items-end">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center rounded-full border border-surface-800/70 bg-surface-900/70 px-1">
             <button
@@ -81,7 +76,7 @@ export function ScheduleHeader({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
-            className="input h-9 rounded-full bg-surface-900/70 px-3 text-xs"
+            className="input h-9 w-full max-w-[280px] rounded-full bg-surface-900/70 px-3 text-xs sm:w-64"
             value={selectedLocationId}
             onChange={(event) => onLocationChange(event.target.value)}
             aria-label="Filtruj po lokalizacji"
