@@ -1,4 +1,4 @@
-import type { DragEvent } from "react";
+import { useMemo, useState, type DragEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import type { AvailabilityIndicator, ShiftDisplay, WeekRange } from "../types";
@@ -6,18 +6,12 @@ import type { ApprovedLeaveForSchedule, EmployeeRecord, ScheduleMetadata, ShiftR
 import { formatEmployeeName, formatMinutes, getContrastTextColor } from "../utils";
 
 const dowOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const dowLabels = [
-  "Poniedziałek",
-  "Wtorek",
-  "Środa",
-  "Czwartek",
-  "Piątek",
-  "Sobota",
-  "Niedziela",
-];
+const dowLabels = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
+const dowShortLabels = ["PN", "WT", "ŚR", "CZ", "PT", "SB", "ND"];
 
 const REQUIRED_AFTERNOON_COUNT = 2;
 const AFTERNOON_START_HOUR = 14;
+const WEEK_TARGET_HOURS = 40;
 
 interface ScheduleGridProps {
   range: WeekRange;
@@ -47,6 +41,20 @@ function availabilityDotColor(status: AvailabilityIndicator["status"]) {
   }
 }
 
+function availabilityCellStyles(status: AvailabilityIndicator["status"], hasApprovedLeave: boolean) {
+  if (hasApprovedLeave) {
+    return "bg-amber-500/10 ring-1 ring-amber-400/20";
+  }
+  switch (status) {
+    case "available":
+      return "bg-emerald-500/5";
+    case "partial":
+      return "bg-amber-500/10 ring-1 ring-amber-400/20";
+    default:
+      return "bg-rose-500/5 bg-[linear-gradient(135deg,rgba(244,63,94,0.12)_25%,transparent_25%,transparent_50%,rgba(244,63,94,0.12)_50%,rgba(244,63,94,0.12)_75%,transparent_75%,transparent)] bg-[length:10px_10px]";
+  }
+}
+
 export function ScheduleGrid({
   range,
   employees,
@@ -63,6 +71,38 @@ export function ScheduleGrid({
   onOpenEdit,
   onDeleteShift,
 }: ScheduleGridProps) {
+  const [activeDropTarget, setActiveDropTarget] = useState<{ employeeId: string; dayIndex: number } | null>(null);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const { employeeTotals, dayTotals, totalWeekMinutes } = useMemo(() => {
+    const totalsByEmployee: Record<string, number> = {};
+    const totalsByDay: number[] = Array.from({ length: 7 }, () => 0);
+    let totalMinutes = 0;
+
+    shifts.forEach((shift) => {
+      if (!shift.employeeId) return;
+      const start = new Date(shift.startsAt);
+      const end = new Date(shift.endsAt);
+      const minutes = Math.max(0, (end.getTime() - start.getTime()) / 60000);
+      if (!Number.isFinite(minutes) || minutes <= 0) return;
+
+      totalsByEmployee[shift.employeeId] = (totalsByEmployee[shift.employeeId] ?? 0) + minutes;
+
+      const dateStr = start.toISOString().slice(0, 10);
+      for (let i = 0; i < 7; i += 1) {
+        const dayDate = new Date(range.from);
+        dayDate.setDate(dayDate.getDate() + i);
+        if (dayDate.toISOString().slice(0, 10) === dateStr) {
+          totalsByDay[i] += minutes;
+        }
+      }
+
+      totalMinutes += minutes;
+    });
+
+    return { employeeTotals: totalsByEmployee, dayTotals: totalsByDay, totalWeekMinutes: totalMinutes };
+  }, [range.from, shifts]);
+
   const promotionWarnings = scheduleMetadata?.promotionDays
     ?.filter((promo) => promo.type === "ZMIANA_PROMOCJI")
     .map((promo) => {
@@ -87,7 +127,10 @@ export function ScheduleGrid({
             </svg>
             nieobsadzona
           </span>
-          <span className="text-xs text-surface-400">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
+            <span className="rounded-full border border-surface-800/60 bg-surface-900/60 px-2.5 py-1">
+              Łącznie godzin: {formatMinutes(totalWeekMinutes)}
+            </span>
             <span className="inline-flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-emerald-400" /> dostępny
             </span>
@@ -99,12 +142,12 @@ export function ScheduleGrid({
             <span className="inline-flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-rose-400" /> brak dostępności
             </span>
-          </span>
+          </div>
         </div>
       </div>
 
       {promotionWarnings.length > 0 && (
-        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/15 px-4 py-3 text-sm text-amber-200">
+        <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/15 px-4 py-3 text-sm text-amber-200">
           <div className="flex items-start gap-2">
             <svg className="mt-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -135,41 +178,36 @@ export function ScheduleGrid({
       )}
 
       {employees.length > 0 && shifts.length === 0 && (
-        <div className="rounded-xl border border-dashed border-surface-800/70 bg-surface-900/40">
-          <EmptyState
-            icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            }
-            title="Brak zmian w tym tygodniu"
-            description="Dodaj pierwszą zmianę, aby rozpocząć planowanie grafiku."
-            action={
-              <button className="btn-primary px-4 py-2" onClick={() => onOpenCreate()}>
-                Dodaj zmianę
-              </button>
-            }
-          />
+        <div className="flex items-center justify-end">
+          <button className="btn-primary px-4 py-2" onClick={() => onOpenCreate()}>
+            Dodaj zmianę
+          </button>
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-surface-800/80 -mx-1 lg:-mx-2">
+      <div className="overflow-x-auto rounded-2xl border border-surface-800/80 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.6)] -mx-1 lg:-mx-2">
         <table className="min-w-full w-full table-fixed">
-          <thead className="bg-surface-900/70">
-            <tr className="border-b border-surface-800">
-              <th className="w-48 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-400 sticky left-0 bg-surface-900/70 z-10">
+          <thead className="bg-surface-900/70 sticky top-0 z-10">
+            <tr className="border-b border-surface-800/80">
+              <th className="w-52 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-surface-400 sticky left-0 bg-surface-900/80 z-20">
                 Pracownik
               </th>
               {dowLabels.map((dayLabel, idx) => {
                 const dayDate = new Date(range.from);
                 dayDate.setDate(dayDate.getDate() + idx);
                 const dayDateStr = dayDate.toISOString().slice(0, 10);
+                const isToday = dayDateStr === todayStr;
 
                 const isDeliveryDay = scheduleMetadata?.deliveryDays?.includes(dayDateStr);
                 const promotionInfo = scheduleMetadata?.promotionDays?.find((p) => p.date === dayDateStr);
 
                 return (
-                  <th key={dayLabel} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-400">
+                  <th
+                    key={dayLabel}
+                    className={`px-2 py-4 text-center text-xs font-semibold uppercase tracking-wider text-surface-400 ${
+                      isToday ? "bg-brand-500/10 text-brand-200" : ""
+                    }`}
+                  >
                     <div className="flex flex-col items-center gap-1">
                       {isDeliveryDay && (
                         <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-white">
@@ -187,8 +225,10 @@ export function ScheduleGrid({
                           {promotionInfo.type === "ZMIANA_PROMOCJI" ? "ZMIANA PROMOCJI" : "MAŁA PROMOCJA"}
                         </span>
                       )}
-                      <span>{dayLabel}</span>
-                      <span className="font-normal text-[10px] text-surface-500">
+                      <span className={`text-sm ${isToday ? "text-brand-200" : "text-surface-200"}`}>
+                        {dowShortLabels[idx]}
+                      </span>
+                      <span className="font-normal text-[11px] text-surface-500">
                         {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
                       </span>
                       {promotionInfo?.type === "ZMIANA_PROMOCJI" && (
@@ -211,12 +251,15 @@ export function ScheduleGrid({
                   </th>
                 );
               })}
+              <th className="w-40 px-3 py-4 text-center text-xs font-semibold uppercase tracking-wider text-surface-400">
+                Suma tyg.
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-800/80 bg-surface-900/60">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-surface-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-surface-400">
                   <EmptyState
                     icon={
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -232,9 +275,16 @@ export function ScheduleGrid({
               employees.map((employee) => {
                 const employeeShifts = gridByEmployeeAndDay[employee.id] || {};
                 const employeeAvail = availabilityIndicators[employee.id] || {};
+                const employeeTotalMinutes = employeeTotals[employee.id] ?? 0;
+                const targetMinutes = WEEK_TARGET_HOURS * 60;
+                const progress = Math.min(100, Math.round((employeeTotalMinutes / targetMinutes) * 100));
+                const isRowActive = activeDropTarget?.employeeId === employee.id;
                 return (
-                  <tr key={employee.id} className="hover:bg-surface-800/40 transition-colors">
-                    <td className="w-48 px-3 py-2 sticky left-0 bg-surface-900/70 z-10 border-r border-surface-800/80">
+                  <tr
+                    key={employee.id}
+                    className={`transition-colors ${isRowActive ? "bg-brand-500/5" : "hover:bg-surface-800/40"}`}
+                  >
+                    <td className="w-52 px-3 py-3 sticky left-0 bg-surface-900/80 z-10 border-r border-surface-800/80">
                       <div className="flex items-center gap-2">
                         <Avatar name={formatEmployeeName(employee)} src={employee.avatarUrl} size="sm" />
                         <div className="flex flex-col min-w-0">
@@ -256,6 +306,8 @@ export function ScheduleGrid({
                       const dayDate = new Date(range.from);
                       dayDate.setDate(dayDate.getDate() + dayIdx);
                       const dayDateValue = dayDate.toISOString().slice(0, 10);
+                      const isColumnActive = activeDropTarget?.dayIndex === dayIdx;
+                      const isToday = dayDateValue === todayStr;
                       const dayAvailabilityLabel = dayIndicator
                         ? `Dostępność: ${dayIndicator.label}`
                         : "Brak danych o dostępności";
@@ -271,14 +323,30 @@ export function ScheduleGrid({
                       return (
                         <td
                           key={dow}
-                          className={`px-2 py-2 align-top ${draggedShift ? "hover:bg-brand-500/10" : ""} ${hasApprovedLeave ? "bg-amber-500/10" : ""}`}
+                          className={`px-2 py-2 align-top transition-colors ${
+                            draggedShift ? "hover:bg-brand-500/10" : ""
+                          } ${isColumnActive ? "bg-brand-500/10" : ""} ${isToday ? "bg-brand-500/5" : ""}`}
                           onDragOver={(event) => {
                             event.preventDefault();
                             event.dataTransfer.dropEffect = "move";
+                            setActiveDropTarget({ employeeId: employee.id, dayIndex: dayIdx });
                           }}
-                          onDrop={(event) => onDropShift(event, dayDateValue, employee.id)}
+                          onDragLeave={() => {
+                            setActiveDropTarget((prev) =>
+                              prev?.employeeId === employee.id && prev?.dayIndex === dayIdx ? null : prev,
+                            );
+                          }}
+                          onDrop={(event) => {
+                            setActiveDropTarget(null);
+                            onDropShift(event, dayDateValue, employee.id);
+                          }}
                         >
-                            <div className="flex flex-col gap-2 min-h-[54px]">
+                            <div
+                              className={`flex flex-col gap-2 min-h-[72px] rounded-2xl border border-surface-800/40 px-2 py-2 ${availabilityCellStyles(
+                                dayIndicator?.status ?? "unavailable",
+                                hasApprovedLeave,
+                              )}`}
+                            >
                               <div className="flex items-center justify-between">
                                 {dayIndicator && (
                                   <div className="flex items-center gap-1 text-[9px] text-surface-400" title={availabilityTooltip}>
@@ -297,7 +365,7 @@ export function ScheduleGrid({
                               </div>
                               {dayShifts.length === 0 ? (
                                 <button
-                                  className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-surface-800/70 hover:border-brand-500/60 hover:bg-brand-500/10 transition-colors flex items-center justify-center group"
+                                  className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-surface-800/70 hover:border-brand-500/60 hover:bg-brand-500/10 transition-all flex items-center justify-center group"
                                   onClick={() => onOpenCreate(dayDateValue, employee.id)}
                                   aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                 >
@@ -309,16 +377,17 @@ export function ScheduleGrid({
                               <>
                                 {dayShifts.map((shift) => {
                                   const sourceShift = shifts.find((s) => s.id === shift.id);
+                                  const showWarning = Boolean(shift.availabilityWarning || hasApprovedLeave);
                                   return (
                                     <div
                                       key={shift.id}
                                       draggable
                                       onDragStart={(event) => onDragStart(shift.id, event)}
-                                      className={`group relative rounded-full border px-2.5 py-2 shadow-sm hover:shadow-md transition-all text-xs cursor-move ${
+                                      className={`group relative rounded-2xl border px-3 py-2 shadow-sm hover:shadow-lg transition-all text-xs cursor-move ${
                                         shift.color
                                           ? ""
                                           : "border-emerald-500/30 bg-emerald-500/10"
-                                      }`}
+                                      } ${draggedShift === shift.id ? "opacity-60 scale-95" : "hover:-translate-y-0.5"}`}
                                       style={
                                         shift.color
                                           ? { backgroundColor: `${shift.color}20`, borderColor: `${shift.color}50` }
@@ -335,29 +404,38 @@ export function ScheduleGrid({
                                         <div className="flex items-center gap-2 min-w-0">
                                           <Avatar name={shift.employeeName} src={shift.employeeAvatar} size="sm" className="h-6 w-6 text-[10px]" />
                                           <div
-                                            className="font-semibold text-[11px]"
+                                            className="font-semibold text-[11px] min-w-0"
                                             style={
                                               shift.color
                                                 ? { color: getContrastTextColor(shift.color + "30") === "#ffffff" ? shift.color : shift.color }
                                                 : undefined
                                             }
                                           >
-                                            <span className={shift.color ? "" : "text-emerald-200"}>
-                                              {shift.start}–{shift.end}
-                                            </span>
-                                            {shift.locationName && shift.locationName !== "Brak lokalizacji" && (
+                                            <div className="flex items-center gap-1">
+                                              <span className={`text-[11px] ${shift.color ? "" : "text-emerald-200"}`}>
+                                                {shift.start}–{shift.end}
+                                              </span>
+                                              {showWarning && (
+                                                <span
+                                                  className="inline-flex items-center text-amber-400"
+                                                  title={shift.availabilityWarning || "Konflikt z urlopem"}
+                                                >
+                                                  <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path
+                                                      fillRule="evenodd"
+                                                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                      clipRule="evenodd"
+                                                    />
+                                                  </svg>
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="text-[9px] uppercase tracking-wide text-surface-400 truncate">
+                                              {shift.position || shift.locationName || "Zmiana"}
+                                            </div>
+                                            {shift.locationName && shift.locationName !== "Brak lokalizacji" && shift.position && (
                                               <div className="text-[9px] text-surface-300 truncate">
                                                 {shift.locationName}
-                                              </div>
-                                            )}
-                                            {shift.position && (
-                                              <div className="text-[9px] uppercase tracking-wide text-surface-400 truncate">
-                                                {shift.position}
-                                              </div>
-                                            )}
-                                            {shift.availabilityWarning && (
-                                              <div className="mt-0.5 rounded bg-amber-500/15 px-1 py-0.5 text-[8px] text-amber-200 ring-1 ring-amber-400/30">
-                                                {shift.availabilityWarning}
                                               </div>
                                             )}
                                           </div>
@@ -397,11 +475,41 @@ export function ScheduleGrid({
                         </td>
                       );
                     })}
+                    <td className="px-3 py-2 align-top">
+                      <div className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-3 py-3 text-center shadow-sm">
+                        <p className="text-xs font-semibold text-surface-50">{formatMinutes(employeeTotalMinutes)}</p>
+                        <p className="text-[10px] text-surface-400">Cel {WEEK_TARGET_HOURS}h</p>
+                        <div className="mt-2 h-1.5 w-full rounded-full bg-surface-800/60">
+                          <div
+                            className="h-1.5 rounded-full bg-brand-400"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
                   </tr>
                 );
               })
             )}
           </tbody>
+          <tfoot className="bg-surface-900/70">
+            <tr className="border-t border-surface-800/80">
+              <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400 sticky left-0 bg-surface-900/80 z-20">
+                Suma dnia
+              </td>
+              {dayTotals.map((total, index) => (
+                <td key={`total-${dowOrder[index]}`} className="px-2 py-3 text-center">
+                  <div className="inline-flex flex-col items-center gap-1 rounded-full border border-surface-800/70 bg-surface-900/70 px-3 py-1 text-[10px] font-semibold text-surface-200">
+                    <span>{formatMinutes(total)}</span>
+                    <span className="text-[9px] text-surface-400">godziny</span>
+                  </div>
+                </td>
+              ))}
+              <td className="px-3 py-3 text-center text-xs font-semibold text-surface-300">
+                {formatMinutes(totalWeekMinutes)}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
