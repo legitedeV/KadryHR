@@ -1,5 +1,4 @@
 import { Reveal } from "@/components/motion/Reveal";
-import { CountUp } from "@/components/motion/CountUp";
 
 const quotes = [
   {
@@ -20,9 +19,9 @@ const quotes = [
 ];
 
 const metrics = [
-  { value: 42, prefix: "-", suffix: "%", label: "mniej konfliktów w grafiku" },
-  { value: 31, prefix: "-", suffix: "%", label: "krótsze zamknięcie miesiąca" },
-  { value: 55, prefix: "-", suffix: "%", label: "mniej telefonów od zespołu" },
+  { value: "-42%", label: "mniej konfliktów w grafiku" },
+  { value: "-31%", label: "krótsze zamknięcie miesiąca" },
+  { value: "-55%", label: "mniej telefonów od zespołu" },
 ];
 
 export function SocialProof() {
@@ -30,13 +29,13 @@ export function SocialProof() {
     <section className="px-6 py-20" id="opinie">
       <div className="mx-auto max-w-6xl space-y-12">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <Reveal className="space-y-3" delay={80} distance={18}>
+          <Reveal className="space-y-3" delay={80}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Social proof</p>
             <h2 className="text-3xl font-semibold text-surface-50">
               Co mówią zespoły z pilotażu.
             </h2>
           </Reveal>
-          <Reveal className="rounded-full border border-surface-800/60 bg-surface-900/60 px-4 py-2 text-xs font-semibold text-surface-300" delay={120} distance={16}>
+          <Reveal className="rounded-full border border-surface-800/60 bg-surface-900/60 px-4 py-2 text-xs font-semibold text-surface-300" delay={120}>
             Wyniki po 3 miesiącach wdrożenia
           </Reveal>
         </div>
@@ -45,8 +44,7 @@ export function SocialProof() {
             <Reveal
               key={item.quote}
               delay={140 + index * 80}
-              className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1"
-              distance={18}
+              className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur"
             >
               <p className="text-sm text-surface-300">“{item.quote}”</p>
               <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
@@ -56,25 +54,18 @@ export function SocialProof() {
           ))}
         </div>
         <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-          <Reveal className="grid gap-4 rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6" delay={160} distance={20}>
+          <Reveal className="grid gap-4 rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6" delay={160}>
             <h3 className="text-xl font-semibold text-surface-50">Wyniki, które robią różnicę</h3>
             <div className="grid gap-4 md:grid-cols-3">
               {metrics.map((metric, index) => (
-                <Reveal
-                  key={metric.label}
-                  delay={200 + index * 60}
-                  className="rounded-2xl bg-surface-900/70 p-4 text-center shadow-sm transition-transform duration-300 hover:-translate-y-1"
-                  distance={16}
-                >
-                  <p className="text-2xl font-semibold text-brand-200">
-                    <CountUp value={metric.value} prefix={metric.prefix} suffix={metric.suffix} />
-                  </p>
+                <Reveal key={metric.label} delay={200 + index * 60} className="rounded-2xl bg-surface-900/70 p-4 text-center shadow-sm">
+                  <p className="text-2xl font-semibold text-brand-200">{metric.value}</p>
                   <p className="mt-1 text-xs text-surface-300">{metric.label}</p>
                 </Reveal>
               ))}
             </div>
           </Reveal>
-          <Reveal className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur" delay={220} distance={20}>
+          <Reveal className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur" delay={220}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Security badge</p>
             <h3 className="mt-3 text-xl font-semibold text-surface-50">Bezpieczeństwo i zgodność</h3>
             <p className="mt-3 text-sm text-surface-300">

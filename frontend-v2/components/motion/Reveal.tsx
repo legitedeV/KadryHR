@@ -1,20 +1,27 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { prefersReducedMotion } from "./prefersReducedMotion";
 
 type RevealProps = {
   children: ReactNode;
   className?: string;
   delay?: number;
   once?: boolean;
+  distance?: number;
+  duration?: number;
+  scale?: number;
 };
 
-function prefersReducedMotion() {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-export function Reveal({ children, className, delay = 0, once = true }: RevealProps) {
+export function Reveal({
+  children,
+  className,
+  delay = 0,
+  once = true,
+  distance = 16,
+  duration = 700,
+  scale = 0.98,
+}: RevealProps) {
   const [visible, setVisible] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -50,7 +57,16 @@ export function Reveal({ children, className, delay = 0, once = true }: RevealPr
     return () => observer.disconnect();
   }, [once, reducedMotion]);
 
-  const style = useMemo(() => ({ "--reveal-delay": `${delay}ms` }) as React.CSSProperties, [delay]);
+  const style = useMemo(
+    () =>
+      ({
+        "--reveal-delay": `${delay}ms`,
+        "--reveal-distance": `${distance}px`,
+        "--reveal-duration": `${duration}ms`,
+        "--reveal-scale": scale,
+      }) as React.CSSProperties,
+    [delay, distance, duration, scale],
+  );
 
   return (
     <div

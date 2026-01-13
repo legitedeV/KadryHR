@@ -45,7 +45,7 @@ export function UseCases() {
   return (
     <section className="px-6 py-20" id="dla-kogo">
       <div className="mx-auto max-w-6xl space-y-12">
-        <Reveal className="space-y-4" delay={80} distance={18}>
+        <Reveal className="space-y-4" delay={80}>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Dla kogo</p>
           <h2 className="text-3xl font-semibold text-surface-50">
             Trzy branże, jeden rytm pracy zmianowej.
@@ -57,7 +57,7 @@ export function UseCases() {
               key={item.id}
               type="button"
               onClick={() => setActive(item)}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 ${
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
                 active.id === item.id
                   ? "bg-brand-600 text-white shadow-soft"
                   : "border border-surface-800/60 bg-surface-900/60 text-surface-300 hover:border-brand-600"
@@ -68,11 +68,7 @@ export function UseCases() {
           ))}
         </div>
         <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-          <Reveal
-            className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1"
-            delay={120}
-            distance={20}
-          >
+          <Reveal className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur" delay={120}>
             <h3 className="text-2xl font-semibold text-surface-50">
               {active.title}
             </h3>
@@ -86,11 +82,7 @@ export function UseCases() {
               ))}
             </ul>
           </Reveal>
-          <Reveal
-            className="relative overflow-hidden rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6 transition-transform duration-300 hover:-translate-y-1"
-            delay={180}
-            distance={20}
-          >
+          <Reveal className="relative overflow-hidden rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6" delay={180}>
             <div className="absolute inset-0 opacity-70" aria-hidden="true">
               <svg className="h-full w-full" viewBox="0 0 400 300" fill="none">
                 <g className="topo-lines" stroke="rgba(22, 132, 96, 0.35)" strokeWidth="1">
