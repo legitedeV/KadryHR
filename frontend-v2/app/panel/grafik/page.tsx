@@ -48,10 +48,16 @@ function getWeekRange(anchor: Date = new Date()): WeekRange {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const sameMonth = monday.getMonth() === sunday.getMonth() && monday.getFullYear() === sunday.getFullYear();
+  const dayFormatter = new Intl.DateTimeFormat("pl-PL", { day: "numeric" });
+  const monthFormatter = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" });
+  const fullFormatter = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", year: "numeric" });
   return {
     from: fmt(monday),
     to: fmt(sunday),
-    label: `${monday.toLocaleDateString("pl-PL")} – ${sunday.toLocaleDateString("pl-PL")}`,
+    label: sameMonth
+      ? `${dayFormatter.format(monday)}–${dayFormatter.format(sunday)} ${monthFormatter.format(sunday)}`
+      : `${fullFormatter.format(monday)} – ${fullFormatter.format(sunday)}`,
   };
 }
 
@@ -228,6 +234,7 @@ export default function GrafikPage() {
   const [scheduleMetadata, setScheduleMetadata] = useState<ScheduleMetadata | null>(null);
   const [templates, setTemplates] = useState<ScheduleTemplateRecord[]>([]);
   const [draggedShift, setDraggedShift] = useState<string | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState("");
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -357,7 +364,11 @@ export default function GrafikPage() {
       });
     });
 
-    shifts.forEach((s) => {
+    const filteredShifts = selectedLocationId
+      ? shifts.filter((shift) => shift.locationId === selectedLocationId)
+      : shifts;
+
+    filteredShifts.forEach((s) => {
       const display = mapShiftRecord(s, employees, locations);
       if (!display.employeeId) return;
       const key = getDowKey(display.date);
@@ -367,7 +378,7 @@ export default function GrafikPage() {
     });
 
     return grid;
-  }, [employees, shifts, locations]);
+  }, [employees, locations, selectedLocationId, shifts]);
 
   const availabilityByEmployeeAndDay: Record<string, Record<string, AvailabilityRecord[]>> = useMemo(() => {
     const grid: Record<string, Record<string, AvailabilityRecord[]>> = {};
@@ -419,9 +430,13 @@ export default function GrafikPage() {
     return indicators;
   }, [availabilityByEmployeeAndDay, employees]);
 
+  const visibleShifts = useMemo(() => {
+    return selectedLocationId ? shifts.filter((shift) => shift.locationId === selectedLocationId) : shifts;
+  }, [selectedLocationId, shifts]);
+
   const promotionAfternoonCounts = useMemo(() => {
-    return countAfternoonPromotions(shifts, scheduleMetadata);
-  }, [scheduleMetadata, shifts]);
+    return countAfternoonPromotions(visibleShifts, scheduleMetadata);
+  }, [scheduleMetadata, visibleShifts]);
 
   const handleWeekChange = (direction: "next" | "prev") => {
     const currentStart = new Date(range.from);
@@ -433,7 +448,7 @@ export default function GrafikPage() {
   const resetForm = (date?: string, employeeId?: string) => {
     setForm({
       employeeId: employeeId ?? employees[0]?.id ?? "",
-      locationId: locations[0]?.id,
+      locationId: selectedLocationId || locations[0]?.id,
       position: "",
       notes: "",
       color: "",
@@ -472,6 +487,19 @@ export default function GrafikPage() {
     setDraggedShift(shiftId);
     event.dataTransfer.setData("text/plain", shiftId);
     event.dataTransfer.effectAllowed = "move";
+    const target = event.currentTarget;
+    const clone = target.cloneNode(true) as HTMLElement;
+    clone.style.position = "absolute";
+    clone.style.top = "-9999px";
+    clone.style.left = "-9999px";
+    clone.style.pointerEvents = "none";
+    clone.style.width = `${target.offsetWidth}px`;
+    clone.style.boxShadow = "0 20px 35px rgba(15, 23, 42, 0.35)";
+    document.body.appendChild(clone);
+    event.dataTransfer.setDragImage(clone, clone.offsetWidth / 2, clone.offsetHeight / 2);
+    requestAnimationFrame(() => {
+      clone.remove();
+    });
   };
 
   const checkAvailabilityForPayload = (payload: ShiftPayload) => {
@@ -807,19 +835,26 @@ export default function GrafikPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card p-6 space-y-4">
-        <ScheduleHeader
-          range={range}
-          shiftsCount={shifts.length}
-          onPrevWeek={() => handleWeekChange("prev")}
-          onNextWeek={() => handleWeekChange("next")}
-          onPublish={() => setPublishOpen(true)}
-          onClearWeek={() => setClearWeekOpen(true)}
-          onCopyPreviousWeek={() => setCopyConfirmOpen(true)}
-          onOpenTemplates={handleOpenTemplates}
-          copying={copyingWeek}
-          templatesLoading={loadingTemplates}
-        />
+      <div className="card p-6 space-y-6">
+        <div className="sticky top-4 z-20 -mx-6 -mt-6 px-6 pt-6 pb-4 border-b border-surface-200/60 bg-surface-50/80 backdrop-blur dark:border-surface-800/70 dark:bg-surface-950/80">
+          <ScheduleHeader
+            range={range}
+            shiftsCount={visibleShifts.length}
+            locations={locations}
+            selectedLocationId={selectedLocationId}
+            onPrevWeek={() => handleWeekChange("prev")}
+            onNextWeek={() => handleWeekChange("next")}
+            onCurrentWeek={() => setRange(getWeekRange())}
+            onPublish={() => setPublishOpen(true)}
+            onClearWeek={() => setClearWeekOpen(true)}
+            onCopyPreviousWeek={() => setCopyConfirmOpen(true)}
+            onOpenTemplates={handleOpenTemplates}
+            onAddShift={() => openCreateModal()}
+            onLocationChange={setSelectedLocationId}
+            copying={copyingWeek}
+            templatesLoading={loadingTemplates}
+          />
+        </div>
 
         {loading && (
           <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
@@ -849,7 +884,7 @@ export default function GrafikPage() {
             <ScheduleGrid
               range={range}
               employees={employees}
-              shifts={shifts}
+              shifts={visibleShifts}
               gridByEmployeeAndDay={gridByEmployeeAndDay}
               availabilityIndicators={availabilityIndicators}
               approvedLeavesByEmployeeAndDay={approvedLeavesByEmployeeAndDay}
@@ -872,6 +907,17 @@ export default function GrafikPage() {
         form={form}
         employees={employees}
         locations={locations}
+        availabilityLabel={
+          form.employeeId
+            ? availabilityIndicators[form.employeeId]?.[getDowKey(form.date)]?.label
+            : undefined
+        }
+        availabilityWindows={
+          form.employeeId ? availabilityByEmployeeAndDay[form.employeeId]?.[getDowKey(form.date)] ?? [] : []
+        }
+        approvedLeaves={
+          form.employeeId ? approvedLeavesByEmployeeAndDay[form.employeeId]?.[getDowKey(form.date)] ?? [] : []
+        }
         saving={saving}
         formError={formError}
         onClose={() => setEditorOpen(false)}

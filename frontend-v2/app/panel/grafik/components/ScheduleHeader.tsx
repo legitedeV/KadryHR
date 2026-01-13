@@ -1,14 +1,20 @@
+import type { LocationRecord } from "@/lib/api";
 import type { WeekRange } from "../types";
 
 interface ScheduleHeaderProps {
   range: WeekRange;
   shiftsCount: number;
+  locations: LocationRecord[];
+  selectedLocationId: string;
   onPrevWeek: () => void;
   onNextWeek: () => void;
+  onCurrentWeek: () => void;
   onPublish: () => void;
   onClearWeek: () => void;
   onCopyPreviousWeek: () => void;
   onOpenTemplates: () => void;
+  onAddShift: () => void;
+  onLocationChange: (locationId: string) => void;
   copying: boolean;
   templatesLoading: boolean;
 }
@@ -16,44 +22,80 @@ interface ScheduleHeaderProps {
 export function ScheduleHeader({
   range,
   shiftsCount,
+  locations,
+  selectedLocationId,
   onPrevWeek,
   onNextWeek,
+  onCurrentWeek,
   onPublish,
   onClearWeek,
   onCopyPreviousWeek,
   onOpenTemplates,
+  onAddShift,
+  onLocationChange,
   copying,
   templatesLoading,
 }: ScheduleHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Grafik</p>
-        <p className="text-2xl font-semibold text-surface-50 mt-1">
-          Tydzień: {range.label}
+    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Grafik pracy</p>
+        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">
+          {range.label}
         </p>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-surface-300">
+          <span className="panel-pill">
+            Łącznie zmian: <strong className="text-surface-900 dark:text-surface-100">{shiftsCount}</strong>
+          </span>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-sm text-surface-300">
-        <span className="panel-pill">
-          Łącznie zmian: <strong className="text-surface-100">{shiftsCount}</strong>
-        </span>
-        <div className="flex items-center gap-2">
-          <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onPrevWeek} aria-label="Poprzedni tydzień">
-            ← Poprzedni
-          </button>
-          <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onNextWeek} aria-label="Następny tydzień">
-            Następny →
-          </button>
+      <div className="flex flex-col gap-3 xl:items-end">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center rounded-full border border-surface-800/70 bg-surface-900/70 px-1">
+            <button
+              className="btn-secondary rounded-full px-3 py-1.5"
+              onClick={onPrevWeek}
+              aria-label="Poprzedni tydzień"
+            >
+              ← Poprzedni
+            </button>
+            <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onCurrentWeek}>
+              Bieżący
+            </button>
+            <button
+              className="btn-secondary rounded-full px-3 py-1.5"
+              onClick={onNextWeek}
+              aria-label="Następny tydzień"
+            >
+              Następny →
+            </button>
+          </div>
           <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onPublish}>
             Opublikuj tydzień
           </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="input h-9 w-full max-w-[280px] rounded-full bg-surface-900/70 px-3 text-xs sm:w-64"
+            value={selectedLocationId}
+            onChange={(event) => onLocationChange(event.target.value)}
+            aria-label="Filtruj po lokalizacji"
+          >
+            <option value="">Wszystkie lokalizacje</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+          <button className="btn-primary rounded-full px-4 py-2 text-sm" onClick={onAddShift}>
+            + Dodaj zmianę
+          </button>
           <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onOpenTemplates} disabled={templatesLoading}>
             {templatesLoading ? "Ładowanie szablonów..." : "Szablony"}
           </button>
           <button className="btn-secondary rounded-full px-3 py-1.5" onClick={onCopyPreviousWeek} disabled={copying}>
-            {copying ? "Kopiowanie..." : "Kopiuj tydzień"}
+            {copying ? "Kopiowanie..." : "Kopiuj z poprzedniego tygodnia"}
           </button>
           <button
             className="btn-secondary rounded-full px-3 py-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/50"
