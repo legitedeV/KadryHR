@@ -97,7 +97,7 @@ export function ShiftEditorModal({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
@@ -219,13 +219,13 @@ export function ShiftEditorModal({
           </label>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-surface-200/70 bg-surface-50 px-4 py-3 text-sm text-surface-600 shadow-sm dark:border-surface-800/70 dark:bg-surface-900/60 dark:text-surface-300">
+        <aside className="space-y-4 lg:pt-1">
+          <div className="rounded-2xl border border-surface-200/70 bg-surface-50 px-4 py-4 text-sm text-surface-600 shadow-sm dark:border-surface-800/70 dark:bg-surface-900/60 dark:text-surface-300">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Dostępność</p>
             <p className="mt-2 text-sm font-medium text-surface-700 dark:text-surface-200">{availabilityLabel || "Brak danych"}</p>
             <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{availabilityText}</p>
           </div>
-          <div className="rounded-2xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm text-amber-700 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+          <div className="rounded-2xl border border-amber-200/60 bg-amber-50 px-4 py-4 text-sm text-amber-700 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500 dark:text-amber-300">Urlopy / konflikty</p>
             {approvedLeaves.length > 0 ? (
               <ul className="mt-2 space-y-1 text-xs">
@@ -239,7 +239,7 @@ export function ShiftEditorModal({
               <p className="mt-2 text-xs text-amber-600/80 dark:text-amber-200/80">Brak zatwierdzonych urlopów.</p>
             )}
           </div>
-        </div>
+        </aside>
       </div>
 
       {formError && <p className="text-sm text-rose-600 dark:text-rose-300">{formError}</p>}
