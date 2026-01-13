@@ -183,6 +183,7 @@ export type NotificationType =
   | "SCHEDULE_PUBLISHED"
   | "SWAP_STATUS"
   | "AVAILABILITY_SUBMITTED"
+  | "USER_CREATED"
   | "CUSTOM";
 export type NotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "PUSH";
 export type NotificationCampaignStatus = "DRAFT" | "SENDING" | "SENT" | "FAILED";
@@ -1708,6 +1709,38 @@ export interface OrganisationMember {
   createdAt: string;
 }
 
+export type ManagedUserRole = Exclude<UserRole, "OWNER">;
+
+export interface UserDirectoryEntry {
+  id: string;
+  email: string;
+  role: UserRole;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatarUrl?: string | null;
+  createdAt: string;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    position?: string | null;
+  } | null;
+}
+
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  role: ManagedUserRole;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface UpdateUserPayload {
+  firstName?: string;
+  lastName?: string;
+  password?: string;
+}
+
 export interface UpdateOrganisationPayload {
   name?: string;
   description?: string;
@@ -1778,6 +1811,32 @@ export interface UpdateMemberRolePayload {
 }
 
 const USERS_PREFIX = "/users";
+
+export async function apiListUsers(): Promise<UserDirectoryEntry[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<UserDirectoryEntry[]>(USERS_PREFIX);
+}
+
+export async function apiCreateUser(
+  payload: CreateUserPayload,
+): Promise<UserDirectoryEntry> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<UserDirectoryEntry>(USERS_PREFIX, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateUser(
+  userId: string,
+  payload: UpdateUserPayload,
+): Promise<UserDirectoryEntry> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<UserDirectoryEntry>(`${USERS_PREFIX}/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
 
 export async function apiGetProfile(): Promise<UserProfile> {
   apiClient.hydrateFromStorage();

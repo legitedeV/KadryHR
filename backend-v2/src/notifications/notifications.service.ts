@@ -18,6 +18,7 @@ const AVAILABLE_TYPES: NotificationType[] = [
   NotificationType.SCHEDULE_PUBLISHED,
   NotificationType.SWAP_STATUS,
   NotificationType.AVAILABILITY_SUBMITTED,
+  NotificationType.USER_CREATED,
   NotificationType.CUSTOM,
 ];
 
@@ -303,6 +304,57 @@ export class NotificationsService {
       emailSubject: emailTemplate.subject,
       emailHtml: emailTemplate.html,
       smsMessage: 'KadryHR: To jest testowa wiadomość SMS.',
+    });
+  }
+
+  async sendUserCreatedNotification(params: {
+    organisationId: string;
+    userId: string;
+    loginUrl: string;
+    createdByUserId?: string;
+  }) {
+    const [recipient, organisation, creator] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: params.userId },
+        select: { firstName: true, lastName: true, email: true },
+      }),
+      this.prisma.organisation.findUnique({
+        where: { id: params.organisationId },
+        select: { name: true },
+      }),
+      params.createdByUserId
+        ? this.prisma.user.findUnique({
+            where: { id: params.createdByUserId },
+            select: { firstName: true, lastName: true, email: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    const recipientName = recipient
+      ? `${recipient.firstName ?? ''} ${recipient.lastName ?? ''}`.trim() ||
+        recipient.email
+      : undefined;
+    const creatorName = creator
+      ? `${creator.firstName ?? ''} ${creator.lastName ?? ''}`.trim() ||
+        creator.email
+      : undefined;
+
+    const template = this.emailTemplates.userCreatedTemplate({
+      organisationName: organisation?.name ?? 'Twojej organizacji',
+      loginUrl: params.loginUrl,
+      recipientName,
+      createdByName: creatorName,
+    });
+
+    return this.createNotification({
+      organisationId: params.organisationId,
+      userId: params.userId,
+      type: NotificationType.USER_CREATED,
+      title: 'Twoje konto w KadryHR',
+      body: 'Konto zostało utworzone. Zaloguj się do panelu, aby rozpocząć pracę.',
+      channels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+      emailSubject: template.subject,
+      emailHtml: template.html,
     });
   }
 

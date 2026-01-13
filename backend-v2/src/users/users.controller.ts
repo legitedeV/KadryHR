@@ -71,7 +71,7 @@ export class UsersController {
 
   // User management endpoints (OWNER, MANAGER only)
   @UseGuards(RolesGuard)
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER)
   @Get()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findAll(user.organisationId);
@@ -84,7 +84,7 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateUserDto,
   ) {
-    return this.usersService.create(user.organisationId, dto);
+    return this.usersService.create(user.id, user.organisationId, dto);
   }
 
   @UseGuards(RolesGuard)
@@ -95,7 +95,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.usersService.update(id, user.organisationId, dto);
+    return this.usersService.update(user.id, id, user.organisationId, dto);
   }
 
   @UseGuards(RolesGuard)

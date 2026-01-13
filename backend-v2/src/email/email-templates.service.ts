@@ -175,6 +175,51 @@ export class EmailTemplatesService {
   }
 
   /**
+   * User account created email template
+   */
+  userCreatedTemplate(params: {
+    organisationName: string;
+    loginUrl: string;
+    recipientName?: string;
+    createdByName?: string | null;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+    const creator = params.createdByName
+      ? ` przez ${params.createdByName}`
+      : '';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+        Twoje konto w KadryHR jest aktywne
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 8px 0;">
+        ${greeting}
+      </p>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+        Utworzono dla Ciebie konto w organizacji <strong>${params.organisationName}</strong>${creator}.
+        Możesz już zalogować się do panelu KadryHR.
+      </p>
+      ${this.infoBox([
+        { label: 'Organizacja', value: params.organisationName },
+      ])}
+      ${this.actionButton('Przejdź do logowania', params.loginUrl)}
+      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+        Jeśli nie znasz hasła, skontaktuj się z administratorem organizacji.
+      </p>`;
+
+    return {
+      subject: `Twoje konto w ${params.organisationName} – KadryHR`,
+      text: `${greeting} Utworzono dla Ciebie konto w ${params.organisationName}${creator}. Zaloguj się: ${params.loginUrl}`,
+      html: this.baseTemplate(
+        content,
+        `Twoje konto w ${params.organisationName} jest aktywne`,
+      ),
+    };
+  }
+
+  /**
    * Shift assignment/change notification template
    */
   shiftAssignmentTemplate(params: {
