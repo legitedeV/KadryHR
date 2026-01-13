@@ -601,16 +601,13 @@ body::before {
 }
 
 /* Compact panel utilities */
-.panel-card {
-  @apply card p-4;
-}
-
 .panel-card-compact {
-  @apply card p-3;
-}
-
-.panel-card-header {
-  @apply px-4 py-3 border-b border-surface-800;
+  border-radius: 1rem;
+  border: 1px solid rgba(40, 95, 70, 0.5);
+  background: rgba(12, 26, 20, 0.78);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 18px 45px rgba(2, 6, 23, 0.45);
+  padding: 0.75rem;
 }
 
 .panel-table {
