@@ -231,6 +231,7 @@ export function ScheduleGrid({
                       <span className="font-normal text-[11px] text-surface-500">
                         {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
                       </span>
+                      <span className="font-normal text-[9px] text-surface-500 tracking-widest">06 12 18</span>
                       {promotionInfo?.type === "ZMIANA_PROMOCJI" && (
                         <div className="mt-1 flex flex-col items-center gap-0.5 text-[9px]">
                           <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-200 ring-1 ring-amber-400/30">
