@@ -11,10 +11,6 @@ const nextConfig = {
     // Type checking runs in CI via npm run typecheck.
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // Linting runs in CI via npm run lint.
-    ignoreDuringBuilds: true,
-  },
   turbopack: {
     // Specifies the working directory to avoid multi-lockfile warnings
     root: __dirname,

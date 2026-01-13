@@ -1,6 +1,54 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Surface colors (zinc) */
+  --color-surface-50: #fafafa;
+  --color-surface-100: #f4f4f5;
+  --color-surface-200: #e4e4e7;
+  --color-surface-300: #d4d4d8;
+  --color-surface-400: #a1a1aa;
+  --color-surface-500: #71717a;
+  --color-surface-600: #52525b;
+  --color-surface-700: #3f3f46;
+  --color-surface-800: #27272a;
+  --color-surface-900: #18181b;
+  --color-surface-950: #09090b;
+
+  /* Accent colors (emerald) */
+  --color-accent-50: #ecfdf5;
+  --color-accent-100: #d1fae5;
+  --color-accent-200: #a7f3d0;
+  --color-accent-300: #6ee7b7;
+  --color-accent-400: #34d399;
+  --color-accent-500: #10b981;
+  --color-accent-600: #059669;
+  --color-accent-700: #047857;
+  --color-accent-800: #065f46;
+  --color-accent-900: #064e3b;
+  --color-accent-950: #022c22;
+
+  /* Brand colors */
+  --color-brand-50: #effaf4;
+  --color-brand-100: #d8f5e6;
+  --color-brand-200: #b2ebcc;
+  --color-brand-300: #7fddb0;
+  --color-brand-400: #45c992;
+  --color-brand-500: #1ea574;
+  --color-brand-600: #168460;
+  --color-brand-700: #12684f;
+  --color-brand-800: #0f5341;
+  --color-brand-900: #0d4536;
+  --color-brand-950: #05281f;
+
+  /* Border radius */
+  --radius-xl: 0.9rem;
+  --radius-2xl: 1.2rem;
+
+  /* Box shadow */
+  --shadow-soft: 0 18px 45px rgba(15,23,42,0.18);
+}
+
+@variant dark (&:where(.dark, .dark *));
 
 :root {
   --bg-dark: #0b1411;
