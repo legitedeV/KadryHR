@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,18 +14,36 @@ import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
   ) {}
 
-  async create(organisationId: string, dto: CreateUserDto) {
+  private buildLoginUrl() {
+    const baseUrl =
+      this.configService.get<string>('FRONTEND_BASE_URL') ??
+      this.configService.get<string>('APP_FRONTEND_URL') ??
+      'https://kadryhr.pl';
+    return `${baseUrl.replace(/\/$/, '')}/login`;
+  }
+
+  async create(
+    actorUserId: string,
+    organisationId: string,
+    dto: CreateUserDto,
+  ) {
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         email: dto.email,
         passwordHash,
@@ -49,6 +68,35 @@ export class UsersService {
         createdAt: true,
       },
     });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'CREATE',
+      entityType: 'user',
+      entityId: created.id,
+      after: {
+        email: created.email,
+        role: created.role,
+        firstName: created.firstName,
+        lastName: created.lastName,
+      },
+    });
+
+    try {
+      await this.notificationsService.sendUserCreatedNotification({
+        organisationId,
+        userId: created.id,
+        loginUrl: this.buildLoginUrl(),
+        createdByUserId: actorUserId,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Notification for user ${created.id} skipped: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+
+    return created;
   }
 
   async findAll(organisationId: string) {
@@ -62,12 +110,25 @@ export class UsersService {
         lastName: true,
         avatarUrl: true,
         createdAt: true,
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            position: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async update(userId: string, organisationId: string, dto: UpdateUserDto) {
+  async update(
+    actorUserId: string,
+    userId: string,
+    organisationId: string,
+    dto: UpdateUserDto,
+  ) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, organisationId },
     });
@@ -81,7 +142,7 @@ export class UsersService {
       passwordHash = await bcrypt.hash(dto.password, 10);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         firstName: dto.firstName,
@@ -98,6 +159,26 @@ export class UsersService {
         createdAt: true,
       },
     });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'UPDATE',
+      entityType: 'user',
+      entityId: userId,
+      before: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      after: {
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        role: updated.role,
+      },
+    });
+
+    return updated;
   }
 
   async getProfile(userId: string) {

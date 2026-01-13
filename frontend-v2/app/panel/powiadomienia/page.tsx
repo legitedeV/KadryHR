@@ -24,6 +24,7 @@ const AVAILABLE_TYPES: NotificationType[] = [
   "SCHEDULE_PUBLISHED",
   "SWAP_STATUS",
   "AVAILABILITY_SUBMITTED",
+  "USER_CREATED",
   "CUSTOM",
 ];
 
@@ -48,6 +49,10 @@ const TYPE_COPY: Record<NotificationType, { label: string; description: string }
   AVAILABILITY_SUBMITTED: {
     label: "Dyspozycja",
     description: "Nowe dyspozycje przesyłane przez pracowników.",
+  },
+  USER_CREATED: {
+    label: "Nowe konto użytkownika",
+    description: "Powiadomienia o utworzeniu nowego konta w organizacji.",
   },
   CUSTOM: {
     label: "Niestandardowe",

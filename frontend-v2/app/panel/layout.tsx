@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { href: "/panel/newsletter-subscribers", label: "Subskrybenci", icon: "M16 12a4 4 0 10-8 0 4 4 0 008 0z M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
   { href: "/panel/audit", label: "Audit", icon: "M9 12h6m-6 4h6M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v12a2 2 0 002 2h10a2 2 0 002-2V8" },
   { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "MANAGER"] },
+  { href: "/panel/uzytkownicy", label: "Użytkownicy", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
@@ -44,6 +45,7 @@ const titleByPath: Record<string, string> = {
   "/panel/newsletter-subscribers": "Subskrybenci newslettera",
   "/panel/audit": "Audit log",
   "/panel/organizacja": "Ustawienia organizacji",
+  "/panel/uzytkownicy": "Użytkownicy",
 };
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
