@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
-import { Logo } from "@/components/brand/Logo";
+import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
+import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
 import { NotificationsProvider } from "@/lib/notifications-context";
 import { ScheduleNotificationPopups } from "@/components/notifications/ScheduleNotificationPopups";
 
@@ -118,14 +119,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         {/* sidebar */}
         <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
-            <Logo
-              variant="icon"
-              size="sm"
-              alt="KadryHR"
-              className="shrink-0"
-              asLink="/panel/dashboard"
-              label="KadryHR"
-            />
+            <Link href="/panel/dashboard" className="shrink-0">
+              <BrandLogoStatic size={32} variant="icon" ariaLabel="KadryHR" />
+            </Link>
           </div>
           <nav className="flex-1 py-6 px-4 space-y-1">
             <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
@@ -203,14 +199,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/80`}>
           <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800">
-            <Logo
-              variant="icon"
-              size="sm"
-              alt="KadryHR"
-              className="shrink-0"
-              asLink="/panel/dashboard"
-              label="KadryHR"
-            />
+            <Link href="/panel/dashboard" className="shrink-0">
+              <BrandLogoStatic size={30} variant="icon" ariaLabel="KadryHR" />
+            </Link>
             <button
               onClick={() => setMobileMenuOpen(false)}
               className="p-2 text-surface-300 hover:text-surface-50 transition-colors"
@@ -300,6 +291,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
+              <Link href="/panel/dashboard" className="hidden sm:block shrink-0">
+                <BrandLogoMotion size={28} variant="full" withPL={false} ariaLabel="KadryHR" enableHover={false} />
+              </Link>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-surface-400">
                   KadryHR · panel

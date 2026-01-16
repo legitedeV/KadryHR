@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 
 const navLinks = [
   { label: "Produkt", href: "/#produkt" },
@@ -32,10 +33,7 @@ export function MarketingHeader() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="group flex items-center gap-2 relative">
-          <span className="text-xl font-bold text-surface-50 transition-colors group-hover:text-brand-300">
-            KadryHR
-            <span className="text-brand-400">.pl</span>
-          </span>
+          <BrandLogoMotion size={36} variant="full" withPL className="text-surface-50" />
         </Link>
         
         <nav className="hidden items-center gap-6 lg:gap-8 text-sm md:flex">

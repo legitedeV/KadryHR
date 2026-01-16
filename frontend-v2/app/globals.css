@@ -713,6 +713,107 @@ body[data-viewport-height="short"] .landing-section {
   transform: translate3d(0, 0, 0);
 }
 
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  position: relative;
+  color: inherit;
+}
+
+.brand-logo--light {
+  --brand-wordmark-primary: #0b2c22;
+  --brand-wordmark-secondary: #1b6f54;
+  --brand-wordmark-gradient-1: #0b2c22;
+  --brand-wordmark-gradient-2: #1b6f54;
+  --brand-wordmark-gradient-3: #45c992;
+}
+
+.brand-logo__svg {
+  height: 100%;
+  width: auto;
+  display: block;
+}
+
+.brand-logo__glow {
+  opacity: 0.45;
+}
+
+.brand-logo__hr-glow {
+  opacity: 0.55;
+  filter: blur(6px);
+}
+
+.brand-logo__shine {
+  transform: translateX(-140%);
+}
+
+.brand-logo--motion {
+  animation: brandLogoBreath 3.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.brand-logo--motion .brand-logo__glow,
+.brand-logo--motion .brand-logo__hr-glow {
+  animation: brandLogoGlow 3.4s ease-in-out infinite;
+}
+
+.brand-logo--motion .brand-logo__shine {
+  animation: brandLogoShine 5.4s ease-in-out infinite;
+}
+
+.brand-logo--hover {
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.brand-logo--hover:hover {
+  transform: scale(1.02);
+}
+
+.brand-logo--hover:hover .brand-logo__glow {
+  opacity: 0.7;
+}
+
+.brand-logo--hover:hover .brand-logo__hr-glow {
+  opacity: 0.75;
+}
+
+@keyframes brandLogoBreath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.01);
+  }
+}
+
+@keyframes brandLogoGlow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes brandLogoShine {
+  0%,
+  70% {
+    transform: translateX(-140%);
+    opacity: 0;
+  }
+  80% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(140%);
+    opacity: 0;
+  }
+}
+
 @keyframes topo-move {
   from {
     stroke-dashoffset: 0;
