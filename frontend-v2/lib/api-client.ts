@@ -176,6 +176,7 @@ class ApiClient {
   }
 
   private async safeErrorMessage(res: Response): Promise<string | null> {
+    if (res.bodyUsed) return null;
     const text = await res.text();
     if (!text) return null;
     try {
