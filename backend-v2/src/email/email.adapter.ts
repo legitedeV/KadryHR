@@ -87,11 +87,4 @@ export class EmailAdapter {
     }
   }
 
-  async sendTestEmail(to: string): Promise<EmailSendResult> {
-    return this.sendEmail({
-      to,
-      subject: 'KadryHR – Test email',
-      text: 'This is a test email from KadryHR production environment.',
-    });
-  }
 }

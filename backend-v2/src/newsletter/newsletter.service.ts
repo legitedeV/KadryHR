@@ -12,7 +12,6 @@ import { randomBytes, createHash } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
-import { buildWelcomeNewsletterHtml } from './templates/welcome-newsletter-template';
 import { AppConfig } from '../config/configuration';
 import { EmailTemplatesService } from '../email/email-templates.service';
 
@@ -223,16 +222,17 @@ export class NewsletterService {
     );
     const unsubscribeLink = this.buildUnsubscribeLink(unsubscribeToken);
 
-    const html = buildWelcomeNewsletterHtml({
+    const welcomeTemplate = this.emailTemplates.newsletterWelcomeTemplate({
+      recipientName: subscriber.name ?? undefined,
       unsubscribeUrl: unsubscribeLink,
       ctaUrl: this.appCtaUrl,
     });
 
     await this.queueService.addNewsletterEmailJob({
       to: subscriber.email,
-      subject: 'Witaj w newsletterze KadryHR',
-      text: 'Poznaj nowości w KadryHR i planuj grafiki bez chaosu.',
-      html,
+      subject: welcomeTemplate.subject,
+      text: welcomeTemplate.text,
+      html: welcomeTemplate.html,
     });
 
     return { success: true };

@@ -543,6 +543,53 @@ export class EmailTemplatesService {
   }
 
   /**
+   * Newsletter welcome template
+   */
+  newsletterWelcomeTemplate(params: {
+    recipientName?: string;
+    ctaUrl: string;
+    unsubscribeUrl: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 12px 0;">
+        Witaj w newsletterze KadryHR
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 12px 0;">
+        ${greeting} Dziękujemy za dołączenie do społeczności KadryHR. Od teraz będziemy dzielić się wskazówkami, jak szybciej planować grafiki, liczyć czas pracy i dbać o płynne zmiany.
+      </p>
+      ${this.infoBox([
+        { label: 'Co przygotowaliśmy', value: 'Sprawdzone praktyki dla retail i gastro' },
+        { label: 'Jak często', value: '1–2 wiadomości w miesiącu' },
+      ])}
+      <div class="email-card" style="background-color:#0f1714;border-radius:12px;border:1px solid rgba(31, 59, 49, 0.8);padding:16px;margin-top:16px;">
+        <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:0 0 8px 0;">Na start polecamy</p>
+        <ul class="email-text" style="margin:0;padding-left:18px;font-size:14px;line-height:1.6;color:#e4f2ea;">
+          <li>Checklistę zamknięcia miesiąca bez nadgodzin.</li>
+          <li>Gotowy przepływ komunikacji z zespołem zmianowym.</li>
+          <li>Alerty o brakach obsady w grafiku.</li>
+        </ul>
+      </div>
+      ${this.actionButton('Zobacz panel KadryHR', params.ctaUrl)}
+      <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">
+        Jeśli nie chcesz otrzymywać tego typu wiadomości, możesz się wypisać:<br>
+        <a href="${params.unsubscribeUrl}" style="color:#45c992;word-break:break-all;">${params.unsubscribeUrl}</a>
+      </p>`;
+
+    return {
+      subject: 'Witaj w newsletterze KadryHR',
+      text: `${greeting} Dziękujemy za dołączenie do newslettera KadryHR. Startujemy z praktycznymi wskazówkami dla retail i gastro. Zobacz panel: ${params.ctaUrl}. Wypisz się: ${params.unsubscribeUrl}`,
+      html: this.baseTemplate(
+        content,
+        'Witaj w newsletterze KadryHR!',
+      ),
+    };
+  }
+
+  /**
    * Generic notification template (for custom notifications)
    */
   genericTemplate(params: {
