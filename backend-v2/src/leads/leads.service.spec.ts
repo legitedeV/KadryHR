@@ -14,6 +14,9 @@ describe('LeadsService', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    organisation: {
+      findMany: jest.fn(),
+    },
     leadAuditLog: {
       create: jest.fn(),
       findMany: jest.fn(),
@@ -25,6 +28,10 @@ describe('LeadsService', () => {
   } as any;
   const emailAdapter = {
     sendEmail: jest.fn(),
+  } as any;
+  const emailTemplates = {
+    leadAdminNotificationTemplate: jest.fn(),
+    leadAutoReplyTemplate: jest.fn(),
   } as any;
 
   beforeEach(() => {
@@ -52,7 +59,23 @@ describe('LeadsService', () => {
     });
     prisma.leadAuditLog.create = jest.fn().mockResolvedValue({});
     emailAdapter.sendEmail = jest.fn().mockResolvedValue({ success: true });
-    service = new LeadsService(prisma, queueService, mockConfig, emailAdapter);
+    emailTemplates.leadAdminNotificationTemplate = jest.fn().mockReturnValue({
+      subject: 'Nowy lead demo KadryHR',
+      text: 'Lead admin',
+      html: '<p>Lead admin</p>',
+    });
+    emailTemplates.leadAutoReplyTemplate = jest.fn().mockReturnValue({
+      subject: 'KadryHR – potwierdzenie zgłoszenia demo',
+      text: 'Auto reply',
+      html: '<p>Auto reply</p>',
+    });
+    service = new LeadsService(
+      prisma,
+      queueService,
+      mockConfig,
+      emailAdapter,
+      emailTemplates,
+    );
   });
 
   it('creates lead and enqueues emails', async () => {
@@ -72,6 +95,38 @@ describe('LeadsService', () => {
     expect(result).toEqual({ success: true, id: 'lead-1' });
     expect(prisma.lead.create).toHaveBeenCalled();
     expect(queueService.addNewsletterEmailJob).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to single organisation when default is missing', async () => {
+    mockConfig.get = jest.fn((key: string) => {
+      const map: Record<string, any> = {
+        'leads.defaultOrganisationId': '',
+        'leads.notificationEmail': 'sales@kadryhr.pl',
+        'leads.autoReplyEnabled': true,
+        'leads.ipHashSalt': 'salt',
+      };
+      return map[key];
+    });
+    prisma.organisation.findMany.mockResolvedValue([{ id: 'org-fallback' }]);
+
+    await service.createPublicLead(
+      {
+        name: 'Anna Nowak',
+        email: 'demo@company.pl',
+        company: 'Sklep Demo',
+        headcount: 42,
+        message: 'Test',
+        consentMarketing: true,
+        consentPrivacy: true,
+      },
+      { ip: '127.0.0.1', userAgent: 'jest' },
+    );
+
+    expect(prisma.lead.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ organisationId: 'org-fallback' }),
+      }),
+    );
   });
 
   it('updates lead status for admin', async () => {
