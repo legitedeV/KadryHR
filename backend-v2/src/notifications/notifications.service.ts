@@ -19,8 +19,6 @@ const AVAILABLE_TYPES: NotificationType[] = [
   NotificationType.SWAP_STATUS,
   NotificationType.AVAILABILITY_SUBMITTED,
   NotificationType.USER_CREATED,
-  NotificationType.LOGO_PROPOSAL_REVIEW,
-  NotificationType.LOGO_PROPOSAL_APPROVED,
   NotificationType.CUSTOM,
 ];
 
