@@ -142,6 +142,7 @@ model Organisation {
   notificationPreferences NotificationPreference[]
   notificationCampaigns NotificationCampaign[]
   newsletterSubscribers NewsletterSubscriber[]
+  newsletterAuditLogs NewsletterAuditLog[]
   employeeInvitations EmployeeInvitation[]
   rolePermissions RolePermission[]
   employmentContracts EmploymentContract[]
@@ -668,6 +669,7 @@ model NewsletterSubscriber {
   confirmedAt      DateTime?
   unsubscribedAt   DateTime?
   tokens           NewsletterToken[]
+  auditLogs        NewsletterAuditLog[]
 
   organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
 
