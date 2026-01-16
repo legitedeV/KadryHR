@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ReactNode } from "react";
+import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
 
 type LogoVariant = "full" | "compact" | "icon";
 type LogoSize = "xs" | "sm" | "md" | "lg";
@@ -12,15 +12,8 @@ type LogoProps = {
   className?: string;
   asLink?: string;
   align?: "row" | "column";
-  priority?: boolean;
   alt?: string;
   label?: string;
-};
-
-const assets: Record<LogoVariant, string> = {
-  full: "/brand/kadryhr-logo-full-dark.svg",
-  compact: "/brand/kadryhr-logo-compact-dark.svg",
-  icon: "/brand/kadryhr-logo-mark.svg",
 };
 
 const baseDimensions: Record<LogoVariant, { width: number; height: number }> = {
@@ -47,16 +40,15 @@ export function Logo({
   className,
   asLink,
   align = "row",
-  priority,
   alt,
   label,
 }: LogoProps) {
-  const asset = assets[variant];
   const dimensions = baseDimensions[variant];
   const scale = sizeScale[size];
-  const width = Math.round(dimensions.width * scale);
   const height = Math.round(dimensions.height * scale);
   const altText = alt ?? (showTagline ? "KadryHR – Kadry i płace bez tajemnic" : "KadryHR");
+  const logoVariant = variant === "icon" ? "icon" : "full";
+  const withPL = variant !== "compact";
   const content: ReactNode = (
     <div
       className={composeClassName(
@@ -66,13 +58,12 @@ export function Logo({
       aria-label={label}
     >
       <div className="relative">
-        <Image
-          src={asset}
-          alt={altText}
-          width={width}
-          height={height}
-          priority={priority}
-          className="block h-auto w-auto select-none"
+        <BrandLogoStatic
+          size={height}
+          variant={logoVariant}
+          withPL={withPL}
+          ariaLabel={altText}
+          className="select-none"
         />
       </div>
       {showTagline ? (
