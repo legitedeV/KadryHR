@@ -1,4 +1,4 @@
-import { useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import type { AvailabilityIndicator, ShiftDisplay, WeekRange } from "../types";
@@ -113,6 +113,14 @@ export function ScheduleGrid({
     })
     .filter((promo) => promo.count < REQUIRED_AFTERNOON_COUNT) ?? [];
 
+  const [showPromotionPopup, setShowPromotionPopup] = useState(promotionWarnings.length > 0);
+
+  useEffect(() => {
+    if (promotionWarnings.length > 0) {
+      setShowPromotionPopup(true);
+    }
+  }, [promotionWarnings.length]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -148,34 +156,55 @@ export function ScheduleGrid({
         </div>
       </div>
 
-      {promotionWarnings.length > 0 && (
-        <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/15 px-4 py-3 text-sm text-amber-200">
-          <div className="flex items-start gap-2">
-            <svg className="mt-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <div className="space-y-1">
-              <p className="font-semibold">
-                ZMIANA PROMOCJI: wymagane minimum 2 osoby na popołudniowej zmianie.
-              </p>
-              <ul className="space-y-0.5 text-xs">
-                {promotionWarnings.map((warning) => (
-                  <li key={warning.date}>
-                    {new Date(warning.date).toLocaleDateString("pl-PL", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}{" "}
-                    · obsada {warning.count}/{REQUIRED_AFTERNOON_COUNT}
-                  </li>
-                ))}
-              </ul>
+      {showPromotionPopup && promotionWarnings.length > 0 && (
+        <div className="fixed right-6 top-24 z-40 w-[320px] rounded-2xl border border-amber-400/40 bg-surface-950/95 p-4 text-sm text-amber-100 shadow-2xl shadow-black/40 backdrop-blur">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <div className="mt-0.5 rounded-full bg-amber-500/20 p-1 text-amber-200">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
+                  Zmiana promocji
+                </p>
+                <p className="mt-1 text-sm font-semibold">
+                  Wymagane minimum 2 osoby na popołudniowej zmianie.
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowPromotionPopup(false)}
+              className="rounded-full border border-amber-400/30 p-1 text-amber-200/70 transition hover:text-amber-100"
+              aria-label="Zamknij powiadomienie"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+          <ul className="mt-3 space-y-1 text-xs text-amber-200/90">
+            {promotionWarnings.map((warning) => (
+              <li key={warning.date} className="flex items-center justify-between gap-2">
+                <span className="capitalize">
+                  {new Date(warning.date).toLocaleDateString("pl-PL", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </span>
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                  {warning.count}/{REQUIRED_AFTERNOON_COUNT}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
