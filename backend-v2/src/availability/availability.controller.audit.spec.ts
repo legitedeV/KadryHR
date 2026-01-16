@@ -78,7 +78,9 @@ describe('AvailabilityController audit logging (integration)', () => {
       })
       .expect(200);
 
-    expect(availabilityService.saveWindowAvailabilityForEmployee).toHaveBeenCalledWith(
+    expect(
+      availabilityService.saveWindowAvailabilityForEmployee,
+    ).toHaveBeenCalledWith(
       'org-1',
       'user-1',
       'window-1',
