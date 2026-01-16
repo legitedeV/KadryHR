@@ -33,7 +33,7 @@ export function MarketingHeader() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="group flex items-center gap-2 relative">
-          <BrandLogoMotion size={36} variant="full" withPL className="text-surface-50" />
+          <BrandLogoMotion size={40} variant="full" withPL className="text-surface-50" />
         </Link>
         
         <nav className="hidden items-center gap-6 lg:gap-8 text-sm md:flex">

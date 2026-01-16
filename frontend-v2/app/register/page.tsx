@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { pushToast } from "@/lib/toast";
-import { Logo } from "@/components/brand/Logo";
+import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-lg card p-6 space-y-6">
         <div className="flex items-center justify-center">
-          <Logo variant="full" size="sm" alt="KadryHR – Kadry i płace bez tajemnic" />
+          <BrandLogoMotion size={56} variant="full" withPL ariaLabel="KadryHR – Kadry i płace bez tajemnic" />
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>

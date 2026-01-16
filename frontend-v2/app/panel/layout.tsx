@@ -120,7 +120,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
             <Link href="/panel/dashboard" className="shrink-0">
-              <BrandLogoStatic size={32} variant="icon" ariaLabel="KadryHR" />
+              <BrandLogoStatic size={37} variant="icon" ariaLabel="KadryHR" />
             </Link>
           </div>
           <nav className="flex-1 py-6 px-4 space-y-1">
@@ -200,7 +200,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         } bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/80`}>
           <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800">
             <Link href="/panel/dashboard" className="shrink-0">
-              <BrandLogoStatic size={30} variant="icon" ariaLabel="KadryHR" />
+              <BrandLogoStatic size={36} variant="icon" ariaLabel="KadryHR" />
             </Link>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -292,7 +292,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 </svg>
               </button>
               <Link href="/panel/dashboard" className="hidden sm:block shrink-0">
-                <BrandLogoMotion size={28} variant="full" withPL={false} ariaLabel="KadryHR" enableHover={false} />
+                <BrandLogoMotion size={32} variant="full" withPL={false} ariaLabel="KadryHR" enableHover={false} />
               </Link>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-surface-400">
