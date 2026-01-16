@@ -27,6 +27,7 @@ import {
   ShiftRecord,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+import { usePermissions } from "@/lib/use-permissions";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ClearWeekModal } from "./components/ClearWeekModal";
 import { PublishScheduleModal } from "./components/PublishScheduleModal";
@@ -225,6 +226,8 @@ function getWeekdayIndex(weekday: string) {
 }
 
 export default function GrafikPage() {
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission("SCHEDULE_MANAGE") || hasPermission("RCP_EDIT");
   const [range, setRange] = useState<WeekRange>(() => getWeekRange());
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
@@ -446,6 +449,7 @@ export default function GrafikPage() {
   };
 
   const resetForm = (date?: string, employeeId?: string) => {
+    if (!canManage) return;
     setForm({
       employeeId: employeeId ?? employees[0]?.id ?? "",
       locationId: selectedLocationId || locations[0]?.id,
@@ -462,11 +466,13 @@ export default function GrafikPage() {
   };
 
   const openCreateModal = (date?: string, employeeId?: string) => {
+    if (!canManage) return;
     resetForm(date, employeeId);
     setEditorOpen(true);
   };
 
   const openEditModal = (shift: ShiftRecord) => {
+    if (!canManage) return;
     const startDate = new Date(shift.startsAt);
     const endDate = new Date(shift.endsAt);
     setForm({
@@ -484,6 +490,7 @@ export default function GrafikPage() {
   };
 
   const handleDragStart = (shiftId: string, event: DragEvent<HTMLDivElement>) => {
+    if (!canManage) return;
     setDraggedShift(shiftId);
     event.dataTransfer.setData("text/plain", shiftId);
     event.dataTransfer.effectAllowed = "move";
@@ -526,6 +533,7 @@ export default function GrafikPage() {
     action: { type: "create"; payload: ShiftPayload } | { type: "update"; payload: ShiftPayload; shiftId: string } | { type: "bulk"; payloads: ShiftPayload[] },
     overrideReason?: string,
   ) => {
+    if (!canManage) return;
     if (action.type === "create") {
       const payload = overrideReason
         ? { ...action.payload, availabilityOverrideReason: overrideReason }
@@ -559,6 +567,7 @@ export default function GrafikPage() {
   };
 
   const handleAvailabilityConfirm = async () => {
+    if (!canManage) return;
     if (!pendingAvailabilitySeverity || !pendingAction) return;
     setPendingAvailabilitySeverity(null);
     const action = pendingAction;
@@ -583,6 +592,7 @@ export default function GrafikPage() {
   };
 
   const handleDrop = async (event: DragEvent<HTMLTableCellElement>, targetDate: string, targetEmployeeId: string) => {
+    if (!canManage) return;
     event.preventDefault();
     const shiftId = event.dataTransfer.getData("text/plain");
     if (!shiftId || !draggedShift) return;
@@ -632,6 +642,7 @@ export default function GrafikPage() {
   };
 
   const handleSave = async () => {
+    if (!canManage) return;
     if (!form.employeeId) {
       setFormError("Wybierz pracownika, aby zapisać zmianę.");
       return;
@@ -671,6 +682,7 @@ export default function GrafikPage() {
   };
 
   const handleDelete = async () => {
+    if (!canManage) return;
     if (!deleteTarget) return;
     try {
       await apiDeleteShift(deleteTarget.id);
@@ -684,6 +696,7 @@ export default function GrafikPage() {
   };
 
   const handlePublish = async () => {
+    if (!canManage) return;
     const employeeIds = Array.from(new Set(shifts.map((s) => s.employeeId).filter(Boolean))) as string[];
     if (employeeIds.length === 0) {
       setFormError("Brak obsadzonych zmian w tym tygodniu do powiadomienia.");
@@ -707,6 +720,7 @@ export default function GrafikPage() {
   };
 
   const handleClearWeek = async () => {
+    if (!canManage) return;
     setClearing(true);
     setFormError(null);
     try {
@@ -726,6 +740,7 @@ export default function GrafikPage() {
   };
 
   const loadTemplates = async () => {
+    if (!canManage) return;
     setLoadingTemplates(true);
     setTemplatesError(null);
     try {
@@ -740,6 +755,7 @@ export default function GrafikPage() {
   };
 
   const handleOpenTemplates = () => {
+    if (!canManage) return;
     setTemplatesOpen(true);
     if (!templates.length) {
       void loadTemplates();
@@ -747,6 +763,7 @@ export default function GrafikPage() {
   };
 
   const handleCreateTemplate = async (name: string) => {
+    if (!canManage) return;
     setCreatingTemplate(true);
     setTemplatesError(null);
     try {
@@ -766,6 +783,7 @@ export default function GrafikPage() {
   };
 
   const handleApplyTemplate = async (templateId: string) => {
+    if (!canManage) return;
     setApplyingTemplateId(templateId);
     setFormError(null);
     try {
@@ -809,6 +827,7 @@ export default function GrafikPage() {
   };
 
   const handleCopyPreviousWeek = async () => {
+    if (!canManage) return;
     setCopyingWeek(true);
     setFormError(null);
     try {
@@ -842,6 +861,7 @@ export default function GrafikPage() {
             shiftsCount={visibleShifts.length}
             locations={locations}
             selectedLocationId={selectedLocationId}
+            canManage={canManage}
             onPrevWeek={() => handleWeekChange("prev")}
             onNextWeek={() => handleWeekChange("next")}
             onCurrentWeek={() => setRange(getWeekRange())}
@@ -885,6 +905,7 @@ export default function GrafikPage() {
               range={range}
               employees={employees}
               shifts={visibleShifts}
+              canManage={canManage}
               gridByEmployeeAndDay={gridByEmployeeAndDay}
               availabilityIndicators={availabilityIndicators}
               approvedLeavesByEmployeeAndDay={approvedLeavesByEmployeeAndDay}
@@ -901,97 +922,101 @@ export default function GrafikPage() {
         )}
       </div>
 
-      <ShiftEditorModal
-        open={editorOpen}
-        isEditing={!!editingShift}
-        form={form}
-        employees={employees}
-        locations={locations}
-        availabilityLabel={
-          form.employeeId
-            ? availabilityIndicators[form.employeeId]?.[getDowKey(form.date)]?.label
-            : undefined
-        }
-        availabilityWindows={
-          form.employeeId ? availabilityByEmployeeAndDay[form.employeeId]?.[getDowKey(form.date)] ?? [] : []
-        }
-        approvedLeaves={
-          form.employeeId ? approvedLeavesByEmployeeAndDay[form.employeeId]?.[getDowKey(form.date)] ?? [] : []
-        }
-        saving={saving}
-        formError={formError}
-        onClose={() => setEditorOpen(false)}
-        onReset={() => resetForm(form.date, form.employeeId)}
-        onSave={handleSave}
-        onFormChange={setForm}
-      />
+      {canManage && (
+        <>
+          <ShiftEditorModal
+            open={editorOpen}
+            isEditing={!!editingShift}
+            form={form}
+            employees={employees}
+            locations={locations}
+            availabilityLabel={
+              form.employeeId
+                ? availabilityIndicators[form.employeeId]?.[getDowKey(form.date)]?.label
+                : undefined
+            }
+            availabilityWindows={
+              form.employeeId ? availabilityByEmployeeAndDay[form.employeeId]?.[getDowKey(form.date)] ?? [] : []
+            }
+            approvedLeaves={
+              form.employeeId ? approvedLeavesByEmployeeAndDay[form.employeeId]?.[getDowKey(form.date)] ?? [] : []
+            }
+            saving={saving}
+            formError={formError}
+            onClose={() => setEditorOpen(false)}
+            onReset={() => resetForm(form.date, form.employeeId)}
+            onSave={handleSave}
+            onFormChange={setForm}
+          />
 
-      <PublishScheduleModal
-        open={publishOpen}
-        range={range}
-        publishing={publishing}
-        onClose={() => setPublishOpen(false)}
-        onPublish={handlePublish}
-      />
+          <PublishScheduleModal
+            open={publishOpen}
+            range={range}
+            publishing={publishing}
+            onClose={() => setPublishOpen(false)}
+            onPublish={handlePublish}
+          />
 
-      <ClearWeekModal
-        open={clearWeekOpen}
-        range={range}
-        shiftCount={shifts.length}
-        clearing={clearing}
-        onClose={() => setClearWeekOpen(false)}
-        onConfirm={handleClearWeek}
-      />
+          <ClearWeekModal
+            open={clearWeekOpen}
+            range={range}
+            shiftCount={shifts.length}
+            clearing={clearing}
+            onClose={() => setClearWeekOpen(false)}
+            onConfirm={handleClearWeek}
+          />
 
-      <TemplatesDialog
-        open={templatesOpen}
-        templates={templates}
-        loading={loadingTemplates}
-        error={templatesError}
-        creating={creatingTemplate}
-        busy={bulkCreating}
-        applyingTemplateId={applyingTemplateId}
-        onClose={() => setTemplatesOpen(false)}
-        onCreateTemplate={handleCreateTemplate}
-        onApplyTemplate={handleApplyTemplate}
-      />
+          <TemplatesDialog
+            open={templatesOpen}
+            templates={templates}
+            loading={loadingTemplates}
+            error={templatesError}
+            creating={creatingTemplate}
+            busy={bulkCreating}
+            applyingTemplateId={applyingTemplateId}
+            onClose={() => setTemplatesOpen(false)}
+            onCreateTemplate={handleCreateTemplate}
+            onApplyTemplate={handleApplyTemplate}
+          />
 
-      <AvailabilityOverrideModal
-        open={!!pendingAvailabilitySeverity}
-        severity={pendingAvailabilitySeverity ?? "partial"}
-        reason={availabilityOverrideReason}
-        onReasonChange={setAvailabilityOverrideReason}
-        onConfirm={handleAvailabilityConfirm}
-        onClose={() => {
-          setPendingAvailabilitySeverity(null);
-          setPendingAction(null);
-          setAvailabilityOverrideReason("");
-        }}
-      />
+          <AvailabilityOverrideModal
+            open={!!pendingAvailabilitySeverity}
+            severity={pendingAvailabilitySeverity ?? "partial"}
+            reason={availabilityOverrideReason}
+            onReasonChange={setAvailabilityOverrideReason}
+            onConfirm={handleAvailabilityConfirm}
+            onClose={() => {
+              setPendingAvailabilitySeverity(null);
+              setPendingAction(null);
+              setAvailabilityOverrideReason("");
+            }}
+          />
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Usuń zmianę"
-        description={
-          deleteTarget
-            ? buildShiftDescription(deleteTarget, employees, locations)
-            : "Czy na pewno chcesz usunąć zmianę?"
-        }
-        confirmLabel="Usuń"
-        cancelLabel="Anuluj"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
+          <ConfirmDialog
+            open={!!deleteTarget}
+            title="Usuń zmianę"
+            description={
+              deleteTarget
+                ? buildShiftDescription(deleteTarget, employees, locations)
+                : "Czy na pewno chcesz usunąć zmianę?"
+            }
+            confirmLabel="Usuń"
+            cancelLabel="Anuluj"
+            onConfirm={handleDelete}
+            onCancel={() => setDeleteTarget(null)}
+          />
 
-      <ConfirmDialog
-        open={copyConfirmOpen}
-        title="Skopiować poprzedni tydzień?"
-        description={`Skopiujemy wszystkie zmiany z poprzedniego tygodnia do zakresu ${range.label}.`}
-        confirmLabel="Kopiuj"
-        cancelLabel="Anuluj"
-        onConfirm={handleCopyPreviousWeek}
-        onCancel={() => setCopyConfirmOpen(false)}
-      />
+          <ConfirmDialog
+            open={copyConfirmOpen}
+            title="Skopiować poprzedni tydzień?"
+            description={`Skopiujemy wszystkie zmiany z poprzedniego tygodnia do zakresu ${range.label}.`}
+            confirmLabel="Kopiuj"
+            cancelLabel="Anuluj"
+            onConfirm={handleCopyPreviousWeek}
+            onCancel={() => setCopyConfirmOpen(false)}
+          />
+        </>
+      )}
     </div>
   );
 }
