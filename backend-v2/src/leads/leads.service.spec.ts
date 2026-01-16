@@ -23,6 +23,9 @@ describe('LeadsService', () => {
   const queueService = {
     addNewsletterEmailJob: jest.fn(),
   } as any;
+  const emailAdapter = {
+    sendEmail: jest.fn(),
+  } as any;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -48,7 +51,8 @@ describe('LeadsService', () => {
       consentPrivacy: true,
     });
     prisma.leadAuditLog.create = jest.fn().mockResolvedValue({});
-    service = new LeadsService(prisma, queueService, mockConfig);
+    emailAdapter.sendEmail = jest.fn().mockResolvedValue({ success: true });
+    service = new LeadsService(prisma, queueService, mockConfig, emailAdapter);
   });
 
   it('creates lead and enqueues emails', async () => {
