@@ -405,6 +405,135 @@ export class EmailTemplatesService {
   }
 
   /**
+   * Lead admin notification template
+   */
+  leadAdminNotificationTemplate(params: {
+    name: string;
+    email: string;
+    company: string;
+    headcount?: number | null;
+    message?: string;
+  }): { subject: string; text: string; html: string } {
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 12px 0;">
+        Nowy lead demo KadryHR
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+        Otrzymaliśmy nowe zgłoszenie demo. Poniżej znajdują się dane kontaktowe klienta.
+      </p>
+      ${this.infoBox([
+        { label: 'Imię i nazwisko', value: params.name },
+        { label: 'Email', value: params.email },
+        { label: 'Firma', value: params.company },
+        {
+          label: 'Liczba pracowników',
+          value: params.headcount ? `${params.headcount}` : 'brak danych',
+        },
+      ])}
+      <div class="email-card" style="background-color:#f8fafc;border-radius:12px;padding:16px;margin-top:16px;">
+        <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:0 0 8px 0;">Wiadomość klienta</p>
+        <p class="email-text" style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">
+          ${params.message ?? '—'}
+        </p>
+      </div>`;
+
+    const textLines = [
+      'Nowy lead demo KadryHR',
+      `Imię i nazwisko: ${params.name}`,
+      `Email: ${params.email}`,
+      `Firma: ${params.company}`,
+      `Liczba pracowników: ${params.headcount ?? 'brak danych'}`,
+      `Wiadomość: ${params.message ?? '—'}`,
+    ];
+
+    return {
+      subject: 'Nowy lead demo KadryHR',
+      text: textLines.join('\n'),
+      html: this.baseTemplate(
+        content,
+        `Nowy lead demo od ${params.name}`,
+      ),
+    };
+  }
+
+  /**
+   * Lead auto-reply template
+   */
+  leadAutoReplyTemplate(params: {
+    name: string;
+    company: string;
+    message?: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.name ? `Cześć ${params.name}!` : 'Cześć!';
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 12px 0;">
+        Dziękujemy za zgłoszenie demo
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 12px 0;">
+        ${greeting} Dziękujemy za zainteresowanie KadryHR. Wracamy z propozycją terminu demo w ciągu 24h (dni robocze).
+      </p>
+      ${this.infoBox([
+        { label: 'Firma', value: params.company },
+        {
+          label: 'Status zgłoszenia',
+          value: 'Potwierdzone i przekazane do opiekuna',
+        },
+      ])}
+      <div class="email-card" style="background-color:#f8fafc;border-radius:12px;padding:16px;margin-top:16px;">
+        <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:0 0 8px 0;">Twoja wiadomość</p>
+        <p class="email-text" style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">
+          ${params.message ?? '—'}
+        </p>
+      </div>
+      <p class="email-text" style="font-size:14px;line-height:1.6;color:#334155;margin:16px 0 0 0;">
+        Jeśli coś się zmieniło, możesz odpowiedzieć bezpośrednio na tę wiadomość.
+      </p>`;
+
+    return {
+      subject: 'KadryHR – potwierdzenie zgłoszenia demo',
+      text: `${greeting}\n\nDziękujemy za zgłoszenie demo KadryHR. Wracamy z propozycją terminu do 24h (dni robocze).\n\nTwoja wiadomość: ${params.message ?? '—'}\n\nPozdrawiamy,\nZespół KadryHR`,
+      html: this.baseTemplate(
+        content,
+        `Dziękujemy za zgłoszenie demo, ${params.name}`,
+      ),
+    };
+  }
+
+  /**
+   * Newsletter confirmation template
+   */
+  newsletterConfirmationTemplate(params: {
+    confirmLink: string;
+    recipientName?: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 12px 0;">
+        Potwierdź zapis do newslettera
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+        ${greeting} Dziękujemy za zapis do newslettera KadryHR. Kliknij przycisk poniżej, aby potwierdzić subskrypcję.
+      </p>
+      ${this.actionButton('Potwierdź subskrypcję', params.confirmLink)}
+      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+        Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:<br>
+        <a href="${params.confirmLink}" style="color:#2563eb;word-break:break-all;">${params.confirmLink}</a>
+      </p>`;
+
+    return {
+      subject: 'Potwierdź zapis do newslettera KadryHR',
+      text: `${greeting} Dziękujemy za zapis do newslettera KadryHR. Potwierdź subskrypcję: ${params.confirmLink}`,
+      html: this.baseTemplate(
+        content,
+        'Potwierdź zapis do newslettera KadryHR',
+      ),
+    };
+  }
+
+  /**
    * Generic notification template (for custom notifications)
    */
   genericTemplate(params: {

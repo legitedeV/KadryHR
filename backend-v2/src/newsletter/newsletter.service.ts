@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { buildWelcomeNewsletterHtml } from './templates/welcome-newsletter-template';
 import { AppConfig } from '../config/configuration';
+import { EmailTemplatesService } from '../email/email-templates.service';
 
 const TOKEN_EXPIRY_HOURS = 24;
 
@@ -33,6 +34,7 @@ export class NewsletterService {
     private readonly prisma: PrismaService,
     private readonly queueService: QueueService,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly emailTemplates: EmailTemplatesService,
   ) {}
 
   private generateToken() {
@@ -147,11 +149,16 @@ export class NewsletterService {
     );
 
     const confirmLink = this.buildConfirmLink(rawToken);
+    const confirmTemplate = this.emailTemplates.newsletterConfirmationTemplate({
+      confirmLink,
+      recipientName: subscriber.name ?? undefined,
+    });
+
     await this.queueService.addNewsletterEmailJob({
       to: subscriber.email,
-      subject: 'Potwierdź zapis do newslettera KadryHR',
-      text: `Dziękujemy za zapis. Kliknij, aby potwierdzić: ${confirmLink}`,
-      html: `<p style="font-family:Inter,Arial,sans-serif">Dziękujemy za zapis do newslettera KadryHR.</p><p><a href="${confirmLink}">Potwierdź subskrypcję</a> – link wygaśnie za 24h.</p>`,
+      subject: confirmTemplate.subject,
+      text: confirmTemplate.text,
+      html: confirmTemplate.html,
     });
 
     this.logger.log(

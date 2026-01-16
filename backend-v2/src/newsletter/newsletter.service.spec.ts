@@ -29,6 +29,9 @@ describe('NewsletterService', () => {
   const configService = {
     get: jest.fn(),
   } as any;
+  const emailTemplates = {
+    newsletterConfirmationTemplate: jest.fn(),
+  } as any;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -40,7 +43,17 @@ describe('NewsletterService', () => {
       return map[key];
     });
     prisma.newsletterAuditLog.create = jest.fn().mockResolvedValue({});
-    service = new NewsletterService(prisma, queueService, configService);
+    emailTemplates.newsletterConfirmationTemplate = jest.fn().mockReturnValue({
+      subject: 'Potwierdź zapis do newslettera KadryHR',
+      text: 'Potwierdź subskrypcję',
+      html: '<p>Potwierdź subskrypcję</p>',
+    });
+    service = new NewsletterService(
+      prisma,
+      queueService,
+      configService,
+      emailTemplates,
+    );
   });
 
   it('subscribes a new address and enqueues confirmation', async () => {

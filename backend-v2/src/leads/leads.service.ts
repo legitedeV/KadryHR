@@ -11,6 +11,7 @@ import { LeadStatus, Prisma, Role } from '@prisma/client';
 import { createHash } from 'crypto';
 import { AppConfig } from '../config/configuration';
 import { EmailAdapter } from '../email/email.adapter';
+import { EmailTemplatesService } from '../email/email-templates.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -34,6 +35,7 @@ export class LeadsService {
     private readonly queueService: QueueService,
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly emailAdapter: EmailAdapter,
+    private readonly emailTemplates: EmailTemplatesService,
   ) {}
 
   async createPublicLead(dto: CreateLeadDto, context: LeadRequestContext) {
@@ -63,12 +65,7 @@ export class LeadsService {
       }
     }
 
-    const organisationId = this.configService.get(
-      'leads.defaultOrganisationId',
-      {
-        infer: true,
-      },
-    );
+    const organisationId = await this.resolveOrganisationId();
 
     const lead = await this.prisma.lead.create({
       data: {
@@ -81,7 +78,7 @@ export class LeadsService {
         consentPrivacy: dto.consentPrivacy,
         utmSource: dto.utmSource,
         utmCampaign: dto.utmCampaign,
-        organisationId: organisationId || null,
+        organisationId,
         ipHash,
         userAgent: context.userAgent ?? null,
       },
@@ -90,7 +87,7 @@ export class LeadsService {
     await this.prisma.leadAuditLog.create({
       data: {
         leadId: lead.id,
-        organisationId: organisationId || null,
+        organisationId,
         action: 'lead.created',
         before: null,
         after: {
@@ -120,22 +117,34 @@ export class LeadsService {
 
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
+    const includeUnassigned =
+      await this.shouldIncludeUnassignedLeads(organisationId);
 
-    const where: Prisma.LeadWhereInput = {
-      organisationId,
-      status: query.status,
-    };
+    const filters: Prisma.LeadWhereInput[] = [
+      includeUnassigned
+        ? { OR: [{ organisationId }, { organisationId: null }] }
+        : { organisationId },
+    ];
+
+    if (query.status) {
+      filters.push({ status: query.status });
+    }
 
     if (query.search) {
       const search = query.search.trim();
       if (search) {
-        where.OR = [
-          { email: { contains: search, mode: 'insensitive' } },
-          { name: { contains: search, mode: 'insensitive' } },
-          { company: { contains: search, mode: 'insensitive' } },
-        ];
+        filters.push({
+          OR: [
+            { email: { contains: search, mode: 'insensitive' } },
+            { name: { contains: search, mode: 'insensitive' } },
+            { company: { contains: search, mode: 'insensitive' } },
+          ],
+        });
       }
     }
+
+    const where: Prisma.LeadWhereInput =
+      filters.length > 1 ? { AND: filters } : filters[0];
 
     const [total, items] = await this.prisma.$transaction([
       this.prisma.lead.count({ where }),
@@ -266,8 +275,18 @@ export class LeadsService {
       infer: true,
     });
 
-    const adminContent = this.buildAdminNotification(lead);
-    const replyContent = this.buildAutoReply(lead);
+    const adminContent = this.emailTemplates.leadAdminNotificationTemplate({
+      name: lead.name,
+      email: lead.email,
+      company: lead.company,
+      headcount: lead.headcount,
+      message: lead.message ?? undefined,
+    });
+    const replyContent = this.emailTemplates.leadAutoReplyTemplate({
+      name: lead.name,
+      company: lead.company,
+      message: lead.message ?? undefined,
+    });
 
     if (notificationEmail) {
       await this.sendLeadEmail({
@@ -365,45 +384,59 @@ export class LeadsService {
     });
   }
 
-  private buildAdminNotification(lead: {
-    email: string;
-    name: string;
-    company: string;
-    headcount: number | null;
-    message: string | null;
-  }) {
-    const lines = [
-      `Nowy lead demo KadryHR`,
-      `Imię i nazwisko: ${lead.name}`,
-      `Email: ${lead.email}`,
-      `Firma: ${lead.company}`,
-      `Liczba pracowników: ${lead.headcount ?? 'brak danych'}`,
-      `Wiadomość: ${lead.message ?? '—'}`,
-    ];
+  private async resolveOrganisationId(): Promise<string | null> {
+    const configured = this.configService.get(
+      'leads.defaultOrganisationId',
+      {
+        infer: true,
+      },
+    );
+    if (configured) {
+      return configured;
+    }
 
-    return {
-      text: lines.join('\n'),
-      html: `
-        <h2>Nowy lead demo KadryHR</h2>
-        <ul>
-          <li><strong>Imię i nazwisko:</strong> ${lead.name}</li>
-          <li><strong>Email:</strong> ${lead.email}</li>
-          <li><strong>Firma:</strong> ${lead.company}</li>
-          <li><strong>Liczba pracowników:</strong> ${lead.headcount ?? 'brak danych'}</li>
-          <li><strong>Wiadomość:</strong> ${lead.message ?? '—'}</li>
-        </ul>
-      `,
-    };
+    const organisations = await this.prisma.organisation.findMany({
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+      take: 2,
+    });
+
+    if (organisations.length === 1) {
+      this.logger.warn(
+        'LEADS_DEFAULT_ORGANISATION_ID not set. Falling back to the only organisation found.',
+      );
+      return organisations[0].id;
+    }
+
+    if (organisations.length > 1) {
+      this.logger.warn(
+        'LEADS_DEFAULT_ORGANISATION_ID not set and multiple organisations exist. Lead will be stored without organisation.',
+      );
+    }
+
+    return null;
   }
 
-  private buildAutoReply(lead: { name: string; company: string }) {
-    return {
-      text: `Cześć ${lead.name},\n\nDziękujemy za zgłoszenie demo KadryHR. Wracamy z propozycją terminu do 24h (dni robocze).\n\nPozdrawiamy,\nZespół KadryHR`,
-      html: `
-        <p>Cześć ${lead.name},</p>
-        <p>Dziękujemy za zgłoszenie demo KadryHR. Wracamy z propozycją terminu do 24h (dni robocze).</p>
-        <p>Pozdrawiamy,<br />Zespół KadryHR</p>
-      `,
-    };
+  private async shouldIncludeUnassignedLeads(
+    organisationId: string,
+  ): Promise<boolean> {
+    const configured = this.configService.get(
+      'leads.defaultOrganisationId',
+      {
+        infer: true,
+      },
+    );
+
+    if (configured) {
+      return configured === organisationId;
+    }
+
+    const organisations = await this.prisma.organisation.findMany({
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+      take: 2,
+    });
+
+    return organisations.length === 1 && organisations[0].id === organisationId;
   }
 }
