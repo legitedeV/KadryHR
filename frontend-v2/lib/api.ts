@@ -75,6 +75,7 @@ export interface AvailabilityRecord {
   weekday?: string | null;
   startMinutes: number;
   endMinutes: number;
+  status?: "AVAILABLE" | "DAY_OFF";
   notes?: string | null;
   employee?: {
     id: string;
@@ -112,6 +113,7 @@ export interface AvailabilityInput {
   date?: string;
   startMinutes: number;
   endMinutes: number;
+  status?: "AVAILABLE" | "DAY_OFF";
   notes?: string;
 }
 

@@ -153,6 +153,21 @@ export function buildShiftDescription(
 export { ConfirmDialog };
 
 function getAvailabilityIndicator(dayAvail: AvailabilityRecord[]): AvailabilityIndicator {
+  const hasDayOff = dayAvail.some((slot) => slot.status === "DAY_OFF");
+  if (hasDayOff) {
+    return {
+      status: "unavailable",
+      label: "Dzień wolny",
+      windows: [],
+    };
+  }
+  if (dayAvail.length === 0) {
+    return {
+      status: "available",
+      label: "Dostępny (domyślnie)",
+      windows: [],
+    };
+  }
   const totalMinutes = dayAvail.reduce((sum, slot) => sum + Math.max(0, slot.endMinutes - slot.startMinutes), 0);
   if (totalMinutes >= FULL_DAY_MINUTES) {
     return {
@@ -177,6 +192,9 @@ function getAvailabilityIndicator(dayAvail: AvailabilityRecord[]): AvailabilityI
 
 function getAvailabilitySeverity(dayAvail: AvailabilityRecord[], startMinutes: number, endMinutes: number) {
   if (!dayAvail.length) {
+    return "available" as const;
+  }
+  if (dayAvail.some((slot) => slot.status === "DAY_OFF")) {
     return "outside" as const;
   }
 

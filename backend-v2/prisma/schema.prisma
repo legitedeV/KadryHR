@@ -31,6 +31,11 @@ enum Weekday {
   SUNDAY
 }
 
+enum AvailabilityStatus {
+  AVAILABLE
+  DAY_OFF
+}
+
 enum LeaveCategory {
   PAID_LEAVE
   SICK
@@ -407,6 +412,7 @@ model Availability {
   weekday        Weekday?
   startMinutes   Int
   endMinutes     Int
+  status         AvailabilityStatus @default(AVAILABLE)
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

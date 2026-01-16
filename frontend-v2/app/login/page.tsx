@@ -52,19 +52,12 @@ function LoginForm() {
       </div>
 
       <div className="w-full max-w-md panel-card p-8 shadow-elevated">
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <Logo
-              variant="compact"
-              size="sm"
-              alt="KadryHR"
-              className="max-w-[200px]"
-              align="column"
-            />
-            <div className="text-xs text-surface-400">
-              Kadry i płace bez tajemnic
-            </div>
-          </div>
+        <div className="flex items-center justify-center mb-8">
+          <Logo
+            variant="full"
+            size="sm"
+            alt="KadryHR – Kadry i płace bez tajemnic"
+          />
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>

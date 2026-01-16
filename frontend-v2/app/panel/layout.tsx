@@ -7,6 +7,7 @@ import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationsProvider } from "@/lib/notifications-context";
+import { ScheduleNotificationPopups } from "@/components/notifications/ScheduleNotificationPopups";
 
 type NavItem = {
   href: string;
@@ -118,10 +119,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
             <Logo
-              variant="compact"
-              size="xs"
+              variant="icon"
+              size="sm"
               alt="KadryHR"
-              className="max-w-[140px]"
+              className="shrink-0"
               asLink="/panel/dashboard"
               label="KadryHR"
             />
@@ -203,10 +204,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         } bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/80`}>
           <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800">
             <Logo
-              variant="compact"
-              size="xs"
+              variant="icon"
+              size="sm"
               alt="KadryHR"
-              className="max-w-[140px]"
+              className="shrink-0"
               asLink="/panel/dashboard"
               label="KadryHR"
             />
@@ -350,6 +351,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
+      <ScheduleNotificationPopups />
     </NotificationsProvider>
   );
 }

@@ -3,9 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { LeaveStatus, NotificationType, type Prisma } from '@prisma/client';
+import { AvailabilityStatus, LeaveStatus, NotificationType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PermissionsService } from '../auth/permissions.service';
+import { Permission } from '../auth/permissions';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 
 @Injectable()
@@ -13,7 +15,28 @@ export class ShiftsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly permissionsService: PermissionsService,
   ) {}
+
+  private async userCanManageSchedule(
+    organisationId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, organisationId },
+      select: { role: true },
+    });
+
+    if (!user) return false;
+    const permissions = await this.permissionsService.getOrganisationPermissions(
+      organisationId,
+      user.role,
+    );
+    return (
+      permissions.includes(Permission.SCHEDULE_MANAGE) ||
+      permissions.includes(Permission.RCP_EDIT)
+    );
+  }
 
   /**
    * Wszystkie zmiany w organizacji (dla OWNER/MANAGER).
@@ -396,7 +419,7 @@ export class ShiftsService {
     });
 
     if (!availability.length) {
-      return 'Brak zadeklarowanej dostępności pracownika dla tego terminu.';
+      return null;
     }
 
     const shiftDateIso = startsAt.toISOString().slice(0, 10);
@@ -425,10 +448,19 @@ export class ShiftsService {
     });
 
     if (!matching.length) {
-      return 'Pracownik nie zadeklarował dostępności w tym dniu.';
+      return null;
     }
 
-    const covered = matching.some(
+    const hasDayOff = matching.some(
+      (slot) => slot.status === AvailabilityStatus.DAY_OFF,
+    );
+    if (hasDayOff) {
+      return 'Pracownik ma oznaczony dzień wolny.';
+    }
+
+    const covered = matching
+      .filter((slot) => slot.status !== AvailabilityStatus.DAY_OFF)
+      .some(
       (slot) =>
         slot.startMinutes <= startMinutes && slot.endMinutes >= endMinutes,
     );
@@ -460,6 +492,10 @@ export class ShiftsService {
   ) {
     if (!userId) {
       return; // Employee doesn't have a user account
+    }
+    const canManage = await this.userCanManageSchedule(organisationId, userId);
+    if (!canManage) {
+      return;
     }
 
     const actionLabel = action === 'assigned' ? 'przypisana' : 'zaktualizowana';
@@ -527,12 +563,44 @@ export class ShiftsService {
       return;
     }
 
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds }, organisationId },
+      select: { id: true, role: true },
+    });
+
+    const roles = Array.from(new Set(users.map((user) => user.role)));
+    const permissionsByRole = new Map<string, Permission[]>();
+    await Promise.all(
+      roles.map(async (role) => {
+        const permissions =
+          await this.permissionsService.getOrganisationPermissions(
+            organisationId,
+            role,
+          );
+        permissionsByRole.set(role, permissions);
+      }),
+    );
+
+    const scheduleManagers = users
+      .filter((user) => {
+        const permissions = permissionsByRole.get(user.role) ?? [];
+        return (
+          permissions.includes(Permission.SCHEDULE_MANAGE) ||
+          permissions.includes(Permission.RCP_EDIT)
+        );
+      })
+      .map((user) => user.id);
+
+    if (scheduleManagers.length === 0) {
+      return;
+    }
+
     const dateRangeStr = dateRange
       ? `${dateRange.from.toLocaleDateString('pl-PL')} - ${dateRange.to.toLocaleDateString('pl-PL')}`
       : 'najbliższy okres';
 
     // Send notification to each employee
-    for (const userId of userIds) {
+    for (const userId of scheduleManagers) {
       await this.notificationsService.createNotification({
         organisationId,
         userId,
