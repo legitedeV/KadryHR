@@ -1,6 +1,25 @@
 -- Add new notification type
 ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'LOGO_PROPOSAL_APPROVED';
 
+-- Ensure PermissionType enum exists (for legacy databases missing the type)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PermissionType') THEN
+    CREATE TYPE "PermissionType" AS ENUM (
+      'SCHEDULE_MANAGE',
+      'SCHEDULE_VIEW',
+      'LEAVE_APPROVE',
+      'LEAVE_REQUEST',
+      'EMPLOYEE_MANAGE',
+      'EMPLOYEE_VIEW',
+      'ORGANISATION_SETTINGS',
+      'AUDIT_VIEW',
+      'REPORTS_EXPORT',
+      'AVAILABILITY_MANAGE'
+    );
+  END IF;
+END $$;
+
 -- CreateTable
 CREATE TABLE "RolePermission" (
     "id" TEXT NOT NULL,

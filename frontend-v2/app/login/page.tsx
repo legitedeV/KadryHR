@@ -53,7 +53,7 @@ function LoginForm() {
 
       <div className="w-full max-w-md panel-card p-8 shadow-elevated">
         <div className="flex items-center justify-center mb-8">
-          <BrandLogoMotion size={59} variant="full" withPL ariaLabel="KadryHR – Kadry i płace bez tajemnic" />
+          <BrandLogoMotion size={56} variant="full" withPL ariaLabel="KadryHR – Kadry i płace bez tajemnic" />
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
