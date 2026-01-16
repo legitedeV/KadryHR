@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { href: "/panel/leads", label: "Leady demo", icon: "M3 4a1 1 0 011-1h6l2 2h8a1 1 0 011 1v2H3V4z M3 9h18v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z", roles: ["OWNER", "ADMIN"] },
   { href: "/panel/newsletter-subscribers", label: "Subskrybenci", icon: "M16 12a4 4 0 10-8 0 4 4 0 008 0z M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
   { href: "/panel/audit", label: "Audit", icon: "M9 12h6m-6 4h6M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v12a2 2 0 002 2h10a2 2 0 002-2V8" },
+  { href: "/panel/logo-propozycje", label: "Logo", icon: "M12 4.5c-4.5 0-8 3.6-8 8.1 0 4 3.1 7.3 7.1 7.9V13H8.6a1 1 0 010-2h2.5V8.6c0-1.5 1.2-2.7 2.7-2.7h1.7a1 1 0 010 2h-1.7c-.4 0-.7.3-.7.7V11h2.2a1 1 0 010 2h-2.2v7.5c4-.6 7.1-3.9 7.1-7.9 0-4.5-3.5-8.1-8-8.1z" },
   { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "MANAGER"] },
   { href: "/panel/uzytkownicy", label: "Użytkownicy", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
@@ -46,6 +47,7 @@ const titleByPath: Record<string, string> = {
   "/panel/leads": "Leady demo",
   "/panel/newsletter-subscribers": "Subskrybenci newslettera",
   "/panel/audit": "Audit log",
+  "/panel/logo-propozycje": "Propozycje logo",
   "/panel/organizacja": "Ustawienia organizacji",
   "/panel/uzytkownicy": "Użytkownicy",
 };
