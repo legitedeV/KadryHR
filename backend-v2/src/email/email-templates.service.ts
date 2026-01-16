@@ -11,7 +11,7 @@ export class EmailTemplatesService {
    */
   private baseTemplate(content: string, previewText?: string): string {
     const preview = previewText
-      ? `<span style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${previewText}</span>`
+      ? `<span style="display:none;font-size:1px;color:#0b1411;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${previewText}</span>`
       : '';
 
     return `
@@ -20,8 +20,8 @@ export class EmailTemplatesService {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
   <title>KadryHR</title>
   <!--[if mso]>
   <noscript>
@@ -34,38 +34,47 @@ export class EmailTemplatesService {
   <![endif]-->
   <style>
     :root {
-      color-scheme: light dark;
-      supported-color-schemes: light dark;
+      color-scheme: dark;
+      supported-color-schemes: dark;
     }
-    @media (prefers-color-scheme: dark) {
-      .email-bg { background-color: #0f172a !important; }
-      .email-card { background-color: #1e293b !important; border-color: #334155 !important; }
-      .email-text { color: #f1f5f9 !important; }
-      .email-text-secondary { color: #94a3b8 !important; }
-      .email-text-muted { color: #64748b !important; }
-      .email-divider { border-color: #334155 !important; }
+    .email-bg {
+      background-color: #0b1411;
+      background-image: radial-gradient(circle at top, rgba(30, 165, 116, 0.25), transparent 55%);
     }
+    .email-card {
+      background-color: #111c18;
+      border: 1px solid #0f5341;
+      border-radius: 18px;
+      box-shadow: 0 20px 45px rgba(2, 6, 23, 0.45);
+    }
+    .email-text { color: #e4f2ea; }
+    .email-text-secondary { color: #b2ebcc; }
+    .email-text-muted { color: #7fbfa5; }
+    .email-divider { border-color: #1f3b31; }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background-color:#0b1411;font-family:'Inter','SF Pro Display','Segoe UI',system-ui,-apple-system,sans-serif;">
   ${preview}
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-bg" style="background-color:#f8fafc;padding:24px 16px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-bg" style="background-color:#0b1411;padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;margin:0 auto;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;">
           <!-- Logo Header -->
           <tr>
             <td style="text-align:center;padding-bottom:24px;">
-              <div style="font-size:24px;font-weight:700;color:#2563eb;letter-spacing:-0.5px;">KadryHR</div>
-              <div style="font-size:12px;color:#64748b;margin-top:4px;">System zarządzania personelem</div>
+              <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background-color:rgba(15,83,65,0.4);border:1px solid rgba(30,165,116,0.35);">
+                <span style="width:8px;height:8px;border-radius:999px;background-color:#34d399;display:inline-block;"></span>
+                <span style="font-size:14px;font-weight:600;color:#b2ebcc;letter-spacing:0.6px;">KadryHR</span>
+              </div>
+              <div style="font-size:12px;color:#7fbfa5;margin-top:10px;">Grafiki, czas pracy i urlopy w jednym rytmie</div>
             </td>
           </tr>
           <!-- Main Card -->
           <tr>
             <td>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-card" style="background-color:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-card" style="background-color:#111c18;border-radius:18px;border:1px solid #0f5341;overflow:hidden;">
                 <tr>
-                  <td style="padding:32px;">
+                  <td style="padding:34px;">
                     ${content}
                   </td>
                 </tr>
@@ -75,7 +84,7 @@ export class EmailTemplatesService {
           <!-- Footer -->
           <tr>
             <td style="text-align:center;padding-top:24px;">
-              <p class="email-text-muted" style="font-size:12px;color:#64748b;margin:0;line-height:1.5;">
+              <p class="email-text-muted" style="font-size:12px;color:#7fbfa5;margin:0;line-height:1.6;">
                 Wiadomość wysłana automatycznie z systemu KadryHR.<br>
                 Jeśli nie spodziewałeś/aś się tej wiadomości, skontaktuj się ze swoim menedżerem.
               </p>
@@ -96,8 +105,8 @@ export class EmailTemplatesService {
     return `
       <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
         <tr>
-          <td style="background-color:#2563eb;border-radius:8px;">
-            <a href="${url}" target="_blank" style="display:inline-block;padding:14px 24px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;">
+          <td style="background-color:#1ea574;border-radius:10px;border:1px solid #34d399;box-shadow:0 12px 24px rgba(16, 124, 87, 0.35);">
+            <a href="${url}" target="_blank" style="display:inline-block;padding:14px 26px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:0.2px;">
               ${text}
             </a>
           </td>
@@ -113,14 +122,14 @@ export class EmailTemplatesService {
       .map(
         (item) => `
         <tr>
-          <td class="email-text-secondary" style="padding:8px 12px;font-size:13px;color:#64748b;white-space:nowrap;">${item.label}</td>
-          <td class="email-text" style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:500;">${item.value}</td>
+          <td class="email-text-secondary" style="padding:8px 12px;font-size:13px;color:#b2ebcc;white-space:nowrap;">${item.label}</td>
+          <td class="email-text" style="padding:8px 12px;font-size:13px;color:#e4f2ea;font-weight:600;">${item.value}</td>
         </tr>`,
       )
       .join('');
 
     return `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-card" style="background-color:#f8fafc;border-radius:8px;margin:16px 0;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0f1714;border-radius:12px;border:1px solid rgba(31, 59, 49, 0.8);margin:18px 0;">
         ${rows}
       </table>`;
   }
@@ -143,13 +152,13 @@ export class EmailTemplatesService {
       : '';
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         Twoje konto w KadryHR jest gotowe
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 8px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 8px 0;">
         ${greeting}
       </p>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         Zostałeś/aś zaproszony/a do organizacji <strong>${params.organisationName}</strong> w systemie KadryHR.${inviterInfo}
       </p>
       ${this.infoBox([
@@ -159,9 +168,9 @@ export class EmailTemplatesService {
           : []),
       ])}
       ${this.actionButton('Ustaw hasło i przejdź do panelu', params.invitationLink)}
-      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+      <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">
         Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:<br>
-        <a href="${params.invitationLink}" style="color:#2563eb;word-break:break-all;">${params.invitationLink}</a>
+        <a href="${params.invitationLink}" style="color:#45c992;word-break:break-all;">${params.invitationLink}</a>
       </p>`;
 
     return {
@@ -191,13 +200,13 @@ export class EmailTemplatesService {
       : '';
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         Twoje konto w KadryHR jest aktywne
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 8px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 8px 0;">
         ${greeting}
       </p>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         Utworzono dla Ciebie konto w organizacji <strong>${params.organisationName}</strong>${creator}.
         Możesz już zalogować się do panelu KadryHR.
       </p>
@@ -205,7 +214,7 @@ export class EmailTemplatesService {
         { label: 'Organizacja', value: params.organisationName },
       ])}
       ${this.actionButton('Przejdź do logowania', params.loginUrl)}
-      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+      <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">
         Jeśli nie znasz hasła, skontaktuj się z administratorem organizacji.
       </p>`;
 
@@ -257,10 +266,10 @@ export class EmailTemplatesService {
     if (params.notes) infoItems.push({ label: 'Uwagi', value: params.notes });
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         ${title}
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         ${greeting} Twoja zmiana została ${verb}.
       </p>
       ${this.infoBox(infoItems)}
@@ -292,9 +301,9 @@ export class EmailTemplatesService {
       string,
       { title: string; color: string; icon: string }
     > = {
-      APPROVED: { title: 'zatwierdzony', color: '#16a34a', icon: '✓' },
-      REJECTED: { title: 'odrzucony', color: '#dc2626', icon: '✗' },
-      CANCELLED: { title: 'anulowany', color: '#64748b', icon: '○' },
+      APPROVED: { title: 'zatwierdzony', color: '#34d399', icon: '✓' },
+      REJECTED: { title: 'odrzucony', color: '#f87171', icon: '✗' },
+      CANCELLED: { title: 'anulowany', color: '#7fbfa5', icon: '○' },
     };
 
     const { title: statusTitle, color } =
@@ -313,10 +322,10 @@ export class EmailTemplatesService {
     }
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         Wniosek urlopowy ${statusTitle}
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         ${greeting} Twój wniosek urlopowy został <span style="color:${color};font-weight:600;">${statusTitle}</span>.
       </p>
       ${this.infoBox(infoItems)}
@@ -346,14 +355,14 @@ export class EmailTemplatesService {
       : 'Cześć!';
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         Opublikowano nowy grafik
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         ${greeting} Nowy grafik został opublikowany${params.organisationName ? ` w ${params.organisationName}` : ''}.
       </p>
       ${this.infoBox([{ label: 'Okres', value: params.dateRange }])}
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:16px 0;">
         Sprawdź swoje zmiany w panelu KadryHR.
       </p>
       ${params.panelUrl ? this.actionButton('Zobacz grafik', params.panelUrl) : ''}`;
@@ -380,17 +389,17 @@ export class EmailTemplatesService {
       : 'Cześć!';
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         Powiadomienie testowe
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         ${greeting} To jest wiadomość testowa z systemu KadryHR.
       </p>
       ${this.infoBox([
         { label: 'Odbiorca', value: params.recipientEmail },
         { label: 'Wysłano', value: new Date().toLocaleString('pl-PL') },
       ])}
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:16px 0;">
         Jeśli widzisz tę wiadomość, to powiadomienia e-mail działają poprawnie! 🎉
       </p>`;
 
@@ -415,10 +424,10 @@ export class EmailTemplatesService {
     message?: string;
   }): { subject: string; text: string; html: string } {
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 12px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 12px 0;">
         Nowy lead demo KadryHR
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         Otrzymaliśmy nowe zgłoszenie demo. Poniżej znajdują się dane kontaktowe klienta.
       </p>
       ${this.infoBox([
@@ -430,9 +439,9 @@ export class EmailTemplatesService {
           value: params.headcount ? `${params.headcount}` : 'brak danych',
         },
       ])}
-      <div class="email-card" style="background-color:#f8fafc;border-radius:12px;padding:16px;margin-top:16px;">
-        <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:0 0 8px 0;">Wiadomość klienta</p>
-        <p class="email-text" style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">
+      <div class="email-card" style="background-color:#0f1714;border-radius:12px;border:1px solid rgba(31, 59, 49, 0.8);padding:16px;margin-top:16px;">
+        <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:0 0 8px 0;">Wiadomość klienta</p>
+        <p class="email-text" style="font-size:14px;line-height:1.6;color:#e4f2ea;margin:0;">
           ${params.message ?? '—'}
         </p>
       </div>`;
@@ -466,10 +475,10 @@ export class EmailTemplatesService {
   }): { subject: string; text: string; html: string } {
     const greeting = params.name ? `Cześć ${params.name}!` : 'Cześć!';
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 12px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 12px 0;">
         Dziękujemy za zgłoszenie demo
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 12px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 12px 0;">
         ${greeting} Dziękujemy za zainteresowanie KadryHR. Wracamy z propozycją terminu demo w ciągu 24h (dni robocze).
       </p>
       ${this.infoBox([
@@ -479,13 +488,13 @@ export class EmailTemplatesService {
           value: 'Potwierdzone i przekazane do opiekuna',
         },
       ])}
-      <div class="email-card" style="background-color:#f8fafc;border-radius:12px;padding:16px;margin-top:16px;">
-        <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:0 0 8px 0;">Twoja wiadomość</p>
-        <p class="email-text" style="font-size:14px;line-height:1.6;color:#0f172a;margin:0;">
+      <div class="email-card" style="background-color:#0f1714;border-radius:12px;border:1px solid rgba(31, 59, 49, 0.8);padding:16px;margin-top:16px;">
+        <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:0 0 8px 0;">Twoja wiadomość</p>
+        <p class="email-text" style="font-size:14px;line-height:1.6;color:#e4f2ea;margin:0;">
           ${params.message ?? '—'}
         </p>
       </div>
-      <p class="email-text" style="font-size:14px;line-height:1.6;color:#334155;margin:16px 0 0 0;">
+      <p class="email-text" style="font-size:14px;line-height:1.6;color:#cfe9de;margin:16px 0 0 0;">
         Jeśli coś się zmieniło, możesz odpowiedzieć bezpośrednio na tę wiadomość.
       </p>`;
 
@@ -511,16 +520,16 @@ export class EmailTemplatesService {
       : 'Cześć!';
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 12px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 12px 0;">
         Potwierdź zapis do newslettera
       </h1>
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         ${greeting} Dziękujemy za zapis do newslettera KadryHR. Kliknij przycisk poniżej, aby potwierdzić subskrypcję.
       </p>
       ${this.actionButton('Potwierdź subskrypcję', params.confirmLink)}
-      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+      <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">
         Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:<br>
-        <a href="${params.confirmLink}" style="color:#2563eb;word-break:break-all;">${params.confirmLink}</a>
+        <a href="${params.confirmLink}" style="color:#45c992;word-break:break-all;">${params.confirmLink}</a>
       </p>`;
 
     return {
@@ -529,6 +538,53 @@ export class EmailTemplatesService {
       html: this.baseTemplate(
         content,
         'Potwierdź zapis do newslettera KadryHR',
+      ),
+    };
+  }
+
+  /**
+   * Newsletter welcome template
+   */
+  newsletterWelcomeTemplate(params: {
+    recipientName?: string;
+    ctaUrl: string;
+    unsubscribeUrl: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 12px 0;">
+        Witaj w newsletterze KadryHR
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 12px 0;">
+        ${greeting} Dziękujemy za dołączenie do społeczności KadryHR. Od teraz będziemy dzielić się wskazówkami, jak szybciej planować grafiki, liczyć czas pracy i dbać o płynne zmiany.
+      </p>
+      ${this.infoBox([
+        { label: 'Co przygotowaliśmy', value: 'Sprawdzone praktyki dla retail i gastro' },
+        { label: 'Jak często', value: '1–2 wiadomości w miesiącu' },
+      ])}
+      <div class="email-card" style="background-color:#0f1714;border-radius:12px;border:1px solid rgba(31, 59, 49, 0.8);padding:16px;margin-top:16px;">
+        <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:0 0 8px 0;">Na start polecamy</p>
+        <ul class="email-text" style="margin:0;padding-left:18px;font-size:14px;line-height:1.6;color:#e4f2ea;">
+          <li>Checklistę zamknięcia miesiąca bez nadgodzin.</li>
+          <li>Gotowy przepływ komunikacji z zespołem zmianowym.</li>
+          <li>Alerty o brakach obsady w grafiku.</li>
+        </ul>
+      </div>
+      ${this.actionButton('Zobacz panel KadryHR', params.ctaUrl)}
+      <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">
+        Jeśli nie chcesz otrzymywać tego typu wiadomości, możesz się wypisać:<br>
+        <a href="${params.unsubscribeUrl}" style="color:#45c992;word-break:break-all;">${params.unsubscribeUrl}</a>
+      </p>`;
+
+    return {
+      subject: 'Witaj w newsletterze KadryHR',
+      text: `${greeting} Dziękujemy za dołączenie do newslettera KadryHR. Startujemy z praktycznymi wskazówkami dla retail i gastro. Zobacz panel: ${params.ctaUrl}. Wypisz się: ${params.unsubscribeUrl}`,
+      html: this.baseTemplate(
+        content,
+        'Witaj w newsletterze KadryHR!',
       ),
     };
   }
@@ -548,11 +604,11 @@ export class EmailTemplatesService {
       : '';
 
     const content = `
-      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
         ${params.title}
       </h1>
-      ${greeting ? `<p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 8px 0;">${greeting}</p>` : ''}
-      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+      ${greeting ? `<p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 8px 0;">${greeting}</p>` : ''}
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
         ${params.body}
       </p>
       ${params.actionUrl && params.actionLabel ? this.actionButton(params.actionLabel, params.actionUrl) : ''}`;

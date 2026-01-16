@@ -31,6 +31,7 @@ describe('NewsletterService', () => {
   } as any;
   const emailTemplates = {
     newsletterConfirmationTemplate: jest.fn(),
+    newsletterWelcomeTemplate: jest.fn(),
   } as any;
 
   beforeEach(() => {
@@ -47,6 +48,11 @@ describe('NewsletterService', () => {
       subject: 'Potwierdź zapis do newslettera KadryHR',
       text: 'Potwierdź subskrypcję',
       html: '<p>Potwierdź subskrypcję</p>',
+    });
+    emailTemplates.newsletterWelcomeTemplate = jest.fn().mockReturnValue({
+      subject: 'Witaj w newsletterze KadryHR',
+      text: 'Poznaj nowości w KadryHR.',
+      html: '<p>Witaj w newsletterze KadryHR</p>',
     });
     service = new NewsletterService(
       prisma,
