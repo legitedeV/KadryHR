@@ -193,7 +193,7 @@ class ApiClient {
     init: RequestInit,
     timeoutMs = DEFAULT_TIMEOUT_MS,
   ) {
-    if (!timeoutMs) {
+    if (timeoutMs == null) {
       return fetch(url, init);
     }
     const controller = new AbortController();
@@ -207,9 +207,6 @@ class ApiClient {
 
   private normalizeNetworkError(error: unknown) {
     if (error instanceof ApiError) return error;
-    if (error instanceof DOMException && error.name === "AbortError") {
-      return new ApiError("Brak połączenia z serwerem.", { kind: "timeout" });
-    }
     if (error instanceof Error && error.name === "AbortError") {
       return new ApiError("Brak połączenia z serwerem.", { kind: "timeout" });
     }
