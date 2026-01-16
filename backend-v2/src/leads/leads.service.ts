@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { LeadStatus, Prisma, Role } from '@prisma/client';
 import { createHash } from 'crypto';
 import { AppConfig } from '../config/configuration';
+import { EmailAdapter } from '../email/email.adapter';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -32,6 +33,7 @@ export class LeadsService {
     private readonly prisma: PrismaService,
     private readonly queueService: QueueService,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly emailAdapter: EmailAdapter,
   ) {}
 
   async createPublicLead(dto: CreateLeadDto, context: LeadRequestContext) {
@@ -248,6 +250,8 @@ export class LeadsService {
   }
 
   private async sendLeadNotifications(lead: {
+    id: string;
+    organisationId: string | null;
     email: string;
     name: string;
     company: string;
@@ -266,30 +270,99 @@ export class LeadsService {
     const replyContent = this.buildAutoReply(lead);
 
     if (notificationEmail) {
-      const queued = await this.queueService.addNewsletterEmailJob({
-        to: notificationEmail,
+      await this.sendLeadEmail({
+        lead,
+        recipient: notificationEmail,
         subject: 'Nowy lead demo KadryHR',
         text: adminContent.text,
         html: adminContent.html,
+        kind: 'admin-notification',
       });
-
-      if (!queued) {
-        this.logger.warn('Lead notification email queued synchronously.');
-      }
+    } else {
+      this.logger.warn('Lead notification email not configured.');
     }
 
     if (autoReplyEnabled) {
-      const queued = await this.queueService.addNewsletterEmailJob({
-        to: lead.email,
+      await this.sendLeadEmail({
+        lead,
+        recipient: lead.email,
         subject: 'KadryHR – potwierdzenie zgłoszenia demo',
         text: replyContent.text,
         html: replyContent.html,
+        kind: 'auto-reply',
       });
-
-      if (!queued) {
-        this.logger.warn('Lead auto-reply queued synchronously.');
-      }
     }
+  }
+
+  private async sendLeadEmail(params: {
+    lead: {
+      id: string;
+      organisationId: string | null;
+      email: string;
+    };
+    recipient: string;
+    subject: string;
+    text: string;
+    html: string;
+    kind: 'admin-notification' | 'auto-reply';
+  }) {
+    const queued = await this.queueService.addNewsletterEmailJob({
+      to: params.recipient,
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    });
+
+    if (queued) {
+      await this.prisma.leadAuditLog.create({
+        data: {
+          leadId: params.lead.id,
+          organisationId: params.lead.organisationId,
+          action: 'lead.notification.queued',
+          before: null,
+          after: {
+            kind: params.kind,
+            recipient: params.recipient,
+          },
+          ipHash: null,
+          userAgent: null,
+        },
+      });
+      return;
+    }
+
+    this.logger.warn(
+      `Lead email queue unavailable, sending synchronously (${params.kind}).`,
+    );
+
+    const result = await this.emailAdapter.sendEmail({
+      to: params.recipient,
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    });
+
+    const status = result.success
+      ? 'sent'
+      : result.skipped
+        ? 'skipped'
+        : 'failed';
+
+    await this.prisma.leadAuditLog.create({
+      data: {
+        leadId: params.lead.id,
+        organisationId: params.lead.organisationId,
+        action: `lead.notification.${status}`,
+        before: null,
+        after: {
+          kind: params.kind,
+          recipient: params.recipient,
+          error: result.error ?? null,
+        },
+        ipHash: null,
+        userAgent: null,
+      },
+    });
   }
 
   private buildAdminNotification(lead: {
