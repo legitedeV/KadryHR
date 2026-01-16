@@ -39,6 +39,9 @@ export interface AppConfig {
     autoReplyEnabled: boolean;
     ipHashSalt: string;
   };
+  newsletter: {
+    defaultOrganisationId: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -82,5 +85,9 @@ export const configuration = (): AppConfig => ({
     notificationEmail: process.env.LEADS_NOTIFICATION_EMAIL ?? '',
     autoReplyEnabled: (process.env.LEADS_AUTO_REPLY_ENABLED ?? 'true') !== 'false',
     ipHashSalt: process.env.LEADS_IP_HASH_SALT ?? 'kadryhr-leads',
+  },
+  newsletter: {
+    defaultOrganisationId:
+      process.env.NEWSLETTER_DEFAULT_ORGANISATION_ID ?? '',
   },
 });

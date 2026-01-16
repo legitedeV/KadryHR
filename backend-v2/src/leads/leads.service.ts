@@ -7,7 +7,7 @@ import {
   TooManyRequestsException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { LeadStatus, Role } from '@prisma/client';
+import { LeadStatus, Prisma, Role } from '@prisma/client';
 import { createHash } from 'crypto';
 import { AppConfig } from '../config/configuration';
 import { PrismaService } from '../prisma/prisma.service';
@@ -119,10 +119,21 @@ export class LeadsService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
 
-    const where = {
+    const where: Prisma.LeadWhereInput = {
       organisationId,
       status: query.status,
     };
+
+    if (query.search) {
+      const search = query.search.trim();
+      if (search) {
+        where.OR = [
+          { email: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
+          { company: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+    }
 
     const [total, items] = await this.prisma.$transaction([
       this.prisma.lead.count({ where }),
@@ -181,6 +192,47 @@ export class LeadsService {
     });
 
     return updated;
+  }
+
+  async listAudit(
+    user: AuthenticatedUser,
+    id: string,
+    query: { skip?: number; take?: number },
+  ) {
+    this.ensureAccess(user);
+
+    const organisationId = user.organisationId;
+    if (!organisationId) {
+      throw new ForbiddenException('Brak przypisanej organizacji.');
+    }
+
+    const lead = await this.prisma.lead.findFirst({
+      where: { id, organisationId },
+    });
+
+    if (!lead) {
+      throw new NotFoundException('Lead nie został znaleziony.');
+    }
+
+    const take = query.take ?? 20;
+    const skip = query.skip ?? 0;
+
+    return this.prisma.leadAuditLog.findMany({
+      where: { leadId: id, organisationId },
+      orderBy: { createdAt: 'desc' },
+      take,
+      skip,
+      include: {
+        actor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 
   private ensureAccess(user: AuthenticatedUser) {

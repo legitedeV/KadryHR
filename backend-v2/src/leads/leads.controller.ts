@@ -17,6 +17,7 @@ import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
+import { QueryLeadAuditDto } from './dto/query-lead-audit.dto';
 
 @Controller('public/leads')
 export class PublicLeadsController {
@@ -55,5 +56,14 @@ export class LeadsController {
     @Body() body: UpdateLeadStatusDto,
   ) {
     return this.leadsService.updateStatus(user, id, body.status);
+  }
+
+  @Get(':id/audit')
+  async audit(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: QueryLeadAuditDto,
+  ) {
+    return this.leadsService.listAudit(user, id, query);
   }
 }

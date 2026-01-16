@@ -689,6 +689,22 @@ model NewsletterToken {
   @@index([tokenHash, type])
 }
 
+model NewsletterAuditLog {
+  id             String   @id @default(uuid())
+  subscriberId   String
+  organisationId String?
+  action         String
+  before         Json?
+  after          Json?
+  createdAt      DateTime @default(now())
+
+  subscriber   NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  organisation Organisation?        @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+
+  @@index([subscriberId])
+  @@index([organisationId])
+}
+
 model EmployeeInvitation {
   id              String           @id @default(uuid())
   organisationId  String

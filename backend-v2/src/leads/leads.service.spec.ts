@@ -16,6 +16,7 @@ describe('LeadsService', () => {
     },
     leadAuditLog: {
       create: jest.fn(),
+      findMany: jest.fn(),
     },
     $transaction: jest.fn(),
   } as any;
@@ -94,5 +95,31 @@ describe('LeadsService', () => {
 
     expect(result).toEqual({ id: 'lead-1', status: LeadStatus.CONTACTED });
     expect(prisma.leadAuditLog.create).toHaveBeenCalled();
+  });
+
+  it('lists lead audit logs for permitted user', async () => {
+    prisma.lead.findFirst.mockResolvedValue({
+      id: 'lead-1',
+      organisationId: 'org-1',
+      status: LeadStatus.NEW,
+    });
+    prisma.leadAuditLog.findMany.mockResolvedValue([
+      { id: 'audit-1', action: 'lead.created' },
+    ]);
+
+    const result = await service.listAudit(
+      {
+        id: 'user-1',
+        organisationId: 'org-1',
+        role: 'OWNER',
+        email: 'owner@kadryhr.pl',
+        permissions: [],
+      } as any,
+      'lead-1',
+      {},
+    );
+
+    expect(result).toEqual([{ id: 'audit-1', action: 'lead.created' }]);
+    expect(prisma.leadAuditLog.findMany).toHaveBeenCalled();
   });
 });
