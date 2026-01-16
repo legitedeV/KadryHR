@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ShiftsService } from './shifts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PermissionsService } from '../auth/permissions.service';
+import { Permission } from '../auth/permissions';
 
 const mockPrisma = {
   shift: {
@@ -28,10 +30,18 @@ const mockPrisma = {
   leaveRequest: {
     findFirst: jest.fn(),
   },
+  user: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
 };
 
 const mockNotifications = {
   createNotification: jest.fn(),
+};
+
+const mockPermissions = {
+  getOrganisationPermissions: jest.fn(),
 };
 
 describe('ShiftsService', () => {
@@ -43,6 +53,7 @@ describe('ShiftsService', () => {
         ShiftsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: NotificationsService, useValue: mockNotifications },
+        { provide: PermissionsService, useValue: mockPermissions },
       ],
     }).compile();
 
@@ -61,6 +72,10 @@ describe('ShiftsService', () => {
       preventShiftOnApprovedLeave: false,
     });
     mockPrisma.leaveRequest.findFirst.mockResolvedValue(null);
+    mockPrisma.user.findFirst.mockResolvedValue({ role: 'MANAGER' });
+    mockPermissions.getOrganisationPermissions.mockResolvedValue([
+      Permission.SCHEDULE_MANAGE,
+    ]);
   });
 
   it('throws on overlapping shift for employee', async () => {
@@ -75,7 +90,7 @@ describe('ShiftsService', () => {
     ).rejects.toThrow('Employee already has a shift in this time range');
   });
 
-  it('returns availability warning when outside declared slots', async () => {
+  it('does not warn when default availability is implied', async () => {
     mockPrisma.shift.findFirst.mockResolvedValueOnce(null); // ensureEmployee
     mockPrisma.shift.findFirst.mockResolvedValueOnce(null); // conflict
     mockPrisma.availability.findMany.mockResolvedValue([]);
@@ -92,7 +107,7 @@ describe('ShiftsService', () => {
       endsAt: '2024-01-01T12:00:00.000Z',
     });
 
-    expect(result.availabilityWarning).toBeDefined();
+    expect(result.availabilityWarning).toBeNull();
   });
 
   it('calculates summary hours', async () => {
