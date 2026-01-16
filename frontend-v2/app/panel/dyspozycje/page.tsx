@@ -50,14 +50,14 @@ const WEEKDAYS: { key: Weekday; label: string; shortLabel: string }[] = [
 
 const AVAILABILITY_TEMPLATES: Array<{ key: string; label: string; start: string; end: string }> = [
   { key: "morning", label: "Rano", start: "05:45", end: "15:00" },
-  { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
   { key: "afternoon", label: "Popołudnie", start: "14:15", end: "23:15" },
-  { key: "custom", label: "Wybór samodzielny", start: "08:00", end: "16:00" },
+  { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
 ];
 
 interface DayAvailability {
   weekday: Weekday;
   slots: Array<{ start: string; end: string }>;
+  status?: "AVAILABLE" | "DAY_OFF";
 }
 
 type ActiveTab = "my" | "team";
@@ -379,22 +379,29 @@ function MonthlyAvailabilityTab({
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const initialData = useMemo(() => {
     const map: Record<string, Array<{ start: string; end: string }>> = {};
+    const dayOffs: Record<string, boolean> = {};
     (submission?.availability ?? []).forEach((entry) => {
       if (!entry.date) return;
       const key = toDateKey(new Date(entry.date));
+      if (entry.status === "DAY_OFF") {
+        dayOffs[key] = true;
+        return;
+      }
       if (!map[key]) map[key] = [];
       map[key].push({
         start: formatMinutes(entry.startMinutes),
         end: formatMinutes(entry.endMinutes),
       });
     });
-    return map;
+    return { map, dayOffs };
   }, [submission]);
 
-  const [calendarData, setCalendarData] = useState(initialData);
+  const [calendarData, setCalendarData] = useState(initialData.map);
+  const [dayOffs, setDayOffs] = useState(initialData.dayOffs);
 
   useEffect(() => {
-    setCalendarData(initialData);
+    setCalendarData(initialData.map);
+    setDayOffs(initialData.dayOffs);
   }, [initialData]);
 
   const status = submission?.status ?? "DRAFT";
@@ -412,9 +419,11 @@ function MonthlyAvailabilityTab({
   }, [selectedDate, weeks]);
 
   const slotsForSelected = selectedDate ? calendarData[selectedDate] ?? [] : [];
+  const isSelectedDayOff = selectedDate ? !!dayOffs[selectedDate] : false;
 
   const updateSlot = (slotIndex: number, field: "start" | "end", value: string) => {
     if (!selectedDate) return;
+    if (dayOffs[selectedDate]) return;
     setCalendarData((prev) => {
       const slots = [...(prev[selectedDate] ?? [])];
       slots[slotIndex] = { ...slots[slotIndex], [field]: value };
@@ -424,6 +433,12 @@ function MonthlyAvailabilityTab({
 
   const addSlot = () => {
     if (!selectedDate) return;
+    setDayOffs((prev) => {
+      if (!prev[selectedDate]) return prev;
+      const next = { ...prev };
+      delete next[selectedDate];
+      return next;
+    });
     setCalendarData((prev) => {
       const slots = [...(prev[selectedDate] ?? [])];
       slots.push({ start: "08:00", end: "16:00" });
@@ -435,6 +450,12 @@ function MonthlyAvailabilityTab({
     if (!selectedDate) return;
     const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
     if (!template) return;
+    setDayOffs((prev) => {
+      if (!prev[selectedDate]) return prev;
+      const next = { ...prev };
+      delete next[selectedDate];
+      return next;
+    });
     setCalendarData((prev) => {
       const slots = [...(prev[selectedDate] ?? [])];
       slots.push({ start: template.start, end: template.end });
@@ -448,6 +469,20 @@ function MonthlyAvailabilityTab({
       const slots = (prev[selectedDate] ?? []).filter((_, idx) => idx !== slotIndex);
       return { ...prev, [selectedDate]: slots };
     });
+  };
+
+  const toggleDayOff = () => {
+    if (!selectedDate) return;
+    setDayOffs((prev) => {
+      const next = { ...prev };
+      if (next[selectedDate]) {
+        delete next[selectedDate];
+      } else {
+        next[selectedDate] = true;
+      }
+      return next;
+    });
+    setCalendarData((prev) => ({ ...prev, [selectedDate]: [] }));
   };
 
   const handleSave = async (submit: boolean) => {
@@ -471,15 +506,14 @@ function MonthlyAvailabilityTab({
         });
       }
     }
-
-    if (submit && availabilities.length === 0) {
-      pushToast({
-        title: "Brak dyspozycji",
-        description: "Dodaj przynajmniej jeden przedział przed wysłaniem.",
-        variant: "warning",
+    Object.keys(dayOffs).forEach((date) => {
+      availabilities.push({
+        date,
+        startMinutes: 0,
+        endMinutes: 0,
+        status: "DAY_OFF",
       });
-      return;
-    }
+    });
 
     await onSave(availabilities, submit);
   };
@@ -518,6 +552,7 @@ function MonthlyAvailabilityTab({
                   }
                   const key = toDateKey(day);
                   const slots = calendarData[key] ?? [];
+                  const isDayOff = !!dayOffs[key];
                   const isSelected = selectedDate === key;
                   return (
                     <button
@@ -534,16 +569,23 @@ function MonthlyAvailabilityTab({
                         <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
                           {day.getDate()}
                         </span>
-                        {slots.length > 0 && (
+                        {isDayOff && (
+                          <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                            Dzień wolny
+                          </span>
+                        )}
+                        {!isDayOff && slots.length > 0 && (
                           <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
                             {slots.length} slot
                           </span>
                         )}
                       </div>
                       <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
-                        {slots.length === 0
-                          ? "Brak dyspozycji"
-                          : slots.map((slot) => `${slot.start}-${slot.end}`).join(", ")}
+                        {isDayOff
+                          ? "Dzień wolny"
+                          : slots.length === 0
+                            ? "Dostępny (domyślnie)"
+                            : slots.map((slot) => `${slot.start}-${slot.end}`).join(", ")}
                       </p>
                     </button>
                   );
@@ -561,17 +603,40 @@ function MonthlyAvailabilityTab({
             {selectedDate ? formatDate(selectedDate) : "Wybierz dzień z kalendarza"}
           </h4>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Dodaj dostępne godziny dla wybranego dnia.
+            {isSelectedDayOff
+              ? "Ten dzień jest oznaczony jako wolny."
+              : "Dodaj dostępne godziny lub zostaw domyślną dostępność."}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={`badge ${isSelectedDayOff ? "badge-error" : "badge-success"}`}>
+              {isSelectedDayOff ? "Dzień wolny" : "Dostępny"}
+            </span>
+            {!isLocked && selectedDate && (
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                onClick={toggleDayOff}
+              >
+                {isSelectedDayOff ? "Usuń dzień wolny" : "Oznacz dzień wolny"}
+              </button>
+            )}
+          </div>
         </div>
 
         {slotsForSelected.length === 0 ? (
           <div className="space-y-4">
-            <EmptyState
-              title="Brak dyspozycji"
-              description="Dodaj przedziały czasowe, aby zaznaczyć swoją dostępność."
-            />
-            {!isLocked && (
+            {isSelectedDayOff ? (
+              <EmptyState
+                title="Dzień wolny"
+                description="Ten dzień jest oznaczony jako wolny i nie będzie dostępności."
+              />
+            ) : (
+              <EmptyState
+                title="Dostępny (domyślnie)"
+                description="Dodaj przedziały czasowe, jeśli chcesz zawęzić dostępność."
+              />
+            )}
+            {!isLocked && !isSelectedDayOff && (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   {AVAILABILITY_TEMPLATES.map((template) => (
@@ -584,9 +649,16 @@ function MonthlyAvailabilityTab({
                       {template.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    className="btn-secondary text-sm"
+                    onClick={toggleDayOff}
+                  >
+                    Dzień wolny
+                  </button>
                 </div>
                 <button type="button" className="btn-secondary w-full" onClick={addSlot}>
-                  + Dodaj przedział
+                  Inne godziny
                 </button>
               </div>
             )}
@@ -624,7 +696,7 @@ function MonthlyAvailabilityTab({
           </div>
         )}
 
-        {!isLocked && slotsForSelected.length > 0 && (
+        {!isLocked && slotsForSelected.length > 0 && !isSelectedDayOff && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               {AVAILABILITY_TEMPLATES.map((template) => (
@@ -637,9 +709,16 @@ function MonthlyAvailabilityTab({
                   {template.label}
                 </button>
               ))}
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                onClick={toggleDayOff}
+              >
+                Dzień wolny
+              </button>
             </div>
             <button type="button" className="btn-secondary w-full" onClick={addSlot}>
-              + Dodaj przedział
+              Inne godziny
             </button>
           </div>
         )}
@@ -867,7 +946,14 @@ function TeamAvailabilityTab({
                       </div>
                     </td>
                     <td className="px-3 py-2 text-center">
-                      {emp.hasWeeklyDefault ? (
+                      {emp.availabilityCount === 0 ? (
+                        <span className="badge badge-success">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Dostępny (domyślnie)
+                        </span>
+                      ) : emp.hasWeeklyDefault ? (
                         <span className="badge badge-success">
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -879,7 +965,7 @@ function TeamAvailabilityTab({
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01" />
                           </svg>
-                          Brak
+                          Wymaga uzupełnienia
                         </span>
                       )}
                     </td>
@@ -1056,23 +1142,27 @@ function EmployeeDetailPanel({
     if (availability.length > 0) {
       return WEEKDAYS.map((w) => {
         const dayAvail = availability.filter((a) => a.weekday === w.key);
+        const isDayOff = dayAvail.some((a) => a.status === "DAY_OFF");
         return {
           weekday: w.key,
-          slots: dayAvail.map((a) => ({
-            start: formatMinutes(a.startMinutes),
-            end: formatMinutes(a.endMinutes),
-          })),
+          status: isDayOff ? "DAY_OFF" : "AVAILABLE",
+          slots: dayAvail
+            .filter((a) => a.status !== "DAY_OFF")
+            .map((a) => ({
+              start: formatMinutes(a.startMinutes),
+              end: formatMinutes(a.endMinutes),
+            })),
         };
       });
     }
-    return WEEKDAYS.map((w) => ({ weekday: w.key, slots: [] }));
+    return WEEKDAYS.map((w) => ({ weekday: w.key, slots: [], status: "AVAILABLE" }));
   }, [availability]);
 
   const [formData, setFormData] = useState<DayAvailability[]>(initialFormData);
 
   // Reset form when availability changes (using a key to track changes)
   const availabilityKey = useMemo(() => 
-    availability.map(a => `${a.id}-${a.weekday}-${a.startMinutes}-${a.endMinutes}`).join(','),
+    availability.map(a => `${a.id}-${a.weekday}-${a.startMinutes}-${a.endMinutes}-${a.status ?? ""}`).join(','),
     [availability]
   );
   
@@ -1098,13 +1188,23 @@ function EmployeeDetailPanel({
       }
     }
 
-    const availabilities: AvailabilityInput[] = formData.flatMap((day) =>
-      day.slots.map((slot) => ({
+    const availabilities: AvailabilityInput[] = formData.flatMap((day) => {
+      if (day.status === "DAY_OFF") {
+        return [
+          {
+            weekday: day.weekday,
+            startMinutes: 0,
+            endMinutes: 0,
+            status: "DAY_OFF",
+          },
+        ];
+      }
+      return day.slots.map((slot) => ({
         weekday: day.weekday,
         startMinutes: parseTime(slot.start),
         endMinutes: parseTime(slot.end),
-      }))
-    );
+      }));
+    });
 
     await onSave(availabilities);
   };
@@ -1113,7 +1213,11 @@ function EmployeeDetailPanel({
     setFormData((prev) =>
       prev.map((day) => {
         if (day.weekday !== weekday) return day;
-        return { ...day, slots: [...day.slots, { start: "08:00", end: "16:00" }] };
+        return {
+          ...day,
+          status: "AVAILABLE",
+          slots: [...day.slots, { start: "08:00", end: "16:00" }],
+        };
       })
     );
   };
@@ -1122,6 +1226,7 @@ function EmployeeDetailPanel({
     setFormData((prev) =>
       prev.map((day) => {
         if (day.weekday !== weekday) return day;
+        if (day.status === "DAY_OFF") return day;
         const newSlots = [...day.slots];
         newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
         return { ...day, slots: newSlots };
@@ -1135,6 +1240,20 @@ function EmployeeDetailPanel({
         if (day.weekday !== weekday) return day;
         return { ...day, slots: day.slots.filter((_, i) => i !== slotIndex) };
       })
+    );
+  };
+
+  const toggleDayOff = (weekday: Weekday) => {
+    setFormData((prev) =>
+      prev.map((day) => {
+        if (day.weekday !== weekday) return day;
+        const nextStatus = day.status === "DAY_OFF" ? "AVAILABLE" : "DAY_OFF";
+        return {
+          ...day,
+          status: nextStatus,
+          slots: nextStatus === "DAY_OFF" ? [] : day.slots,
+        };
+      }),
     );
   };
 
@@ -1164,21 +1283,38 @@ function EmployeeDetailPanel({
           {WEEKDAYS.map(({ key, label }) => {
             const dayData = formData.find((d) => d.weekday === key);
             const slots = dayData?.slots || [];
+            const isDayOff = dayData?.status === "DAY_OFF";
 
             return (
               <div key={key} className="rounded-lg border border-surface-200/80 dark:border-surface-700/80 p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium text-sm text-surface-900 dark:text-surface-50">{label}</span>
-                  <button
-                    type="button"
-                    className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium"
-                    onClick={() => addSlot(key)}
-                  >
-                    + Dodaj
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge ${isDayOff ? "badge-error" : "badge-success"}`}>
+                      {isDayOff ? "Dzień wolny" : "Dostępny"}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium"
+                      onClick={() => toggleDayOff(key)}
+                    >
+                      {isDayOff ? "Usuń wolne" : "Dzień wolny"}
+                    </button>
+                    {!isDayOff && (
+                      <button
+                        type="button"
+                        className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium"
+                        onClick={() => addSlot(key)}
+                      >
+                        + Dodaj
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {slots.length === 0 ? (
-                  <p className="text-xs text-surface-400 py-2">Brak dostępności</p>
+                  <p className="text-xs text-surface-400 py-2">
+                    {isDayOff ? "Dzień wolny" : "Dostępny (domyślnie)"}
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {slots.map((slot, idx) => (
@@ -1241,23 +1377,30 @@ function WindowEmployeeDetailPanel({
 }) {
   const initialData = useMemo(() => {
     const map: Record<string, Array<{ start: string; end: string }>> = {};
+    const dayOffs: Record<string, boolean> = {};
     availability.forEach((entry) => {
       if (!entry.date) return;
       const key = entry.date.split("T")[0];
+      if (entry.status === "DAY_OFF") {
+        dayOffs[key] = true;
+        return;
+      }
       if (!map[key]) map[key] = [];
       map[key].push({
         start: formatMinutes(entry.startMinutes),
         end: formatMinutes(entry.endMinutes),
       });
     });
-    return map;
+    return { map, dayOffs };
   }, [availability]);
 
-  const [calendarData, setCalendarData] = useState(initialData);
+  const [calendarData, setCalendarData] = useState(initialData.map);
+  const [dayOffs, setDayOffs] = useState(initialData.dayOffs);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    setCalendarData(initialData);
+    setCalendarData(initialData.map);
+    setDayOffs(initialData.dayOffs);
   }, [initialData]);
 
   const windowStart = window ? new Date(window.startDate) : null;
@@ -1274,9 +1417,11 @@ function WindowEmployeeDetailPanel({
   }, [selectedDate, weeks]);
 
   const slotsForSelected = selectedDate ? calendarData[selectedDate] ?? [] : [];
+  const isSelectedDayOff = selectedDate ? !!dayOffs[selectedDate] : false;
 
   const updateSlot = (slotIndex: number, field: "start" | "end", value: string) => {
     if (!selectedDate) return;
+    if (dayOffs[selectedDate]) return;
     setCalendarData((prev) => {
       const slots = [...(prev[selectedDate] ?? [])];
       slots[slotIndex] = { ...slots[slotIndex], [field]: value };
@@ -1286,9 +1431,32 @@ function WindowEmployeeDetailPanel({
 
   const addSlot = () => {
     if (!selectedDate) return;
+    setDayOffs((prev) => {
+      if (!prev[selectedDate]) return prev;
+      const next = { ...prev };
+      delete next[selectedDate];
+      return next;
+    });
     setCalendarData((prev) => {
       const slots = [...(prev[selectedDate] ?? [])];
       slots.push({ start: "08:00", end: "16:00" });
+      return { ...prev, [selectedDate]: slots };
+    });
+  };
+
+  const addTemplateSlot = (templateKey: string) => {
+    if (!selectedDate) return;
+    const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
+    if (!template) return;
+    setDayOffs((prev) => {
+      if (!prev[selectedDate]) return prev;
+      const next = { ...prev };
+      delete next[selectedDate];
+      return next;
+    });
+    setCalendarData((prev) => {
+      const slots = [...(prev[selectedDate] ?? [])];
+      slots.push({ start: template.start, end: template.end });
       return { ...prev, [selectedDate]: slots };
     });
   };
@@ -1299,6 +1467,20 @@ function WindowEmployeeDetailPanel({
       const slots = (prev[selectedDate] ?? []).filter((_, idx) => idx !== slotIndex);
       return { ...prev, [selectedDate]: slots };
     });
+  };
+
+  const toggleDayOff = () => {
+    if (!selectedDate) return;
+    setDayOffs((prev) => {
+      const next = { ...prev };
+      if (next[selectedDate]) {
+        delete next[selectedDate];
+      } else {
+        next[selectedDate] = true;
+      }
+      return next;
+    });
+    setCalendarData((prev) => ({ ...prev, [selectedDate]: [] }));
   };
 
   const handleSave = async () => {
@@ -1318,6 +1500,14 @@ function WindowEmployeeDetailPanel({
         availabilities.push({ date, startMinutes, endMinutes });
       }
     }
+    Object.keys(dayOffs).forEach((date) => {
+      availabilities.push({
+        date,
+        startMinutes: 0,
+        endMinutes: 0,
+        status: "DAY_OFF",
+      });
+    });
 
     await onSave(availabilities);
   };
@@ -1365,6 +1555,7 @@ function WindowEmployeeDetailPanel({
                     }
                     const key = toDateKey(day);
                     const slots = calendarData[key] ?? [];
+                    const isDayOff = !!dayOffs[key];
                     const isSelected = selectedDate === key;
                     return (
                       <button
@@ -1381,7 +1572,12 @@ function WindowEmployeeDetailPanel({
                           <span className="text-xs font-semibold text-surface-900 dark:text-surface-50">
                             {day.getDate()}
                           </span>
-                          {slots.length > 0 && (
+                          {isDayOff && (
+                            <span className="text-[9px] text-rose-600 dark:text-rose-400">
+                              Wolne
+                            </span>
+                          )}
+                          {!isDayOff && slots.length > 0 && (
                             <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
                               {slots.length}
                             </span>
@@ -1399,8 +1595,24 @@ function WindowEmployeeDetailPanel({
             <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
               {selectedDate ? formatDate(selectedDate) : "Wybierz dzień"}
             </h4>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`badge ${isSelectedDayOff ? "badge-error" : "badge-success"}`}>
+                {isSelectedDayOff ? "Dzień wolny" : "Dostępny"}
+              </span>
+              {!loading && !saving && selectedDate && (
+                <button
+                  type="button"
+                  className="btn-secondary text-xs"
+                  onClick={toggleDayOff}
+                >
+                  {isSelectedDayOff ? "Usuń dzień wolny" : "Oznacz dzień wolny"}
+                </button>
+              )}
+            </div>
             {slotsForSelected.length === 0 ? (
-              <p className="text-xs text-surface-500">Brak dyspozycji</p>
+              <p className="text-xs text-surface-500">
+                {isSelectedDayOff ? "Dzień wolny" : "Dostępny (domyślnie)"}
+              </p>
             ) : (
               slotsForSelected.map((slot, idx) => (
                 <div key={idx} className="flex items-center gap-2">
@@ -1427,21 +1639,25 @@ function WindowEmployeeDetailPanel({
                 </div>
               ))
             )}
-            <div className="grid grid-cols-2 gap-2">
-              {AVAILABILITY_TEMPLATES.map((template) => (
-                <button
-                  key={template.key}
-                  type="button"
-                  className="btn-secondary text-sm"
-                  onClick={() => addTemplateSlot(template.key)}
-                >
-                  {template.label}
+            {!isSelectedDayOff && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {AVAILABILITY_TEMPLATES.map((template) => (
+                    <button
+                      key={template.key}
+                      type="button"
+                      className="btn-secondary text-sm"
+                      onClick={() => addTemplateSlot(template.key)}
+                    >
+                      {template.label}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="btn-secondary w-full" onClick={addSlot}>
+                  + Dodaj przedział
                 </button>
-              ))}
-            </div>
-            <button type="button" className="btn-secondary w-full" onClick={addSlot}>
-              + Dodaj przedział
-            </button>
+              </>
+            )}
           </div>
         </div>
       )}

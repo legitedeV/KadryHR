@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  AvailabilityStatus,
   AvailabilitySubmissionStatus,
   NotificationType,
   Prisma,
@@ -56,19 +57,25 @@ export class AvailabilityService {
       endMinutes: number;
       weekday?: string;
       date?: string;
+      status?: AvailabilityStatus;
     }>,
   ) {
     // Group by weekday or date
     const grouped: Record<string, Array<{ start: number; end: number }>> = {};
+    const dayOffKeys = new Set<string>();
 
     for (const interval of intervals) {
+      const key = interval.weekday || interval.date || 'default';
+      if (interval.status === AvailabilityStatus.DAY_OFF) {
+        dayOffKeys.add(key);
+        continue;
+      }
       if (interval.endMinutes <= interval.startMinutes) {
         throw new BadRequestException(
           'Godzina końcowa musi być po godzinie początkowej',
         );
       }
 
-      const key = interval.weekday || interval.date || 'default';
       if (!grouped[key]) {
         grouped[key] = [];
       }
@@ -80,6 +87,11 @@ export class AvailabilityService {
 
     // Check for overlaps within each day
     for (const [key, slots] of Object.entries(grouped)) {
+      if (dayOffKeys.has(key)) {
+        throw new BadRequestException(
+          'Nie można łączyć "Dzień wolny" z przedziałami czasowymi',
+        );
+      }
       const sorted = [...slots].sort((a, b) => a.start - b.start);
       for (let i = 1; i < sorted.length; i++) {
         if (sorted[i].start < sorted[i - 1].end) {
@@ -228,11 +240,12 @@ export class AvailabilityService {
    */
   async create(organisationId: string, dto: any) {
     await this.ensureEmployeeActiveById(organisationId, dto.employeeId);
-    if (
-      typeof dto.startMinutes === 'number' &&
-      typeof dto.endMinutes === 'number' &&
-      dto.endMinutes <= dto.startMinutes
-    ) {
+    const status = dto.status ?? AvailabilityStatus.AVAILABLE;
+    const startMinutes =
+      status === AvailabilityStatus.DAY_OFF ? 0 : dto.startMinutes;
+    const endMinutes =
+      status === AvailabilityStatus.DAY_OFF ? 0 : dto.endMinutes;
+    if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
       throw new BadRequestException(
         'endMinutes must be greater than startMinutes',
       );
@@ -243,8 +256,9 @@ export class AvailabilityService {
         employeeId: dto.employeeId,
         date: dto.date ?? null,
         weekday: dto.weekday ?? null,
-        startMinutes: dto.startMinutes,
-        endMinutes: dto.endMinutes,
+        startMinutes,
+        endMinutes,
+        status,
         notes: dto.notes ?? null,
       },
       include: {
@@ -274,20 +288,33 @@ export class AvailabilityService {
     const targetEmployeeId = dto.employeeId ?? existing.employeeId;
     await this.ensureEmployeeActiveById(organisationId, targetEmployeeId);
 
+    const status = dto.status ?? existing.status ?? AvailabilityStatus.AVAILABLE;
+    const startMinutes =
+      typeof dto.startMinutes === 'number'
+        ? dto.startMinutes
+        : existing.startMinutes;
+    const endMinutes =
+      typeof dto.endMinutes === 'number'
+        ? dto.endMinutes
+        : existing.endMinutes;
+    const nextStart =
+      status === AvailabilityStatus.DAY_OFF ? 0 : startMinutes;
+    const nextEnd = status === AvailabilityStatus.DAY_OFF ? 0 : endMinutes;
+    if (status !== AvailabilityStatus.DAY_OFF && nextEnd <= nextStart) {
+      throw new BadRequestException(
+        'endMinutes must be greater than startMinutes',
+      );
+    }
+
     return this.prisma.availability.update({
       where: { id },
       data: {
         employeeId: targetEmployeeId,
         date: dto.date ?? existing.date,
         weekday: dto.weekday ?? existing.weekday,
-        startMinutes:
-          typeof dto.startMinutes === 'number'
-            ? dto.startMinutes
-            : existing.startMinutes,
-        endMinutes:
-          typeof dto.endMinutes === 'number'
-            ? dto.endMinutes
-            : existing.endMinutes,
+        startMinutes: nextStart,
+        endMinutes: nextEnd,
+        status,
         notes: dto.notes ?? existing.notes,
       },
       include: {
@@ -332,6 +359,7 @@ export class AvailabilityService {
       date?: string;
       startMinutes: number;
       endMinutes: number;
+      status?: AvailabilityStatus;
       notes?: string;
     }>,
   ) {
@@ -355,20 +383,31 @@ export class AvailabilityService {
 
     // Create new availability records
     const created = await this.prisma.$transaction(
-      availabilities.map((avail) =>
-        this.prisma.availability.create({
+      availabilities.map((avail) => {
+        const status = avail.status ?? AvailabilityStatus.AVAILABLE;
+        const startMinutes =
+          status === AvailabilityStatus.DAY_OFF ? 0 : avail.startMinutes;
+        const endMinutes =
+          status === AvailabilityStatus.DAY_OFF ? 0 : avail.endMinutes;
+        if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
+          throw new BadRequestException(
+            'endMinutes must be greater than startMinutes',
+          );
+        }
+        return this.prisma.availability.create({
           data: {
             organisationId,
             employeeId,
             availabilityWindowId: null,
             date: avail.date ?? null,
             weekday: (avail.weekday as Weekday) ?? null,
-            startMinutes: avail.startMinutes,
-            endMinutes: avail.endMinutes,
+            startMinutes,
+            endMinutes,
+            status,
             notes: avail.notes ?? null,
           },
-        }),
-      ),
+        });
+      }),
     );
 
     return created;
@@ -652,6 +691,7 @@ export class AvailabilityService {
       date?: string;
       startMinutes: number;
       endMinutes: number;
+      status?: AvailabilityStatus;
       notes?: string;
     }>,
   ) {
@@ -717,6 +757,7 @@ export class AvailabilityService {
       date: string;
       startMinutes: number;
       endMinutes: number;
+      status?: AvailabilityStatus;
       notes?: string;
     }>,
     submit?: boolean,
@@ -725,8 +766,8 @@ export class AvailabilityService {
     this.ensureWindowOpen(window);
 
     if (submit && availabilities.length === 0) {
-      throw new BadRequestException(
-        'Nie można wysłać pustej dyspozycji.',
+      this.logger.log(
+        'Submitting default availability with no time slots.',
       );
     }
 
@@ -768,19 +809,30 @@ export class AvailabilityService {
       });
 
       const availability = await Promise.all(
-        availabilities.map((entry) =>
-          tx.availability.create({
+        availabilities.map((entry) => {
+          const status = entry.status ?? AvailabilityStatus.AVAILABLE;
+          const startMinutes =
+            status === AvailabilityStatus.DAY_OFF ? 0 : entry.startMinutes;
+          const endMinutes =
+            status === AvailabilityStatus.DAY_OFF ? 0 : entry.endMinutes;
+          if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
+            throw new BadRequestException(
+              'endMinutes must be greater than startMinutes',
+            );
+          }
+          return tx.availability.create({
             data: {
               organisationId,
               employeeId: employee.id,
               availabilityWindowId: windowId,
               date: new Date(entry.date),
-              startMinutes: entry.startMinutes,
-              endMinutes: entry.endMinutes,
+              startMinutes,
+              endMinutes,
+              status,
               notes: entry.notes ?? null,
             },
-          }),
-        ),
+          });
+        }),
       );
 
       const status = submit
@@ -1039,6 +1091,7 @@ export class AvailabilityService {
       date: string;
       startMinutes: number;
       endMinutes: number;
+      status?: AvailabilityStatus;
       notes?: string;
     }>,
     actorUserId: string,
@@ -1068,19 +1121,30 @@ export class AvailabilityService {
       });
 
       const availability = await Promise.all(
-        availabilities.map((entry) =>
-          tx.availability.create({
+        availabilities.map((entry) => {
+          const status = entry.status ?? AvailabilityStatus.AVAILABLE;
+          const startMinutes =
+            status === AvailabilityStatus.DAY_OFF ? 0 : entry.startMinutes;
+          const endMinutes =
+            status === AvailabilityStatus.DAY_OFF ? 0 : entry.endMinutes;
+          if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
+            throw new BadRequestException(
+              'endMinutes must be greater than startMinutes',
+            );
+          }
+          return tx.availability.create({
             data: {
               organisationId,
               employeeId,
               availabilityWindowId: windowId,
               date: new Date(entry.date),
-              startMinutes: entry.startMinutes,
-              endMinutes: entry.endMinutes,
+              startMinutes,
+              endMinutes,
+              status,
               notes: entry.notes ?? null,
             },
-          }),
-        ),
+          });
+        }),
       );
 
       const submission = await tx.availabilitySubmission.upsert({

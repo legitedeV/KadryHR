@@ -54,6 +54,7 @@ export function ShiftEditorModal({
       title={isEditing ? "Edytuj zmianę" : "Dodaj zmianę"}
       description="Uzupełnij szczegóły zmiany i przypisz pracownika."
       onClose={onClose}
+      size="lg"
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>

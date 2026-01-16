@@ -7,7 +7,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { Weekday } from '@prisma/client';
+import { AvailabilityStatus, Weekday } from '@prisma/client';
 
 export class CreateAvailabilityDto {
   @IsString()
@@ -21,11 +21,17 @@ export class CreateAvailabilityDto {
   @IsEnum(Weekday)
   weekday?: Weekday;
 
+  @IsOptional()
+  @IsEnum(AvailabilityStatus)
+  status?: AvailabilityStatus;
+
+  @ValidateIf((o) => o.status !== AvailabilityStatus.DAY_OFF)
   @IsInt()
   @Min(0)
   @Max(24 * 60)
   startMinutes!: number;
 
+  @ValidateIf((o) => o.status !== AvailabilityStatus.DAY_OFF)
   @IsInt()
   @Min(0)
   @Max(24 * 60)
