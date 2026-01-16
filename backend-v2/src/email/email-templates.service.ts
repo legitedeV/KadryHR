@@ -219,6 +219,81 @@ export class EmailTemplatesService {
     };
   }
 
+  logoProposalReviewTemplate(params: {
+    organisationName: string;
+    proposalTitle: string;
+    reviewUrl: string;
+    recipientName?: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+        Nowa propozycja logo do oceny
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 12px 0;">
+        ${greeting}
+      </p>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+        W organizacji <strong>${params.organisationName}</strong> pojawiła się nowa propozycja logo.
+      </p>
+      ${this.infoBox([
+        { label: 'Propozycja', value: params.proposalTitle },
+        { label: 'Organizacja', value: params.organisationName },
+      ])}
+      ${this.actionButton('Oceń propozycję', params.reviewUrl)}
+      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+        Twoja opinia pomaga dopracować identyfikację marki.
+      </p>`;
+
+    return {
+      subject: `Propozycja logo do oceny – ${params.organisationName}`,
+      text: `${greeting} Nowa propozycja logo (${params.proposalTitle}) czeka na Twoją opinię. Oceń: ${params.reviewUrl}`,
+      html: this.baseTemplate(
+        content,
+        `Nowa propozycja logo w ${params.organisationName}`,
+      ),
+    };
+  }
+
+  logoProposalApprovedTemplate(params: {
+    organisationName: string;
+    proposalTitle: string;
+    dashboardUrl: string;
+    recipientName?: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#0f172a;margin:0 0 16px 0;">
+        Logo zostało zatwierdzone
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 12px 0;">
+        ${greeting}
+      </p>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#334155;margin:0 0 16px 0;">
+        Propozycja <strong>${params.proposalTitle}</strong> została zatwierdzona i ustawiona jako logo organizacji
+        <strong>${params.organisationName}</strong>.
+      </p>
+      ${this.actionButton('Zobacz w panelu', params.dashboardUrl)}
+      <p class="email-text-secondary" style="font-size:13px;color:#64748b;margin:16px 0 0 0;">
+        Jeśli potrzebujesz zmian, możesz przygotować kolejną wersję w module propozycji logo.
+      </p>`;
+
+    return {
+      subject: `Logo zatwierdzone – ${params.organisationName}`,
+      text: `${greeting} Logo ${params.proposalTitle} zostało zatwierdzone i ustawione jako główne. Zobacz: ${params.dashboardUrl}`,
+      html: this.baseTemplate(
+        content,
+        `Logo zatwierdzone w ${params.organisationName}`,
+      ),
+    };
+  }
+
   /**
    * Shift assignment/change notification template
    */

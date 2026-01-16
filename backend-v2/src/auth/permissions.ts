@@ -25,6 +25,10 @@ export enum Permission {
   // Availability management
   AVAILABILITY_MANAGE = 'AVAILABILITY_MANAGE',
 
+  // Branding / logo proposals
+  BRANDING_VIEW = 'BRANDING_VIEW',
+  BRANDING_MANAGE = 'BRANDING_MANAGE',
+
   // Legacy aliases for backward compatibility
   RCP_EDIT = 'RCP_EDIT',
   REPORT_EXPORT = 'REPORT_EXPORT',
@@ -43,6 +47,8 @@ const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.AUDIT_VIEW,
     Permission.REPORTS_EXPORT,
     Permission.AVAILABILITY_MANAGE,
+    Permission.BRANDING_VIEW,
+    Permission.BRANDING_MANAGE,
     Permission.RCP_EDIT,
     Permission.REPORT_EXPORT,
   ],
@@ -56,6 +62,8 @@ const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.AUDIT_VIEW,
     Permission.REPORTS_EXPORT,
     Permission.AVAILABILITY_MANAGE,
+    Permission.BRANDING_VIEW,
+    Permission.BRANDING_MANAGE,
     Permission.RCP_EDIT,
     Permission.REPORT_EXPORT,
   ],
@@ -67,12 +75,15 @@ const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.EMPLOYEE_MANAGE,
     Permission.EMPLOYEE_VIEW,
     Permission.AVAILABILITY_MANAGE,
+    Permission.BRANDING_VIEW,
+    Permission.BRANDING_MANAGE,
     Permission.RCP_EDIT,
   ],
   [Role.EMPLOYEE]: [
     Permission.SCHEDULE_VIEW,
     Permission.LEAVE_REQUEST,
     Permission.EMPLOYEE_VIEW,
+    Permission.BRANDING_VIEW,
   ],
 };
 
@@ -96,6 +107,8 @@ export const CONFIGURABLE_PERMISSIONS: Permission[] = [
   Permission.AUDIT_VIEW,
   Permission.REPORTS_EXPORT,
   Permission.AVAILABILITY_MANAGE,
+  Permission.BRANDING_VIEW,
+  Permission.BRANDING_MANAGE,
 ];
 
 // Permission labels in Polish for UI
@@ -110,6 +123,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   [Permission.AUDIT_VIEW]: 'Podgląd logów audytu',
   [Permission.REPORTS_EXPORT]: 'Eksport raportów',
   [Permission.AVAILABILITY_MANAGE]: 'Zarządzanie dostępnością',
+  [Permission.BRANDING_VIEW]: 'Podgląd logo',
+  [Permission.BRANDING_MANAGE]: 'Zarządzanie propozycjami logo',
   [Permission.RCP_EDIT]: 'Edycja grafiku (legacy)',
   [Permission.REPORT_EXPORT]: 'Eksport raportów (legacy)',
 };

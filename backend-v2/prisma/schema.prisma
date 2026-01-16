@@ -54,6 +54,8 @@ enum NotificationType {
   AVAILABILITY_SUBMITTED
   AVAILABILITY_WINDOW_CLOSED
   USER_CREATED
+  LOGO_PROPOSAL_REVIEW
+  LOGO_PROPOSAL_APPROVED
   CUSTOM
 }
 
@@ -107,6 +109,20 @@ enum NewsletterSubscriptionStatus {
   UNSUBSCRIBED
 }
 
+enum LogoProposalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum LogoProposalVote {
+  APPROVE
+  NEUTRAL
+  REJECT
+}
+
 model Organisation {
   id          String      @id @default(uuid())
   name        String
@@ -150,6 +166,8 @@ model Organisation {
   employeeDocuments EmployeeDocument[]
   scheduleTemplates ScheduleTemplate[]
   leaveBalances LeaveBalance[]
+  logoProposals LogoProposal[]
+  logoProposalFeedbacks LogoProposalFeedback[]
 }
 
 model User {
@@ -178,7 +196,64 @@ model User {
   scheduleTemplatesCreated ScheduleTemplate[] @relation("ScheduleTemplateCreatedBy")
   availabilitySubmissions AvailabilitySubmission[] @relation("AvailabilitySubmissionSubmittedBy")
   availabilityReviews AvailabilitySubmission[] @relation("AvailabilitySubmissionReviewedBy")
+  logoProposalsCreated LogoProposal[] @relation("LogoProposalCreatedBy")
+  logoProposalsSubmitted LogoProposal[] @relation("LogoProposalSubmittedBy")
+  logoProposalsApproved LogoProposal[] @relation("LogoProposalApprovedBy")
+  logoProposalsRejected LogoProposal[] @relation("LogoProposalRejectedBy")
+  logoProposalFeedbacks LogoProposalFeedback[]
 
+  @@index([organisationId])
+}
+
+model LogoProposal {
+  id             String            @id @default(uuid())
+  organisationId String
+  createdById    String
+  title          String
+  description    String?
+  status         LogoProposalStatus @default(DRAFT)
+  primaryColor   String
+  secondaryColor String?
+  accentColor    String?
+  typography     String?
+  symbol         String?
+  logoSvg        String
+  logoConfig     Json?
+  submittedAt    DateTime?
+  submittedById  String?
+  approvedAt     DateTime?
+  approvedById   String?
+  rejectedAt     DateTime?
+  rejectedById   String?
+  rejectionReason String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdBy    User @relation("LogoProposalCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  submittedBy  User? @relation("LogoProposalSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy   User? @relation("LogoProposalApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy   User? @relation("LogoProposalRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  feedbacks    LogoProposalFeedback[]
+
+  @@index([organisationId])
+  @@index([status])
+}
+
+model LogoProposalFeedback {
+  id             String           @id @default(uuid())
+  proposalId     String
+  organisationId String
+  userId         String
+  vote           LogoProposalVote
+  comment        String?
+  createdAt      DateTime         @default(now())
+
+  proposal     LogoProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([proposalId, userId])
   @@index([organisationId])
 }
 
