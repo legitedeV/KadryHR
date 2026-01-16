@@ -5,7 +5,6 @@ import { ProductTour } from "@/components/landing/ProductTour";
 import { StorySection } from "@/components/landing/StorySection";
 import { FeatureGroups } from "@/components/landing/FeatureGroups";
 import { UseCases } from "@/components/landing/UseCases";
-import { BusinessOutcomeSection } from "@/components/landing/BusinessOutcomeSection";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { SecuritySection } from "@/components/landing/SecuritySection";
@@ -25,7 +24,6 @@ export default function HomePage() {
         <StorySection />
         <FeatureGroups />
         <UseCases />
-        <BusinessOutcomeSection />
         <SocialProof />
         <PricingSection />
         <SecuritySection />

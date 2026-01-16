@@ -20,7 +20,6 @@ import { PayrollModule } from './payroll/payroll.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates.module';
 import { LeadsModule } from './leads/leads.module';
-import { LogoProposalsModule } from './logo-proposals/logo-proposals.module';
 
 @Module({
   imports: [
@@ -45,7 +44,6 @@ import { LogoProposalsModule } from './logo-proposals/logo-proposals.module';
     DocumentsModule,
     ScheduleTemplatesModule,
     LeadsModule,
-    LogoProposalsModule,
   ],
 })
 export class AppModule {}
