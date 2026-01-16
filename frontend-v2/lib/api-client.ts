@@ -184,7 +184,7 @@ class ApiClient {
       if (Array.isArray(data?.message)) return data.message.join(", ");
       return null;
     } catch {
-      return text;
+      return null;
     }
   }
 
@@ -193,9 +193,6 @@ class ApiClient {
     init: RequestInit,
     timeoutMs = DEFAULT_TIMEOUT_MS,
   ) {
-    if (timeoutMs === undefined || timeoutMs === null) {
-      return fetch(url, init);
-    }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
