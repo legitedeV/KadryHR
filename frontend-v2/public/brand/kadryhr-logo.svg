@@ -1,0 +1,32 @@
+<svg width="320" height="96" viewBox="0 0 320 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KadryHR">
+  <defs>
+    <linearGradient id="iconGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f5341" />
+      <stop offset="52%" stop-color="#168460" />
+      <stop offset="100%" stop-color="#45c992" />
+    </linearGradient>
+    <linearGradient id="wordmarkGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e4f2ea" />
+      <stop offset="55%" stop-color="#a7f3d0" />
+      <stop offset="100%" stop-color="#45c992" />
+    </linearGradient>
+  </defs>
+  <g>
+    <rect x="8" y="12" width="72" height="72" rx="20" fill="url(#iconGradient)" />
+    <rect x="14" y="18" width="60" height="60" rx="18" fill="rgba(4, 12, 9, 0.22)" />
+    <g fill="#dff5ea">
+      <circle cx="44" cy="36" r="9" />
+      <circle cx="28" cy="40" r="7" fill="#bcebd3" />
+      <circle cx="60" cy="40" r="7" fill="#bcebd3" />
+      <path d="M24 68c3-9 10.5-14 20-14s17 5 20 14v8H24v-8z" />
+      <path d="M10 68c2.5-7 7.5-11 14-11 2.8 0 5 .4 7.2 1.4-4.2 2.2-7.2 5.5-9.2 9.6H10z" fill="#bcebd3" />
+      <path d="M58.8 58.4c2.2-1 4.5-1.4 7.2-1.4 6.5 0 11.5 4 14 11H66c-2-4-5-7.4-9.2-9.6z" fill="#bcebd3" />
+    </g>
+    <rect x="8" y="12" width="72" height="72" rx="20" fill="none" stroke="rgba(255,255,255,0.22)" />
+  </g>
+  <text x="96" y="60" font-family="Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif" font-size="40" font-weight="600" letter-spacing="-0.02em" fill="#e8f6ee">
+    Kadry
+    <tspan fill="url(#wordmarkGradient)" font-weight="700">HR</tspan>
+    <tspan dx="6" dy="-14" font-size="18" font-weight="600" fill="#7fddb0">.PL</tspan>
+  </text>
+</svg>

@@ -4,7 +4,7 @@ import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Logo } from "@/components/brand/Logo";
+import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 
 function parseError(err: unknown) {
   return err instanceof Error ? err.message : "Błąd logowania";
@@ -53,11 +53,7 @@ function LoginForm() {
 
       <div className="w-full max-w-md panel-card p-8 shadow-elevated">
         <div className="flex items-center justify-center mb-8">
-          <Logo
-            variant="full"
-            size="sm"
-            alt="KadryHR – Kadry i płace bez tajemnic"
-          />
+          <BrandLogoMotion size={52} variant="full" withPL ariaLabel="KadryHR – Kadry i płace bez tajemnic" />
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
