@@ -58,9 +58,7 @@ describe('LeaveRequestsService', () => {
 
     service = module.get(LeaveRequestsService);
     jest.clearAllMocks();
-    mockEmployeesService.ensureEmployeeProfile.mockResolvedValue({
-      id: 'emp-1',
-    });
+    mockEmployeesService.ensureEmployeeProfile.mockResolvedValue({ id: 'emp-1' });
     mockNotifications.createNotification.mockResolvedValue(null);
     mockPrisma.leaveRequest.findMany.mockResolvedValue([]);
     mockPrisma.leaveRequest.count.mockResolvedValue(0);

@@ -103,10 +103,7 @@ export class AvailabilityService {
     }
   }
 
-  private ensureDateWithinWindow(
-    date: Date,
-    window: { startDate: Date; endDate: Date },
-  ) {
+  private ensureDateWithinWindow(date: Date, window: { startDate: Date; endDate: Date }) {
     const start = new Date(window.startDate);
     const end = new Date(window.endDate);
     start.setHours(0, 0, 0, 0);
@@ -124,7 +121,9 @@ export class AvailabilityService {
   }) {
     const now = new Date();
     if (!window.isOpen || window.deadline < now || window.closedAt) {
-      throw new BadRequestException('Okno składania dyspozycji jest zamknięte');
+      throw new BadRequestException(
+        'Okno składania dyspozycji jest zamknięte',
+      );
     }
   }
 
@@ -289,15 +288,17 @@ export class AvailabilityService {
     const targetEmployeeId = dto.employeeId ?? existing.employeeId;
     await this.ensureEmployeeActiveById(organisationId, targetEmployeeId);
 
-    const status =
-      dto.status ?? existing.status ?? AvailabilityStatus.AVAILABLE;
+    const status = dto.status ?? existing.status ?? AvailabilityStatus.AVAILABLE;
     const startMinutes =
       typeof dto.startMinutes === 'number'
         ? dto.startMinutes
         : existing.startMinutes;
     const endMinutes =
-      typeof dto.endMinutes === 'number' ? dto.endMinutes : existing.endMinutes;
-    const nextStart = status === AvailabilityStatus.DAY_OFF ? 0 : startMinutes;
+      typeof dto.endMinutes === 'number'
+        ? dto.endMinutes
+        : existing.endMinutes;
+    const nextStart =
+      status === AvailabilityStatus.DAY_OFF ? 0 : startMinutes;
     const nextEnd = status === AvailabilityStatus.DAY_OFF ? 0 : endMinutes;
     if (status !== AvailabilityStatus.DAY_OFF && nextEnd <= nextStart) {
       throw new BadRequestException(
@@ -388,10 +389,7 @@ export class AvailabilityService {
           status === AvailabilityStatus.DAY_OFF ? 0 : avail.startMinutes;
         const endMinutes =
           status === AvailabilityStatus.DAY_OFF ? 0 : avail.endMinutes;
-        if (
-          status !== AvailabilityStatus.DAY_OFF &&
-          endMinutes <= startMinutes
-        ) {
+        if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
           throw new BadRequestException(
             'endMinutes must be greater than startMinutes',
           );
@@ -543,8 +541,9 @@ export class AvailabilityService {
       ? null
       : shouldClose
         ? now
-        : (existing.closedAt ?? null);
-    const effectiveDeadline = shouldClose && deadline > now ? now : deadline;
+        : existing.closedAt ?? null;
+    const effectiveDeadline =
+      shouldClose && deadline > now ? now : deadline;
 
     return this.prisma.availabilityWindow.update({
       where: { id: windowId },
@@ -577,7 +576,9 @@ export class AvailabilityService {
 
     const now = new Date();
     if (!window.isOpen || window.deadline < now || window.closedAt) {
-      throw new BadRequestException('To okno dyspozycji jest już zamknięte.');
+      throw new BadRequestException(
+        'To okno dyspozycji jest już zamknięte.',
+      );
     }
 
     const updated = await this.prisma.availabilityWindow.update({
@@ -765,7 +766,9 @@ export class AvailabilityService {
     this.ensureWindowOpen(window);
 
     if (submit && availabilities.length === 0) {
-      this.logger.log('Submitting default availability with no time slots.');
+      this.logger.log(
+        'Submitting default availability with no time slots.',
+      );
     }
 
     const employee = await this.findEmployeeByUserId(organisationId, userId);
@@ -777,10 +780,9 @@ export class AvailabilityService {
 
     if (
       existing &&
-      [
-        AvailabilitySubmissionStatus.SUBMITTED,
-        AvailabilitySubmissionStatus.REVIEWED,
-      ].includes(existing.status)
+      [AvailabilitySubmissionStatus.SUBMITTED, AvailabilitySubmissionStatus.REVIEWED].includes(
+        existing.status,
+      )
     ) {
       throw new BadRequestException(
         'Dyspozycja została już wysłana i oczekuje na zatwierdzenie.',
@@ -813,10 +815,7 @@ export class AvailabilityService {
             status === AvailabilityStatus.DAY_OFF ? 0 : entry.startMinutes;
           const endMinutes =
             status === AvailabilityStatus.DAY_OFF ? 0 : entry.endMinutes;
-          if (
-            status !== AvailabilityStatus.DAY_OFF &&
-            endMinutes <= startMinutes
-          ) {
+          if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
             throw new BadRequestException(
               'endMinutes must be greater than startMinutes',
             );
@@ -838,7 +837,7 @@ export class AvailabilityService {
 
       const status = submit
         ? AvailabilitySubmissionStatus.SUBMITTED
-        : (existing?.status ?? AvailabilitySubmissionStatus.DRAFT);
+        : existing?.status ?? AvailabilitySubmissionStatus.DRAFT;
 
       const submission = await tx.availabilitySubmission.upsert({
         where: {
@@ -846,14 +845,10 @@ export class AvailabilityService {
         },
         update: {
           status,
-          submittedAt: submit ? new Date() : (existing?.submittedAt ?? null),
-          submittedByUserId: submit
-            ? userId
-            : (existing?.submittedByUserId ?? null),
-          reviewedAt: submit ? null : (existing?.reviewedAt ?? null),
-          reviewedByUserId: submit
-            ? null
-            : (existing?.reviewedByUserId ?? null),
+          submittedAt: submit ? new Date() : existing?.submittedAt ?? null,
+          submittedByUserId: submit ? userId : existing?.submittedByUserId ?? null,
+          reviewedAt: submit ? null : existing?.reviewedAt ?? null,
+          reviewedByUserId: submit ? null : existing?.reviewedByUserId ?? null,
         },
         create: {
           organisationId,
@@ -871,9 +866,7 @@ export class AvailabilityService {
     await this.auditService.record({
       organisationId,
       actorUserId: userId,
-      action: submit
-        ? 'availability.submission.submitted'
-        : 'availability.submission.saved',
+      action: submit ? 'availability.submission.submitted' : 'availability.submission.saved',
       entityType: 'availability_submission',
       entityId: created.submission.id,
       after: {
@@ -1134,10 +1127,7 @@ export class AvailabilityService {
             status === AvailabilityStatus.DAY_OFF ? 0 : entry.startMinutes;
           const endMinutes =
             status === AvailabilityStatus.DAY_OFF ? 0 : entry.endMinutes;
-          if (
-            status !== AvailabilityStatus.DAY_OFF &&
-            endMinutes <= startMinutes
-          ) {
+          if (status !== AvailabilityStatus.DAY_OFF && endMinutes <= startMinutes) {
             throw new BadRequestException(
               'endMinutes must be greater than startMinutes',
             );

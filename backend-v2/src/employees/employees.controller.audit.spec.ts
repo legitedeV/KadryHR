@@ -14,11 +14,7 @@ import { InvitationsService } from '../auth/invitations.service';
 describe('EmployeesController audit logging (integration)', () => {
   let app: INestApplication;
   let auditService: { log: jest.Mock };
-  let employeesService: {
-    create: jest.Mock;
-    deactivate: jest.Mock;
-    activate: jest.Mock;
-  };
+  let employeesService: { create: jest.Mock; deactivate: jest.Mock; activate: jest.Mock };
 
   beforeEach(async () => {
     auditService = { log: jest.fn().mockResolvedValue({ id: 'audit-1' }) };

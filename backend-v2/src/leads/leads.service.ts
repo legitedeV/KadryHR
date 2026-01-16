@@ -44,9 +44,7 @@ export class LeadsService {
     }
 
     if (!dto.consentPrivacy) {
-      throw new BadRequestException(
-        'Zgoda na politykę prywatności jest wymagana.',
-      );
+      throw new BadRequestException('Zgoda na politykę prywatności jest wymagana.');
     }
 
     const ipHash = this.hashIp(context.ip ?? undefined);
@@ -166,7 +164,11 @@ export class LeadsService {
     };
   }
 
-  async updateStatus(user: AuthenticatedUser, id: string, status: LeadStatus) {
+  async updateStatus(
+    user: AuthenticatedUser,
+    id: string,
+    status: LeadStatus,
+  ) {
     this.ensureAccess(user);
 
     const organisationId = user.organisationId;
@@ -383,9 +385,12 @@ export class LeadsService {
   }
 
   private async resolveOrganisationId(): Promise<string | null> {
-    const configured = this.configService.get('leads.defaultOrganisationId', {
-      infer: true,
-    });
+    const configured = this.configService.get(
+      'leads.defaultOrganisationId',
+      {
+        infer: true,
+      },
+    );
     if (configured) {
       return configured;
     }
@@ -415,9 +420,12 @@ export class LeadsService {
   private async shouldIncludeUnassignedLeads(
     organisationId: string,
   ): Promise<boolean> {
-    const configured = this.configService.get('leads.defaultOrganisationId', {
-      infer: true,
-    });
+    const configured = this.configService.get(
+      'leads.defaultOrganisationId',
+      {
+        infer: true,
+      },
+    );
 
     if (configured) {
       return configured === organisationId;

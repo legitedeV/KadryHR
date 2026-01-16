@@ -84,11 +84,11 @@ export const configuration = (): AppConfig => ({
     defaultOrganisationId: process.env.LEADS_DEFAULT_ORGANISATION_ID ?? '',
     notificationEmail:
       process.env.LEADS_NOTIFICATION_EMAIL || 'powiadomienia@kadryhr.pl',
-    autoReplyEnabled:
-      (process.env.LEADS_AUTO_REPLY_ENABLED ?? 'true') !== 'false',
+    autoReplyEnabled: (process.env.LEADS_AUTO_REPLY_ENABLED ?? 'true') !== 'false',
     ipHashSalt: process.env.LEADS_IP_HASH_SALT ?? 'kadryhr-leads',
   },
   newsletter: {
-    defaultOrganisationId: process.env.NEWSLETTER_DEFAULT_ORGANISATION_ID ?? '',
+    defaultOrganisationId:
+      process.env.NEWSLETTER_DEFAULT_ORGANISATION_ID ?? '',
   },
 });

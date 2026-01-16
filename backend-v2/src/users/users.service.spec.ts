@@ -65,9 +65,7 @@ describe('UsersService', () => {
         entityId: createdUser.id,
       }),
     );
-    expect(
-      mockNotificationsService.sendUserCreatedNotification,
-    ).toHaveBeenCalledWith(
+    expect(mockNotificationsService.sendUserCreatedNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         organisationId: 'org-1',
         userId: createdUser.id,
