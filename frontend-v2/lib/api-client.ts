@@ -193,7 +193,7 @@ class ApiClient {
     init: RequestInit,
     timeoutMs = DEFAULT_TIMEOUT_MS,
   ) {
-    if (timeoutMs == null) {
+    if (timeoutMs === undefined || timeoutMs === null) {
       return fetch(url, init);
     }
     const controller = new AbortController();
