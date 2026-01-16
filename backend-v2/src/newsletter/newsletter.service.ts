@@ -9,9 +9,11 @@ import {
 } from '@nestjs/common';
 import { NewsletterSubscriptionStatus, Prisma } from '@prisma/client';
 import { randomBytes, createHash } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { buildWelcomeNewsletterHtml } from './templates/welcome-newsletter-template';
+import { AppConfig } from '../config/configuration';
 
 const TOKEN_EXPIRY_HOURS = 24;
 
@@ -30,6 +32,7 @@ export class NewsletterService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly queueService: QueueService,
+    private readonly configService: ConfigService<AppConfig, true>,
   ) {}
 
   private generateToken() {
@@ -70,7 +73,12 @@ export class NewsletterService {
     marketingConsent: boolean;
     organisationId?: string | null;
   }) {
-    const organisationId = input.organisationId ?? null;
+    const defaultOrganisationId = this.configService.get(
+      'newsletter.defaultOrganisationId',
+      { infer: true },
+    );
+    const organisationId =
+      input.organisationId ?? (defaultOrganisationId || null);
     const existing = await this.prisma.newsletterSubscriber.findFirst({
       where: {
         email: input.email,
@@ -98,6 +106,24 @@ export class NewsletterService {
         },
       });
     }
+
+    await this.prisma.newsletterAuditLog.create({
+      data: {
+        subscriberId: subscriber.id,
+        organisationId,
+        action: 'newsletter.subscribe.requested',
+        before: existing
+          ? {
+              status: existing.status,
+              marketingConsent: existing.marketingConsent,
+            }
+          : null,
+        after: {
+          status: subscriber.status,
+          marketingConsent: subscriber.marketingConsent,
+        },
+      },
+    });
 
     const recentTokens = await this.prisma.newsletterToken.count({
       where: {
@@ -162,6 +188,22 @@ export class NewsletterService {
       },
     });
 
+    await this.prisma.newsletterAuditLog.create({
+      data: {
+        subscriberId: subscriber.id,
+        organisationId: subscriber.organisationId ?? null,
+        action: 'newsletter.confirmed',
+        before: {
+          status: storedToken.subscriber.status,
+          confirmedAt: storedToken.subscriber.confirmedAt,
+        },
+        after: {
+          status: subscriber.status,
+          confirmedAt: subscriber.confirmedAt,
+        },
+      },
+    });
+
     await this.prisma.newsletterToken.update({
       where: { id: storedToken.id },
       data: { usedAt: new Date() },
@@ -208,11 +250,28 @@ export class NewsletterService {
       throw new BadRequestException('Token wygasł.');
     }
 
+    const unsubscribedAt = new Date();
     await this.prisma.newsletterSubscriber.update({
       where: { id: storedToken.subscriberId },
       data: {
         status: NewsletterSubscriptionStatus.UNSUBSCRIBED,
-        unsubscribedAt: new Date(),
+        unsubscribedAt,
+      },
+    });
+
+    await this.prisma.newsletterAuditLog.create({
+      data: {
+        subscriberId: storedToken.subscriberId,
+        organisationId: storedToken.subscriber.organisationId ?? null,
+        action: 'newsletter.unsubscribed',
+        before: {
+          status: storedToken.subscriber.status,
+          unsubscribedAt: storedToken.subscriber.unsubscribedAt,
+        },
+        after: {
+          status: NewsletterSubscriptionStatus.UNSUBSCRIBED,
+          unsubscribedAt,
+        },
       },
     });
 
@@ -237,9 +296,20 @@ export class NewsletterService {
       throw new ForbiddenException('Brak organizacji');
     }
 
-    const where: Prisma.NewsletterSubscriberWhereInput = {
-      organisationId,
-    };
+    const defaultOrganisationId = this.configService.get(
+      'newsletter.defaultOrganisationId',
+      { infer: true },
+    );
+    const includeGlobal =
+      defaultOrganisationId && organisationId === defaultOrganisationId;
+
+    const where: Prisma.NewsletterSubscriberWhereInput = includeGlobal
+      ? {
+          OR: [{ organisationId }, { organisationId: null }],
+        }
+      : {
+          organisationId,
+        };
 
     if (query.status) {
       where.status = query.status;

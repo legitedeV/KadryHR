@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchNewsletterSubscribers, NewsletterSubscriberSummary, NewsletterStatus } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
+import { useAuth } from "@/lib/auth-context";
 
 const statusLabels: Record<NewsletterStatus, string> = {
   PENDING_CONFIRMATION: "Oczekuje na potwierdzenie",
@@ -11,12 +12,16 @@ const statusLabels: Record<NewsletterStatus, string> = {
 };
 
 export default function NewsletterSubscribersPage() {
+  const { user, loading: authLoading } = useAuth();
   const [subscribers, setSubscribers] = useState<NewsletterSubscriberSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<NewsletterStatus | "">("");
   const [emailFilter, setEmailFilter] = useState("");
 
+  const canAccess = user?.role === "OWNER";
+
   useEffect(() => {
+    if (!canAccess) return;
     async function load() {
       setLoading(true);
       try {
@@ -25,16 +30,43 @@ export default function NewsletterSubscribersPage() {
           email: emailFilter || undefined,
         });
         setSubscribers(data);
-  } catch {
-        pushToast({ title: "Błąd", description: "Nie udało się wczytać subskrybentów." });
+      } catch {
+        pushToast({
+          title: "Błąd",
+          description: "Nie udało się wczytać subskrybentów.",
+        });
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [statusFilter, emailFilter]);
+  }, [canAccess, statusFilter, emailFilter]);
 
   const filtered = useMemo(() => subscribers, [subscribers]);
+
+  if (authLoading) {
+    return (
+      <div className="card p-6 text-sm text-surface-500">
+        Ładujemy dostęp…
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  if (!canAccess) {
+    return (
+      <div className="card p-6 space-y-2">
+        <p className="section-label">Marketing</p>
+        <h1 className="text-base font-bold text-surface-900 dark:text-surface-50">
+          Subskrybenci newslettera
+        </h1>
+        <p className="text-sm text-surface-500">
+          Dostęp do listy subskrybentów ma tylko właściciel organizacji.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -84,6 +84,10 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   LEADS_IP_HASH_SALT?: string;
+
+  @IsOptional()
+  @IsString()
+  NEWSLETTER_DEFAULT_ORGANISATION_ID?: string;
 }
 
 export const validateEnv = (config: Record<string, unknown>) => {

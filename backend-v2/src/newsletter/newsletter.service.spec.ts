@@ -19,15 +19,28 @@ describe('NewsletterService', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    newsletterAuditLog: {
+      create: jest.fn(),
+    },
   } as any;
   const queueService = {
     addNewsletterEmailJob: jest.fn(),
+  } as any;
+  const configService = {
+    get: jest.fn(),
   } as any;
 
   beforeEach(() => {
     jest.resetAllMocks();
     queueService.addNewsletterEmailJob = jest.fn().mockResolvedValue(true);
-    service = new NewsletterService(prisma, queueService);
+    configService.get = jest.fn((key: string) => {
+      const map: Record<string, string> = {
+        'newsletter.defaultOrganisationId': 'org-1',
+      };
+      return map[key];
+    });
+    prisma.newsletterAuditLog.create = jest.fn().mockResolvedValue({});
+    service = new NewsletterService(prisma, queueService, configService);
   });
 
   it('subscribes a new address and enqueues confirmation', async () => {
@@ -47,6 +60,7 @@ describe('NewsletterService', () => {
 
     expect(result).toEqual({ success: true });
     expect(queueService.addNewsletterEmailJob).toHaveBeenCalled();
+    expect(prisma.newsletterAuditLog.create).toHaveBeenCalled();
   });
 
   it('confirms a valid token and sends welcome email', async () => {
@@ -65,6 +79,7 @@ describe('NewsletterService', () => {
     });
     prisma.newsletterToken.update.mockResolvedValue({});
     prisma.newsletterToken.create.mockResolvedValue({});
+    prisma.newsletterAuditLog.create.mockResolvedValue({});
 
     const result = await service.confirm(rawToken);
 
@@ -73,5 +88,6 @@ describe('NewsletterService', () => {
       prisma.newsletterSubscriber.update.mock.calls[0][0].data.status,
     ).toBe(NewsletterSubscriptionStatus.ACTIVE);
     expect(queueService.addNewsletterEmailJob).toHaveBeenCalled();
+    expect(prisma.newsletterAuditLog.create).toHaveBeenCalled();
   });
 });
