@@ -50,9 +50,8 @@ const WEEKDAYS: { key: Weekday; label: string; shortLabel: string }[] = [
 
 const AVAILABILITY_TEMPLATES: Array<{ key: string; label: string; start: string; end: string }> = [
   { key: "morning", label: "Rano", start: "05:45", end: "15:00" },
-  { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
   { key: "afternoon", label: "Popołudnie", start: "14:15", end: "23:15" },
-  { key: "custom", label: "Wybór samodzielny", start: "08:00", end: "16:00" },
+  { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
 ];
 
 interface DayAvailability {
@@ -650,9 +649,16 @@ function MonthlyAvailabilityTab({
                       {template.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    className="btn-secondary text-sm"
+                    onClick={toggleDayOff}
+                  >
+                    Dzień wolny
+                  </button>
                 </div>
                 <button type="button" className="btn-secondary w-full" onClick={addSlot}>
-                  + Dodaj przedział
+                  Inne godziny
                 </button>
               </div>
             )}
@@ -703,9 +709,16 @@ function MonthlyAvailabilityTab({
                   {template.label}
                 </button>
               ))}
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                onClick={toggleDayOff}
+              >
+                Dzień wolny
+              </button>
             </div>
             <button type="button" className="btn-secondary w-full" onClick={addSlot}>
-              + Dodaj przedział
+              Inne godziny
             </button>
           </div>
         )}
