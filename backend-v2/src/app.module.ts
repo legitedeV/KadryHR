@@ -25,6 +25,8 @@ import { LeadsModule } from './leads/leads.module';
 import { AvatarsModule } from './avatars/avatars.module';
 import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
 import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { AdminModule } from './admin/admin.module';
     AvatarsModule,
     ShiftPresetsModule,
     AdminModule,
+    ReportsModule,
+    SubscriptionsModule,
   ],
 })
 export class AppModule {}

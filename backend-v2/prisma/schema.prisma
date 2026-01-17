@@ -157,6 +157,7 @@ model Organisation {
   scheduleTemplates ScheduleTemplate[]
   leaveBalances LeaveBalance[]
   shiftPresets ShiftPreset[]
+  subscription Subscription?
 }
 
 model User {
@@ -169,6 +170,8 @@ model User {
   lastName          String?
   avatarUrl         String?
   refreshTokenHash  String?
+  twoFactorEnabled  Boolean  @default(false)
+  twoFactorSecret   String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -836,4 +839,16 @@ model ShiftPreset {
   @@unique([organisationId, code])
   @@index([organisationId])
   @@index([isActive])
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  organisationId String   @unique
+  plan           String   @default("FREE_TRIAL")
+  status         String   @default("ACTIVE")
+  trialEndsAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 }
