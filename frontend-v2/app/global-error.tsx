@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import "./globals.css";
+import { DEFAULT_LANG } from "@/lib/site-config";
 
 export default function GlobalError({
   error,
@@ -15,7 +17,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="pl" className="dark">
+    <html lang={DEFAULT_LANG} className="dark">
       <body className="antialiased bg-surface-950 text-surface-50">
         <main className="min-h-screen px-6 flex items-center justify-center">
           <div className="max-w-md space-y-4 text-center">
@@ -31,9 +33,9 @@ export default function GlobalError({
               <button className="btn-primary px-5 py-2" onClick={() => reset()}>
                 Spróbuj ponownie
               </button>
-              <a href="/" className="btn-secondary px-5 py-2">
+              <Link href="/" className="btn-secondary px-5 py-2">
                 Strona główna
-              </a>
+              </Link>
             </div>
           </div>
         </main>

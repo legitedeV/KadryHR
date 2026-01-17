@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/lib/auth-context";
 import { CookieBanner } from "@/components/CookieBanner";
+import { DEFAULT_LANG } from "@/lib/site-config";
 
 export const viewport: Viewport = {
   themeColor: "#1EA574",
@@ -70,7 +71,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pl" className="dark">
+    <html lang={DEFAULT_LANG} className="dark">
       <body className="antialiased bg-surface-950 text-surface-50">
         <ToastProvider>
           <AuthProvider>
