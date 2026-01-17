@@ -15,8 +15,8 @@ export default function RaportyPage() {
   async function downloadReport(type: "schedule" | "leaves", from: string, to: string) {
     if (!from || !to) {
       pushToast({
-        type: "error",
-        message: "Proszę wybrać zakres dat",
+        variant: "error",
+        title: "Proszę wybrać zakres dat",
       });
       return;
     }
@@ -47,13 +47,13 @@ export default function RaportyPage() {
       document.body.removeChild(a);
 
       pushToast({
-        type: "success",
-        message: "Raport został pobrany",
+        variant: "success",
+        title: "Raport został pobrany",
       });
     } catch (error) {
       pushToast({
-        type: "error",
-        message: "Nie udało się pobrać raportu",
+        variant: "error",
+        title: "Nie udało się pobrać raportu",
       });
     } finally {
       setLoading(null);

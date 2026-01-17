@@ -13,13 +13,17 @@ export class SubscriptionsController {
   @Get('me')
   @Roles('OWNER', 'ADMIN', 'MANAGER', 'EMPLOYEE')
   async getMySubscription(@CurrentUser() user: { organisationId: string }) {
-    const subscription = await this.subscriptionsService.getByOrganisationId(user.organisationId);
-    
+    const subscription = await this.subscriptionsService.getByOrganisationId(
+      user.organisationId,
+    );
+
     // Return default values if no subscription exists yet
-    return subscription || {
-      plan: 'FREE_TRIAL',
-      status: 'ACTIVE',
-      trialEndsAt: null,
-    };
+    return (
+      subscription || {
+        plan: 'FREE_TRIAL',
+        status: 'ACTIVE',
+        trialEndsAt: null,
+      }
+    );
   }
 }

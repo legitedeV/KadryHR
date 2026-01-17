@@ -34,8 +34,8 @@ export default function RozliczeniaPage() {
       }
     } catch (error) {
       pushToast({
-        type: "error",
-        message: "Nie udało się pobrać danych subskrypcji",
+        variant: "error",
+        title: "Nie udało się pobrać danych subskrypcji",
       });
     } finally {
       setLoading(false);

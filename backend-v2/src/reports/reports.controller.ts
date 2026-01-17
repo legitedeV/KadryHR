@@ -30,19 +30,31 @@ export class ReportsController {
     );
 
     if (format === 'csv') {
-      const headers = ['id', 'date', 'startMinutes', 'endMinutes', 'employee', 'location'];
-      const csvData = data.map(shift => ({
+      const headers = [
+        'id',
+        'date',
+        'startMinutes',
+        'endMinutes',
+        'employee',
+        'location',
+      ];
+      const csvData = data.map((shift) => ({
         id: shift.id,
         date: shift.date.toISOString().split('T')[0],
         startMinutes: shift.startMinutes,
         endMinutes: shift.endMinutes,
-        employee: shift.employee ? `${shift.employee.firstName} ${shift.employee.lastName}` : '',
+        employee: shift.employee
+          ? `${shift.employee.firstName} ${shift.employee.lastName}`
+          : '',
         location: shift.location?.name || '',
       }));
-      
+
       const csv = this.reportsService.convertToCSV(csvData, headers);
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=schedule-report.csv');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=schedule-report.csv',
+      );
       return res.send(csv);
     }
 
@@ -68,20 +80,33 @@ export class ReportsController {
     );
 
     if (format === 'csv') {
-      const headers = ['id', 'startDate', 'endDate', 'status', 'employee', 'leaveType', 'category'];
-      const csvData = data.map(leave => ({
+      const headers = [
+        'id',
+        'startDate',
+        'endDate',
+        'status',
+        'employee',
+        'leaveType',
+        'category',
+      ];
+      const csvData = data.map((leave) => ({
         id: leave.id,
         startDate: leave.startDate.toISOString().split('T')[0],
         endDate: leave.endDate.toISOString().split('T')[0],
         status: leave.status,
-        employee: leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : '',
+        employee: leave.employee
+          ? `${leave.employee.firstName} ${leave.employee.lastName}`
+          : '',
         leaveType: leave.leaveType?.name || '',
         category: leave.leaveType?.category || '',
       }));
-      
+
       const csv = this.reportsService.convertToCSV(csvData, headers);
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=leaves-report.csv');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=leaves-report.csv',
+      );
       return res.send(csv);
     }
 

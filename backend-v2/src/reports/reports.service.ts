@@ -83,14 +83,16 @@ export class ReportsService {
     const csvRows = [headers.join(',')];
 
     for (const row of data) {
-      const values = headers.map(header => {
+      const values = headers.map((header) => {
         const value = row[header];
         if (value === null || value === undefined) {
           return '';
         }
         // Escape quotes and wrap in quotes if contains comma or quotes
         const escaped = String(value).replace(/"/g, '""');
-        return escaped.includes(',') || escaped.includes('"') ? `"${escaped}"` : escaped;
+        return escaped.includes(',') || escaped.includes('"')
+          ? `"${escaped}"`
+          : escaped;
       });
       csvRows.push(values.join(','));
     }

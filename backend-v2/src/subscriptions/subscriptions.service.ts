@@ -17,7 +17,10 @@ export class SubscriptionsService {
   /**
    * Create or update subscription for an organisation
    */
-  async upsert(organisationId: string, data: { plan?: string; status?: string; trialEndsAt?: Date }) {
+  async upsert(
+    organisationId: string,
+    data: { plan?: string; status?: string; trialEndsAt?: Date },
+  ) {
     return this.prisma.subscription.upsert({
       where: { organisationId },
       create: {

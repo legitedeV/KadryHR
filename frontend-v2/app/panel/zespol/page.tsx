@@ -42,8 +42,8 @@ export default function ZespolPage() {
       setMembers(data);
     } catch (error) {
       pushToast({
-        type: "error",
-        message: "Nie udało się pobrać listy członków zespołu",
+        variant: "error",
+        title: "Nie udało się pobrać listy członków zespołu",
       });
     } finally {
       setLoading(false);
@@ -54,8 +54,8 @@ export default function ZespolPage() {
     try {
       await apiCreateUser(inviteForm);
       pushToast({
-        type: "success",
-        message: "Użytkownik został zaproszony",
+        variant: "success",
+        title: "Użytkownik został zaproszony",
       });
       setShowInviteModal(false);
       setInviteForm({
@@ -68,8 +68,8 @@ export default function ZespolPage() {
       loadMembers();
     } catch (error) {
       pushToast({
-        type: "error",
-        message: "Nie udało się zaprosić użytkownika",
+        variant: "error",
+        title: "Nie udało się zaprosić użytkownika",
       });
     }
   }
@@ -78,16 +78,16 @@ export default function ZespolPage() {
     try {
       await apiUpdateMemberRole(memberId, { role: newRole });
       pushToast({
-        type: "success",
-        message: "Rola została zmieniona",
+        variant: "success",
+        title: "Rola została zmieniona",
       });
       setShowRoleModal(false);
       setSelectedMember(null);
       loadMembers();
     } catch (error) {
       pushToast({
-        type: "error",
-        message: "Nie udało się zmienić roli",
+        variant: "error",
+        title: "Nie udało się zmienić roli",
       });
     }
   }
@@ -96,16 +96,16 @@ export default function ZespolPage() {
     try {
       await apiDeleteUser(memberId);
       pushToast({
-        type: "success",
-        message: "Użytkownik został usunięty",
+        variant: "success",
+        title: "Użytkownik został usunięty",
       });
       setShowDeleteModal(false);
       setSelectedMember(null);
       loadMembers();
     } catch (error) {
       pushToast({
-        type: "error",
-        message: "Nie udało się usunąć użytkownika",
+        variant: "error",
+        title: "Nie udało się usunąć użytkownika",
       });
     }
   }
