@@ -482,6 +482,10 @@ body::before {
   box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 }
 
+.input-field-with-icon {
+  padding-left: 2.75rem;
+}
+
 .input {
   width: 100%;
   border-radius: var(--radius-xl);
