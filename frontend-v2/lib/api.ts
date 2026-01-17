@@ -1979,6 +1979,8 @@ export async function apiGetRoleDescriptions(): Promise<RoleDescription[]> {
 }
 
 // Avatar Upload API
+// Note: File uploads use raw fetch() because apiClient sets Content-Type: application/json
+// which interferes with FormData multipart uploads
 
 export async function apiUploadEmployeeAvatar(
   employeeId: string,
