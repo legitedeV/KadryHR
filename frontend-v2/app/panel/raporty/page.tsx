@@ -21,6 +21,26 @@ export default function RaportyPage() {
       return;
     }
 
+    // Validate dates
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      pushToast({
+        variant: "error",
+        title: "Nieprawidłowy format daty",
+      });
+      return;
+    }
+
+    if (fromDate > toDate) {
+      pushToast({
+        variant: "error",
+        title: "Data początkowa musi być wcześniejsza niż data końcowa",
+      });
+      return;
+    }
+
     try {
       setLoading(type);
       const tokens = getAuthTokens();

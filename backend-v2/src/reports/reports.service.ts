@@ -73,7 +73,7 @@ export class ReportsService {
   }
 
   /**
-   * Convert data to CSV format
+   * Convert data to CSV format with proper escaping to prevent CSV injection
    */
   convertToCSV(data: any[], headers: string[]): string {
     if (!data || data.length === 0) {
@@ -88,11 +88,27 @@ export class ReportsService {
         if (value === null || value === undefined) {
           return '';
         }
-        // Escape quotes and wrap in quotes if contains comma or quotes
-        const escaped = String(value).replace(/"/g, '""');
-        return escaped.includes(',') || escaped.includes('"')
-          ? `"${escaped}"`
-          : escaped;
+        // Convert to string
+        let escaped = String(value);
+
+        // Prevent CSV injection by prefixing dangerous characters
+        if (escaped.match(/^[=+\-@]/)) {
+          escaped = "'" + escaped;
+        }
+
+        // Replace newlines and carriage returns with spaces
+        escaped = escaped.replace(/\r?\n/g, ' ');
+
+        // Escape quotes and wrap in quotes if contains comma, quotes, or was modified
+        if (
+          escaped.includes(',') ||
+          escaped.includes('"') ||
+          value !== escaped
+        ) {
+          escaped = '"' + escaped.replace(/"/g, '""') + '"';
+        }
+
+        return escaped;
       });
       csvRows.push(values.join(','));
     }

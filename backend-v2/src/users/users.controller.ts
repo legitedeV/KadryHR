@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -118,5 +119,20 @@ export class UsersController {
       user.organisationId,
       dto,
     );
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER)
+  @Delete(':id')
+  async delete(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    // Prevent owner from deleting themselves
+    if (user.id === id) {
+      throw new BadRequestException('Cannot delete your own account');
+    }
+
+    return this.usersService.delete(user.id, id, user.organisationId);
   }
 }
