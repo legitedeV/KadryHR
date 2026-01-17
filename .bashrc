@@ -95,7 +95,7 @@ in_kadryhr_project() {
     local dir="$PWD"
     while [ "$dir" != "/" ]; do
         if [ -f "$dir/deploy.sh" ] && [ -d "$dir/backend-v2" ] && [ -d "$dir/frontend-v2" ]; then
-            echo "󰊖 "  # KadryHR indicator (Nerd Font icon)
+            echo "K "  # KadryHR indicator (using K for compatibility with non-Nerd Font terminals)
             return 0
         fi
         dir="$(dirname "$dir")"
@@ -140,7 +140,52 @@ PROMPT_COMMAND=set_prompt
 # ============================================================================
 
 # === Project Navigation ===
-alias cdkadry='cd ~/apps/kadryhr-app 2>/dev/null || cd ~/work/KadryHR 2>/dev/null || cd /home/runner/work/KadryHR/KadryHR 2>/dev/null || echo "KadryHR project not found"'
+# KADRYHR_ROOT can be set to override the default project location
+# Example: export KADRYHR_ROOT="$HOME/projects/kadryhr"
+find_kadryhr_root() {
+    # Check if KADRYHR_ROOT is set
+    if [ -n "$KADRYHR_ROOT" ] && [ -d "$KADRYHR_ROOT" ]; then
+        echo "$KADRYHR_ROOT"
+        return 0
+    fi
+    # Search common locations
+    local dirs=(
+        "$HOME/apps/kadryhr-app"
+        "$HOME/work/KadryHR"
+        "/home/runner/work/KadryHR/KadryHR"
+        "$HOME/projects/kadryhr-app"
+        "$HOME/kadryhr"
+    )
+    for dir in "${dirs[@]}"; do
+        if [ -d "$dir" ] && [ -f "$dir/deploy.sh" ] && [ -d "$dir/backend-v2" ]; then
+            echo "$dir"
+            return 0
+        fi
+    done
+    # Search from current directory upwards
+    local current="$PWD"
+    while [ "$current" != "/" ]; do
+        if [ -f "$current/deploy.sh" ] && [ -d "$current/backend-v2" ]; then
+            echo "$current"
+            return 0
+        fi
+        current="$(dirname "$current")"
+    done
+    echo ""
+    return 1
+}
+
+cdkadry() {
+    local root
+    root=$(find_kadryhr_root)
+    if [ -n "$root" ]; then
+        cd "$root" || return 1
+    else
+        echo "KadryHR project not found. Set KADRYHR_ROOT environment variable to the project path."
+        return 1
+    fi
+}
+
 alias cdback='cdkadry && cd backend-v2'
 alias cdfront='cdkadry && cd frontend-v2'
 alias cdscripts='cdkadry && cd scripts'
@@ -184,8 +229,38 @@ alias ftest:e2e='cdfront && npm run test:e2e'
 alias fcheck='cdfront && npm run ci:check'
 
 # === Combined Development ===
-alias kdev='echo "Starting KadryHR development servers..." && (cdback && npm run dev &) && (cdfront && npm run dev &) && echo "Backend and Frontend dev servers started!"'
-alias kbuild='echo "Building KadryHR..." && cdback && npm run build && cdfront && npm run build && echo "Build complete!"'
+# Function to start development servers with proper process management
+kdev() {
+    echo -e "\033[38;2;30;165;116mStarting KadryHR development servers...\033[0m"
+    local root
+    root=$(find_kadryhr_root)
+    if [ -z "$root" ]; then
+        echo "KadryHR project not found."
+        return 1
+    fi
+    
+    # Start backend in background
+    echo -e "\033[38;2;148;163;184m→ Starting backend dev server...\033[0m"
+    (cd "$root/backend-v2" && npm run dev) &
+    local backend_pid=$!
+    
+    # Start frontend in background
+    echo -e "\033[38;2;148;163;184m→ Starting frontend dev server...\033[0m"
+    (cd "$root/frontend-v2" && npm run dev) &
+    local frontend_pid=$!
+    
+    echo -e "\033[38;2;69;201;146m✓ Development servers started!\033[0m"
+    echo "  Backend PID: $backend_pid"
+    echo "  Frontend PID: $frontend_pid"
+    echo ""
+    echo "Press Ctrl+C to stop all servers, or use: kill $backend_pid $frontend_pid"
+    
+    # Wait for both processes and handle interrupts
+    trap "kill $backend_pid $frontend_pid 2>/dev/null; echo -e '\n\033[38;2;254;215;170mServers stopped.\033[0m'" INT TERM
+    wait $backend_pid $frontend_pid
+}
+
+alias kbuild='echo "Building KadryHR..." && cdkadry && cd backend-v2 && npm run build && cd ../frontend-v2 && npm run build && echo "Build complete!"'
 alias ktest='echo "Running all tests..." && cdback && npm run test && cdfront && npm run test && echo "All tests passed!"'
 alias klint='echo "Linting KadryHR..." && cdback && npm run lint && cdfront && npm run lint && echo "Linting complete!"'
 
@@ -362,9 +437,22 @@ psgrep() {
     ps aux | grep -v grep | grep -i "$1"
 }
 
-# Kill process by name
+# Kill process by name (with safety check)
 pskill() {
-    ps aux | grep -v grep | grep -i "$1" | awk '{print $2}' | xargs kill -9
+    if [ -z "$1" ]; then
+        echo "Usage: pskill <process_name>"
+        return 1
+    fi
+    local pids
+    pids=$(ps aux | grep -v grep | grep -i "$1" | awk '{print $2}')
+    if [ -z "$pids" ]; then
+        echo "No processes found matching '$1'"
+        return 1
+    fi
+    echo "Found processes: $pids"
+    echo "Killing processes..."
+    echo "$pids" | xargs kill -9
+    echo "Done."
 }
 
 # Quick HTTP server
