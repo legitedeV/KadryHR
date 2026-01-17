@@ -24,6 +24,7 @@ import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates
 import { LeadsModule } from './leads/leads.module';
 import { AvatarsModule } from './avatars/avatars.module';
 import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
     LeadsModule,
     AvatarsModule,
     ShiftPresetsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

@@ -2012,3 +2012,68 @@ export async function apiDeleteShiftPreset(
     method: "DELETE",
   });
 }
+
+// Admin Panel Types and API
+export interface AdminStats {
+  totalOrganisations: number;
+  totalEmployees: number;
+  totalUsers: number;
+  totalShifts: number;
+}
+
+export interface AdminOrganisationItem {
+  id: string;
+  name: string;
+  category?: string | null;
+  employeeCount: number;
+  userCount: number;
+  createdAt: string;
+}
+
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role: UserRole;
+  organisationId: string;
+  organisationName: string;
+  createdAt: string;
+}
+
+const ADMIN_PREFIX = "/admin";
+
+export async function apiGetAdminStats(): Promise<AdminStats> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AdminStats>(`${ADMIN_PREFIX}/stats`);
+}
+
+export async function apiListAdminOrganisations(params?: {
+  page?: number;
+  perPage?: number;
+}): Promise<{ data: AdminOrganisationItem[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.perPage) search.set("perPage", String(params.perPage));
+  const query = search.toString();
+  return apiClient.request<{ data: AdminOrganisationItem[]; total: number }>(
+    `${ADMIN_PREFIX}/organisations${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function apiListAdminUsers(params?: {
+  page?: number;
+  perPage?: number;
+  role?: string;
+}): Promise<{ data: AdminUserItem[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.perPage) search.set("perPage", String(params.perPage));
+  if (params?.role) search.set("role", params.role);
+  const query = search.toString();
+  return apiClient.request<{ data: AdminUserItem[]; total: number }>(
+    `${ADMIN_PREFIX}/users${query ? `?${query}` : ""}`,
+  );
+}

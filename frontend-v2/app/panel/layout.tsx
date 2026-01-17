@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { href: "/panel/audit", label: "Audit", icon: "M9 12h6m-6 4h6M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v12a2 2 0 002 2h10a2 2 0 002-2V8" },
   { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "MANAGER"] },
   { href: "/panel/uzytkownicy", label: "Użytkownicy", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
+  { href: "/panel/admin", label: "Panel admina", icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", roles: ["ADMIN"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
@@ -46,6 +47,9 @@ const titleByPath: Record<string, string> = {
   "/panel/audit": "Audit log",
   "/panel/organizacja": "Ustawienia organizacji",
   "/panel/uzytkownicy": "Użytkownicy",
+  "/panel/admin": "Panel admina",
+  "/panel/admin/organisations": "Organizacje",
+  "/panel/admin/users": "Użytkownicy systemu",
 };
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
