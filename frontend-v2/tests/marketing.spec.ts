@@ -7,7 +7,7 @@ test('landing navigation and lead form', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Rejestracja' })).toBeVisible();
 
   await page.getByRole('navigation').getByRole('link', { name: 'Cennik' }).click();
-  await expect(page).toHaveURL(/#cennik/);
+  await expect(page).toHaveURL(/#cennik$/);
 
   await page.goto('/kontakt');
   await page.route('**/api/public/leads', async (route) => {
