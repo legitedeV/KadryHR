@@ -77,6 +77,11 @@ export class AvatarsService {
   async deleteAvatar(avatarPath: string): Promise<void> {
     if (!avatarPath) return;
 
+    // Skip deletion for data URLs (base64 encoded images)
+    if (avatarPath.startsWith('data:')) {
+      return;
+    }
+
     // Convert URL path to filesystem path
     // avatarPath format: /static/avatars/employees/xxx.jpg
     const relativePath = avatarPath.replace('/static/avatars/', '');
