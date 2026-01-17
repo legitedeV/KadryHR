@@ -1,5 +1,5 @@
-import { apiClient } from "./api-client";
-import { clearAuthTokens } from "./auth";
+import { apiClient, API_BASE_URL } from "./api-client";
+import { clearAuthTokens, getAuthTokens } from "./auth";
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
 export type Permission =
@@ -1976,4 +1976,75 @@ export interface RoleDescription {
 export async function apiGetRoleDescriptions(): Promise<RoleDescription[]> {
   apiClient.hydrateFromStorage();
   return apiClient.request<RoleDescription[]>(`${USERS_PREFIX}/roles`);
+}
+
+// Avatar Upload API
+
+export async function apiUploadEmployeeAvatar(
+  employeeId: string,
+  file: File,
+): Promise<{ avatarUrl: string }> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const tokens = getAuthTokens();
+  const response = await fetch(`${API_BASE_URL}${EMPLOYEES_PREFIX}/${employeeId}/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokens?.accessToken ?? ""}`,
+    },
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Błąd przesyłania" }));
+    throw new Error(error.message || "Nie udało się przesłać zdjęcia");
+  }
+
+  return response.json();
+}
+
+export async function apiDeleteEmployeeAvatar(
+  employeeId: string,
+): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `${EMPLOYEES_PREFIX}/${employeeId}/avatar`,
+    { method: "DELETE" },
+  );
+}
+
+export async function apiUploadOrganisationAvatar(
+  file: File,
+): Promise<{ logoUrl: string }> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const tokens = getAuthTokens();
+  const response = await fetch(`${API_BASE_URL}${ORGANISATIONS_PREFIX}/me/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokens?.accessToken ?? ""}`,
+    },
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Błąd przesyłania" }));
+    throw new Error(error.message || "Nie udało się przesłać logo");
+  }
+
+  return response.json();
+}
+
+export async function apiDeleteOrganisationAvatar(): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `${ORGANISATIONS_PREFIX}/me/avatar`,
+    { method: "DELETE" },
+  );
 }

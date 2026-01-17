@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, useCallback } from "react";
 import {
   EmployeeRecord,
   LocationRecord,
@@ -13,10 +13,13 @@ import {
   apiListLocations,
   apiResendInvitation,
   apiUpdateEmployee,
+  apiUploadEmployeeAvatar,
+  apiDeleteEmployeeAvatar,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 import { Modal } from "@/components/Modal";
 import { EmptyState } from "@/components/EmptyState";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { pushToast } from "@/lib/toast";
 import { usePermissions } from "@/lib/use-permissions";
 
@@ -51,6 +54,7 @@ export default function PracownicyPage() {
     action: "deactivate" | "activate" | "delete";
   } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null);
   const [form, setForm] = useState<SaveEmployeePayload>({
     firstName: "",
     lastName: "",
@@ -109,6 +113,7 @@ export default function PracownicyPage() {
   const resetForm = () => {
     setForm({ firstName: "", lastName: "", email: "", phone: "", position: "", locationIds: [] });
     setEditId(null);
+    setEditAvatarUrl(null);
     setFormError(null);
   };
 
@@ -144,6 +149,7 @@ export default function PracownicyPage() {
 
   const handleEdit = (employee: EmployeeRecord) => {
     setEditId(employee.id);
+    setEditAvatarUrl(employee.avatarUrl ?? null);
     setForm({
       firstName: employee.firstName,
       lastName: employee.lastName,
@@ -169,6 +175,34 @@ export default function PracownicyPage() {
       setSaving(false);
     }
   };
+
+  const handleAvatarUpload = useCallback(async (file: File) => {
+    if (!editId) return;
+    const result = await apiUploadEmployeeAvatar(editId, file);
+    setEditAvatarUrl(result.avatarUrl);
+    setEmployees((prev) =>
+      prev.map((e) => (e.id === editId ? { ...e, avatarUrl: result.avatarUrl } : e)),
+    );
+    pushToast({
+      title: "Sukces",
+      description: "Zdjęcie zostało przesłane",
+      variant: "success",
+    });
+  }, [editId]);
+
+  const handleAvatarDelete = useCallback(async () => {
+    if (!editId) return;
+    await apiDeleteEmployeeAvatar(editId);
+    setEditAvatarUrl(null);
+    setEmployees((prev) =>
+      prev.map((e) => (e.id === editId ? { ...e, avatarUrl: undefined } : e)),
+    );
+    pushToast({
+      title: "Sukces",
+      description: "Zdjęcie zostało usunięte",
+      variant: "success",
+    });
+  }, [editId]);
 
   const openConfirm = (employee: EmployeeRecord, action: "deactivate" | "activate" | "delete") => {
     setConfirmAction({ employee, action });
@@ -367,9 +401,18 @@ export default function PracownicyPage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/50 dark:to-accent-900/50 dark:text-brand-300">
-                    {formatEmployeeName(employee).charAt(0).toUpperCase()}
-                  </div>
+                  {employee.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={employee.avatarUrl}
+                      alt={formatEmployeeName(employee)}
+                      className="h-10 w-10 rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-100 to-accent-100 flex items-center justify-center text-brand-700 font-semibold text-sm dark:from-brand-900/50 dark:to-accent-900/50 dark:text-brand-300">
+                      {formatEmployeeName(employee).charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="font-semibold text-surface-900 dark:text-surface-100 truncate">{formatEmployeeName(employee)}</p>
                     <p className="text-xs text-surface-500 dark:text-surface-400 truncate">{employee.email ?? "Brak emaila"}</p>
@@ -493,6 +536,16 @@ export default function PracownicyPage() {
           </Fragment>
         }
       >
+        {editId && (
+          <AvatarUpload
+            currentUrl={editAvatarUrl}
+            onUpload={handleAvatarUpload}
+            onDelete={handleAvatarDelete}
+            label="Zdjęcie pracownika"
+            name={`${form.firstName} ${form.lastName}`.trim() || "Pracownik"}
+            disabled={saving}
+          />
+        )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm text-surface-700 dark:text-surface-200">
             Imię
