@@ -1,21 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect } from "react";
 import "./globals.css";
 import { DEFAULT_LANG } from "@/lib/site-config";
 
 export default function GlobalError({
-  error,
+  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
   return (
     <html lang={DEFAULT_LANG} className="dark">
       <body className="antialiased bg-surface-950 text-surface-50">
@@ -33,9 +27,10 @@ export default function GlobalError({
               <button className="btn-primary px-5 py-2" onClick={() => reset()}>
                 Spróbuj ponownie
               </button>
-              <Link href="/" className="btn-secondary px-5 py-2">
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- global-error renders outside router context, Link cannot be used */}
+              <a href="/" className="btn-secondary px-5 py-2">
                 Strona główna
-              </Link>
+              </a>
             </div>
           </div>
         </main>
