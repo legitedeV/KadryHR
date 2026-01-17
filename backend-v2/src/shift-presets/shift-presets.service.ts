@@ -88,15 +88,16 @@ export class ShiftPresetsService {
       throw new NotFoundException('Shift preset not found');
     }
 
-    if (dto.code && dto.code.toUpperCase() !== existing.code) {
-      await this.ensureCodeUnique(organisationId, dto.code, id);
+    const normalizedCode = dto.code?.toUpperCase();
+    if (normalizedCode && normalizedCode !== existing.code) {
+      await this.ensureCodeUnique(organisationId, normalizedCode, id);
     }
 
     return this.prisma.shiftPreset.update({
       where: { id },
       data: {
         name: dto.name ?? existing.name,
-        code: dto.code ? dto.code.toUpperCase() : existing.code,
+        code: normalizedCode ?? existing.code,
         startMinutes: dto.startMinutes ?? existing.startMinutes,
         endMinutes: dto.endMinutes ?? existing.endMinutes,
         color: dto.color !== undefined ? dto.color : existing.color,

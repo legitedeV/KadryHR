@@ -15,6 +15,17 @@ function formatMinutes(minutes: number): string {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
+// Check if color is a valid hex color format
+function isHexColor(color: string): boolean {
+  return /^#([0-9A-Fa-f]{3}){1,2}$/.test(color);
+}
+
+// Get color with alpha for border and background
+function getColorWithAlpha(color: string | null | undefined, alphaHex: string): string | undefined {
+  if (!color || !isHexColor(color)) return undefined;
+  return color + alphaHex;
+}
+
 export function ShiftPresetSelector({
   presets,
   selectedPresetId,
@@ -31,6 +42,7 @@ export function ShiftPresetSelector({
       <div className="flex flex-wrap gap-2">
         {presets.map((preset) => {
           const isSelected = selectedPresetId === preset.id;
+          const hasValidColor = preset.color && isHexColor(preset.color);
           return (
             <button
               key={preset.id}
@@ -42,16 +54,16 @@ export function ShiftPresetSelector({
                   : ""
               }`}
               style={{
-                borderColor: preset.color ? preset.color + "50" : undefined,
-                backgroundColor: preset.color ? preset.color + "15" : undefined,
-                color: preset.color ?? undefined,
+                borderColor: getColorWithAlpha(preset.color, "50"),
+                backgroundColor: getColorWithAlpha(preset.color, "15"),
+                color: hasValidColor ? preset.color : undefined,
               }}
               onClick={() => onSelect(isSelected ? null : preset)}
             >
-              {preset.color && (
+              {hasValidColor && (
                 <span
                   className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: preset.color }}
+                  style={{ backgroundColor: preset.color ?? undefined }}
                 />
               )}
               <span>{preset.name}</span>
