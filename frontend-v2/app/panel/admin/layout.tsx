@@ -17,12 +17,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user || user.role !== "ADMIN") {
+  if (!user || !["ADMIN", "OWNER"].includes(user.role)) {
     return (
       <div className="panel-card p-8">
         <EmptyState
           title="Brak dostępu"
-          description="Panel administratora jest dostępny tylko dla użytkowników z rolą ADMIN. Jeśli uważasz, że powinieneś mieć dostęp, skontaktuj się z administratorem systemu."
+          description="Panel administratora jest dostępny tylko dla użytkowników z rolą ADMIN lub OWNER. Jeśli uważasz, że powinieneś mieć dostęp, skontaktuj się z administratorem systemu."
           action={
             <Link href="/panel/dashboard" className="btn-primary px-4 py-2">
               Wróć do dashboardu

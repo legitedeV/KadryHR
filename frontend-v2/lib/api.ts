@@ -1842,6 +1842,13 @@ export async function apiUpdateUser(
   });
 }
 
+export async function apiDeleteUser(userId: string): Promise<void> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<void>(`${USERS_PREFIX}/${userId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function apiGetProfile(): Promise<UserProfile> {
   apiClient.hydrateFromStorage();
   return apiClient.request<UserProfile>(`${USERS_PREFIX}/profile`);

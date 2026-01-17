@@ -398,4 +398,49 @@ export class UsersService {
 
     return updated;
   }
+
+  async delete(
+    actorUserId: string,
+    userId: string,
+    organisationId: string,
+  ) {
+    // Verify user exists and belongs to the same organization
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        organisationId,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prevent deleting OWNER role
+    if (user.role === Role.OWNER) {
+      throw new BadRequestException('Cannot delete organization owner');
+    }
+
+    // Delete the user
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    // Audit log
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'DELETE',
+      entityType: 'user',
+      entityId: userId,
+      before: {
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
+
+    return { success: true, message: 'User deleted successfully' };
+  }
 }

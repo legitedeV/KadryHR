@@ -419,6 +419,27 @@ export default function ProfilPage() {
                 Wyloguj
               </button>
             </div>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
+              <div>
+                <p className="font-medium text-surface-900 dark:text-surface-50">Uwierzytelnianie dwuskładnikowe (2FA)</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  Dodatkowa warstwa bezpieczeństwa dla Twojego konta
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-1 rounded-full bg-accent-900/30 text-accent-300">
+                  Wkrótce dostępne
+                </span>
+                <button
+                  disabled
+                  className="btn-secondary text-sm opacity-50 cursor-not-allowed"
+                  title="Funkcja w przygotowaniu"
+                >
+                  Włącz 2FA
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
