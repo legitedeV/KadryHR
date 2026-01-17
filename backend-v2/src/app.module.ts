@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { ConfigValidationModule } from './config/config-validation.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -20,10 +22,20 @@ import { PayrollModule } from './payroll/payroll.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates.module';
 import { LeadsModule } from './leads/leads.module';
+import { AvatarsModule } from './avatars/avatars.module';
+import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), '..', 'uploads'),
+      serveRoot: '/static',
+      serveStaticOptions: {
+        index: false,
+      },
+    }),
     ConfigValidationModule,
     PrismaModule,
     AuthModule,
@@ -44,6 +56,9 @@ import { LeadsModule } from './leads/leads.module';
     DocumentsModule,
     ScheduleTemplatesModule,
     LeadsModule,
+    AvatarsModule,
+    ShiftPresetsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

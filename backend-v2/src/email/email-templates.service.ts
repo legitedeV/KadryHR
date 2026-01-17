@@ -458,10 +458,7 @@ export class EmailTemplatesService {
     return {
       subject: 'Nowy lead demo KadryHR',
       text: textLines.join('\n'),
-      html: this.baseTemplate(
-        content,
-        `Nowy lead demo od ${params.name}`,
-      ),
+      html: this.baseTemplate(content, `Nowy lead demo od ${params.name}`),
     };
   }
 
@@ -562,7 +559,10 @@ export class EmailTemplatesService {
         ${greeting} Dziękujemy za dołączenie do społeczności KadryHR. Od teraz będziemy dzielić się wskazówkami, jak szybciej planować grafiki, liczyć czas pracy i dbać o płynne zmiany.
       </p>
       ${this.infoBox([
-        { label: 'Co przygotowaliśmy', value: 'Sprawdzone praktyki dla retail i gastro' },
+        {
+          label: 'Co przygotowaliśmy',
+          value: 'Sprawdzone praktyki dla retail i gastro',
+        },
         { label: 'Jak często', value: '1–2 wiadomości w miesiącu' },
       ])}
       <div class="email-card" style="background-color:#0f1714;border-radius:12px;border:1px solid rgba(31, 59, 49, 0.8);padding:16px;margin-top:16px;">
@@ -582,10 +582,7 @@ export class EmailTemplatesService {
     return {
       subject: 'Witaj w newsletterze KadryHR',
       text: `${greeting} Dziękujemy za dołączenie do newslettera KadryHR. Startujemy z praktycznymi wskazówkami dla retail i gastro. Zobacz panel: ${params.ctaUrl}. Wypisz się: ${params.unsubscribeUrl}`,
-      html: this.baseTemplate(
-        content,
-        'Witaj w newsletterze KadryHR!',
-      ),
+      html: this.baseTemplate(content, 'Witaj w newsletterze KadryHR!'),
     };
   }
 

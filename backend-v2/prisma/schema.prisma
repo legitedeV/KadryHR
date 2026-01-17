@@ -156,6 +156,7 @@ model Organisation {
   employeeDocuments EmployeeDocument[]
   scheduleTemplates ScheduleTemplate[]
   leaveBalances LeaveBalance[]
+  shiftPresets ShiftPreset[]
 }
 
 model User {
@@ -813,4 +814,25 @@ model RolePermission {
   @@unique([organisationId, role, permission])
   @@index([organisationId])
   @@index([role])
+}
+
+model ShiftPreset {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  code           String   // e.g., "MORNING", "AFTERNOON", "DELIVERY", "NIGHT"
+  startMinutes   Int      // e.g., 345 for 05:45
+  endMinutes     Int      // e.g., 900 for 15:00
+  color          String?  // Optional color for this preset
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, code])
+  @@index([organisationId])
+  @@index([isActive])
 }

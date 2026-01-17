@@ -187,6 +187,8 @@ describe('AvailabilityService', () => {
         deadline: '2099-05-01',
         isOpen: true,
       }),
-    ).rejects.toThrow('Istnieje już aktywne okno dyspozycji dla tej organizacji.');
+    ).rejects.toThrow(
+      'Istnieje już aktywne okno dyspozycji dla tej organizacji.',
+    );
   });
 });

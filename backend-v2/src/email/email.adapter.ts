@@ -86,5 +86,4 @@ export class EmailAdapter {
       return { success: false, error: message };
     }
   }
-
 }

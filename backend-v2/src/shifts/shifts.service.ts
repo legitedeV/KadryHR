@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AvailabilityStatus, LeaveStatus, NotificationType, type Prisma } from '@prisma/client';
+import {
+  AvailabilityStatus,
+  LeaveStatus,
+  NotificationType,
+  type Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PermissionsService } from '../auth/permissions.service';
@@ -28,10 +33,11 @@ export class ShiftsService {
     });
 
     if (!user) return false;
-    const permissions = await this.permissionsService.getOrganisationPermissions(
-      organisationId,
-      user.role,
-    );
+    const permissions =
+      await this.permissionsService.getOrganisationPermissions(
+        organisationId,
+        user.role,
+      );
     return (
       permissions.includes(Permission.SCHEDULE_MANAGE) ||
       permissions.includes(Permission.RCP_EDIT)
@@ -461,9 +467,9 @@ export class ShiftsService {
     const covered = matching
       .filter((slot) => slot.status !== AvailabilityStatus.DAY_OFF)
       .some(
-      (slot) =>
-        slot.startMinutes <= startMinutes && slot.endMinutes >= endMinutes,
-    );
+        (slot) =>
+          slot.startMinutes <= startMinutes && slot.endMinutes >= endMinutes,
+      );
 
     if (!covered) {
       return 'Godziny zmiany wykraczają poza dostępność pracownika.';

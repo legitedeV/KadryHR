@@ -1,5 +1,5 @@
-import { apiClient } from "./api-client";
-import { clearAuthTokens } from "./auth";
+import { apiClient, API_BASE_URL } from "./api-client";
+import { clearAuthTokens, getAuthTokens } from "./auth";
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
 export type Permission =
@@ -178,6 +178,42 @@ export interface ScheduleTemplateDetail extends ScheduleTemplateRecord {
   shifts: ScheduleTemplateShift[];
 }
 
+export interface ShiftPresetRecord {
+  id: string;
+  organisationId: string;
+  name: string;
+  code: string;
+  startMinutes: number;
+  endMinutes: number;
+  color?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateShiftPresetPayload {
+  name: string;
+  code: string;
+  startMinutes: number;
+  endMinutes: number;
+  color?: string;
+  isDefault?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateShiftPresetPayload {
+  name?: string;
+  code?: string;
+  startMinutes?: number;
+  endMinutes?: number;
+  color?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
 export type NotificationType =
   | "TEST"
   | "LEAVE_STATUS"
@@ -208,63 +244,6 @@ export interface NotificationPreference {
   email: boolean;
   sms?: boolean;
   push?: boolean; // Future: push notifications
-}
-
-export type NewsletterStatus =
-  | "PENDING_CONFIRMATION"
-  | "ACTIVE"
-  | "UNSUBSCRIBED";
-
-export interface NewsletterSubscriberSummary {
-  id: string;
-  email: string;
-  name?: string | null;
-  status: NewsletterStatus;
-  subscribedAt: string;
-  confirmedAt?: string | null;
-  unsubscribedAt?: string | null;
-}
-
-export type LeadStatus = "NEW" | "QUALIFIED" | "CONTACTED" | "WON" | "LOST";
-
-export interface LeadItem {
-  id: string;
-  email: string;
-  name: string;
-  company: string;
-  headcount?: number | null;
-  message?: string | null;
-  consentMarketing: boolean;
-  consentPrivacy: boolean;
-  utmSource?: string | null;
-  utmCampaign?: string | null;
-  status: LeadStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LeadListResponse {
-  page: number;
-  pageSize: number;
-  total: number;
-  items: LeadItem[];
-}
-
-export interface LeadAuditEntry {
-  id: string;
-  leadId: string;
-  organisationId?: string | null;
-  actorUserId?: string | null;
-  action: string;
-  before?: Record<string, unknown> | null;
-  after?: Record<string, unknown> | null;
-  createdAt: string;
-  actor?: {
-    id: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    email: string;
-  } | null;
 }
 
 export interface AudienceFilter {
@@ -437,6 +416,7 @@ const AVAILABILITY_PREFIX = "/availability";
 const LEAVE_PREFIX = "/leave-requests";
 const NOTIFICATIONS_PREFIX = "/notifications";
 const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
+const SHIFT_PRESETS_PREFIX = "/shift-presets";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -1643,60 +1623,6 @@ function mapLeaveRequest(request: LeaveRequestResponse): RequestItem {
   };
 }
 
-export async function fetchNewsletterSubscribers(filters?: {
-  status?: NewsletterStatus;
-  from?: string;
-  to?: string;
-  email?: string;
-}) {
-  const params = new URLSearchParams();
-  if (filters?.status) params.set("status", filters.status);
-  if (filters?.from) params.set("from", filters.from);
-  if (filters?.to) params.set("to", filters.to);
-  if (filters?.email) params.set("email", filters.email);
-
-  const query = params.toString();
-  const payload = await apiClient.request<{ data: NewsletterSubscriberSummary[] }>(
-    `/newsletter/subscribers${query ? `?${query}` : ""}`,
-  );
-
-  return payload.data;
-}
-
-export async function fetchLeads(filters?: {
-  status?: LeadStatus;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-}) {
-  const params = new URLSearchParams();
-  if (filters?.status) params.set("status", filters.status);
-  if (filters?.search) params.set("search", filters.search);
-  if (filters?.page) params.set("page", String(filters.page));
-  if (filters?.pageSize) params.set("pageSize", String(filters.pageSize));
-
-  const query = params.toString();
-  return apiClient.request<LeadListResponse>(`/leads${query ? `?${query}` : ""}`);
-}
-
-export async function updateLeadStatus(id: string, status: LeadStatus) {
-  return apiClient.request<LeadItem>(`/leads/${id}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  });
-}
-
-export async function fetchLeadAudit(
-  id: string,
-  params?: { skip?: number; take?: number },
-) {
-  const search = new URLSearchParams();
-  if (params?.skip !== undefined) search.set("skip", String(params.skip));
-  if (params?.take !== undefined) search.set("take", String(params.take));
-  const query = search.toString();
-  return apiClient.request<LeadAuditEntry[]>(`/leads/${id}/audit${query ? `?${query}` : ""}`);
-}
-
 function mapNotification(notification: NotificationResponse): NotificationItem {
   return {
     id: notification.id,
@@ -1976,4 +1902,178 @@ export interface RoleDescription {
 export async function apiGetRoleDescriptions(): Promise<RoleDescription[]> {
   apiClient.hydrateFromStorage();
   return apiClient.request<RoleDescription[]>(`${USERS_PREFIX}/roles`);
+}
+
+// Avatar Upload API
+// Note: File uploads use raw fetch() because apiClient sets Content-Type: application/json
+// which interferes with FormData multipart uploads
+
+export async function apiUploadEmployeeAvatar(
+  employeeId: string,
+  file: File,
+): Promise<{ avatarUrl: string }> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const tokens = getAuthTokens();
+  const response = await fetch(`${API_BASE_URL}${EMPLOYEES_PREFIX}/${employeeId}/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokens?.accessToken ?? ""}`,
+    },
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Błąd przesyłania" }));
+    throw new Error(error.message || "Nie udało się przesłać zdjęcia");
+  }
+
+  return response.json();
+}
+
+export async function apiDeleteEmployeeAvatar(
+  employeeId: string,
+): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `${EMPLOYEES_PREFIX}/${employeeId}/avatar`,
+    { method: "DELETE" },
+  );
+}
+
+export async function apiUploadOrganisationAvatar(
+  file: File,
+): Promise<{ logoUrl: string }> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const tokens = getAuthTokens();
+  const response = await fetch(`${API_BASE_URL}${ORGANISATIONS_PREFIX}/me/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokens?.accessToken ?? ""}`,
+    },
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Błąd przesyłania" }));
+    throw new Error(error.message || "Nie udało się przesłać logo");
+  }
+
+  return response.json();
+}
+
+export async function apiDeleteOrganisationAvatar(): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `${ORGANISATIONS_PREFIX}/me/avatar`,
+    { method: "DELETE" },
+  );
+}
+
+// Shift Presets API
+export async function apiListShiftPresets(): Promise<ShiftPresetRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPresetRecord[]>(`${SHIFT_PRESETS_PREFIX}`);
+}
+
+export async function apiCreateShiftPreset(
+  payload: CreateShiftPresetPayload,
+): Promise<ShiftPresetRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPresetRecord>(`${SHIFT_PRESETS_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateShiftPreset(
+  id: string,
+  payload: UpdateShiftPresetPayload,
+): Promise<ShiftPresetRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPresetRecord>(`${SHIFT_PRESETS_PREFIX}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteShiftPreset(
+  id: string,
+): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`${SHIFT_PRESETS_PREFIX}/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// Admin Panel Types and API
+export interface AdminStats {
+  totalOrganisations: number;
+  totalEmployees: number;
+  totalUsers: number;
+  totalShifts: number;
+}
+
+export interface AdminOrganisationItem {
+  id: string;
+  name: string;
+  category?: string | null;
+  employeeCount: number;
+  userCount: number;
+  createdAt: string;
+}
+
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role: UserRole;
+  organisationId: string;
+  organisationName: string;
+  createdAt: string;
+}
+
+const ADMIN_PREFIX = "/admin";
+
+export async function apiGetAdminStats(): Promise<AdminStats> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AdminStats>(`${ADMIN_PREFIX}/stats`);
+}
+
+export async function apiListAdminOrganisations(params?: {
+  page?: number;
+  perPage?: number;
+}): Promise<{ data: AdminOrganisationItem[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.perPage) search.set("perPage", String(params.perPage));
+  const query = search.toString();
+  return apiClient.request<{ data: AdminOrganisationItem[]; total: number }>(
+    `${ADMIN_PREFIX}/organisations${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function apiListAdminUsers(params?: {
+  page?: number;
+  perPage?: number;
+  role?: string;
+}): Promise<{ data: AdminUserItem[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.perPage) search.set("perPage", String(params.perPage));
+  if (params?.role) search.set("role", params.role);
+  const query = search.toString();
+  return apiClient.request<{ data: AdminUserItem[]; total: number }>(
+    `${ADMIN_PREFIX}/users${query ? `?${query}` : ""}`,
+  );
 }

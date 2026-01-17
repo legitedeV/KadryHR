@@ -10,6 +10,8 @@ import {
   apiGetOrganisationMembers,
   apiUpdateMemberRole,
   apiGetRoleDescriptions,
+  apiUploadOrganisationAvatar,
+  apiDeleteOrganisationAvatar,
   OrganisationMember,
   RoleDescription,
   User,
@@ -17,6 +19,7 @@ import {
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 import { Avatar } from "@/components/Avatar";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { Modal } from "@/components/Modal";
 
 const CATEGORIES = [
@@ -156,6 +159,26 @@ export default function OrganisationSettingsPage() {
       setSaving(false);
     }
   }, [name, description, category, logoUrl, deliveryDays, deliveryLabelColor, promotionCycleStartDate, promotionCycleFrequency]);
+
+  const handleLogoUpload = useCallback(async (file: File) => {
+    const result = await apiUploadOrganisationAvatar(file);
+    setLogoUrl(result.logoUrl);
+    pushToast({
+      title: "Sukces",
+      description: "Logo zostało przesłane",
+      variant: "success",
+    });
+  }, []);
+
+  const handleLogoDelete = useCallback(async () => {
+    await apiDeleteOrganisationAvatar();
+    setLogoUrl("");
+    pushToast({
+      title: "Sukces",
+      description: "Logo zostało usunięte",
+      variant: "success",
+    });
+  }, []);
 
   const toggleDeliveryDay = (day: Weekday) => {
     setDeliveryDays((prev) =>
@@ -329,35 +352,15 @@ export default function OrganisationSettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
-              URL logo
-              <input
-                type="url"
-                className="input mt-1"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-            </label>
-
-            {logoUrl && (
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
-                <p className="text-sm text-surface-600 dark:text-surface-300">Podgląd:</p>
-                <div className="h-16 w-16 rounded-xl bg-white dark:bg-surface-700 border border-surface-200 dark:border-surface-600 flex items-center justify-center overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={logoUrl}
-                    alt="Logo preview"
-                    className="max-h-full max-w-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <AvatarUpload
+            currentUrl={logoUrl}
+            onUpload={handleLogoUpload}
+            onDelete={handleLogoDelete}
+            label="Logo firmy"
+            name={name}
+            size="lg"
+            disabled={saving}
+          />
         </div>
 
         {/* Schedule Settings - Delivery Days */}
