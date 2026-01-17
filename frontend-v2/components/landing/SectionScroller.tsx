@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef } from "react";
+import { Children, ReactNode, useEffect, useRef } from "react";
 import { prefersReducedMotion } from "@/components/motion/prefersReducedMotion";
 
 type SectionScrollerProps = {
@@ -11,6 +11,7 @@ type SectionScrollerProps = {
 export function SectionScroller({ children, className }: SectionScrollerProps) {
   const currentIndexRef = useRef(0);
   const lockRef = useRef(false);
+  const sections = Children.toArray(children);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -95,7 +96,7 @@ export function SectionScroller({ children, className }: SectionScrollerProps) {
 
   return (
     <main className={className ?? ""}>
-      {children}
+      {sections}
     </main>
   );
 }
