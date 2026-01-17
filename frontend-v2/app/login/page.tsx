@@ -3,10 +3,23 @@
 import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 
 function parseError(err: unknown) {
+  if (err instanceof ApiError) {
+    if (err.kind === "timeout" || err.kind === "network") {
+      return "Brak połączenia";
+    }
+    if (err.status === 401 || err.status === 403) {
+      return "Nieprawidłowe dane";
+    }
+    if (err.status && err.status >= 500) {
+      return "Błąd serwera";
+    }
+    return err.message || "Błąd logowania";
+  }
   return err instanceof Error ? err.message : "Błąd logowania";
 }
 
@@ -62,7 +75,7 @@ function LoginForm() {
               E-mail
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70">
                 <svg className="h-5 w-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path
                     strokeLinecap="round"
@@ -74,7 +87,7 @@ function LoginForm() {
               <input
                 type="email"
                 required
-                className="input-field pl-11 pr-11 text-center"
+                className="input-field h-12 pl-10 pr-4 text-left"
                 placeholder="twoj@email.pl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -88,7 +101,7 @@ function LoginForm() {
               Hasło
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70">
                 <svg className="h-5 w-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path
                     strokeLinecap="round"
@@ -100,7 +113,7 @@ function LoginForm() {
               <input
                 type="password"
                 required
-                className="input-field pl-11"
+                className="input-field h-12 pl-10 pr-4 text-left"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -123,7 +136,7 @@ function LoginForm() {
           )}
 
           <button type="submit" disabled={disabled} className="btn-primary w-full justify-center py-3">
-            {disabled ? (
+            {loading ? (
               <>
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

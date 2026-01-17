@@ -3,12 +3,29 @@ import { pushToast } from "./toast";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const DEFAULT_TIMEOUT_MS = 15000;
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
   retry?: boolean;
   suppressToast?: boolean;
+  timeoutMs?: number;
 };
+
+export class ApiError extends Error {
+  status?: number;
+  kind?: "timeout" | "network";
+
+  constructor(
+    message: string,
+    options?: { status?: number; kind?: "timeout" | "network" },
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.status = options?.status;
+    this.kind = options?.kind;
+  }
+}
 
 class ApiClient {
   private tokens: AuthTokens | null = null;
@@ -44,7 +61,13 @@ class ApiClient {
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { auth = true, retry = true, suppressToast = false, ...init } = options;
+    const {
+      auth = true,
+      retry = true,
+      suppressToast = false,
+      timeoutMs,
+      ...init
+    } = options;
     const headers = new Headers(init.headers ?? {});
 
     if (auth) {
@@ -59,11 +82,28 @@ class ApiClient {
       headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...init,
-      headers,
-      credentials: init.credentials ?? "include",
-    });
+    let response: Response;
+    try {
+      response = await this.fetchWithTimeout(
+        `${this.baseUrl}${path}`,
+        {
+          ...init,
+          headers,
+          credentials: init.credentials ?? "include",
+        },
+        timeoutMs,
+      );
+    } catch (error) {
+      const apiError = this.normalizeNetworkError(error);
+      if (!suppressToast) {
+        pushToast({
+          title: "Błąd sieci",
+          description: apiError.message,
+          variant: "error",
+        });
+      }
+      throw apiError;
+    }
 
     if (response.status === 401 && auth && retry) {
       const refreshed = await this.refreshTokens({ suppressToast });
@@ -81,7 +121,9 @@ class ApiClient {
           variant: "error",
         });
       }
-      throw new Error(message ?? response.statusText);
+      throw new ApiError(message ?? response.statusText, {
+        status: response.status,
+      });
     }
 
     if (response.status === 204) {
@@ -93,10 +135,14 @@ class ApiClient {
 
   private async refreshTokens(options?: { suppressToast?: boolean }) {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-      });
+      const response = await this.fetchWithTimeout(
+        `${this.baseUrl}/auth/refresh`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+        DEFAULT_TIMEOUT_MS,
+      );
 
       if (!response.ok) {
         this.setTokens(null);
@@ -130,14 +176,39 @@ class ApiClient {
   }
 
   private async safeErrorMessage(res: Response): Promise<string | null> {
+    if (res.bodyUsed) return null;
+    const text = await res.text();
+    if (!text) return null;
     try {
-      const data = await res.json();
+      const data = JSON.parse(text);
       if (typeof data?.message === "string") return data.message;
       if (Array.isArray(data?.message)) return data.message.join(", ");
       return null;
     } catch {
       return null;
     }
+  }
+
+  private async fetchWithTimeout(
+    url: string,
+    init: RequestInit,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  ) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...init, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private normalizeNetworkError(error: unknown) {
+    if (error instanceof ApiError) return error;
+    if (error instanceof Error && error.name === "AbortError") {
+      return new ApiError("Brak połączenia z serwerem.", { kind: "timeout" });
+    }
+    return new ApiError("Brak połączenia z serwerem.", { kind: "network" });
   }
 }
 
