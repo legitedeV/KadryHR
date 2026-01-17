@@ -246,63 +246,6 @@ export interface NotificationPreference {
   push?: boolean; // Future: push notifications
 }
 
-export type NewsletterStatus =
-  | "PENDING_CONFIRMATION"
-  | "ACTIVE"
-  | "UNSUBSCRIBED";
-
-export interface NewsletterSubscriberSummary {
-  id: string;
-  email: string;
-  name?: string | null;
-  status: NewsletterStatus;
-  subscribedAt: string;
-  confirmedAt?: string | null;
-  unsubscribedAt?: string | null;
-}
-
-export type LeadStatus = "NEW" | "QUALIFIED" | "CONTACTED" | "WON" | "LOST";
-
-export interface LeadItem {
-  id: string;
-  email: string;
-  name: string;
-  company: string;
-  headcount?: number | null;
-  message?: string | null;
-  consentMarketing: boolean;
-  consentPrivacy: boolean;
-  utmSource?: string | null;
-  utmCampaign?: string | null;
-  status: LeadStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LeadListResponse {
-  page: number;
-  pageSize: number;
-  total: number;
-  items: LeadItem[];
-}
-
-export interface LeadAuditEntry {
-  id: string;
-  leadId: string;
-  organisationId?: string | null;
-  actorUserId?: string | null;
-  action: string;
-  before?: Record<string, unknown> | null;
-  after?: Record<string, unknown> | null;
-  createdAt: string;
-  actor?: {
-    id: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    email: string;
-  } | null;
-}
-
 export interface AudienceFilter {
   all?: boolean;
   roles?: UserRole[];
@@ -1678,60 +1621,6 @@ function mapLeaveRequest(request: LeaveRequestResponse): RequestItem {
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
   };
-}
-
-export async function fetchNewsletterSubscribers(filters?: {
-  status?: NewsletterStatus;
-  from?: string;
-  to?: string;
-  email?: string;
-}) {
-  const params = new URLSearchParams();
-  if (filters?.status) params.set("status", filters.status);
-  if (filters?.from) params.set("from", filters.from);
-  if (filters?.to) params.set("to", filters.to);
-  if (filters?.email) params.set("email", filters.email);
-
-  const query = params.toString();
-  const payload = await apiClient.request<{ data: NewsletterSubscriberSummary[] }>(
-    `/newsletter/subscribers${query ? `?${query}` : ""}`,
-  );
-
-  return payload.data;
-}
-
-export async function fetchLeads(filters?: {
-  status?: LeadStatus;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-}) {
-  const params = new URLSearchParams();
-  if (filters?.status) params.set("status", filters.status);
-  if (filters?.search) params.set("search", filters.search);
-  if (filters?.page) params.set("page", String(filters.page));
-  if (filters?.pageSize) params.set("pageSize", String(filters.pageSize));
-
-  const query = params.toString();
-  return apiClient.request<LeadListResponse>(`/leads${query ? `?${query}` : ""}`);
-}
-
-export async function updateLeadStatus(id: string, status: LeadStatus) {
-  return apiClient.request<LeadItem>(`/leads/${id}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  });
-}
-
-export async function fetchLeadAudit(
-  id: string,
-  params?: { skip?: number; take?: number },
-) {
-  const search = new URLSearchParams();
-  if (params?.skip !== undefined) search.set("skip", String(params.skip));
-  if (params?.take !== undefined) search.set("take", String(params.take));
-  const query = search.toString();
-  return apiClient.request<LeadAuditEntry[]>(`/leads/${id}/audit${query ? `?${query}` : ""}`);
 }
 
 function mapNotification(notification: NotificationResponse): NotificationItem {
