@@ -14,6 +14,7 @@ import {
   apiListEmployees,
   apiListLocations,
   apiListScheduleTemplates,
+  apiListShiftPresets,
   apiPublishSchedule,
   apiUpdateShift,
   apiGetApprovedLeavesForSchedule,
@@ -24,6 +25,7 @@ import {
   ScheduleMetadata,
   ScheduleTemplateRecord,
   ShiftPayload,
+  ShiftPresetRecord,
   ShiftRecord,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
@@ -254,6 +256,7 @@ export default function GrafikPage() {
   const [approvedLeaves, setApprovedLeaves] = useState<ApprovedLeaveForSchedule[]>([]);
   const [scheduleMetadata, setScheduleMetadata] = useState<ScheduleMetadata | null>(null);
   const [templates, setTemplates] = useState<ScheduleTemplateRecord[]>([]);
+  const [shiftPresets, setShiftPresets] = useState<ShiftPresetRecord[]>([]);
   const [draggedShift, setDraggedShift] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -313,8 +316,9 @@ export default function GrafikPage() {
       apiGetAvailability({ from: range.from, to: range.to }),
       apiGetScheduleMetadata({ from: range.from, to: range.to }),
       apiGetApprovedLeavesForSchedule({ from: range.from, to: range.to }),
+      apiListShiftPresets().catch(() => []), // Fallback to empty array if presets fail
     ])
-      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse, metadataResponse, approvedLeavesResponse]) => {
+      .then(([employeeResponse, locationResponse, shiftResponse, availabilityResponse, metadataResponse, approvedLeavesResponse, presetsResponse]) => {
         if (!isMounted) return;
         setEmployees(employeeResponse.data);
         setLocations(locationResponse);
@@ -322,6 +326,7 @@ export default function GrafikPage() {
         setAvailability(availabilityResponse);
         setScheduleMetadata(metadataResponse);
         setApprovedLeaves(approvedLeavesResponse);
+        setShiftPresets(presetsResponse);
         if (!employeeResponse.data.length) {
           setFormError("Dodaj pracowników, aby przypisać ich do zmian.");
         }
@@ -948,6 +953,7 @@ export default function GrafikPage() {
             form={form}
             employees={employees}
             locations={locations}
+            shiftPresets={shiftPresets}
             availabilityLabel={
               form.employeeId
                 ? availabilityIndicators[form.employeeId]?.[getDowKey(form.date)]?.label

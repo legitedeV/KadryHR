@@ -12,6 +12,7 @@ import { QueueModule } from '../queue/queue.module';
 import { InvitationsService } from './invitations.service';
 import { PermissionsService } from './permissions.service';
 import { AuditModule } from '../audit/audit.module';
+import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuditModule } from '../audit/audit.module';
     QueueModule,
     ConfigModule,
     AuditModule,
+    ShiftPresetsModule,
   ],
   controllers: [AuthController],
   providers: [

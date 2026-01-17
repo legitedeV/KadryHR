@@ -21,6 +21,7 @@ import {
   apiListLocations,
   apiCreateAvailabilityWindow,
   apiCloseAvailabilityWindow,
+  apiListShiftPresets,
   AvailabilityWindowRecord,
   AvailabilityRecord,
   AvailabilityInput,
@@ -33,6 +34,7 @@ import {
   TeamAvailabilityStatsResponse,
   EmployeeAvailabilityDetailResponse,
   LocationRecord,
+  ShiftPresetRecord,
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
 import { Modal } from "@/components/Modal";
@@ -48,7 +50,8 @@ const WEEKDAYS: { key: Weekday; label: string; shortLabel: string }[] = [
   { key: "SUNDAY", label: "Niedziela", shortLabel: "Nd" },
 ];
 
-const AVAILABILITY_TEMPLATES: Array<{ key: string; label: string; start: string; end: string }> = [
+// Hardcoded fallback templates in case API fails
+const FALLBACK_AVAILABILITY_TEMPLATES: Array<{ key: string; label: string; start: string; end: string }> = [
   { key: "morning", label: "Rano", start: "05:45", end: "15:00" },
   { key: "afternoon", label: "Popołudnie", start: "14:15", end: "23:15" },
   { key: "delivery", label: "Dostawa", start: "06:00", end: "12:00" },
@@ -364,18 +367,38 @@ function getSubmissionStatusLabel(status: AvailabilitySubmissionStatus) {
   }
 }
 
+// Helper to convert ShiftPresetRecord to template format
+function presetToTemplate(preset: ShiftPresetRecord): { key: string; label: string; start: string; end: string } {
+  return {
+    key: preset.code,
+    label: preset.name,
+    start: formatMinutes(preset.startMinutes),
+    end: formatMinutes(preset.endMinutes),
+  };
+}
+
 // Monthly Availability Tab Component
 function MonthlyAvailabilityTab({
   window,
   submission,
   saving,
   onSave,
+  shiftPresets,
 }: {
   window: AvailabilityWindowRecord;
   submission: AvailabilityWindowSubmissionResponse | null;
   saving: boolean;
   onSave: (availabilities: AvailabilityInput[], submit: boolean) => Promise<void>;
+  shiftPresets: ShiftPresetRecord[];
 }) {
+  // Use presets from backend or fallback to hardcoded templates
+  const availabilityTemplates = useMemo(() => {
+    if (shiftPresets.length > 0) {
+      return shiftPresets.map(presetToTemplate);
+    }
+    return FALLBACK_AVAILABILITY_TEMPLATES;
+  }, [shiftPresets]);
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const initialData = useMemo(() => {
     const map: Record<string, Array<{ start: string; end: string }>> = {};
@@ -448,7 +471,7 @@ function MonthlyAvailabilityTab({
 
   const addTemplateSlot = (templateKey: string) => {
     if (!selectedDate) return;
-    const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
+    const template = availabilityTemplates.find((item) => item.key === templateKey);
     if (!template) return;
     setDayOffs((prev) => {
       if (!prev[selectedDate]) return prev;
@@ -639,7 +662,7 @@ function MonthlyAvailabilityTab({
             {!isLocked && !isSelectedDayOff && (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
-                  {AVAILABILITY_TEMPLATES.map((template) => (
+                  {availabilityTemplates.map((template) => (
                     <button
                       key={template.key}
                       type="button"
@@ -699,7 +722,7 @@ function MonthlyAvailabilityTab({
         {!isLocked && slotsForSelected.length > 0 && !isSelectedDayOff && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              {AVAILABILITY_TEMPLATES.map((template) => (
+              {availabilityTemplates.map((template) => (
                 <button
                   key={template.key}
                   type="button"
@@ -1138,14 +1161,14 @@ function EmployeeDetailPanel({
   onSave: (availabilities: AvailabilityInput[]) => Promise<void>;
 }) {
   // Compute initial form data from availability
-  const initialFormData = useMemo(() => {
+  const initialFormData = useMemo((): DayAvailability[] => {
     if (availability.length > 0) {
       return WEEKDAYS.map((w) => {
         const dayAvail = availability.filter((a) => a.weekday === w.key);
         const isDayOff = dayAvail.some((a) => a.status === "DAY_OFF");
         return {
           weekday: w.key,
-          status: isDayOff ? "DAY_OFF" : "AVAILABLE",
+          status: isDayOff ? ("DAY_OFF" as const) : ("AVAILABLE" as const),
           slots: dayAvail
             .filter((a) => a.status !== "DAY_OFF")
             .map((a) => ({
@@ -1155,7 +1178,7 @@ function EmployeeDetailPanel({
         };
       });
     }
-    return WEEKDAYS.map((w) => ({ weekday: w.key, slots: [], status: "AVAILABLE" }));
+    return WEEKDAYS.map((w) => ({ weekday: w.key, slots: [], status: "AVAILABLE" as const }));
   }, [availability]);
 
   const [formData, setFormData] = useState<DayAvailability[]>(initialFormData);
@@ -1364,6 +1387,7 @@ function WindowEmployeeDetailPanel({
   saving,
   onClose,
   onSave,
+  shiftPresets,
 }: {
   open: boolean;
   employee: EmployeeAvailabilityDetailResponse["employee"] | null;
@@ -1374,7 +1398,16 @@ function WindowEmployeeDetailPanel({
   saving: boolean;
   onClose: () => void;
   onSave: (availabilities: AvailabilityInput[]) => Promise<void>;
+  shiftPresets: ShiftPresetRecord[];
 }) {
+  // Use presets from backend or fallback to hardcoded templates
+  const availabilityTemplates = useMemo(() => {
+    if (shiftPresets.length > 0) {
+      return shiftPresets.map(presetToTemplate);
+    }
+    return FALLBACK_AVAILABILITY_TEMPLATES;
+  }, [shiftPresets]);
+
   const initialData = useMemo(() => {
     const map: Record<string, Array<{ start: string; end: string }>> = {};
     const dayOffs: Record<string, boolean> = {};
@@ -1446,7 +1479,7 @@ function WindowEmployeeDetailPanel({
 
   const addTemplateSlot = (templateKey: string) => {
     if (!selectedDate) return;
-    const template = AVAILABILITY_TEMPLATES.find((item) => item.key === templateKey);
+    const template = availabilityTemplates.find((item) => item.key === templateKey);
     if (!template) return;
     setDayOffs((prev) => {
       if (!prev[selectedDate]) return prev;
@@ -1642,7 +1675,7 @@ function WindowEmployeeDetailPanel({
             {!isSelectedDayOff && (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  {AVAILABILITY_TEMPLATES.map((template) => (
+                  {availabilityTemplates.map((template) => (
                     <button
                       key={template.key}
                       type="button"
@@ -1767,6 +1800,7 @@ export default function DyspozycjePage() {
   const [activeWindows, setActiveWindows] = useState<AvailabilityWindowRecord[]>([]);
   const [allWindows, setAllWindows] = useState<AvailabilityWindowRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
+  const [shiftPresets, setShiftPresets] = useState<ShiftPresetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1814,13 +1848,15 @@ export default function DyspozycjePage() {
       apiGetMe(),
       apiGetActiveAvailabilityWindows(),
       apiListLocations(),
+      apiListShiftPresets().catch(() => []), // Fallback to empty array if presets fail
     ])
-      .then(async ([userData, windowsData, locationsData]) => {
+      .then(async ([userData, windowsData, locationsData, presetsData]) => {
         if (cancelled) return;
 
         setUser(userData);
         setActiveWindows(windowsData);
         setLocations(locationsData);
+        setShiftPresets(presetsData);
 
         if (windowsData[0]) {
           try {
@@ -2262,6 +2298,7 @@ export default function DyspozycjePage() {
             submission={windowSubmission}
             saving={saving}
             onSave={handleSaveWindowAvailability}
+            shiftPresets={shiftPresets}
           />
         ) : (
           <div className="card p-5">
@@ -2315,6 +2352,7 @@ export default function DyspozycjePage() {
         saving={employeeSaving}
         onClose={() => setSelectedWindowEmployee(null)}
         onSave={handleSaveEmployeeAvailability}
+        shiftPresets={shiftPresets}
       />
 
       <Modal

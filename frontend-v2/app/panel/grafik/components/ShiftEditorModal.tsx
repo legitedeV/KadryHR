@@ -1,7 +1,15 @@
+import { useMemo } from "react";
 import { Modal } from "@/components/Modal";
-import type { ApprovedLeaveForSchedule, AvailabilityRecord, EmployeeRecord, LocationRecord } from "@/lib/api";
+import type { ApprovedLeaveForSchedule, AvailabilityRecord, EmployeeRecord, LocationRecord, ShiftPresetRecord } from "@/lib/api";
 import type { ShiftFormState } from "../types";
 import { SHIFT_COLORS, SHIFT_TEMPLATES } from "../constants";
+
+// Helper to convert minutes to HH:MM format
+function formatMinutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
 
 interface ShiftEditorModalProps {
   open: boolean;
@@ -9,6 +17,7 @@ interface ShiftEditorModalProps {
   form: ShiftFormState;
   employees: EmployeeRecord[];
   locations: LocationRecord[];
+  shiftPresets?: ShiftPresetRecord[];
   availabilityLabel?: string;
   availabilityWindows?: AvailabilityRecord[];
   approvedLeaves?: ApprovedLeaveForSchedule[];
@@ -26,6 +35,7 @@ export function ShiftEditorModal({
   form,
   employees,
   locations,
+  shiftPresets = [],
   availabilityLabel,
   availabilityWindows = [],
   approvedLeaves = [],
@@ -36,6 +46,19 @@ export function ShiftEditorModal({
   onSave,
   onFormChange,
 }: ShiftEditorModalProps) {
+  // Build templates from shift presets or fallback to hardcoded ones
+  const templates = useMemo(() => {
+    if (shiftPresets.length > 0) {
+      return shiftPresets.map((preset) => ({
+        name: preset.name,
+        startTime: formatMinutesToTime(preset.startMinutes),
+        endTime: formatMinutesToTime(preset.endMinutes),
+        color: preset.color ?? "#3b82f6",
+      }));
+    }
+    return SHIFT_TEMPLATES;
+  }, [shiftPresets]);
+
   const formatWindowMinutes = (minutes: number) => {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
@@ -70,9 +93,9 @@ export function ShiftEditorModal({
       }
     >
       <div className="mb-4">
-        <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-2">Szybkie szablony:</p>
+        <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-2">Typ zmiany:</p>
         <div className="flex flex-wrap gap-2">
-          {SHIFT_TEMPLATES.map((template) => (
+          {templates.map((template) => (
             <button
               key={template.name}
               type="button"
@@ -95,6 +118,20 @@ export function ShiftEditorModal({
               {template.name}
             </button>
           ))}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-1 text-xs font-semibold text-surface-600 dark:text-surface-300 transition hover:border-brand-400 dark:hover:border-brand-700"
+            onClick={() =>
+              onFormChange({
+                ...form,
+                startTime: "09:00",
+                endTime: "17:00",
+                color: "",
+              })
+            }
+          >
+            Niestandardowa
+          </button>
         </div>
       </div>
 

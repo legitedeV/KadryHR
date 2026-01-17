@@ -178,6 +178,42 @@ export interface ScheduleTemplateDetail extends ScheduleTemplateRecord {
   shifts: ScheduleTemplateShift[];
 }
 
+export interface ShiftPresetRecord {
+  id: string;
+  organisationId: string;
+  name: string;
+  code: string;
+  startMinutes: number;
+  endMinutes: number;
+  color?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateShiftPresetPayload {
+  name: string;
+  code: string;
+  startMinutes: number;
+  endMinutes: number;
+  color?: string;
+  isDefault?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateShiftPresetPayload {
+  name?: string;
+  code?: string;
+  startMinutes?: number;
+  endMinutes?: number;
+  color?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
 export type NotificationType =
   | "TEST"
   | "LEAVE_STATUS"
@@ -437,6 +473,7 @@ const AVAILABILITY_PREFIX = "/availability";
 const LEAVE_PREFIX = "/leave-requests";
 const NOTIFICATIONS_PREFIX = "/notifications";
 const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
+const SHIFT_PRESETS_PREFIX = "/shift-presets";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -2049,4 +2086,40 @@ export async function apiDeleteOrganisationAvatar(): Promise<{ success: boolean 
     `${ORGANISATIONS_PREFIX}/me/avatar`,
     { method: "DELETE" },
   );
+}
+
+// Shift Presets API
+export async function apiListShiftPresets(): Promise<ShiftPresetRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPresetRecord[]>(`${SHIFT_PRESETS_PREFIX}`);
+}
+
+export async function apiCreateShiftPreset(
+  payload: CreateShiftPresetPayload,
+): Promise<ShiftPresetRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPresetRecord>(`${SHIFT_PRESETS_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateShiftPreset(
+  id: string,
+  payload: UpdateShiftPresetPayload,
+): Promise<ShiftPresetRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPresetRecord>(`${SHIFT_PRESETS_PREFIX}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteShiftPreset(
+  id: string,
+): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`${SHIFT_PRESETS_PREFIX}/${id}`, {
+    method: "DELETE",
+  });
 }

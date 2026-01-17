@@ -23,6 +23,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates.module';
 import { LeadsModule } from './leads/leads.module';
 import { AvatarsModule } from './avatars/avatars.module';
+import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { AvatarsModule } from './avatars/avatars.module';
     ScheduleTemplatesModule,
     LeadsModule,
     AvatarsModule,
+    ShiftPresetsModule,
   ],
 })
 export class AppModule {}
