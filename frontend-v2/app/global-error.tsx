@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import "./globals.css";
 import { DEFAULT_LANG } from "@/lib/site-config";
 
@@ -10,6 +11,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const handleReset = useCallback(() => {
+    reset();
+  }, [reset]);
+
   return (
     <html lang={DEFAULT_LANG} className="dark">
       <body className="antialiased bg-surface-950 text-surface-50">
@@ -24,7 +29,7 @@ export default function GlobalError({
               skontaktuj się z zespołem wsparcia.
             </p>
             <div className="flex items-center justify-center gap-3">
-              <button className="btn-primary px-5 py-2" onClick={() => reset()}>
+              <button className="btn-primary px-5 py-2" onClick={handleReset}>
                 Spróbuj ponownie
               </button>
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- global-error renders outside router context, Link cannot be used */}
