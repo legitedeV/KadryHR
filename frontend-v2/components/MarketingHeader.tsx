@@ -54,10 +54,16 @@ export function MarketingHeader() {
             Umów demo
           </Link>
           <Link 
+            href="/login" 
+            className="btn-secondary px-4 py-2 text-sm"
+          >
+            Zaloguj
+          </Link>
+          <Link 
             href="/register" 
             className="btn-primary px-4 py-2 text-sm"
           >
-            Zacznij
+            Rejestracja
           </Link>
         </nav>
         
@@ -102,11 +108,18 @@ export function MarketingHeader() {
                 Umów demo
               </Link>
               <Link
+                href="/login"
+                className="block btn-secondary text-center py-3"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Zaloguj
+              </Link>
+              <Link
                 href="/register"
                 className="block btn-primary text-center py-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Zacznij
+                Rejestracja
               </Link>
             </div>
           </nav>

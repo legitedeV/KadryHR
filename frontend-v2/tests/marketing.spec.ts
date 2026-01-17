@@ -2,10 +2,12 @@ import { test, expect } from '@playwright/test';
 
 test('landing navigation and lead form', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /grafiki zmianowe/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /grafiki, czas pracy i urlopy/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zaloguj' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Rejestracja' })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Cennik' }).click();
-  await expect(page).toHaveURL(/\/cennik/);
+  await page.getByRole('navigation').getByRole('link', { name: 'Cennik' }).click();
+  await expect(page).toHaveURL(/#cennik/);
 
   await page.goto('/kontakt');
   await page.route('**/api/public/leads', async (route) => {
@@ -27,9 +29,12 @@ test('landing navigation and lead form', async ({ page }) => {
   await expect(page.getByText(/Dziękujemy/i)).toBeVisible();
 });
 
-test('theme toggle switches modes', async ({ page }) => {
+test('header auth links navigate', async ({ page }) => {
   await page.goto('/');
-  const toggle = page.getByRole('button', { name: 'Przełącz motyw' });
-  await toggle.click();
-  await expect(page.locator('html')).toHaveClass(/dark|light/);
+  await page.getByRole('link', { name: 'Zaloguj' }).click();
+  await expect(page).toHaveURL(/\/login/);
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Rejestracja' }).click();
+  await expect(page).toHaveURL(/\/register/);
 });
