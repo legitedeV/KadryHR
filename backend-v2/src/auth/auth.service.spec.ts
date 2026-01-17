@@ -41,7 +41,9 @@ describe('AuthService', () => {
 
     queueService = { addEmailDeliveryJob: jest.fn() };
 
-    shiftPresetsService = { createDefaultPresets: jest.fn().mockResolvedValue(undefined) };
+    shiftPresetsService = {
+      createDefaultPresets: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
