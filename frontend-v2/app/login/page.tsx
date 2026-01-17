@@ -87,7 +87,7 @@ function LoginForm() {
               <input
                 type="email"
                 required
-                className="input-field h-12 pl-10 pr-4 text-left"
+                className="input-field h-12 pl-11 pr-4 text-left"
                 placeholder="twoj@email.pl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -113,7 +113,7 @@ function LoginForm() {
               <input
                 type="password"
                 required
-                className="input-field h-12 pl-10 pr-4 text-left"
+                className="input-field h-12 pl-11 pr-4 text-left"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
