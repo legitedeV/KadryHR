@@ -69,6 +69,17 @@ export class AuthService {
     return `${safeUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
   }
 
+  private getPasswordResetTtlMs() {
+    const configured =
+      this.configService.get<string>('app.passwordResetTtlMs') ??
+      this.configService.get<string>('APP_PASSWORD_RESET_TTL_MS');
+    const parsed = configured ? Number(configured) : NaN;
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+    return PASSWORD_RESET_TTL_MS;
+  }
+
   private buildUserPayload(user: {
     id: string;
     email: string;
@@ -384,7 +395,7 @@ export class AuthService {
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = this.hashToken(token);
-    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+    const expiresAt = new Date(Date.now() + this.getPasswordResetTtlMs());
 
     await this.prisma.$transaction([
       this.prisma.passwordResetToken.updateMany({

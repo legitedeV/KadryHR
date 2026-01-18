@@ -103,7 +103,9 @@ export default function RaportyPage() {
         title: "Raport został pobrany",
       });
     } catch (error) {
-      console.error(error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error(error);
+      }
       pushToast({
         variant: "error",
         title: "Nie udało się pobrać raportu",

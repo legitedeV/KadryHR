@@ -6,6 +6,7 @@ export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private readonly MS_PER_HOUR = 1000 * 60 * 60;
+  private readonly NO_LOCATION_LABEL = 'Bez lokalizacji';
 
   /**
    * Get schedule summary for date range
@@ -98,7 +99,7 @@ export class ReportsService {
 
     for (const shift of shifts) {
       if (!shift.employeeId) continue;
-      const locationName = shift.location?.name ?? 'Bez lokalizacji';
+      const locationName = shift.location?.name ?? this.NO_LOCATION_LABEL;
       const key = `${shift.employeeId}:${shift.locationId ?? 'none'}`;
       const current = totals.get(key) ?? {
         employeeId: shift.employeeId,
