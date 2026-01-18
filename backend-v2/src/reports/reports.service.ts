@@ -5,10 +5,18 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly MS_PER_HOUR = 1000 * 60 * 60;
+  private readonly NO_LOCATION_LABEL = 'Bez lokalizacji';
+
   /**
    * Get schedule summary for date range
    */
-  async getScheduleSummary(organisationId: string, from: Date, to: Date) {
+  async getScheduleSummary(
+    organisationId: string,
+    from: Date,
+    to: Date,
+    locationId?: string,
+  ) {
     const shifts = await this.prisma.shift.findMany({
       where: {
         organisationId,
@@ -16,6 +24,7 @@ export class ReportsService {
           gte: from,
           lte: to,
         },
+        ...(locationId ? { locationId } : {}),
       },
       include: {
         employee: {
@@ -35,6 +44,84 @@ export class ReportsService {
     });
 
     return shifts;
+  }
+
+  getShiftDurationHours(startsAt: Date, endsAt: Date) {
+    const diff =
+      (endsAt.getTime() - startsAt.getTime()) / this.MS_PER_HOUR;
+    return Math.round((Math.max(diff, 0) + Number.EPSILON) * 100) / 100;
+  }
+
+  async getHoursSummary(
+    organisationId: string,
+    from: Date,
+    to: Date,
+    locationId?: string,
+  ) {
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        organisationId,
+        startsAt: {
+          gte: from,
+          lte: to,
+        },
+        ...(locationId ? { locationId } : {}),
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const totals = new Map<
+      string,
+      {
+        employeeId: string;
+        employeeName: string;
+        locationId: string | null;
+        locationName: string;
+        hours: number;
+        shiftCount: number;
+      }
+    >();
+
+    for (const shift of shifts) {
+      if (!shift.employeeId) continue;
+      const locationName = shift.location?.name ?? this.NO_LOCATION_LABEL;
+      const key = `${shift.employeeId}:${shift.locationId ?? 'none'}`;
+      const current = totals.get(key) ?? {
+        employeeId: shift.employeeId,
+        employeeName:
+          `${shift.employee?.firstName ?? ''} ${shift.employee?.lastName ?? ''}`.trim() ||
+          shift.employee?.email ||
+          'Pracownik',
+        locationId: shift.locationId ?? null,
+        locationName,
+        hours: 0,
+        shiftCount: 0,
+      };
+
+      current.hours += this.getShiftDurationHours(shift.startsAt, shift.endsAt);
+      current.shiftCount += 1;
+      totals.set(key, current);
+    }
+
+    return Array.from(totals.values()).map((row) => ({
+      ...row,
+      hours: Math.round((row.hours + Number.EPSILON) * 100) / 100,
+    }));
   }
 
   /**

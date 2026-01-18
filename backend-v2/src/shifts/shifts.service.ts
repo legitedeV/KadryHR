@@ -380,7 +380,7 @@ export class ShiftsService {
 
     if (conflict) {
       throw new BadRequestException(
-        'Employee already has a shift in this time range',
+        'Pracownik ma już zmianę w tym czasie.',
       );
     }
 

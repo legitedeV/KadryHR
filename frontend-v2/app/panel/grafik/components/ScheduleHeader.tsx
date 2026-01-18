@@ -7,6 +7,8 @@ interface ScheduleHeaderProps {
   locations: LocationRecord[];
   selectedLocationId: string;
   canManage: boolean;
+  title?: string;
+  scopeLabel?: string;
   onPrevWeek: () => void;
   onNextWeek: () => void;
   onCurrentWeek: () => void;
@@ -26,6 +28,8 @@ export function ScheduleHeader({
   locations,
   selectedLocationId,
   canManage,
+  title,
+  scopeLabel,
   onPrevWeek,
   onNextWeek,
   onCurrentWeek,
@@ -41,7 +45,9 @@ export function ScheduleHeader({
   return (
     <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Grafik pracy</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+          {title ?? "Grafik pracy"}
+        </p>
         <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">
           {range.label}
         </p>
@@ -49,6 +55,7 @@ export function ScheduleHeader({
           <span className="panel-pill">
             Łącznie zmian: <strong className="text-surface-900 dark:text-surface-100">{shiftsCount}</strong>
           </span>
+          {scopeLabel && <span className="panel-pill">{scopeLabel}</span>}
         </div>
       </div>
       <div className="flex flex-col gap-3 xl:items-end">

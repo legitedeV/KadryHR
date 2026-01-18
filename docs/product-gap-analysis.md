@@ -36,7 +36,7 @@ A **B2B SaaS platform** targeting Polish retail businesses, convenience stores (
 | Employee self-portal | ⚠️ Partial | ✅ Dedicated employee app |
 | Time tracking (RCP) | ❌ Missing | ✅ Core feature |
 | Mobile app | ❌ Missing | ✅ iOS/Android apps |
-| Payroll export | ❌ Missing | ✅ Standard feature |
+| Payroll export | ⚠️ CSV export available | ✅ Standard feature |
 | Integrations | ❌ Missing | ✅ ERP, accounting systems |
 | Multi-language | ❌ Polish only | ✅ Multi-language |
 
@@ -53,9 +53,9 @@ A **B2B SaaS platform** targeting Polish retail businesses, convenience stores (
 **Weaknesses:**
 - No time tracking / clock-in functionality (critical for shift businesses)
 - No mobile-optimized employee experience
-- No payroll export or hours reporting
+- Only basic CSV hours export (no payroll summary)
 - Billing not functional (payment integration missing)
-- Employee view shows manager's full schedule (privacy concern)
+- Employee self-service still limited beyond schedule view
 - No contract/document management UI despite backend support
 
 **Where we stand:**
@@ -126,11 +126,11 @@ Secure access for existing users, easy onboarding for new organisations.
 - Login with email/password
 - Register new organisation with owner account
 - Redirect handling for protected routes
+- Request password reset and set a new password
 
 **Status classification:** Partially usable
 
 **Gaps / Missing pieces**
-- No "Forgot password" flow (link exists, no page)
 - No email verification on registration
 - No 2FA setup in UI (backend supports TOTP)
 - No OAuth/social login
@@ -214,13 +214,13 @@ Weekly schedule builder for managers. Assign employees to shifts, manage coverag
 - ✅ See availability indicators
 - ✅ See approved leave overlays
 - ✅ Override availability with reason
+- ✅ Employee self-view (own shifts only)
+- ✅ Conflict detection for overlapping shifts
 
 **Status classification:** Production-ready (for manager view)
 
 **Gaps / Missing pieces**
 - No monthly view option
-- No employee self-view (employees see manager's full grid)
-- No conflict detection (overlapping shifts for same employee)
 - No auto-scheduling / suggestions
 - No export to PDF/Excel
 - No print-friendly view
@@ -463,7 +463,7 @@ Manage subscription, view invoices, upgrade plans.
 **Status classification:** Read-only prototype
 
 **Gaps / Missing pieces**
-- **No payment integration** (Stripe, etc.)
+- **No payment integration** (Stripe, etc.) — deferred
 - No actual plan upgrade flow
 - No invoice history
 - No billing contact management
@@ -491,7 +491,7 @@ Clock in/out functionality to track actual hours worked vs. planned schedule.
 - Backend models reference shifts and could support time entries
 - No `TimeEntry` or `ClockEvent` model in schema
 
-**Status classification:** Not implemented
+**Status classification:** Deferred
 
 **Gaps / Missing pieces**
 - No clock-in/out endpoints
@@ -518,21 +518,18 @@ Export hours worked, generate payroll reports, analyze scheduling efficiency.
 
 **Current implementation**
 - Backend: `backend-v2/src/reports/` exists
-- No UI for reports
-- No export functionality exposed
+- UI at `/panel/raporty` with CSV downloads
+- Schedule report includes hours per shift
+- Hours summary export by employee with optional location filter
 
-**Status classification:** Not implemented (backend partial)
+**Status classification:** Basic export available
 
 **Gaps / Missing pieces**
-- No hours report
-- No CSV/Excel export
-- No payroll summary
+- No payroll summary report
 - No labor cost analysis
 - No schedule efficiency metrics
 
 **Recommendations**
-- [P0] Add hours export endpoint
-- [P0] Add CSV export for shifts/hours
 - [P1] Add payroll summary report
 - [P2] Add dashboard analytics
 
@@ -569,10 +566,10 @@ Export hours worked, generate payroll reports, analyze scheduling efficiency.
 - Self-service registration at `/register`
 - Creates organisation + owner in one step
 - Login works with email/password
+- Password reset flow with email link
 
 **What's missing:**
 - No email verification
-- No password reset
 - No 2FA setup
 
 **Friction points:**
@@ -701,7 +698,7 @@ Export hours worked, generate payroll reports, analyze scheduling efficiency.
 
 **What exists:**
 - Employees can login with same UI
-- See full schedule grid (privacy concern)
+- See own shifts only in schedule view
 - Submit availability and requests
 
 **What's missing:**
@@ -711,7 +708,7 @@ Export hours worked, generate payroll reports, analyze scheduling efficiency.
 - "My shifts" focused view
 
 **Friction points:**
-- Employees see manager's full view
+- Employee schedule view still lacks a dedicated mobile layout
 - Poor mobile experience
 
 ---
@@ -727,27 +724,32 @@ Export hours worked, generate payroll reports, analyze scheduling efficiency.
   - Backend email with reset link
   - Reset confirmation page
   - *Files:* Create `frontend-v2/app/forgot-password/page.tsx`, `frontend-v2/app/reset-password/page.tsx`
+  - **Status:** ✅ Implemented
 
 - [P0] **Employee Self-View for Schedule**
   - Employees should see only their shifts
   - Separate component or view mode in `/panel/grafik`
   - *Files:* Modify `frontend-v2/app/panel/grafik/page.tsx`
+  - **Status:** ✅ Implemented
 
 - [P0] **Shift Conflict Detection**
   - Prevent overlapping shifts for same employee
   - Show warning in shift editor
   - *Files:* `backend-v2/src/shifts/shifts.service.ts`, frontend shift modal
+  - **Status:** ✅ Implemented
 
 - [P0] **Basic Hours Export**
   - CSV download of shifts with hours
   - Filter by date range, location
   - *Files:* `backend-v2/src/reports/`, new UI component
+  - **Status:** ✅ Implemented
 
 - [P0] **Stripe Payment Integration**
   - Connect Stripe account
   - Plan selection and checkout
   - Subscription management
   - *Files:* `backend-v2/src/subscriptions/`, `frontend-v2/app/panel/rozliczenia/`
+  - **Status:** ⏳ Deferred (requires Stripe setup)
 
 ### Phase 2 – Employee Experience
 
@@ -773,6 +775,8 @@ Export hours worked, generate payroll reports, analyze scheduling efficiency.
   - *Files:* `frontend-v2/app/panel/profil/` (new section)
 
 ### Phase 3 – Time Tracking (RCP)
+
+- **Status:** ⏳ Deferred (requires new data model + UI design)
 
 - [P0] **Time Entry Data Model**
   - Add `TimeEntry` model to Prisma schema

@@ -120,6 +120,14 @@ function LoginForm() {
                 autoComplete="current-password"
               />
             </div>
+            <div className="text-right">
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-brand-400 hover:text-brand-300"
+              >
+                Nie pamiętasz hasła?
+              </Link>
+            </div>
           </div>
 
           {error && (

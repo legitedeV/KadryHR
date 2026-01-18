@@ -456,6 +456,26 @@ export async function apiRegisterOwner(payload: {
   return user;
 }
 
+export async function apiRequestPasswordReset(email: string) {
+  return apiClient.request<{ success: boolean }>(`${AUTH_PREFIX}/password-reset/request`, {
+    method: "POST",
+    auth: false,
+    suppressToast: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function apiResetPassword(payload: { token: string; password: string }) {
+  return apiClient.request<{ success: boolean }>(`${AUTH_PREFIX}/password-reset/confirm`, {
+    method: "POST",
+    auth: false,
+    suppressToast: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiGetMe(): Promise<User> {
   apiClient.hydrateFromStorage();
   const data = await apiClient.request<UserResponse>(`${AUTH_PREFIX}/me`, {

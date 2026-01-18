@@ -29,6 +29,8 @@ import {
   ShiftRecord,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api-client";
 import { usePermissions } from "@/lib/use-permissions";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ClearWeekModal } from "./components/ClearWeekModal";
@@ -126,6 +128,13 @@ function buildPayloadFromForm(form: ShiftFormState): ShiftPayload {
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
   };
+}
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError) {
+    return error.message || fallback;
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function buildShiftDescription(
@@ -247,7 +256,9 @@ function getWeekdayIndex(weekday: string) {
 
 export default function GrafikPage() {
   const { hasPermission } = usePermissions();
+  const { user } = useAuth();
   const canManage = hasPermission("SCHEDULE_MANAGE") || hasPermission("RCP_EDIT");
+  const isEmployeeView = user?.role === "EMPLOYEE" && !canManage;
   const [range, setRange] = useState<WeekRange>(() => getWeekRange());
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
@@ -512,6 +523,26 @@ export default function GrafikPage() {
     setEditorOpen(true);
   };
 
+  const findShiftConflict = (payload: ShiftPayload, ignoreShiftId?: string) => {
+    const start = new Date(payload.startsAt).getTime();
+    const end = new Date(payload.endsAt).getTime();
+    return shifts.find((shift) => {
+      if (shift.id === ignoreShiftId) return false;
+      if (shift.employeeId !== payload.employeeId) return false;
+      const shiftStart = new Date(shift.startsAt).getTime();
+      const shiftEnd = new Date(shift.endsAt).getTime();
+      return shiftStart < end && shiftEnd > start;
+    });
+  };
+
+  const findBulkConflict = (payloads: ShiftPayload[]) => {
+    for (const payload of payloads) {
+      const conflict = findShiftConflict(payload);
+      if (conflict) return conflict;
+    }
+    return null;
+  };
+
   const handleDragStart = (shiftId: string, event: DragEvent<HTMLDivElement>) => {
     if (!canManage) return;
     setDraggedShift(shiftId);
@@ -645,6 +676,13 @@ export default function GrafikPage() {
       endsAt: newEnd.toISOString(),
     };
 
+    const conflict = findShiftConflict(payload, shiftId);
+    if (conflict) {
+      setFormError(`Konflikt zmiany: ${buildShiftDescription(conflict, employees, locations)}`);
+      setDraggedShift(null);
+      return;
+    }
+
     const severity = checkAvailabilityForPayload(payload);
     if (severity !== "available") {
       queueAvailabilityOverride(severity, { type: "update", payload, shiftId });
@@ -658,7 +696,7 @@ export default function GrafikPage() {
       setFormSuccess("Zmiana została przeniesiona.");
     } catch (err) {
       console.error(err);
-      setFormError("Nie udało się przenieść zmiany.");
+      setFormError(getApiErrorMessage(err, "Nie udało się przenieść zmiany."));
     } finally {
       setDraggedShift(null);
     }
@@ -681,6 +719,12 @@ export default function GrafikPage() {
     setSaving(true);
     setFormError(null);
     const payload = buildPayloadFromForm(form);
+    const conflict = findShiftConflict(payload, editingShift?.id);
+    if (conflict) {
+      setFormError(`Konflikt zmiany: ${buildShiftDescription(conflict, employees, locations)}`);
+      setSaving(false);
+      return;
+    }
     const severity = checkAvailabilityForPayload(payload);
     if (severity !== "available") {
       queueAvailabilityOverride(severity, editingShift ? { type: "update", payload, shiftId: editingShift.id } : { type: "create", payload });
@@ -698,7 +742,7 @@ export default function GrafikPage() {
       resetForm();
     } catch (err) {
       console.error(err);
-      setFormError("Nie udało się zapisać zmiany. Spróbuj ponownie.");
+      setFormError(getApiErrorMessage(err, "Nie udało się zapisać zmiany. Spróbuj ponownie."));
     } finally {
       setSaving(false);
     }
@@ -831,6 +875,12 @@ export default function GrafikPage() {
         };
       });
 
+      const conflict = findBulkConflict(payloads);
+      if (conflict) {
+        setFormError(`Konflikt zmiany: ${buildShiftDescription(conflict, employees, locations)}`);
+        return;
+      }
+
       const severities = payloads.map((payload) => checkAvailabilityForPayload(payload));
       if (severities.includes("outside") || severities.includes("partial")) {
         const severity = severities.includes("outside") ? "outside" : "partial";
@@ -859,6 +909,11 @@ export default function GrafikPage() {
         setFormError("Brak zmian do skopiowania z poprzedniego tygodnia.");
         return;
       }
+      const conflict = findBulkConflict(payloads);
+      if (conflict) {
+        setFormError(`Konflikt zmiany: ${buildShiftDescription(conflict, employees, locations)}`);
+        return;
+      }
       const severities = payloads.map((payload) => checkAvailabilityForPayload(payload));
       if (severities.includes("outside") || severities.includes("partial")) {
         const severity = severities.includes("outside") ? "outside" : "partial";
@@ -885,6 +940,8 @@ export default function GrafikPage() {
             locations={locations}
             selectedLocationId={selectedLocationId}
             canManage={canManage}
+            title={isEmployeeView ? "Mój grafik" : undefined}
+            scopeLabel={isEmployeeView ? "Widok pracownika" : undefined}
             onPrevWeek={() => handleWeekChange("prev")}
             onNextWeek={() => handleWeekChange("next")}
             onCurrentWeek={() => setRange(getWeekRange())}

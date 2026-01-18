@@ -150,6 +150,7 @@ model Organisation {
   newsletterSubscribers NewsletterSubscriber[]
   newsletterAuditLogs NewsletterAuditLog[]
   employeeInvitations EmployeeInvitation[]
+  passwordResetTokens PasswordResetToken[]
   rolePermissions RolePermission[]
   employmentContracts EmploymentContract[]
   compensations Compensation[]
@@ -188,6 +189,7 @@ model User {
   scheduleTemplatesCreated ScheduleTemplate[] @relation("ScheduleTemplateCreatedBy")
   availabilitySubmissions AvailabilitySubmission[] @relation("AvailabilitySubmissionSubmittedBy")
   availabilityReviews AvailabilitySubmission[] @relation("AvailabilitySubmissionReviewedBy")
+  passwordResetTokens PasswordResetToken[]
 
   @@index([organisationId])
 }
@@ -739,6 +741,24 @@ model EmployeeInvitation {
   @@index([employeeId])
   @@index([tokenHash])
   @@index([status])
+}
+
+model PasswordResetToken {
+  id             String   @id @default(uuid())
+  organisationId String
+  userId         String
+  tokenHash      String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
 }
 
 // Task 1: Availability Windows for submission periods
