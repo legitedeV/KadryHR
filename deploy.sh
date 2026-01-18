@@ -93,12 +93,15 @@ if [ "$FRONTEND_CHANGED" = "true" ]; then
     echo "==> Frontend lockfile unchanged – skipping npm ci"
   fi
 
+  echo "==> Clearing Next.js cache to prevent stale Server Actions"
+  rm -rf .next
+
   echo "==> Building frontend"
   npm run build
 
-  echo "==> Reloading frontend with PM2 ($PM2_FRONTEND_NAME)"
+  echo "==> Restarting frontend with PM2 ($PM2_FRONTEND_NAME)"
   if pm2 describe "$PM2_FRONTEND_NAME" > /dev/null 2>&1; then
-    pm2 reload "$PM2_FRONTEND_NAME"
+    pm2 restart "$PM2_FRONTEND_NAME"
   else
     # jeśli masz Next.js w trybie `next start`:
     pm2 start "npm -- start -p 3000" --name "$PM2_FRONTEND_NAME"
