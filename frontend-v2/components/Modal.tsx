@@ -7,7 +7,7 @@ interface ModalProps {
   title: string;
   description?: string;
   onClose: () => void;
-  children: ReactNode;
+  children?: ReactNode;
   footer?: ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }
@@ -74,7 +74,7 @@ export function Modal({ open, title, description, onClose, children, footer, siz
         </div>
 
         {/* Content */}
-        <div className="py-4 space-y-4">{children}</div>
+        {children && <div className="py-4 space-y-4">{children}</div>}
         
         {/* Footer */}
         {footer && (

@@ -56,7 +56,7 @@ export function ShiftPresetSelector({
               style={{
                 borderColor: getColorWithAlpha(preset.color, "50"),
                 backgroundColor: getColorWithAlpha(preset.color, "15"),
-                color: hasValidColor ? preset.color : undefined,
+                color: hasValidColor && preset.color ? preset.color : undefined,
               }}
               onClick={() => onSelect(isSelected ? null : preset)}
             >

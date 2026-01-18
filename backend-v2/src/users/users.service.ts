@@ -399,11 +399,7 @@ export class UsersService {
     return updated;
   }
 
-  async delete(
-    actorUserId: string,
-    userId: string,
-    organisationId: string,
-  ) {
+  async delete(actorUserId: string, userId: string, organisationId: string) {
     // Verify user exists and belongs to the same organization
     const user = await this.prisma.user.findFirst({
       where: {
