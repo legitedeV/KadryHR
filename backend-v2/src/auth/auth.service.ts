@@ -60,7 +60,12 @@ export class AuthService {
     let safeUrl = DEFAULT_FRONTEND_URL;
     try {
       const parsed = new URL(configuredUrl);
-      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const env = this.configService.get<string>('NODE_ENV');
+      const allowHttp = env !== 'production';
+      if (
+        parsed.protocol === 'https:' ||
+        (allowHttp && parsed.protocol === 'http:')
+      ) {
         safeUrl = parsed.toString();
       }
     } catch {

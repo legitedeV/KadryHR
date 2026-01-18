@@ -258,7 +258,7 @@ export default function GrafikPage() {
   const { hasPermission } = usePermissions();
   const { user } = useAuth();
   const canManage = hasPermission("SCHEDULE_MANAGE") || hasPermission("RCP_EDIT");
-  const isEmployeeView = user?.role === "EMPLOYEE";
+  const isEmployeeView = user?.role === "EMPLOYEE" && !canManage;
   const [range, setRange] = useState<WeekRange>(() => getWeekRange());
   const [shifts, setShifts] = useState<ShiftRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
