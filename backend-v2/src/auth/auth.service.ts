@@ -19,6 +19,9 @@ import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
 import { createHash, randomBytes } from 'crypto';
 
+const PASSWORD_RESET_TTL_MS = 2 * 60 * 60 * 1000;
+const DEFAULT_FRONTEND_URL = 'https://kadryhr.pl';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -50,11 +53,20 @@ export class AuthService {
   }
 
   private buildPasswordResetLink(token: string) {
-    const baseUrl =
+    const configuredUrl =
       this.configService.get<string>('FRONTEND_BASE_URL') ??
       this.configService.get<string>('APP_FRONTEND_URL') ??
-      'https://kadryhr.pl';
-    return `${baseUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
+      DEFAULT_FRONTEND_URL;
+    let safeUrl = DEFAULT_FRONTEND_URL;
+    try {
+      const parsed = new URL(configuredUrl);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        safeUrl = parsed.toString();
+      }
+    } catch {
+      safeUrl = DEFAULT_FRONTEND_URL;
+    }
+    return `${safeUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
   }
 
   private buildUserPayload(user: {
@@ -372,7 +384,7 @@ export class AuthService {
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = this.hashToken(token);
-    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
 
     await this.prisma.$transaction([
       this.prisma.passwordResetToken.updateMany({

@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly MS_PER_HOUR = 1000 * 60 * 60;
+
   /**
    * Get schedule summary for date range
    */
@@ -44,7 +46,8 @@ export class ReportsService {
   }
 
   getShiftDurationHours(startsAt: Date, endsAt: Date) {
-    const diff = (endsAt.getTime() - startsAt.getTime()) / (1000 * 60 * 60);
+    const diff =
+      (endsAt.getTime() - startsAt.getTime()) / this.MS_PER_HOUR;
     return Math.round((Math.max(diff, 0) + Number.EPSILON) * 100) / 100;
   }
 

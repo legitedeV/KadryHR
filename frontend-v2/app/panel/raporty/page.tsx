@@ -102,7 +102,8 @@ export default function RaportyPage() {
         variant: "success",
         title: "Raport został pobrany",
       });
-    } catch {
+    } catch (error) {
+      console.error(error);
       pushToast({
         variant: "error",
         title: "Nie udało się pobrać raportu",
