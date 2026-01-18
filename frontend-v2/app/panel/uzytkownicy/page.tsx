@@ -326,7 +326,7 @@ export default function UzytkownicyPage() {
             ? "Zaktualizuj dane i rolę użytkownika."
             : "Utwórz nowe konto i wyślij użytkownikowi powiadomienie."
         }
-        isOpen={modalOpen}
+        open={modalOpen}
         onClose={() => {
           setModalOpen(false);
           resetForm();

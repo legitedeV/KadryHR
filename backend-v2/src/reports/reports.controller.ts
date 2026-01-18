@@ -33,16 +33,16 @@ export class ReportsController {
       const headers = [
         'id',
         'date',
-        'startMinutes',
-        'endMinutes',
+        'startsAt',
+        'endsAt',
         'employee',
         'location',
       ];
       const csvData = data.map((shift) => ({
         id: shift.id,
-        date: shift.date.toISOString().split('T')[0],
-        startMinutes: shift.startMinutes,
-        endMinutes: shift.endMinutes,
+        date: shift.startsAt.toISOString().split('T')[0],
+        startsAt: shift.startsAt.toISOString(),
+        endsAt: shift.endsAt.toISOString(),
         employee: shift.employee
           ? `${shift.employee.firstName} ${shift.employee.lastName}`
           : '',

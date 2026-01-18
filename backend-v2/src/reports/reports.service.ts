@@ -12,7 +12,7 @@ export class ReportsService {
     const shifts = await this.prisma.shift.findMany({
       where: {
         organisationId,
-        date: {
+        startsAt: {
           gte: from,
           lte: to,
         },
