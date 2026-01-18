@@ -316,7 +316,7 @@ export default function RaportyPage() {
           </div>
         </div>
         <button
-          onClick={() => downloadReport("leaves", leavesFrom, leavesTo)}
+          onClick={() => downloadReport("leaves", leavesFrom, leavesTo, undefined)}
           disabled={loading === "leaves"}
           className="btn-primary px-4 py-2"
         >
