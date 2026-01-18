@@ -47,8 +47,7 @@ export class ReportsService {
   }
 
   getShiftDurationHours(startsAt: Date, endsAt: Date) {
-    const diff =
-      (endsAt.getTime() - startsAt.getTime()) / this.MS_PER_HOUR;
+    const diff = (endsAt.getTime() - startsAt.getTime()) / this.MS_PER_HOUR;
     return Math.round((Math.max(diff, 0) + Number.EPSILON) * 100) / 100;
   }
 
