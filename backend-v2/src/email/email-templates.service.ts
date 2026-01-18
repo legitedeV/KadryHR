@@ -258,7 +258,9 @@ export class EmailTemplatesService {
         ...(params.organisationName
           ? [{ label: 'Organizacja', value: params.organisationName }]
           : []),
-        ...(params.expiresIn ? [{ label: 'Link ważny', value: params.expiresIn }] : []),
+        ...(params.expiresIn
+          ? [{ label: 'Link ważny', value: params.expiresIn }]
+          : []),
       ])}
       ${this.actionButton('Ustaw nowe hasło', params.resetLink)}
       <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">

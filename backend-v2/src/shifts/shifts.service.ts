@@ -379,9 +379,7 @@ export class ShiftsService {
     });
 
     if (conflict) {
-      throw new BadRequestException(
-        'Pracownik ma już zmianę w tym czasie.',
-      );
+      throw new BadRequestException('Pracownik ma już zmianę w tym czasie.');
     }
 
     const org = await this.prisma.organisation.findUnique({
