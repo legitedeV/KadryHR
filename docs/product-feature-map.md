@@ -52,8 +52,8 @@ The platform is built with:
 8. **Availability (`/panel/dyspozycje`)** — Collect employee availability windows
 9. **Schedule (`/panel/grafik`)** — Build weekly shift schedule, assign employees
 10. **Requests (`/panel/wnioski`)** — Handle leave requests (approve/reject)
-11. **Billing (`/panel/rozliczenia`)** — View subscription status (payments not yet active)
-12. **Time Tracking / Payroll** — *Not yet implemented in UI*
+11. **Billing (`/panel/rozliczenia`)** — View subscription status (payments deferred)
+12. **Time Tracking / Payroll** — *Deferred (no UI yet)*
 
 ---
 
@@ -104,9 +104,9 @@ Authenticate existing users.
 - Clean, polished UI with branding
 - Suspense boundary for query params
 - Redirects with `?redirect=` query param support
+- Password reset flow (`/forgot-password`, `/reset-password`)
 
 **Gaps/Missing:**
-- No "Forgot password" functionality (link exists but no page)
 - No OAuth/social login
 - No 2FA prompt (backend supports it but not in UI)
 
@@ -211,11 +211,11 @@ Weekly schedule view and shift management for managers.
 - Location filtering
 - Shift colors
 - Delivery day and promotion day indicators
+- Employee self-view (employees see only their shifts)
+- Shift conflict detection (overlap prevention)
 
 **Gaps/Missing:**
 - No monthly view
-- No employee self-view (employees see full grid, should see only their shifts)
-- No conflict detection (overlapping shifts)
 - No automatic scheduling suggestions
 - No export to PDF/Excel
 - No print view
@@ -461,7 +461,7 @@ Manage subscription and payments.
 - Shows plan options
 
 **Gaps/Missing:**
-- **No actual payment integration** (Stripe, etc.)
+- **No actual payment integration** (Stripe, etc.) — deferred
 - No invoice history
 - No plan upgrade flow
 - No usage metrics (employees used vs plan limit)
@@ -560,9 +560,9 @@ KadryHR has a **well-structured foundation** with:
 2. **Payroll integration** — Backend models exist but no UI
 3. **Contract management** — Backend models exist but no UI
 4. **Billing integration** — No actual payment processing
-5. **Employee self-service** — Limited employee view (sees manager's full schedule)
+5. **Employee self-service** — Schedule view scoped, but dashboard still limited
 6. **Mobile experience** — Responsive but not optimized
-7. **Reporting / Export** — No export functionality
+7. **Reporting / Export** — CSV exports available, advanced reporting still missing
 
 ---
 

@@ -5,6 +5,22 @@ This PR implements comprehensive enhancements to KadryHR, focusing on core HR ma
 
 ## Features Implemented
 
+### P0 Gap Closures ✅
+**Password reset flow**
+- Added reset token issuance + confirmation endpoints
+- New `/forgot-password` and `/reset-password` UI pages
+- Branded reset email template with expiry reminder
+
+**Employee schedule self-view + conflict detection**
+- Employee role now sees only their shifts in schedule
+- UI surfaces overlap conflicts before saving shifts
+- Backend overlap validation message localized
+
+**Basic hours export/reporting**
+- CSV exports include hours per shift
+- New hours summary report (per employee/location)
+- Optional location filters for exports
+
 ### A) Schedule Management - "Clear Week" Feature ✅
 **Backend:**
 - Added `POST /shifts/clear-week` endpoint with date range filtering
@@ -172,21 +188,22 @@ npx prisma migrate deploy
 ## Future Work (Phase 2)
 
 ### Not Included in This PR
-1. **Frontend Pages:**
+1. **Stripe billing & checkout**
+   - Requires Stripe account configuration and checkout flows
+2. **Time tracking / RCP**
+   - Requires new data model and mobile-first UI
+3. **Frontend Pages:**
    - Payroll summary UI (`/panel/pracownicy/[id]/wynagrodzenie`)
    - Documents UI (`/panel/pracownicy/[id]/dokumenty`)
    - Contract management UI
-
-2. **Advanced Exports:**
+4. **Advanced Exports:**
    - XLSX export for payroll (requires library)
    - Employee list CSV export
    - Polish accounting format templates
-
-3. **Landing Page:**
+5. **Landing Page:**
    - Complete redesign with "old fashion, classy, rich" style
    - Requires significant design work and content updates
-
-4. **Advanced Payroll:**
+6. **Advanced Payroll:**
    - Polish tax calculations (ZUS, income tax)
    - Overtime compliance rules
    - Legal holiday bonuses

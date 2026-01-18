@@ -10,6 +10,8 @@ import { RegisterDto } from './dto/register.dto';
 import { InvitationsService } from './invitations.service';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { ValidateInvitationDto } from './dto/validate-invitation.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -32,6 +34,16 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.register(registerDto, res);
+  }
+
+  @Post('password-reset/request')
+  async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Post('password-reset/confirm')
+  async confirmPasswordReset(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
   }
 
   @Post('invitations/accept')

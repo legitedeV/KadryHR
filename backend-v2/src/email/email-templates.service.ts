@@ -229,6 +229,51 @@ export class EmailTemplatesService {
   }
 
   /**
+   * Password reset template
+   */
+  passwordResetTemplate(params: {
+    organisationName?: string;
+    resetLink: string;
+    recipientName?: string;
+    expiresIn?: string;
+  }): { subject: string; text: string; html: string } {
+    const greeting = params.recipientName
+      ? `Cześć ${params.recipientName}!`
+      : 'Cześć!';
+    const orgLine = params.organisationName
+      ? ` dla organizacji <strong>${params.organisationName}</strong>.`
+      : '.';
+
+    const content = `
+      <h1 class="email-text" style="font-size:20px;font-weight:600;color:#e4f2ea;margin:0 0 16px 0;">
+        Reset hasła w KadryHR
+      </h1>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 12px 0;">
+        ${greeting} Otrzymaliśmy prośbę o zresetowanie hasła${orgLine}
+      </p>
+      <p class="email-text" style="font-size:15px;line-height:1.6;color:#cfe9de;margin:0 0 16px 0;">
+        Kliknij przycisk poniżej, aby ustawić nowe hasło.
+      </p>
+      ${this.infoBox([
+        ...(params.organisationName
+          ? [{ label: 'Organizacja', value: params.organisationName }]
+          : []),
+        ...(params.expiresIn ? [{ label: 'Link ważny', value: params.expiresIn }] : []),
+      ])}
+      ${this.actionButton('Ustaw nowe hasło', params.resetLink)}
+      <p class="email-text-secondary" style="font-size:13px;color:#7fbfa5;margin:16px 0 0 0;">
+        Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:<br>
+        <a href="${params.resetLink}" style="color:#45c992;word-break:break-all;">${params.resetLink}</a>
+      </p>`;
+
+    return {
+      subject: 'Reset hasła w KadryHR',
+      text: `${greeting} Otrzymaliśmy prośbę o reset hasła${params.organisationName ? ` w ${params.organisationName}` : ''}. Ustaw nowe hasło: ${params.resetLink}`,
+      html: this.baseTemplate(content, 'Reset hasła w KadryHR'),
+    };
+  }
+
+  /**
    * Shift assignment/change notification template
    */
   shiftAssignmentTemplate(params: {

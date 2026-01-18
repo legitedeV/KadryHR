@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { QueueService } from '../queue/queue.service';
 import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
+import { EmailTemplatesService } from '../email/email-templates.service';
 type Role = string;
 
 describe('AuthService', () => {
@@ -14,6 +15,7 @@ describe('AuthService', () => {
   let jwtService: Partial<Record<keyof JwtService, jest.Mock>>;
   let queueService: { addEmailDeliveryJob: jest.Mock };
   let shiftPresetsService: { createDefaultPresets: jest.Mock };
+  let emailTemplates: { passwordResetTemplate: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -45,6 +47,14 @@ describe('AuthService', () => {
       createDefaultPresets: jest.fn().mockResolvedValue(undefined),
     };
 
+    emailTemplates = {
+      passwordResetTemplate: jest.fn().mockReturnValue({
+        subject: 'Reset',
+        text: 'Reset',
+        html: '<p>Reset</p>',
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -58,6 +68,7 @@ describe('AuthService', () => {
         },
         { provide: QueueService, useValue: queueService },
         { provide: ShiftPresetsService, useValue: shiftPresetsService },
+        { provide: EmailTemplatesService, useValue: emailTemplates },
       ],
     }).compile();
 

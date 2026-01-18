@@ -16,6 +16,8 @@ import { Role } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { QueueService } from '../queue/queue.service';
 import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
+import { EmailTemplatesService } from '../email/email-templates.service';
+import { createHash, randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +27,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly queueService: QueueService,
     private readonly shiftPresetsService: ShiftPresetsService,
+    private readonly emailTemplates: EmailTemplatesService,
   ) {}
 
   private parseTtlToMs(ttl: string): number {
@@ -40,6 +43,18 @@ export class AuthService {
             ? 3600000
             : 86400000;
     return Number(value) * multiplier;
+  }
+
+  private hashToken(token: string) {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private buildPasswordResetLink(token: string) {
+    const baseUrl =
+      this.configService.get<string>('FRONTEND_BASE_URL') ??
+      this.configService.get<string>('APP_FRONTEND_URL') ??
+      'https://kadryhr.pl';
+    return `${baseUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
   }
 
   private buildUserPayload(user: {
@@ -336,5 +351,101 @@ export class AuthService {
 
   async me(userPayload: AuthenticatedUser) {
     return this.buildSafeUser(userPayload.id);
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        organisationId: true,
+        firstName: true,
+        lastName: true,
+        organisation: { select: { name: true } },
+      },
+    });
+
+    if (!user) {
+      return { success: true };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(token);
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.updateMany({
+        where: {
+          userId: user.id,
+          usedAt: null,
+        },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: {
+          organisationId: user.organisationId,
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+      }),
+    ]);
+
+    const recipientName =
+      `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || undefined;
+    const resetLink = this.buildPasswordResetLink(token);
+    const template = this.emailTemplates.passwordResetTemplate({
+      organisationName: user.organisation?.name ?? undefined,
+      resetLink,
+      recipientName,
+      expiresIn: '2 godziny',
+    });
+
+    await this.queueService.addEmailDeliveryJob({
+      to: user.email,
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+      organisationId: user.organisationId,
+      userId: user.id,
+    });
+
+    return { success: true };
+  }
+
+  async resetPassword(token: string, password: string) {
+    const tokenHash = this.hashToken(token);
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException(
+        'Nieprawidłowy lub wygasły token resetu hasła.',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash, refreshTokenHash: null },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { success: true };
   }
 }
