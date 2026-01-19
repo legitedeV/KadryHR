@@ -1,0 +1,559 @@
+// !$*UTF8*$!
+{
+  archiveVersion = 1;
+  classes = {};
+  objectVersion = 56;
+  objects = {
+
+/* Begin PBXBuildFile section */
+    100000000000000000000001 /* KadryHRiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* KadryHRiOSApp.swift */; };
+    100000000000000000000002 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* RootView.swift */; };
+    100000000000000000000003 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* Analytics.swift */; };
+    100000000000000000000004 /* BuildConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* BuildConfiguration.swift */; };
+    100000000000000000000005 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* EmptyStateView.swift */; };
+    100000000000000000000006 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* ErrorStateView.swift */; };
+    100000000000000000000007 /* KadryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* KadryButton.swift */; };
+    100000000000000000000008 /* LoadingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008 /* LoadingOverlay.swift */; };
+    100000000000000000000009 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009 /* Theme.swift */; };
+    100000000000000000000010 /* ViewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* ViewState.swift */; };
+    100000000000000000000011 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* User.swift */; };
+    100000000000000000000012 /* Shift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* Shift.swift */; };
+    100000000000000000000013 /* Leave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* Leave.swift */; };
+    100000000000000000000014 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* AppNotification.swift */; };
+    100000000000000000000015 /* AuditLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* AuditLog.swift */; };
+    100000000000000000000016 /* EmployeeDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* EmployeeDirectory.swift */; };
+    100000000000000000000017 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* APIClient.swift */; };
+    100000000000000000000018 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000018 /* APIError.swift */; };
+    100000000000000000000019 /* APIRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* APIRequest.swift */; };
+    100000000000000000000020 /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000020 /* AuthResponse.swift */; };
+    100000000000000000000021 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000021 /* KeychainHelper.swift */; };
+    100000000000000000000022 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000022 /* TokenStore.swift */; };
+    100000000000000000000023 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000023 /* LoginView.swift */; };
+    100000000000000000000024 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000024 /* LoginViewModel.swift */; };
+    100000000000000000000025 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000025 /* SessionManager.swift */; };
+    100000000000000000000026 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000026 /* DashboardView.swift */; };
+    100000000000000000000027 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000027 /* DashboardViewModel.swift */; };
+    100000000000000000000028 /* EmployeeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000028 /* EmployeeHomeView.swift */; };
+    100000000000000000000029 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000029 /* ScheduleView.swift */; };
+    100000000000000000000030 /* ShiftsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000030 /* ShiftsViewModel.swift */; };
+    100000000000000000000031 /* LeavesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000031 /* LeavesView.swift */; };
+    100000000000000000000032 /* LeavesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000032 /* LeavesViewModel.swift */; };
+    100000000000000000000033 /* LeaveRequestFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000033 /* LeaveRequestFormView.swift */; };
+    100000000000000000000034 /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000034 /* NotificationsView.swift */; };
+    100000000000000000000035 /* NotificationsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000035 /* NotificationsViewModel.swift */; };
+    100000000000000000000036 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000036 /* ProfileView.swift */; };
+    100000000000000000000037 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000037 /* ProfileViewModel.swift */; };
+    100000000000000000000038 /* TeamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000038 /* TeamView.swift */; };
+    100000000000000000000039 /* TeamViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000039 /* TeamViewModel.swift */; };
+    100000000000000000000040 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000040 /* Info.plist */; };
+
+    100000000000000000000101 /* APIClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000101 /* APIClientTests.swift */; };
+    100000000000000000000102 /* LoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000102 /* LoginViewModelTests.swift */; };
+    100000000000000000000103 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000103 /* MockURLProtocol.swift */; };
+    100000000000000000000104 /* TestTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000104 /* TestTokenStore.swift */; };
+
+    100000000000000000000201 /* KadryHRiOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000201 /* KadryHRiOSUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+    200000000000000000000001 /* KadryHRiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadryHRiOSApp.swift; sourceTree = "<group>"; };
+    200000000000000000000002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+    200000000000000000000003 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
+    200000000000000000000004 /* BuildConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildConfiguration.swift; sourceTree = "<group>"; };
+    200000000000000000000005 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+    200000000000000000000006 /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
+    200000000000000000000007 /* KadryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadryButton.swift; sourceTree = "<group>"; };
+    200000000000000000000008 /* LoadingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingOverlay.swift; sourceTree = "<group>"; };
+    200000000000000000000009 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+    200000000000000000000010 /* ViewState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewState.swift; sourceTree = "<group>"; };
+    200000000000000000000011 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+    200000000000000000000012 /* Shift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shift.swift; sourceTree = "<group>"; };
+    200000000000000000000013 /* Leave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Leave.swift; sourceTree = "<group>"; };
+    200000000000000000000014 /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
+    200000000000000000000015 /* AuditLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditLog.swift; sourceTree = "<group>"; };
+    200000000000000000000016 /* EmployeeDirectory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeDirectory.swift; sourceTree = "<group>"; };
+    200000000000000000000017 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+    200000000000000000000018 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+    200000000000000000000019 /* APIRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRequest.swift; sourceTree = "<group>"; };
+    200000000000000000000020 /* AuthResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
+    200000000000000000000021 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+    200000000000000000000022 /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
+    200000000000000000000023 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+    200000000000000000000024 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000025 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+    200000000000000000000026 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+    200000000000000000000027 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000028 /* EmployeeHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmployeeHomeView.swift; sourceTree = "<group>"; };
+    200000000000000000000029 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+    200000000000000000000030 /* ShiftsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftsViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000031 /* LeavesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeavesView.swift; sourceTree = "<group>"; };
+    200000000000000000000032 /* LeavesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeavesViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000033 /* LeaveRequestFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaveRequestFormView.swift; sourceTree = "<group>"; };
+    200000000000000000000034 /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
+    200000000000000000000035 /* NotificationsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000036 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+    200000000000000000000037 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000038 /* TeamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamView.swift; sourceTree = "<group>"; };
+    200000000000000000000039 /* TeamViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamViewModel.swift; sourceTree = "<group>"; };
+    200000000000000000000040 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
+
+    200000000000000000000050 /* Dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Dev.xcconfig; sourceTree = "<group>"; };
+    200000000000000000000051 /* Stage.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Stage.xcconfig; sourceTree = "<group>"; };
+    200000000000000000000052 /* Prod.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Prod.xcconfig; sourceTree = "<group>"; };
+
+    200000000000000000000101 /* APIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientTests.swift; sourceTree = "<group>"; };
+    200000000000000000000102 /* LoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModelTests.swift; sourceTree = "<group>"; };
+    200000000000000000000103 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
+    200000000000000000000104 /* TestTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestTokenStore.swift; sourceTree = "<group>"; };
+
+    200000000000000000000201 /* KadryHRiOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadryHRiOSUITests.swift; sourceTree = "<group>"; };
+
+    200000000000000000000301 /* KadryHRiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = KadryHRiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+    200000000000000000000302 /* KadryHRiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = KadryHRiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+    200000000000000000000303 /* KadryHRiOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = KadryHRiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+    300000000000000000000001 = {
+      isa = PBXGroup;
+      children = (
+        300000000000000000000002,
+        300000000000000000000003,
+        300000000000000000000004,
+        300000000000000000000005,
+        200000000000000000000301,
+        200000000000000000000302,
+        200000000000000000000303,
+      );
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000002 /* KadryHRiOS */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000001,
+        200000000000000000000002,
+        300000000000000000000006,
+        300000000000000000000007,
+        300000000000000000000008,
+        300000000000000000000009,
+        300000000000000000000010,
+        300000000000000000000011,
+        200000000000000000000040,
+      );
+      path = KadryHRiOS;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000003 /* KadryHRiOSTests */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000101,
+        200000000000000000000102,
+        200000000000000000000103,
+        200000000000000000000104,
+      );
+      path = KadryHRiOSTests;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000004 /* KadryHRiOSUITests */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000201,
+      );
+      path = KadryHRiOSUITests;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000005 /* Configs */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000050,
+        200000000000000000000051,
+        200000000000000000000052,
+      );
+      path = Configs;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000006 /* Common */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000003,
+        200000000000000000000004,
+        200000000000000000000005,
+        200000000000000000000006,
+        200000000000000000000007,
+        200000000000000000000008,
+        200000000000000000000009,
+        200000000000000000000010,
+      );
+      path = Common;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000007 /* Domain */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000011,
+        200000000000000000000012,
+        200000000000000000000013,
+        200000000000000000000014,
+        200000000000000000000015,
+        200000000000000000000016,
+      );
+      path = Domain/Models;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000008 /* Networking */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000017,
+        200000000000000000000018,
+        200000000000000000000019,
+        200000000000000000000020,
+        200000000000000000000021,
+        200000000000000000000022,
+      );
+      path = Networking;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000009 /* Auth */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000023,
+        200000000000000000000024,
+        200000000000000000000025,
+      );
+      path = Features/Auth;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000010 /* Shifts */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000026,
+        200000000000000000000027,
+        200000000000000000000028,
+        200000000000000000000029,
+        200000000000000000000030,
+      );
+      path = Features/Shifts;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000011 /* Leaves */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000031,
+        200000000000000000000032,
+        200000000000000000000033,
+      );
+      path = Features/Leaves;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000012 /* Notifications */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000034,
+        200000000000000000000035,
+      );
+      path = Features/Notifications;
+      sourceTree = "<group>";
+    };
+
+    300000000000000000000013 /* Profile */ = {
+      isa = PBXGroup;
+      children = (
+        200000000000000000000036,
+        200000000000000000000037,
+        200000000000000000000038,
+        200000000000000000000039,
+      );
+      path = Features/Profile;
+      sourceTree = "<group>";
+    };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+    400000000000000000000001 /* KadryHRiOS */ = {
+      isa = PBXNativeTarget;
+      buildConfigurationList = 500000000000000000000001 /* Build configuration list for PBXNativeTarget "KadryHRiOS" */;
+      buildPhases = (
+        600000000000000000000001 /* Sources */,
+        600000000000000000000002 /* Resources */,
+      );
+      buildRules = ();
+      dependencies = ();
+      name = KadryHRiOS;
+      productName = KadryHRiOS;
+      productReference = 200000000000000000000301 /* KadryHRiOS.app */;
+      productType = "com.apple.product-type.application";
+    };
+
+    400000000000000000000002 /* KadryHRiOSTests */ = {
+      isa = PBXNativeTarget;
+      buildConfigurationList = 500000000000000000000002 /* Build configuration list for PBXNativeTarget "KadryHRiOSTests" */;
+      buildPhases = (
+        600000000000000000000003 /* Sources */,
+      );
+      buildRules = ();
+      dependencies = ();
+      name = KadryHRiOSTests;
+      productName = KadryHRiOSTests;
+      productReference = 200000000000000000000302 /* KadryHRiOSTests.xctest */;
+      productType = "com.apple.product-type.bundle.unit-test";
+    };
+
+    400000000000000000000003 /* KadryHRiOSUITests */ = {
+      isa = PBXNativeTarget;
+      buildConfigurationList = 500000000000000000000003 /* Build configuration list for PBXNativeTarget "KadryHRiOSUITests" */;
+      buildPhases = (
+        600000000000000000000004 /* Sources */,
+      );
+      buildRules = ();
+      dependencies = ();
+      name = KadryHRiOSUITests;
+      productName = KadryHRiOSUITests;
+      productReference = 200000000000000000000303 /* KadryHRiOSUITests.xctest */;
+      productType = "com.apple.product-type.bundle.ui-testing";
+    };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+    700000000000000000000001 /* Project object */ = {
+      isa = PBXProject;
+      buildConfigurationList = 500000000000000000000004 /* Build configuration list for PBXProject "KadryHRiOS" */;
+      compatibilityVersion = "Xcode 14.0";
+      mainGroup = 300000000000000000000001;
+      productRefGroup = 300000000000000000000001;
+      projectDirPath = "";
+      projectRoot = "";
+      targets = (
+        400000000000000000000001,
+        400000000000000000000002,
+        400000000000000000000003,
+      );
+    };
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+    600000000000000000000001 /* Sources */ = {
+      isa = PBXSourcesBuildPhase;
+      buildActionMask = 2147483647;
+      files = (
+        100000000000000000000001,
+        100000000000000000000002,
+        100000000000000000000003,
+        100000000000000000000004,
+        100000000000000000000005,
+        100000000000000000000006,
+        100000000000000000000007,
+        100000000000000000000008,
+        100000000000000000000009,
+        100000000000000000000010,
+        100000000000000000000011,
+        100000000000000000000012,
+        100000000000000000000013,
+        100000000000000000000014,
+        100000000000000000000015,
+        100000000000000000000016,
+        100000000000000000000017,
+        100000000000000000000018,
+        100000000000000000000019,
+        100000000000000000000020,
+        100000000000000000000021,
+        100000000000000000000022,
+        100000000000000000000023,
+        100000000000000000000024,
+        100000000000000000000025,
+        100000000000000000000026,
+        100000000000000000000027,
+        100000000000000000000028,
+        100000000000000000000029,
+        100000000000000000000030,
+        100000000000000000000031,
+        100000000000000000000032,
+        100000000000000000000033,
+        100000000000000000000034,
+        100000000000000000000035,
+        100000000000000000000036,
+        100000000000000000000037,
+        100000000000000000000038,
+        100000000000000000000039,
+      );
+      runOnlyForDeploymentPostprocessing = 0;
+    };
+
+    600000000000000000000003 /* Sources */ = {
+      isa = PBXSourcesBuildPhase;
+      buildActionMask = 2147483647;
+      files = (
+        100000000000000000000101,
+        100000000000000000000102,
+        100000000000000000000103,
+        100000000000000000000104,
+      );
+      runOnlyForDeploymentPostprocessing = 0;
+    };
+
+    600000000000000000000004 /* Sources */ = {
+      isa = PBXSourcesBuildPhase;
+      buildActionMask = 2147483647;
+      files = (
+        100000000000000000000201,
+      );
+      runOnlyForDeploymentPostprocessing = 0;
+    };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+    600000000000000000000002 /* Resources */ = {
+      isa = PBXResourcesBuildPhase;
+      buildActionMask = 2147483647;
+      files = (
+        100000000000000000000040,
+      );
+      runOnlyForDeploymentPostprocessing = 0;
+    };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+    800000000000000000000001 /* Debug */ = {
+      isa = XCBuildConfiguration;
+      baseConfigurationReference = 200000000000000000000050 /* Dev.xcconfig */;
+      buildSettings = {
+        INFOPLIST_FILE = KadryHRiOS/Resources/Info.plist;
+        PRODUCT_NAME = KadryHRiOS;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Debug;
+    };
+    800000000000000000000002 /* Release */ = {
+      isa = XCBuildConfiguration;
+      baseConfigurationReference = 200000000000000000000052 /* Prod.xcconfig */;
+      buildSettings = {
+        INFOPLIST_FILE = KadryHRiOS/Resources/Info.plist;
+        PRODUCT_NAME = KadryHRiOS;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Release;
+    };
+    800000000000000000000009 /* Stage */ = {
+      isa = XCBuildConfiguration;
+      baseConfigurationReference = 200000000000000000000051 /* Stage.xcconfig */;
+      buildSettings = {
+        INFOPLIST_FILE = KadryHRiOS/Resources/Info.plist;
+        PRODUCT_NAME = KadryHRiOS;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Stage;
+    };
+
+    800000000000000000000003 /* Tests Debug */ = {
+      isa = XCBuildConfiguration;
+      buildSettings = {
+        PRODUCT_NAME = KadryHRiOSTests;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Debug;
+    };
+    800000000000000000000004 /* Tests Release */ = {
+      isa = XCBuildConfiguration;
+      buildSettings = {
+        PRODUCT_NAME = KadryHRiOSTests;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Release;
+    };
+
+    800000000000000000000005 /* UITests Debug */ = {
+      isa = XCBuildConfiguration;
+      buildSettings = {
+        PRODUCT_NAME = KadryHRiOSUITests;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Debug;
+    };
+    800000000000000000000006 /* UITests Release */ = {
+      isa = XCBuildConfiguration;
+      buildSettings = {
+        PRODUCT_NAME = KadryHRiOSUITests;
+        SWIFT_VERSION = 5.9;
+      };
+      name = Release;
+    };
+
+    800000000000000000000007 /* Project Debug */ = {
+      isa = XCBuildConfiguration;
+      baseConfigurationReference = 200000000000000000000050 /* Dev.xcconfig */;
+      buildSettings = {
+        SWIFT_VERSION = 5.9;
+      };
+      name = Debug;
+    };
+    800000000000000000000008 /* Project Release */ = {
+      isa = XCBuildConfiguration;
+      baseConfigurationReference = 200000000000000000000052 /* Prod.xcconfig */;
+      buildSettings = {
+        SWIFT_VERSION = 5.9;
+      };
+      name = Release;
+    };
+    800000000000000000000010 /* Project Stage */ = {
+      isa = XCBuildConfiguration;
+      baseConfigurationReference = 200000000000000000000051 /* Stage.xcconfig */;
+      buildSettings = {
+        SWIFT_VERSION = 5.9;
+      };
+      name = Stage;
+    };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+    500000000000000000000001 /* Build configuration list for PBXNativeTarget "KadryHRiOS" */ = {
+      isa = XCConfigurationList;
+      buildConfigurations = (
+        800000000000000000000001,
+        800000000000000000000009,
+        800000000000000000000002,
+      );
+      defaultConfigurationIsVisible = 0;
+      defaultConfigurationName = Debug;
+    };
+    500000000000000000000002 /* Build configuration list for PBXNativeTarget "KadryHRiOSTests" */ = {
+      isa = XCConfigurationList;
+      buildConfigurations = (
+        800000000000000000000003,
+        800000000000000000000004,
+      );
+      defaultConfigurationIsVisible = 0;
+      defaultConfigurationName = Debug;
+    };
+    500000000000000000000003 /* Build configuration list for PBXNativeTarget "KadryHRiOSUITests" */ = {
+      isa = XCConfigurationList;
+      buildConfigurations = (
+        800000000000000000000005,
+        800000000000000000000006,
+      );
+      defaultConfigurationIsVisible = 0;
+      defaultConfigurationName = Debug;
+    };
+    500000000000000000000004 /* Build configuration list for PBXProject "KadryHRiOS" */ = {
+      isa = XCConfigurationList;
+      buildConfigurations = (
+        800000000000000000000007,
+        800000000000000000000010,
+        800000000000000000000008,
+      );
+      defaultConfigurationIsVisible = 0;
+      defaultConfigurationName = Debug;
+    };
+/* End XCConfigurationList section */
+  };
+  rootObject = 700000000000000000000001 /* Project object */;
+}
