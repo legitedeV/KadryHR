@@ -34,9 +34,13 @@ export default function ConsoleOverviewPage() {
 
   const quickLinks = [
     { href: "/console/website", label: "Website CMS", description: "Zarządzaj treściami marketingowymi." },
-    { href: "/console/frontend", label: "Frontend Config", description: "Bezpieczne flagi UI i motywy." },
-    { href: "/console/backend", label: "Backend Config", description: "Konfiguracja systemowa i limity." },
+    { href: "/console/frontend", label: "Frontend", description: "Bezpieczne flagi UI i motywy." },
+    { href: "/console/backend", label: "Backend", description: "Konfiguracja systemowa i limity." },
+    { href: "/console/content", label: "Content & i18n", description: "Centralne zarządzanie copy oraz tłumaczeniami." },
+    { href: "/console/messages", label: "Emails & SMS", description: "Szablony i testowe wysyłki." },
     { href: "/console/status", label: "Status", description: "Health checks i infrastruktura." },
+    { href: "/console/logs", label: "Logs", description: "Inspektor zdarzeń i błędów." },
+    { href: "/console/tools", label: "Tools", description: "Narzędzia operacyjne i debug." },
     { href: "/console/github", label: "GitHub & Deploy", description: "Przegląd zmian i release'ów." },
   ];
 

@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  apiCreateWebsiteBlock,
   apiCreateWebsitePage,
+  apiCreateWebsiteSection,
+  apiGetWebsitePage,
   apiGetWebsiteSettings,
   apiListWebsitePages,
   apiPublishWebsitePage,
@@ -11,6 +14,7 @@ import {
   WebsitePageSummary,
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
+import { APP_URL } from "@/lib/site-config";
 
 const emptySettingsState = {
   contactEmails: "",
@@ -22,12 +26,15 @@ const emptySettingsState = {
   termsOfServiceUrl: "",
 };
 
+const getMarketingPath = (slug: string) => (slug === "home" ? "/" : `/${slug}`);
+
 export default function AdminWebsitePage() {
   const [pages, setPages] = useState<WebsitePageSummary[]>([]);
   const [settingsDraft, setSettingsDraft] = useState(emptySettingsState);
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [creatingPage, setCreatingPage] = useState(false);
+  const [cloningSlug, setCloningSlug] = useState<string | null>(null);
   const [newPage, setNewPage] = useState({
     slug: "",
     seoTitle: "",
@@ -166,6 +173,57 @@ export default function AdminWebsitePage() {
     }
   };
 
+  const handleClonePage = async (page: WebsitePageSummary) => {
+    const nextSlug = prompt(`Podaj slug dla kopii strony "${page.slug}"`, `${page.slug}-copy`);
+    if (!nextSlug) return;
+    setCloningSlug(page.slug);
+    try {
+      const source = await apiGetWebsitePage(page.slug);
+      const created = await apiCreateWebsitePage({
+        slug: nextSlug,
+        seoTitle: source.seoTitle ?? undefined,
+        seoDescription: source.seoDescription ?? undefined,
+        seoImageUrl: source.seoImageUrl ?? undefined,
+        isPublished: false,
+      });
+
+      const sortedSections = [...source.sections].sort((a, b) => a.order - b.order);
+      for (const section of sortedSections) {
+        const newSection = await apiCreateWebsiteSection({
+          pageId: created.id,
+          key: section.key,
+          title: section.title ?? undefined,
+          subtitle: section.subtitle ?? undefined,
+          order: section.order,
+        });
+        const sortedBlocks = [...section.blocks].sort((a, b) => a.order - b.order);
+        for (const block of sortedBlocks) {
+          await apiCreateWebsiteBlock({
+            sectionId: newSection.id,
+            type: block.type,
+            title: block.title ?? undefined,
+            body: block.body ?? undefined,
+            mediaUrl: block.mediaUrl ?? undefined,
+            extra: block.extra ?? undefined,
+            order: block.order,
+          });
+        }
+      }
+
+      pushToast({ title: "Skopiowano stronę", description: `Utworzono szkic ${nextSlug}.` });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się zduplikować strony.",
+        variant: "error",
+      });
+    } finally {
+      setCloningSlug(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-surface-400">
@@ -179,8 +237,8 @@ export default function AdminWebsitePage() {
     <div className="space-y-8">
       <div>
         <div className="flex items-center gap-2 text-sm text-surface-400">
-          <Link href="/panel/admin" className="hover:text-surface-200">
-            Panel admina
+          <Link href="/console" className="hover:text-surface-200">
+            Admin Console
           </Link>
           <span>/</span>
           <span className="text-surface-200">Treści strony</span>
@@ -260,8 +318,27 @@ export default function AdminWebsitePage() {
                 <div>
                   <p className="text-sm font-semibold text-surface-100">{page.slug}</p>
                   <p className="text-xs text-surface-500">
-                    {page.isPublished ? "Opublikowana" : "Wersja robocza"} · {page._count?.sections ?? 0} sekcji
+                    {page.isPublished ? "Opublikowana" : "Wersja robocza"} · {page._count?.sections ?? 0} sekcji ·
+                    wersja {page.version}
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-surface-400">
+                    <a
+                      href={`${APP_URL}${getMarketingPath(page.slug)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full border border-surface-800/70 px-2 py-1 hover:text-surface-100"
+                    >
+                      Otwórz publicznie
+                    </a>
+                    <a
+                      href={`${APP_URL}${getMarketingPath(page.slug)}?preview=1`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full border border-surface-800/70 px-2 py-1 hover:text-surface-100"
+                    >
+                      Podgląd szkicu
+                    </a>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -269,6 +346,13 @@ export default function AdminWebsitePage() {
                     className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     {page.isPublished ? "Cofnij publikację" : "Opublikuj"}
+                  </button>
+                  <button
+                    onClick={() => handleClonePage(page)}
+                    className="btn-secondary px-3 py-1.5 text-xs"
+                    disabled={cloningSlug === page.slug}
+                  >
+                    {cloningSlug === page.slug ? "Duplikowanie..." : "Duplikuj"}
                   </button>
                   <Link
                     href={`/console/website/pages/${page.slug}`}

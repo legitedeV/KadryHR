@@ -17,6 +17,7 @@ import {
   WebsitePageDetail,
 } from "@/lib/api";
 import { pushToast } from "@/lib/toast";
+import { APP_URL } from "@/lib/site-config";
 
 type BlockDraft = {
   type: string;
@@ -42,6 +43,8 @@ const defaultBlockDraft: BlockDraft = {
   extra: {},
 };
 
+const getMarketingPath = (pageSlug: string) => (pageSlug === "home" ? "/" : `/${pageSlug}`);
+
 export default function AdminWebsitePageEditor() {
   const params = useParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
@@ -51,11 +54,15 @@ export default function AdminWebsitePageEditor() {
   const [newSection, setNewSection] = useState({ key: "", title: "", subtitle: "" });
   const [sectionDrafts, setSectionDrafts] = useState<Record<string, SectionDraft>>({});
   const [blockDrafts, setBlockDrafts] = useState<Record<string, BlockDraft>>({});
+  const [showJson, setShowJson] = useState(false);
 
   const sortedSections = useMemo(() => {
     if (!page) return [];
     return [...page.sections].sort((a, b) => a.order - b.order);
   }, [page]);
+
+  const seoTitleLength = (page?.seoTitle ?? "").length;
+  const seoDescriptionLength = (page?.seoDescription ?? "").length;
 
   const loadPage = useCallback(async () => {
     if (!slug) return;
@@ -403,8 +410,8 @@ export default function AdminWebsitePageEditor() {
     <div className="space-y-8">
       <div>
         <div className="flex items-center gap-2 text-sm text-surface-400">
-          <Link href="/panel/admin" className="hover:text-surface-200">
-            Panel admina
+          <Link href="/console" className="hover:text-surface-200">
+            Admin Console
           </Link>
           <span>/</span>
           <Link href="/console/website" className="hover:text-surface-200">
@@ -420,75 +427,149 @@ export default function AdminWebsitePageEditor() {
               Zarządzaj sekcjami, blokami oraz SEO.
             </p>
           </div>
-          <button
-            className="btn-secondary px-4 py-2 text-sm"
-            onClick={handleTogglePublish}
-          >
-            {page.isPublished ? "Cofnij publikację" : "Opublikuj"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={`${APP_URL}${getMarketingPath(page.slug)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              Otwórz publicznie
+            </a>
+            <a
+              href={`${APP_URL}${getMarketingPath(page.slug)}?preview=1`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              Podgląd szkicu
+            </a>
+            <button
+              className="btn-secondary px-4 py-2 text-sm"
+              onClick={handleTogglePublish}
+            >
+              {page.isPublished ? "Cofnij publikację" : "Opublikuj"}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="panel-card p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-surface-100">SEO i metadane</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm text-surface-300">
-            Slug
-            <input
-              className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100"
-              value={page.slug}
-              onChange={(event) => setPage((prev) => (prev ? { ...prev, slug: event.target.value } : prev))}
-            />
-          </label>
-          <label className="text-sm text-surface-300">
-            SEO title
-            <input
-              className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100"
-              value={page.seoTitle ?? ""}
-              onChange={(event) =>
-                setPage((prev) => (prev ? { ...prev, seoTitle: event.target.value } : prev))
-              }
-            />
-          </label>
-          <label className="text-sm text-surface-300 md:col-span-2">
-            SEO description
-            <textarea
-              className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100 min-h-[90px]"
-              value={page.seoDescription ?? ""}
-              onChange={(event) =>
-                setPage((prev) =>
-                  prev ? { ...prev, seoDescription: event.target.value } : prev,
-                )
-              }
-            />
-          </label>
-          <label className="text-sm text-surface-300">
-            SEO image URL
-            <input
-              className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100"
-              value={page.seoImageUrl ?? ""}
-              onChange={(event) =>
-                setPage((prev) =>
-                  prev ? { ...prev, seoImageUrl: event.target.value } : prev,
-                )
-              }
-            />
-          </label>
-          <label className="text-sm text-surface-300 flex items-center gap-2 mt-7">
-            <input
-              type="checkbox"
-              checked={page.isPublished}
-              onChange={(event) =>
-                setPage((prev) => (prev ? { ...prev, isPublished: event.target.checked } : prev))
-              }
-              className="h-4 w-4 rounded border-surface-700 bg-surface-900 text-brand-500"
-            />
-            Strona opublikowana
-          </label>
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="panel-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-surface-100">SEO i metadane</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm text-surface-300">
+              Slug
+              <input
+                className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100"
+                value={page.slug}
+                onChange={(event) => setPage((prev) => (prev ? { ...prev, slug: event.target.value } : prev))}
+              />
+            </label>
+            <label className="text-sm text-surface-300">
+              SEO title
+              <input
+                className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100"
+                value={page.seoTitle ?? ""}
+                onChange={(event) =>
+                  setPage((prev) => (prev ? { ...prev, seoTitle: event.target.value } : prev))
+                }
+              />
+              <span className={`mt-1 block text-xs ${seoTitleLength > 60 ? "text-amber-300" : "text-surface-500"}`}>
+                {seoTitleLength} / 60 znaków
+              </span>
+            </label>
+            <label className="text-sm text-surface-300 md:col-span-2">
+              SEO description
+              <textarea
+                className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100 min-h-[90px]"
+                value={page.seoDescription ?? ""}
+                onChange={(event) =>
+                  setPage((prev) =>
+                    prev ? { ...prev, seoDescription: event.target.value } : prev,
+                  )
+                }
+              />
+              <span className={`mt-1 block text-xs ${seoDescriptionLength > 160 ? "text-amber-300" : "text-surface-500"}`}>
+                {seoDescriptionLength} / 160 znaków
+              </span>
+            </label>
+            <label className="text-sm text-surface-300">
+              SEO image URL
+              <input
+                className="mt-2 w-full rounded-xl border border-surface-800/70 bg-surface-900/60 px-3 py-2 text-surface-100"
+                value={page.seoImageUrl ?? ""}
+                onChange={(event) =>
+                  setPage((prev) =>
+                    prev ? { ...prev, seoImageUrl: event.target.value } : prev,
+                  )
+                }
+              />
+            </label>
+            <label className="text-sm text-surface-300 flex items-center gap-2 mt-7">
+              <input
+                type="checkbox"
+                checked={page.isPublished}
+                onChange={(event) =>
+                  setPage((prev) => (prev ? { ...prev, isPublished: event.target.checked } : prev))
+                }
+                className="h-4 w-4 rounded border-surface-700 bg-surface-900 text-brand-500"
+              />
+              Strona opublikowana
+            </label>
+          </div>
+          <button className="btn-primary px-4 py-2 text-sm" onClick={handleSavePage} disabled={savingPage}>
+            {savingPage ? "Zapisywanie..." : "Zapisz SEO"}
+          </button>
         </div>
-        <button className="btn-primary px-4 py-2 text-sm" onClick={handleSavePage} disabled={savingPage}>
-          {savingPage ? "Zapisywanie..." : "Zapisz SEO"}
-        </button>
+
+        <div className="space-y-4">
+          <div className="panel-card p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-surface-100">Status & wersje</h2>
+            <div className="space-y-2 text-sm text-surface-300">
+              <p>
+                Status:{" "}
+                <span className={page.isPublished ? "text-emerald-300" : "text-amber-300"}>
+                  {page.isPublished ? "Opublikowana" : "Wersja robocza"}
+                </span>
+              </p>
+              <p>Wersja: {page.version}</p>
+              <p>Utworzono: {new Date(page.createdAt).toLocaleString("pl-PL")}</p>
+              <p>Aktualizacja: {new Date(page.updatedAt).toLocaleString("pl-PL")}</p>
+            </div>
+            <p className="text-xs text-surface-500">
+              Pełna historia wersji pojawi się po wdrożeniu logowania zmian.
+            </p>
+          </div>
+
+          <div className="panel-card p-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-surface-100">JSON debug</h2>
+              <button
+                className="btn-secondary px-3 py-1.5 text-xs"
+                type="button"
+                onClick={() => setShowJson((prev) => !prev)}
+              >
+                {showJson ? "Ukryj" : "Pokaż"}
+              </button>
+            </div>
+            {showJson && (
+              <pre className="max-h-[320px] overflow-auto rounded-xl border border-surface-800/70 bg-surface-900/70 p-3 text-xs text-surface-200">
+                {JSON.stringify(
+                  {
+                    slug: page.slug,
+                    seoTitle: page.seoTitle,
+                    seoDescription: page.seoDescription,
+                    isPublished: page.isPublished,
+                    sections: page.sections,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="panel-card p-6 space-y-4">
@@ -695,7 +776,11 @@ export default function AdminWebsitePageEditor() {
                         />
                       </label>
                     </div>
-                    <BlockExtraEditor block={block} onSave={(extra) => handleSaveBlock(block, { extra })} />
+                    <BlockExtraEditor
+                      key={`${block.id}-${block.version}`}
+                      block={block}
+                      onSave={(extra) => handleSaveBlock(block, { extra })}
+                    />
                   </div>
                 ))
               )}
@@ -791,17 +876,19 @@ export default function AdminWebsitePageEditor() {
   );
 }
 
-function BlockExtraEditor({ block, onSave }: { block: WebsiteBlock; onSave: (extra: Record<string, unknown>) => void }) {
-  const [extraDraft, setExtraDraft] = useState<Record<string, unknown>>(() => (block.extra ?? {}) as Record<string, unknown>);
+function BlockExtraEditor({
+  block,
+  onSave,
+}: {
+  block: WebsiteBlock;
+  onSave: (extra: Record<string, unknown>) => void;
+}) {
+  const [extraDraft, setExtraDraft] = useState<Record<string, unknown>>(
+    () => (block.extra ?? {}) as Record<string, unknown>,
+  );
   const [jsonValue, setJsonValue] = useState(() =>
     Object.keys(extraDraft).length ? JSON.stringify(extraDraft, null, 2) : "",
   );
-
-  useEffect(() => {
-    const nextExtra = (block.extra ?? {}) as Record<string, unknown>;
-    setExtraDraft(nextExtra);
-    setJsonValue(Object.keys(nextExtra).length ? JSON.stringify(nextExtra, null, 2) : "");
-  }, [block.extra]);
 
   const handleSaveJson = () => {
     try {
@@ -979,10 +1066,6 @@ function BlockDraftExtraEditor({
   const [jsonValue, setJsonValue] = useState(() =>
     Object.keys(draft.extra).length ? JSON.stringify(draft.extra, null, 2) : "",
   );
-
-  useEffect(() => {
-    setJsonValue(Object.keys(draft.extra).length ? JSON.stringify(draft.extra, null, 2) : "");
-  }, [draft.extra]);
 
   const handleSaveJson = () => {
     try {
