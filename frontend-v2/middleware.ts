@@ -21,7 +21,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hostname = nextUrl.hostname;
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const hostHeader = forwardedHost ?? request.headers.get("host") ?? nextUrl.hostname;
+  const hostname = hostHeader.split(":")[0]?.toLowerCase() ?? nextUrl.hostname;
   const isAdminHost = hostname === adminHost;
   const isPanelHost = hostname === panelHost;
 
