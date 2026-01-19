@@ -5,3 +5,6 @@ export const APP_URL = normalizeUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://
 export const ADMIN_APP_URL = normalizeUrl(
   process.env.NEXT_PUBLIC_ADMIN_APP_URL ?? "https://admin.kadryhr.pl",
 );
+export const PANEL_APP_URL = normalizeUrl(
+  process.env.NEXT_PUBLIC_PANEL_APP_URL ?? "https://panel.kadryhr.pl",
+);

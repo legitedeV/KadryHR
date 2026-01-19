@@ -10,5 +10,6 @@
 - Lead form posts to `NEXT_PUBLIC_API_URL` + `/public/leads`.
 - Default API base: `https://api.kadryhr.pl/api` (override with `NEXT_PUBLIC_API_URL`).
 - Admin panel URL: `NEXT_PUBLIC_ADMIN_APP_URL` (defaults to `https://admin.kadryhr.pl`).
+- Employee panel URL: `NEXT_PUBLIC_PANEL_APP_URL` (defaults to `https://panel.kadryhr.pl`).
 - Main app URL (used for cross-domain links): `NEXT_PUBLIC_APP_URL` (defaults to `https://kadryhr.pl`).
 - Optional E2E: `npm run test:e2e` (Playwright).

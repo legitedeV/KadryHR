@@ -201,6 +201,7 @@ export class AuthService {
       httpOnly: true,
       secure,
       sameSite: secure ? 'none' : 'lax',
+      domain: secure ? '.kadryhr.pl' : undefined,
       maxAge: maxAgeMs || undefined,
       path: '/api/auth',
     });

@@ -9,18 +9,19 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.use(helmet());
 
-  const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
+  const baseOrigins = [
+    'https://kadryhr.pl',
+    'https://admin.kadryhr.pl',
+    'https://panel.kadryhr.pl',
+  ];
+  const envOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
+    .map((origin) => origin.trim())
     .filter(Boolean);
+  const allowedOrigins = Array.from(new Set([...baseOrigins, ...envOrigins]));
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('CORS blocked for origin: ' + origin), false);
-    },
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
