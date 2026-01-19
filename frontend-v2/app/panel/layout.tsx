@@ -57,6 +57,7 @@ const titleByPath: Record<string, string> = {
   "/panel/admin/users": "Użytkownicy systemu",
   "/panel/admin/audit": "System audit log",
   "/panel/admin/settings": "Ustawienia systemu",
+  "/panel/admin/website": "Treści strony",
   "/": "Panel admina",
   "/organisations": "Organizacje",
   "/users": "Użytkownicy systemu",

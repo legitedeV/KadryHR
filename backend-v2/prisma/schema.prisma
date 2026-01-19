@@ -630,6 +630,71 @@ model NotificationDeliveryAttempt {
   @@index([notificationId])
 }
 
+model WebsitePage {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  seoTitle       String?
+  seoDescription String?
+  seoImageUrl    String?
+  isPublished    Boolean  @default(false)
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sections WebsiteSection[]
+}
+
+model WebsiteSection {
+  id        String   @id @default(uuid())
+  pageId    String
+  key       String
+  title     String?
+  subtitle  String?
+  order     Int      @default(0)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page   WebsitePage   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  blocks WebsiteBlock[]
+
+  @@index([pageId])
+  @@index([pageId, order])
+}
+
+model WebsiteBlock {
+  id        String   @id @default(uuid())
+  sectionId String
+  type      String
+  title     String?
+  body      String?
+  mediaUrl  String?
+  extra     Json?
+  order     Int      @default(0)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section WebsiteSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+  @@index([sectionId, order])
+}
+
+model WebsiteSettings {
+  id                 String   @id @default(uuid())
+  contactEmails      String[] @default([])
+  socialLinks        Json?
+  footerLinks        Json?
+  cookieBannerText   String?
+  cookiePolicyUrl    String?
+  privacyPolicyUrl   String?
+  termsOfServiceUrl  String?
+  version            Int      @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
 model NotificationCampaign {
   id              String                      @id @default(uuid())
   organisationId  String

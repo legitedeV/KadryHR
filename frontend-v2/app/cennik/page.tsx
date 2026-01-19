@@ -5,13 +5,27 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { pricingFaq, pricingPlans } from "@/components/landing/pricing-data";
 import { Reveal } from "@/components/motion/Reveal";
 import type { Metadata } from "next";
+import { fetchWebsitePage, fetchWebsiteSettings } from "@/lib/website-content";
+import { resolveFooterContent } from "@/lib/website-mappers";
 
-export const metadata: Metadata = {
-  title: "Cennik",
-  description:
-    "Porównaj plany KadryHR dla retail i zespołów zmianowych. Jasne ceny per użytkownik oraz pełne wsparcie wdrożenia.",
-  alternates: { canonical: "/cennik" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await fetchWebsitePage("pricing");
+  if (!page) {
+    return {
+      title: "Cennik",
+      description:
+        "Porównaj plany KadryHR dla retail i zespołów zmianowych. Jasne ceny per użytkownik oraz pełne wsparcie wdrożenia.",
+      alternates: { canonical: "/cennik" },
+    };
+  }
+
+  return {
+    title: page.seoTitle ?? "Cennik",
+    description: page.seoDescription ?? undefined,
+    alternates: { canonical: "/cennik" },
+    openGraph: page.seoImageUrl ? { images: [page.seoImageUrl] } : undefined,
+  };
+}
 
 const comparisonRows = [
   {
@@ -44,7 +58,70 @@ const comparisonRows = [
   },
 ];
 
-export default function PricingPage() {
+type PricingPlan = {
+  name: string;
+  price: string;
+  cadence: string;
+  desc: string;
+  features: string[];
+  badge?: string;
+  highlighted?: boolean;
+};
+type PricingFaqItem = { question: string; answer: string };
+
+function resolvePricingPlans(
+  pageContent: Awaited<ReturnType<typeof fetchWebsitePage>>,
+): PricingPlan[] {
+  const section = pageContent?.sections.find((item) => item.key === "pricing_plans");
+  if (!section) return [];
+
+  return section.blocks
+    .filter((block) => block.type === "plan")
+    .map((block) => {
+      const extra = block.extra ?? {};
+      const features = Array.isArray(extra.features)
+        ? extra.features.filter((item) => typeof item === "string")
+        : [];
+
+      return {
+        name: block.title ?? "Plan",
+        price: typeof extra.price === "string" ? extra.price : "",
+        cadence: typeof extra.cadence === "string" ? extra.cadence : "",
+        desc: block.body ?? "",
+        badge: typeof extra.badge === "string" ? extra.badge : undefined,
+        highlighted: extra.highlighted === true,
+        features,
+      };
+    })
+    .filter((plan) => plan.name);
+}
+
+function resolvePricingFaq(
+  pageContent: Awaited<ReturnType<typeof fetchWebsitePage>>,
+): PricingFaqItem[] {
+  const section = pageContent?.sections.find((item) => item.key === "faq");
+  if (!section) return [];
+
+  return section.blocks
+    .filter((block) => block.type === "faq_item")
+    .map((block) => ({
+      question: block.title ?? "",
+      answer: block.body ?? "",
+    }))
+    .filter((item) => item.question && item.answer);
+}
+
+export default async function PricingPage() {
+  const [pageContent, settings] = await Promise.all([
+    fetchWebsitePage("pricing"),
+    fetchWebsiteSettings(),
+  ]);
+  const footerContent = resolveFooterContent(settings);
+  const derivedPlans = resolvePricingPlans(pageContent);
+  const derivedFaq = resolvePricingFaq(pageContent);
+  const plansToRender = derivedPlans.length ? derivedPlans : pricingPlans;
+  const faqToRender = derivedFaq.length ? derivedFaq : pricingFaq;
+
   return (
     <div className="min-h-screen">
       <MarketingHeader />
@@ -65,7 +142,7 @@ export default function PricingPage() {
         </Reveal>
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {pricingPlans.map((plan, index) => (
+          {plansToRender.map((plan, index) => (
             <Reveal
               key={plan.name}
               delay={140 + index * 80}
@@ -114,7 +191,7 @@ export default function PricingPage() {
               <thead className="text-left text-surface-400">
                 <tr>
                   <th className="py-3 pr-4">Funkcja</th>
-                  {pricingPlans.map((plan) => (
+                  {plansToRender.map((plan) => (
                     <th key={plan.name} className="py-3 pr-4">{plan.name}</th>
                   ))}
                 </tr>
@@ -140,7 +217,7 @@ export default function PricingPage() {
         </Reveal>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {pricingFaq.map((item, index) => (
+          {faqToRender.map((item, index) => (
             <Reveal key={item.question} delay={160 + index * 60} className="rounded-2xl border border-surface-800/60 bg-surface-800/60 p-4">
               <p className="text-sm font-semibold text-surface-50">{item.question}</p>
               <p className="mt-2 text-sm text-surface-300">{item.answer}</p>
@@ -148,12 +225,12 @@ export default function PricingPage() {
           ))}
         </div>
       </main>
-      <LandingFooter />
+      <LandingFooter content={footerContent} />
       <Script id="faq-jsonld" type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: pricingFaq.map((item) => ({
+          mainEntity: faqToRender.map((item) => ({
             "@type": "Question",
             name: item.question,
             acceptedAnswer: {
