@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListQueryDto, ListUsersQueryDto } from './dto/list-query.dto';
 import { Role } from '@prisma/client';
+import { UpdatePlatformConfigDto } from './dto/platform-config.dto';
 
 @Injectable()
 export class AdminService {
@@ -110,5 +111,65 @@ export class AdminService {
       })),
       total,
     };
+  }
+
+  private async ensurePlatformConfig() {
+    return this.prisma.platformConfig.upsert({
+      where: { id: 'platform' },
+      create: {
+        id: 'platform',
+        frontendConfig: {},
+        backendConfig: {},
+      },
+      update: {},
+    });
+  }
+
+  async getPlatformConfig() {
+    const config = await this.ensurePlatformConfig();
+    return {
+      id: config.id,
+      frontendConfig: config.frontendConfig ?? {},
+      backendConfig: config.backendConfig ?? {},
+      updatedAt: config.updatedAt.toISOString(),
+    };
+  }
+
+  async updatePlatformConfig(payload: UpdatePlatformConfigDto) {
+    const existing = await this.ensurePlatformConfig();
+    const frontendConfig = payload.frontendConfig ?? existing.frontendConfig ?? {};
+    const backendConfig = payload.backendConfig ?? existing.backendConfig ?? {};
+
+    const updated = await this.prisma.platformConfig.update({
+      where: { id: existing.id },
+      data: {
+        frontendConfig,
+        backendConfig,
+      },
+    });
+
+    return {
+      id: updated.id,
+      frontendConfig: updated.frontendConfig ?? {},
+      backendConfig: updated.backendConfig ?? {},
+      updatedAt: updated.updatedAt.toISOString(),
+    };
+  }
+
+  async getSystemStatus() {
+    const status = {
+      api: 'ok',
+      database: 'unknown',
+      checkedAt: new Date().toISOString(),
+    };
+
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      status.database = 'ok';
+    } catch {
+      status.database = 'error';
+    }
+
+    return status;
   }
 }

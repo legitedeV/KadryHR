@@ -28,6 +28,7 @@ import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { WebsiteModule } from './website/website.module';
+import { PlatformConfigModule } from './platform-config/platform-config.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { WebsiteModule } from './website/website.module';
     ReportsModule,
     SubscriptionsModule,
     WebsiteModule,
+    PlatformConfigModule,
   ],
 })
 export class AppModule {}

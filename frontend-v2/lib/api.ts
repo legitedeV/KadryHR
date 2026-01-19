@@ -2048,6 +2048,24 @@ export interface AdminStats {
   totalShifts: number;
 }
 
+export interface AdminPlatformConfig {
+  id: string;
+  frontendConfig: Record<string, unknown>;
+  backendConfig: Record<string, unknown>;
+  updatedAt: string;
+}
+
+export interface AdminSystemStatus {
+  api: "ok" | "error";
+  database: "ok" | "error" | "unknown";
+  checkedAt: string;
+}
+
+export interface PublicFrontendConfig {
+  frontendConfig: Record<string, unknown>;
+  updatedAt: string;
+}
+
 export interface AdminOrganisationItem {
   id: string;
   name: string;
@@ -2161,6 +2179,31 @@ export async function apiListAdminUsers(params?: {
   return apiClient.request<{ data: AdminUserItem[]; total: number }>(
     `${ADMIN_PREFIX}/users${query ? `?${query}` : ""}`,
   );
+}
+
+export async function apiGetAdminConfig(): Promise<AdminPlatformConfig> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AdminPlatformConfig>(`${ADMIN_PREFIX}/config`);
+}
+
+export async function apiUpdateAdminConfig(payload: Partial<{
+  frontendConfig: Record<string, unknown>;
+  backendConfig: Record<string, unknown>;
+}>): Promise<AdminPlatformConfig> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AdminPlatformConfig>(`${ADMIN_PREFIX}/config`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiGetAdminStatus(): Promise<AdminSystemStatus> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<AdminSystemStatus>(`${ADMIN_PREFIX}/status`);
+}
+
+export async function apiGetPublicFrontendConfig(): Promise<PublicFrontendConfig> {
+  return apiClient.request<PublicFrontendConfig>("/config/frontend");
 }
 
 const WEBSITE_ADMIN_PREFIX = "/website/admin";
