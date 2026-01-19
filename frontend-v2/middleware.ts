@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const DEFAULT_ADMIN_APP_URL = "https://admin.kadryhr.pl";
 const DEFAULT_PANEL_APP_URL = "https://panel.kadryhr.pl";
-const DEFAULT_APP_URL = "https://kadryhr.pl";
-
 const adminBaseUrl = process.env.NEXT_PUBLIC_ADMIN_APP_URL ?? DEFAULT_ADMIN_APP_URL;
 const panelBaseUrl = process.env.NEXT_PUBLIC_PANEL_APP_URL ?? DEFAULT_PANEL_APP_URL;
-const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL ?? DEFAULT_APP_URL;
 
 const adminHost = new URL(adminBaseUrl).host;
 const panelHost = new URL(panelBaseUrl).host;
@@ -37,9 +34,10 @@ export function middleware(request: NextRequest) {
     }
 
     if (pathname.startsWith("/panel")) {
-      const appUrl = new URL(`${appBaseUrl}${pathname}`);
-      appUrl.search = nextUrl.search;
-      return NextResponse.redirect(appUrl);
+      const url = nextUrl.clone();
+      url.pathname = `/panel/admin${pathname.replace(/^\/panel/, "")}` || "/panel/admin";
+      url.search = nextUrl.search;
+      return NextResponse.rewrite(url);
     }
 
     const url = nextUrl.clone();
