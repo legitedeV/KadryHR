@@ -27,10 +27,7 @@ export function middleware(request: NextRequest) {
 
   if (isAdminHost) {
     if (pathname.startsWith("/panel/admin")) {
-      const url = nextUrl.clone();
-      url.pathname = pathname.replace(/^\/panel\/admin/, "") || "/";
-      url.search = nextUrl.search;
-      return NextResponse.redirect(url);
+      return NextResponse.next();
     }
 
     if (pathname.startsWith("/panel")) {
