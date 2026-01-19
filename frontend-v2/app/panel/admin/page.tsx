@@ -179,7 +179,7 @@ export default function AdminPage() {
                   </div>
                 </Link>
                 <Link
-                  href="/website"
+                  href="/panel/admin/website"
                   className="flex items-center gap-3 p-3 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
                 >
                   <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-300">

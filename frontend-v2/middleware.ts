@@ -21,16 +21,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hostname = nextUrl.hostname;
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const hostHeader = forwardedHost ?? request.headers.get("host") ?? nextUrl.hostname;
+  const hostname = hostHeader.split(":")[0]?.toLowerCase() ?? nextUrl.hostname;
   const isAdminHost = hostname === adminHost;
   const isPanelHost = hostname === panelHost;
 
   if (isAdminHost) {
     if (pathname.startsWith("/panel/admin")) {
-      const url = nextUrl.clone();
-      url.pathname = pathname.replace(/^\/panel\/admin/, "") || "/";
-      url.search = nextUrl.search;
-      return NextResponse.redirect(url);
+      return NextResponse.next();
     }
 
     if (pathname.startsWith("/panel")) {
