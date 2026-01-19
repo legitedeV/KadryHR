@@ -72,7 +72,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-surface-400 mb-1">
-            <Link href="/panel/admin" className="hover:text-surface-200">
+            <Link href="/" className="hover:text-surface-200">
               Panel admina
             </Link>
             <span>/</span>

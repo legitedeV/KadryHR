@@ -41,7 +41,7 @@ export default function AdminPage() {
           label: "Organizacje",
           value: stats.totalOrganisations,
           icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-          href: "/panel/admin/organisations",
+          href: "/organisations",
           color: "brand",
         },
         {
@@ -55,7 +55,7 @@ export default function AdminPage() {
           label: "Użytkownicy",
           value: stats.totalUsers,
           icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-          href: "/panel/admin/users",
+          href: "/users",
           color: "amber",
         },
         {
@@ -143,7 +143,7 @@ export default function AdminPage() {
               <h2 className="text-lg font-semibold text-surface-100 mb-4">Szybkie akcje</h2>
               <div className="space-y-3">
                 <Link
-                  href="/panel/admin/organisations"
+                  href="/organisations"
                   className="flex items-center gap-3 p-3 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
                 >
                   <div className="h-10 w-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-300">
@@ -161,7 +161,7 @@ export default function AdminPage() {
                   </div>
                 </Link>
                 <Link
-                  href="/panel/admin/users"
+                  href="/users"
                   className="flex items-center gap-3 p-3 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
                 >
                   <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-300">
