@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { EmptyState } from "@/components/EmptyState";
-import { APP_URL } from "@/lib/site-config";
+import { PANEL_APP_URL } from "@/lib/site-config";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           title="Brak dostępu"
           description="Panel administratora jest dostępny tylko dla użytkowników z rolą ADMIN lub OWNER. Jeśli uważasz, że powinieneś mieć dostęp, skontaktuj się z administratorem systemu."
           action={
-            <Link href={`${APP_URL}/panel/dashboard`} className="btn-primary px-4 py-2">
+            <Link href={`${PANEL_APP_URL}/panel/dashboard`} className="btn-primary px-4 py-2">
               Wróć do dashboardu
             </Link>
           }
