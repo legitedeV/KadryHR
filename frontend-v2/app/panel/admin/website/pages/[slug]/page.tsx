@@ -407,7 +407,7 @@ export default function AdminWebsitePageEditor() {
             Panel admina
           </Link>
           <span>/</span>
-          <Link href="/panel/admin/website" className="hover:text-surface-200">
+          <Link href="/console/website" className="hover:text-surface-200">
             Treści strony
           </Link>
           <span>/</span>
