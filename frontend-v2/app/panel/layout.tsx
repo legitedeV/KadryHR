@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
-import { apiGetMe, User } from "@/lib/api";
+import { apiGetMe, apiGetPublicFrontendConfig, User } from "@/lib/api";
 import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
 import { NotificationsProvider } from "@/lib/notifications-context";
@@ -32,9 +32,15 @@ const navItems: NavItem[] = [
   { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "ADMIN"] },
   { href: "/panel/rozliczenia", label: "Rozliczenia", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z", roles: ["OWNER"] },
   { href: "/panel/uzytkownicy", label: "Użytkownicy", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
-  { href: ADMIN_APP_URL, label: "Panel admina", icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", roles: ["ADMIN", "OWNER"] },
+  { href: `${ADMIN_APP_URL}/console`, label: "Panel admina", icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", roles: ["ADMIN", "OWNER"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
+
+const defaultPanelNavConfig = {
+  showAudit: true,
+  showReports: true,
+  showBilling: true,
+};
 
 // Height for mobile menu content area (viewport height minus header and footer)
 const MOBILE_MENU_CONTENT_HEIGHT = 'calc(100vh - 180px)';
@@ -74,6 +80,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(hasSession);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [panelNavConfig, setPanelNavConfig] = useState(defaultPanelNavConfig);
 
   useEffect(() => {
     if (!hasSession) {
@@ -102,6 +109,28 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [hasSession, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGetPublicFrontendConfig()
+      .then((data) => {
+        if (cancelled) return;
+        const navigation = (data.frontendConfig as { navigation?: Partial<typeof defaultPanelNavConfig> })
+          ?.navigation;
+        setPanelNavConfig({
+          ...defaultPanelNavConfig,
+          ...(navigation ?? {}),
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPanelNavConfig(defaultPanelNavConfig);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handleLogout() {
     clearAuthTokens();
@@ -144,6 +173,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </p>
             {navItems
               .filter((item) => {
+                if (item.href === "/panel/audit" && !panelNavConfig.showAudit) return false;
+                if (item.href === "/panel/raporty" && !panelNavConfig.showReports) return false;
+                if (item.href === "/panel/rozliczenia" && !panelNavConfig.showBilling) return false;
                 // Filter by roles if specified
                 if (!item.roles) return true;
                 return item.roles.includes(user.role);
