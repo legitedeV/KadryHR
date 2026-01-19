@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 import { ListQueryDto, ListUsersQueryDto } from './dto/list-query.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.OWNER)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}

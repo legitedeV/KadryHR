@@ -9,6 +9,7 @@ import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
 import { NotificationsProvider } from "@/lib/notifications-context";
 import { ScheduleNotificationPopups } from "@/components/notifications/ScheduleNotificationPopups";
+import { ADMIN_APP_URL } from "@/lib/site-config";
 
 type NavItem = {
   href: string;
@@ -31,7 +32,7 @@ const navItems: NavItem[] = [
   { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "ADMIN"] },
   { href: "/panel/rozliczenia", label: "Rozliczenia", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z", roles: ["OWNER"] },
   { href: "/panel/uzytkownicy", label: "Użytkownicy", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
-  { href: "/panel/admin", label: "Panel admina", icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", roles: ["ADMIN", "OWNER"] },
+  { href: ADMIN_APP_URL, label: "Panel admina", icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", roles: ["ADMIN", "OWNER"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
@@ -56,6 +57,9 @@ const titleByPath: Record<string, string> = {
   "/panel/admin/users": "Użytkownicy systemu",
   "/panel/admin/audit": "System audit log",
   "/panel/admin/settings": "Ustawienia systemu",
+  "/": "Panel admina",
+  "/organisations": "Organizacje",
+  "/users": "Użytkownicy systemu",
   "/panel/zespol": "Zarządzanie zespołem",
   "/panel/lokalizacje": "Lokalizacje",
   "/panel/raporty": "Raporty",
@@ -309,7 +313,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   KadryHR · panel
                 </p>
                 <p className="text-sm font-bold text-surface-50 truncate">
-                  {titleByPath[pathname] ?? "Dashboard"}
+                  {titleByPath[pathname] ??
+                    titleByPath[`/panel/admin${pathname === "/" ? "" : pathname}`] ??
+                    "Dashboard"}
                 </p>
               </div>
             </div>
