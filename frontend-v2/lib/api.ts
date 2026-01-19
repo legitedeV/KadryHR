@@ -2068,6 +2068,64 @@ export interface AdminUserItem {
   createdAt: string;
 }
 
+export interface WebsitePageSummary {
+  id: string;
+  slug: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoImageUrl?: string | null;
+  isPublished: boolean;
+  version: number;
+  updatedAt: string;
+  createdAt: string;
+  _count?: { sections: number };
+}
+
+export interface WebsiteBlock {
+  id: string;
+  sectionId: string;
+  type: string;
+  title?: string | null;
+  body?: string | null;
+  mediaUrl?: string | null;
+  extra?: Record<string, unknown> | null;
+  order: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebsiteSection {
+  id: string;
+  pageId: string;
+  key: string;
+  title?: string | null;
+  subtitle?: string | null;
+  order: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  blocks: WebsiteBlock[];
+}
+
+export interface WebsitePageDetail extends WebsitePageSummary {
+  sections: WebsiteSection[];
+}
+
+export interface WebsiteSettings {
+  id: string;
+  contactEmails: string[];
+  socialLinks?: Record<string, unknown> | null;
+  footerLinks?: Record<string, unknown> | null;
+  cookieBannerText?: string | null;
+  cookiePolicyUrl?: string | null;
+  privacyPolicyUrl?: string | null;
+  termsOfServiceUrl?: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const ADMIN_PREFIX = "/admin";
 
 export async function apiGetAdminStats(): Promise<AdminStats> {
@@ -2103,4 +2161,179 @@ export async function apiListAdminUsers(params?: {
   return apiClient.request<{ data: AdminUserItem[]; total: number }>(
     `${ADMIN_PREFIX}/users${query ? `?${query}` : ""}`,
   );
+}
+
+const WEBSITE_ADMIN_PREFIX = "/website/admin";
+
+export async function apiListWebsitePages(): Promise<WebsitePageSummary[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsitePageSummary[]>(`${WEBSITE_ADMIN_PREFIX}/pages`);
+}
+
+export async function apiGetWebsitePage(slug: string): Promise<WebsitePageDetail> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsitePageDetail>(
+    `${WEBSITE_ADMIN_PREFIX}/pages/${slug}`,
+  );
+}
+
+export async function apiCreateWebsitePage(payload: {
+  slug: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoImageUrl?: string;
+  isPublished?: boolean;
+}): Promise<WebsitePageDetail> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsitePageDetail>(`${WEBSITE_ADMIN_PREFIX}/pages`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateWebsitePage(
+  slug: string,
+  payload: Partial<{
+    slug: string;
+    seoTitle: string;
+    seoDescription: string;
+    seoImageUrl: string;
+    isPublished: boolean;
+  }>,
+): Promise<WebsitePageDetail> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsitePageDetail>(
+    `${WEBSITE_ADMIN_PREFIX}/pages/${slug}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiPublishWebsitePage(
+  slug: string,
+  isPublished: boolean,
+): Promise<WebsitePageDetail> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsitePageDetail>(
+    `${WEBSITE_ADMIN_PREFIX}/pages/${slug}/publish`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ isPublished }),
+    },
+  );
+}
+
+export async function apiCreateWebsiteSection(payload: {
+  pageId: string;
+  key: string;
+  title?: string;
+  subtitle?: string;
+  order?: number;
+}): Promise<WebsiteSection> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsiteSection>(`${WEBSITE_ADMIN_PREFIX}/sections`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateWebsiteSection(
+  sectionId: string,
+  payload: Partial<{
+    key: string;
+    title: string;
+    subtitle: string;
+    order: number;
+  }>,
+): Promise<WebsiteSection> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsiteSection>(
+    `${WEBSITE_ADMIN_PREFIX}/sections/${sectionId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiDeleteWebsiteSection(sectionId: string): Promise<{
+  success: boolean;
+}> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `${WEBSITE_ADMIN_PREFIX}/sections/${sectionId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function apiCreateWebsiteBlock(payload: {
+  sectionId: string;
+  type: string;
+  title?: string;
+  body?: string;
+  mediaUrl?: string;
+  extra?: Record<string, unknown>;
+  order?: number;
+}): Promise<WebsiteBlock> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsiteBlock>(`${WEBSITE_ADMIN_PREFIX}/blocks`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateWebsiteBlock(
+  blockId: string,
+  payload: Partial<{
+    type: string;
+    title: string;
+    body: string;
+    mediaUrl: string;
+    extra: Record<string, unknown>;
+    order: number;
+  }>,
+): Promise<WebsiteBlock> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsiteBlock>(
+    `${WEBSITE_ADMIN_PREFIX}/blocks/${blockId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiDeleteWebsiteBlock(blockId: string): Promise<{
+  success: boolean;
+}> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `${WEBSITE_ADMIN_PREFIX}/blocks/${blockId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function apiGetWebsiteSettings(): Promise<WebsiteSettings> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsiteSettings>(`${WEBSITE_ADMIN_PREFIX}/settings`);
+}
+
+export async function apiUpdateWebsiteSettings(
+  payload: Partial<{
+    contactEmails: string[];
+    socialLinks: Record<string, unknown> | null;
+    footerLinks: Record<string, unknown> | null;
+    cookieBannerText: string | null;
+    cookiePolicyUrl: string | null;
+    privacyPolicyUrl: string | null;
+    termsOfServiceUrl: string | null;
+  }>,
+): Promise<WebsiteSettings> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<WebsiteSettings>(`${WEBSITE_ADMIN_PREFIX}/settings`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }

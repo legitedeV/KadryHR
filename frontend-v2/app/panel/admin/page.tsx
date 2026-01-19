@@ -178,6 +178,20 @@ export default function AdminPage() {
                     <p className="text-xs text-surface-400">Lista wszystkich użytkowników w systemie</p>
                   </div>
                 </Link>
+                <Link
+                  href="/website"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-300">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h8" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-surface-100">Treści strony</p>
+                    <p className="text-xs text-surface-400">Zarządzanie landingiem i cennikiem</p>
+                  </div>
+                </Link>
               </div>
             </div>
 

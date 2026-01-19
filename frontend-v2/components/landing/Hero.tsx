@@ -5,19 +5,31 @@ import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
 import { prefersReducedMotion } from "@/components/motion/prefersReducedMotion";
 
-const highlights = [
+const defaultHighlights = [
   "Grafiki miesięczne z dyspozycyjnością w jednym widoku",
   "Rejestracja czasu pracy QR + automatyczne raporty",
   "Panel pracownika i managera z jasnymi przepływami",
 ];
 
-const stats = [
+const defaultStats = [
   { value: "42%", label: "mniej konfliktów" },
   { value: "2h", label: "zamknięcie miesiąca" },
   { value: "92%", label: "odpowiedzi w 24h" },
 ];
 
-export function Hero() {
+export type HeroContent = {
+  badgeLabel?: string;
+  title?: string;
+  subtitle?: string;
+  primaryCtaLabel?: string;
+  primaryCtaUrl?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
+  highlights?: string[];
+  stats?: Array<{ value: string; label: string }>;
+};
+
+export function Hero({ content }: { content?: HeroContent }) {
   const [loaded, setLoaded] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const auroraRef = useRef<HTMLDivElement | null>(null);
@@ -76,6 +88,11 @@ export function Hero() {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  const highlights = content?.highlights?.length
+    ? content.highlights
+    : defaultHighlights;
+  const stats = content?.stats?.length ? content.stats : defaultStats;
 
   return (
     <section
@@ -146,35 +163,48 @@ export function Hero() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-500" />
             </span>
-            KadryHR dla retail i zespołów zmianowych
+            {content?.badgeLabel ?? "KadryHR dla retail i zespołów zmianowych"}
           </div>
           
           <div className="space-y-6">
             <h1 className="hero-title text-4xl font-bold leading-[1.1] tracking-tight text-surface-50 md:text-5xl lg:text-[3.5rem]">
-              Grafiki, czas pracy i urlopy{" "}
-              <span className="relative inline-block">
-                <span className="relative z-10 bg-gradient-to-r from-brand-300 via-emerald-300 to-brand-400 bg-clip-text text-transparent">
-                  domknięte
-                </span>
-                <span className="absolute -bottom-1 left-0 right-0 h-3 bg-brand-500/20 blur-lg" aria-hidden="true" />
-              </span>{" "}
-              w jednym, przewidywalnym rytmie.
+              {content?.title ?? (
+                <>
+                  Grafiki, czas pracy i urlopy{" "}
+                  <span className="relative inline-block">
+                    <span className="relative z-10 bg-gradient-to-r from-brand-300 via-emerald-300 to-brand-400 bg-clip-text text-transparent">
+                      domknięte
+                    </span>
+                    <span
+                      className="absolute -bottom-1 left-0 right-0 h-3 bg-brand-500/20 blur-lg"
+                      aria-hidden="true"
+                    />
+                  </span>{" "}
+                  w jednym, przewidywalnym rytmie.
+                </>
+              )}
             </h1>
             <p className="hero-lede max-w-xl text-lg leading-relaxed text-surface-300">
-              KadryHR porządkuje grafikowanie w sklepach i sieciach usługowych: mniej telefonów, mniej kolizji,
-              szybsze rozliczenia i stały wgląd w obsadę na każdej zmianie.
+              {content?.subtitle ??
+                "KadryHR porządkuje grafikowanie w sklepach i sieciach usługowych: mniej telefonów, mniej kolizji, szybsze rozliczenia i stały wgląd w obsadę na każdej zmianie."}
             </p>
           </div>
           
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="#kontakt" className="btn-primary btn-hero group px-6 py-3 text-base">
-              Umów demo
+            <Link
+              href={content?.primaryCtaUrl ?? "#kontakt"}
+              className="btn-primary btn-hero group px-6 py-3 text-base"
+            >
+              {content?.primaryCtaLabel ?? "Umów demo"}
               <span aria-hidden className="ml-1 transition-transform duration-300 group-hover:translate-x-1">
                 →
               </span>
             </Link>
-            <Link href="#product-tour" className="btn-secondary btn-hero-outline group px-6 py-3">
-              Zobacz jak działa
+            <Link
+              href={content?.secondaryCtaUrl ?? "#product-tour"}
+              className="btn-secondary btn-hero-outline group px-6 py-3"
+            >
+              {content?.secondaryCtaLabel ?? "Zobacz jak działa"}
               <svg className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

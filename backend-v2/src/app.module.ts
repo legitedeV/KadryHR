@@ -27,6 +27,7 @@ import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { WebsiteModule } from './website/website.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     AdminModule,
     ReportsModule,
     SubscriptionsModule,
+    WebsiteModule,
   ],
 })
 export class AppModule {}
