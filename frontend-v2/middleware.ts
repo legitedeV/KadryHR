@@ -34,13 +34,6 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/auth");
 
   if (isAdminHost) {
-    if (pathname.startsWith("/panel/admin")) {
-      const url = nextUrl.clone();
-      url.pathname = `/console${pathname.replace(/^\/panel\/admin/, "")}` || "/console";
-      url.search = nextUrl.search;
-      return NextResponse.redirect(url);
-    }
-
     if (pathname.startsWith("/panel")) {
       const panelUrl = new URL(panelBaseUrl);
       panelUrl.pathname = pathname;
@@ -66,14 +59,6 @@ export function middleware(request: NextRequest) {
   }
 
   if (isPanelHost) {
-    if (pathname.startsWith("/panel/admin")) {
-      const adminUrl = new URL(adminBaseUrl);
-      const adminPath = pathname.replace(/^\/panel\/admin/, "") || "/console";
-      adminUrl.pathname = `/console${adminPath === "/" ? "" : adminPath}`;
-      adminUrl.search = nextUrl.search;
-      return NextResponse.redirect(adminUrl);
-    }
-
     if (pathname.startsWith("/console")) {
       const adminUrl = new URL(adminBaseUrl);
       adminUrl.pathname = pathname;
@@ -94,12 +79,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  if (pathname.startsWith("/panel/admin")) {
-    const adminUrl = new URL(adminBaseUrl);
-    const adminPath = pathname.replace(/^\/panel\/admin/, "") || "/console";
-    adminUrl.pathname = `/console${adminPath === "/" ? "" : adminPath}`;
-    adminUrl.search = nextUrl.search;
-    return NextResponse.redirect(adminUrl);
+  if (pathname.startsWith("/panel")) {
+    const panelUrl = new URL(panelBaseUrl);
+    panelUrl.pathname = pathname;
+    panelUrl.search = nextUrl.search;
+    return NextResponse.redirect(panelUrl);
   }
 
   if (pathname.startsWith("/console")) {
