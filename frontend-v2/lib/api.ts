@@ -1,5 +1,5 @@
-import { apiClient } from "./api-client";
-import { clearAuthTokens } from "./auth";
+import { apiClient, API_BASE_URL, ApiError } from "./api-client";
+import { clearAuthTokens, getAccessToken } from "./auth";
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
 export type Permission =
@@ -877,4 +877,86 @@ export async function apiChangeEmail(
 export async function apiListShiftPresets(): Promise<ShiftPresetRecord[]> {
   apiClient.hydrateFromStorage();
   return apiClient.request<ShiftPresetRecord[]>(`${SHIFT_PRESETS_PREFIX}`);
+}
+
+// ============================================
+// AVATAR UPLOAD API
+// ============================================
+
+function getApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
+}
+
+export async function apiUploadEmployeeAvatar(
+  employeeId: string,
+  file: File
+): Promise<{ avatarUrl: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  const token = getAccessToken();
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(
+    `${baseUrl}/avatars/employees/${employeeId}/avatar`,
+    {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // DO NOT set Content-Type - fetch will automatically add boundary
+      },
+    }
+  );
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new ApiError(error.message || "Upload failed", response.status);
+  }
+  
+  return response.json();
+}
+
+export async function apiDeleteEmployeeAvatar(
+  employeeId: string
+): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `/avatars/employees/${employeeId}/avatar`,
+    { method: "DELETE" }
+  );
+}
+
+export async function apiUploadOrganisationLogo(
+  file: File
+): Promise<{ logoUrl: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  const token = getAccessToken();
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(
+    `${baseUrl}/avatars/organisations/me/avatar`,
+    {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new ApiError(error.message || "Upload failed", response.status);
+  }
+  
+  return response.json();
+}
+
+export async function apiDeleteOrganisationLogo(): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(
+    `/avatars/organisations/me/avatar`,
+    { method: "DELETE" }
+  );
 }
