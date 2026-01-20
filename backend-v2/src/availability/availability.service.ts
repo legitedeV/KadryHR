@@ -775,17 +775,12 @@ export class AvailabilityService {
       },
     });
 
-    if (
+    const wasSubmitted =
       existing &&
       [
         AvailabilitySubmissionStatus.SUBMITTED,
         AvailabilitySubmissionStatus.REVIEWED,
-      ].includes(existing.status)
-    ) {
-      throw new BadRequestException(
-        'Dyspozycja została już wysłana i oczekuje na zatwierdzenie.',
-      );
-    }
+      ].includes(existing.status);
 
     this.validateIntervals(availabilities);
 
@@ -838,7 +833,9 @@ export class AvailabilityService {
 
       const status = submit
         ? AvailabilitySubmissionStatus.SUBMITTED
-        : (existing?.status ?? AvailabilitySubmissionStatus.DRAFT);
+        : wasSubmitted
+          ? AvailabilitySubmissionStatus.DRAFT
+          : (existing?.status ?? AvailabilitySubmissionStatus.DRAFT);
 
       const submission = await tx.availabilitySubmission.upsert({
         where: {
@@ -846,14 +843,26 @@ export class AvailabilityService {
         },
         update: {
           status,
-          submittedAt: submit ? new Date() : (existing?.submittedAt ?? null),
+          submittedAt: submit
+            ? new Date()
+            : wasSubmitted
+              ? null
+              : (existing?.submittedAt ?? null),
           submittedByUserId: submit
             ? userId
-            : (existing?.submittedByUserId ?? null),
-          reviewedAt: submit ? null : (existing?.reviewedAt ?? null),
+            : wasSubmitted
+              ? null
+              : (existing?.submittedByUserId ?? null),
+          reviewedAt: submit
+            ? null
+            : wasSubmitted
+              ? null
+              : (existing?.reviewedAt ?? null),
           reviewedByUserId: submit
             ? null
-            : (existing?.reviewedByUserId ?? null),
+            : wasSubmitted
+              ? null
+              : (existing?.reviewedByUserId ?? null),
         },
         create: {
           organisationId,
@@ -871,9 +880,11 @@ export class AvailabilityService {
     await this.auditService.record({
       organisationId,
       actorUserId: userId,
-      action: submit
-        ? 'availability.submission.submitted'
-        : 'availability.submission.saved',
+      action: wasSubmitted
+        ? 'AVAILABILITY_SUBMISSION_EDIT_AFTER_SUBMIT'
+        : submit
+          ? 'availability.submission.submitted'
+          : 'availability.submission.saved',
       entityType: 'availability_submission',
       entityId: created.submission.id,
       after: {

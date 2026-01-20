@@ -286,7 +286,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-[var(--panel-bg)]">
+          <main className="flex-1 px-3 sm:px-5 lg:px-8 py-6 lg:py-8 bg-[var(--panel-bg)]">
             <div className="max-w-[1600px] w-full mx-auto panel-page">{children}</div>
           </main>
         </div>
