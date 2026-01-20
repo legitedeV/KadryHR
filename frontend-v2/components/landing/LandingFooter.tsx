@@ -41,7 +41,7 @@ export function LandingFooter({ content }: { content?: LandingFooterContent }) {
   const legalLinks = content?.legalLinks?.length ? content.legalLinks : fallbackLegalLinks;
 
   return (
-    <footer className="border-t border-surface-800/60 bg-surface-950/60 py-12">
+    <footer className="border-t border-surface-800/60 bg-surface-950/70 py-14">
       <div className="mx-auto grid max-w-6xl gap-8 px-6 md:grid-cols-4">
         <div className="space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-surface-400">KadryHR</p>
@@ -52,18 +52,18 @@ export function LandingFooter({ content }: { content?: LandingFooterContent }) {
         </div>
         {groups.map((group) => (
           <div key={group.label} className="space-y-2 text-sm text-surface-300">
-            <p className="font-semibold text-surface-100">{group.label}</p>
+            <p className="font-semibold uppercase tracking-[0.2em] text-surface-100">{group.label}</p>
             {group.links.map((link) => (
-              <Link key={link.label} href={link.href} className="block hover:text-surface-50">
+              <Link key={link.label} href={link.href} className="block transition-colors duration-500 hover:text-surface-50">
                 {link.label}
               </Link>
             ))}
           </div>
         ))}
         <div className="space-y-2 text-sm text-surface-300">
-          <p className="font-semibold text-surface-100">Legal</p>
+          <p className="font-semibold uppercase tracking-[0.2em] text-surface-100">Legal</p>
           {legalLinks.map((link) => (
-            <Link key={link.label} href={link.href} className="block hover:text-surface-50">
+            <Link key={link.label} href={link.href} className="block transition-colors duration-500 hover:text-surface-50">
               {link.label}
             </Link>
           ))}
