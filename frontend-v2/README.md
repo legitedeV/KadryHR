@@ -5,11 +5,8 @@
 - In CI, always run `npm run ci:check` (lint + typecheck) before merging to `main`.
 - If you need to run checks locally: `npm run lint` and `npm run typecheck`.
 
-## Marketing pages
-- Marketing routes live in `app/` (landing, pricing, security, legal).
-- Lead form posts to `NEXT_PUBLIC_API_URL` + `/public/leads`.
+## App scope
+- The frontend only ships the core panel modules: Dashboard, Grafik, Dyspozycje, Profil.
 - Default API base: `https://api.kadryhr.pl/api` (override with `NEXT_PUBLIC_API_URL`).
-- Admin panel URL: `NEXT_PUBLIC_ADMIN_APP_URL` (defaults to `https://admin.kadryhr.pl`).
-- Employee panel URL: `NEXT_PUBLIC_PANEL_APP_URL` (defaults to `https://panel.kadryhr.pl`).
-- Main app URL (used for cross-domain links): `NEXT_PUBLIC_APP_URL` (defaults to `https://kadryhr.pl`).
+- Panel URL: `NEXT_PUBLIC_PANEL_APP_URL` (defaults to `https://panel.kadryhr.pl`).
 - Optional E2E: `npm run test:e2e` (Playwright).

@@ -4,13 +4,9 @@ import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import {
   EmployeeRecord,
-  RequestItem,
   ShiftRecord,
-  ApprovedLeaveForSchedule,
-  apiGetRequests,
   apiGetShifts,
   apiListEmployees,
-  apiGetApprovedLeavesForSchedule,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 
@@ -29,8 +25,6 @@ type ShiftView = {
 type DashboardData = {
   shifts: ShiftView[];
   employees: EmployeeRecord[];
-  requests: RequestItem[];
-  upcomingLeaves: ApprovedLeaveForSchedule[];
 };
 
 function parseTimeLabel(value: string): [number, number] | null {
@@ -66,12 +60,6 @@ function mapShift(record: ShiftRecord): ShiftView {
   };
 }
 
-function formatDateRange(start: string, end: string) {
-  const startLabel = new Date(start).toLocaleDateString("pl-PL");
-  const endLabel = new Date(end).toLocaleDateString("pl-PL");
-  return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
-}
-
 function getWeekRange() {
   const now = new Date();
   const day = now.getDay() || 7;
@@ -85,15 +73,6 @@ function getWeekRange() {
     to: fmt(sunday),
     label: `${monday.toLocaleDateString("pl-PL")} – ${sunday.toLocaleDateString("pl-PL")}`,
   };
-}
-
-// Get next 7 days for upcoming leaves
-function getNext7DaysRange() {
-  const now = new Date();
-  const next7 = new Date(now);
-  next7.setDate(now.getDate() + 7);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { from: fmt(now), to: fmt(next7) };
 }
 
 function getShiftTone(shift: ShiftView): { className: string; style?: CSSProperties } {
@@ -162,17 +141,13 @@ export default function DashboardPage() {
     if (!hasSession) return;
     let cancelled = false;
 
-    const leaveRange = getNext7DaysRange();
-
     Promise.all([
       apiGetShifts({ from: range.from, to: range.to }),
       apiListEmployees({ take: 50, skip: 0 }),
-      apiGetRequests(),
-      apiGetApprovedLeavesForSchedule({ from: leaveRange.from, to: leaveRange.to }),
     ])
-      .then(([shifts, employeesResponse, requests, upcomingLeaves]) => {
+      .then(([shifts, employeesResponse]) => {
         if (cancelled) return;
-        setData({ shifts: shifts.map(mapShift), employees: employeesResponse.data, requests, upcomingLeaves });
+        setData({ shifts: shifts.map(mapShift), employees: employeesResponse.data });
       })
       .catch((err) => {
         console.error(err);
@@ -220,18 +195,11 @@ export default function DashboardPage() {
     );
   }
 
-  const { shifts, employees, requests, upcomingLeaves } = data;
+  const { shifts, employees } = data;
   const todaysDate = new Date().toISOString().slice(0, 10);
   const todaysShifts = shifts.filter((s) => s.date === todaysDate);
   const assignedEmployees = employees.filter((e) => e.locations.length > 0);
   const pendingEmployees = employees.filter((e) => e.locations.length === 0);
-  const todaysLeaves = upcomingLeaves.filter((leave) => {
-    const start = new Date(leave.startDate).toISOString().slice(0, 10);
-    const end = new Date(leave.endDate).toISOString().slice(0, 10);
-    return todaysDate >= start && todaysDate <= end;
-  });
-  const onLeaveIds = new Set(todaysLeaves.map((leave) => leave.employee?.id).filter(Boolean));
-  const onLeaveEmployees = employees.filter((employee) => onLeaveIds.has(employee.id));
   
   const totalHoursWeek = shifts.reduce((sum, s) => {
     const startParts = parseTimeLabel(s.start);
@@ -251,12 +219,9 @@ export default function DashboardPage() {
 
   const { totals: chartTotals, maxValue } = buildChartSeries(shifts, range);
   const todaysHours = chartTotals.find((day) => day.date === todaysDate)?.value ?? 0;
-  const upcomingRequests = requests.slice(0, 3);
-
   const employeeTabs = [
     { key: "all", label: "Wszyscy", data: employees },
     { key: "active", label: "Aktywni", data: assignedEmployees },
-    { key: "leave", label: "Na urlopie", data: onLeaveEmployees },
     { key: "pending", label: "Pending", data: pendingEmployees },
   ];
   const activeEmployees = employeeTabs.find((tab) => tab.key === activeTab)?.data ?? employees;
@@ -366,13 +331,6 @@ export default function DashboardPage() {
                         {employee.position ?? "Pracownik"}
                       </span>
                       <div className="flex items-center gap-2 text-surface-400">
-                        <a
-                          href="/panel/pracownicy"
-                          className="rounded-full border border-surface-800/70 p-1.5 text-xs hover:text-brand-300"
-                          aria-label="Zobacz profil"
-                        >
-                          👁
-                        </a>
                         {employee.phone && (
                           <a
                             href={`tel:${employee.phone}`}
@@ -455,8 +413,8 @@ export default function DashboardPage() {
             <p className="text-base font-semibold text-surface-50 mt-1">Szybkie statystyki</p>
             <div className="mt-4 space-y-4">
               {[
-                { label: "Na urlopie dzisiaj", value: todaysLeaves.length, max: employees.length || 1 },
                 { label: "Zaplanowani dzisiaj", value: todaysShifts.length, max: employees.length || 1 },
+                { label: "Aktywni w grafiku", value: assignedEmployees.length, max: employees.length || 1 },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-sm text-surface-300">
@@ -474,71 +432,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="panel-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Requests</p>
-                <p className="text-base font-semibold text-surface-50">Ostatnie wnioski</p>
-              </div>
-              <a href="/panel/wnioski" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
-                Zobacz wszystkie
-              </a>
-            </div>
-            <div className="mt-4 space-y-3">
-              {upcomingRequests.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-surface-800/70 bg-surface-900/40 px-6 py-6 text-center text-sm text-surface-400">
-                  Brak wniosków do wyświetlenia.
-                </div>
-              ) : (
-                upcomingRequests.map((request) => (
-                  <div key={request.id} className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-surface-50">
-                        {request.employeeName}
-                      </p>
-                      <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-amber-200">
-                        {mapRequestType(request.type)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-surface-400 mt-1">
-                      {formatDateRange(request.startDate, request.endDate)} · {request.leaveType?.name ?? request.reason ?? "Brak danych"}
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <a
-                        href="/panel/wnioski"
-                        className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-semibold text-white"
-                      >
-                        Akceptuj
-                      </a>
-                      <a
-                        href="/panel/wnioski"
-                        className="rounded-full bg-rose-500/15 px-3 py-1 text-xs font-semibold text-rose-200"
-                      >
-                        Odrzuć
-                      </a>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
-}
-
-function mapRequestType(type: RequestItem["type"]) {
-  switch (type) {
-    case "PAID_LEAVE":
-      return "Urlop płatny";
-    case "SICK":
-      return "Chorobowe";
-    case "UNPAID":
-      return "Urlop bezpłatny";
-    case "OTHER":
-      return "Inny";
-    default:
-      return type;
-  }
 }

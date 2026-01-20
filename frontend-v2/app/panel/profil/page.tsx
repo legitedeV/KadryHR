@@ -7,11 +7,8 @@ import {
   apiUpdateProfile,
   apiChangePassword,
   apiChangeEmail,
-  apiGetNotificationPreferences,
-  apiUpdateNotificationPreferences,
   User,
   UserProfile,
-  NotificationPreference,
 } from "@/lib/api";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { useRouter } from "next/navigation";
@@ -19,21 +16,11 @@ import { pushToast } from "@/lib/toast";
 import { Avatar } from "@/components/Avatar";
 import { Modal } from "@/components/Modal";
 
-const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
-  TEST: "Testowe",
-  LEAVE_STATUS: "Zmiany statusu urlopu",
-  SHIFT_ASSIGNMENT: "Przypisanie zmiany",
-  SCHEDULE_PUBLISHED: "Publikacja grafiku",
-  SWAP_STATUS: "Zamiany zmian",
-  CUSTOM: "Powiadomienia niestandardowe",
-};
-
 export default function ProfilPage() {
   const router = useRouter();
   const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [loading, setLoading] = useState(hasSession);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +44,6 @@ export default function ProfilPage() {
   const [newEmail, setNewEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
 
-  // Notification preferences state
-  const [savingPreferences, setSavingPreferences] = useState(false);
-
   useEffect(() => {
     if (!hasSession) {
       router.replace("/login");
@@ -68,16 +52,11 @@ export default function ProfilPage() {
 
     let cancelled = false;
 
-    Promise.all([
-      apiGetMe(),
-      apiGetProfile(),
-      apiGetNotificationPreferences(),
-    ])
-      .then(([userData, profileData, prefsData]) => {
+    Promise.all([apiGetMe(), apiGetProfile()])
+      .then(([userData, profileData]) => {
         if (cancelled) return;
         setUser(userData);
         setProfile(profileData);
-        setPreferences(prefsData);
 
         // Initialize edit form
         setFirstName(profileData.firstName ?? "");
@@ -211,37 +190,6 @@ export default function ProfilPage() {
       setSavingEmail(false);
     }
   }, [emailPassword, newEmail]);
-
-  const handleTogglePreference = useCallback(
-    async (type: string, field: "inApp" | "email" | "sms", value: boolean) => {
-      const updated = preferences.map((p) =>
-        p.type === type ? { ...p, [field]: value } : p
-      );
-      setPreferences(updated);
-
-      setSavingPreferences(true);
-      try {
-        await apiUpdateNotificationPreferences(updated);
-        pushToast({
-          title: "Sukces",
-          description: "Preferencje zostały zapisane",
-          variant: "success",
-        });
-      } catch (err) {
-        console.error(err);
-        // Revert on error
-        setPreferences(preferences);
-        pushToast({
-          title: "Błąd",
-          description: "Nie udało się zapisać preferencji",
-          variant: "error",
-        });
-      } finally {
-        setSavingPreferences(false);
-      }
-    },
-    [preferences]
-  );
 
   const formatName = (p?: UserProfile | null) => {
     if (!p) return "";
@@ -419,130 +367,8 @@ export default function ProfilPage() {
                 Wyloguj
               </button>
             </div>
-
-            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
-              <div>
-                <p className="font-medium text-surface-900 dark:text-surface-50">Uwierzytelnianie dwuskładnikowe (2FA)</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Dodatkowa warstwa bezpieczeństwa dla Twojego konta
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs px-2 py-1 rounded-full bg-accent-900/30 text-accent-300">
-                  Wkrótce dostępne
-                </span>
-                <button
-                  disabled
-                  className="btn-secondary text-sm opacity-50 cursor-not-allowed"
-                  title="Funkcja w przygotowaniu"
-                >
-                  Włącz 2FA
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-
-      {/* Notification Preferences */}
-      <div className="card p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="h-10 w-10 rounded-2xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-300">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </div>
-          <div>
-            <p className="section-label">Preferencje</p>
-            <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
-              Powiadomienia
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto rounded-xl border border-surface-200/80 dark:border-surface-800/80">
-          <table className="min-w-full">
-            <thead className="bg-surface-50/80 dark:bg-surface-900/80">
-              <tr className="border-b border-surface-200 dark:border-surface-800">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                  Typ powiadomienia
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                  W aplikacji
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                  E-mail
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                  <span className="flex items-center justify-center gap-1">
-                    SMS
-                    <span className="text-[9px] font-normal normal-case text-amber-600 dark:text-amber-400">(beta)</span>
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100 dark:divide-surface-800 bg-white dark:bg-surface-900/50">
-              {preferences.map((pref) => (
-                <tr key={pref.type} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-surface-900 dark:text-surface-50">
-                    {NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      disabled={savingPreferences}
-                      onClick={() => handleTogglePreference(pref.type, "inApp", !pref.inApp)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        pref.inApp ? "bg-brand-500" : "bg-surface-200 dark:bg-surface-700"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          pref.inApp ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      disabled={savingPreferences}
-                      onClick={() => handleTogglePreference(pref.type, "email", !pref.email)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        pref.email ? "bg-brand-500" : "bg-surface-200 dark:bg-surface-700"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          pref.email ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      disabled={savingPreferences}
-                      onClick={() => handleTogglePreference(pref.type, "sms", !pref.sms)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        pref.sms ? "bg-brand-500" : "bg-surface-200 dark:bg-surface-700"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          pref.sms ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-surface-500 dark:text-surface-400 mt-2">
-          💡 <strong>SMS:</strong> Wymaga skonfigurowanego numeru telefonu. Usługa w wersji beta.
-        </p>
       </div>
 
       {/* Edit Profile Modal */}

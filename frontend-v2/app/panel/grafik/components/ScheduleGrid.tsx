@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import type { AvailabilityIndicator, ShiftDisplay, WeekRange } from "../types";
-import type { ApprovedLeaveForSchedule, EmployeeRecord, ScheduleMetadata, ShiftRecord } from "@/lib/api";
+import type { EmployeeRecord, ScheduleMetadata, ShiftRecord } from "@/lib/api";
 import { formatEmployeeName, formatMinutes, getContrastTextColor } from "../utils";
 
 const dowOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -20,7 +20,6 @@ interface ScheduleGridProps {
   canManage: boolean;
   gridByEmployeeAndDay: Record<string, Record<string, ShiftDisplay[]>>;
   availabilityIndicators: Record<string, Record<string, AvailabilityIndicator>>;
-  approvedLeavesByEmployeeAndDay?: Record<string, Record<string, ApprovedLeaveForSchedule[]>>;
   draggedShift: string | null;
   scheduleMetadata: ScheduleMetadata | null;
   promotionAfternoonCounts: Record<string, number>;
@@ -42,10 +41,7 @@ function availabilityDotColor(status: AvailabilityIndicator["status"]) {
   }
 }
 
-function availabilityCellStyles(status: AvailabilityIndicator["status"], hasApprovedLeave: boolean) {
-  if (hasApprovedLeave) {
-    return "bg-amber-500/10 ring-1 ring-amber-400/20";
-  }
+function availabilityCellStyles(status: AvailabilityIndicator["status"]) {
   switch (status) {
     case "available":
       return "bg-emerald-500/5";
@@ -63,7 +59,6 @@ export function ScheduleGrid({
   canManage,
   gridByEmployeeAndDay,
   availabilityIndicators,
-  approvedLeavesByEmployeeAndDay,
   draggedShift,
   scheduleMetadata,
   promotionAfternoonCounts,
@@ -337,7 +332,6 @@ export function ScheduleGrid({
                     {dowOrder.map((dow, dayIdx) => {
                       const dayShifts = employeeShifts[dow] || [];
                       const dayIndicator = employeeAvail[dow];
-                      const dayLeaves = approvedLeavesByEmployeeAndDay?.[employee.id]?.[dow] || [];
                       const dayDate = new Date(range.from);
                       dayDate.setDate(dayDate.getDate() + dayIdx);
                       const dayDateValue = dayDate.toISOString().slice(0, 10);
@@ -353,8 +347,6 @@ export function ScheduleGrid({
                               .join(", ")}`
                           : dayIndicator.label
                         : "Brak dostępności";
-                      const hasApprovedLeave = dayLeaves.length > 0;
-
                       const dropHandlers = canManage
                         ? {
                             onDragOver: (event: DragEvent<HTMLTableCellElement>) => {
@@ -385,7 +377,6 @@ export function ScheduleGrid({
                             <div
                               className={`flex flex-col gap-2 min-h-[72px] rounded-2xl border border-surface-800/40 px-2 py-2 ${availabilityCellStyles(
                                 dayIndicator?.status ?? "unavailable",
-                                hasApprovedLeave,
                               )}`}
                             >
                               <div className="flex items-center justify-between">
@@ -394,14 +385,6 @@ export function ScheduleGrid({
                                     <span className={`h-2 w-2 rounded-full ${availabilityDotColor(dayIndicator.status)}`} />
                                     <span className="sr-only">{dayAvailabilityLabel}</span>
                                   </div>
-                                )}
-                                {hasApprovedLeave && (
-                                  <span
-                                    className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-amber-500 text-white"
-                                    title={dayLeaves[0].leaveType?.name || "Urlop"}
-                                  >
-                                    URLOP
-                                  </span>
                                 )}
                               </div>
                               {dayShifts.length === 0 ? (
@@ -424,7 +407,7 @@ export function ScheduleGrid({
                               <>
                                 {dayShifts.map((shift) => {
                                   const sourceShift = shifts.find((s) => s.id === shift.id);
-                                  const showWarning = Boolean(shift.availabilityWarning || hasApprovedLeave);
+                                  const showWarning = Boolean(shift.availabilityWarning);
                                   return (
                                     <div
                                       key={shift.id}
@@ -470,7 +453,7 @@ export function ScheduleGrid({
                                               {showWarning && (
                                                 <span
                                                   className="inline-flex items-center text-amber-400"
-                                                  title={shift.availabilityWarning || "Konflikt z urlopem"}
+                                                  title={shift.availabilityWarning || "Konflikt z dostępnością"}
                                                 >
                                                   <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                                     <path

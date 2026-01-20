@@ -726,43 +726,6 @@ body::before {
   opacity: 1;
 }
 
-.landing-section {
-  scroll-snap-align: start;
-  scroll-margin-top: 96px;
-}
-
-body[data-landing-scroll="true"] {
-  scroll-behavior: smooth;
-}
-
-body[data-viewport-width="md"] .landing-section,
-body[data-viewport-width="lg"] .landing-section {
-  padding-top: 5rem !important;
-  padding-bottom: 5rem !important;
-}
-
-body[data-viewport-height="short"] .landing-section {
-  padding-top: 4.5rem !important;
-  padding-bottom: 4.5rem !important;
-}
-
-.hero-title {
-  font-size: clamp(2.5rem, 2.9vw, 3.6rem);
-}
-
-.hero-lede {
-  font-size: clamp(1rem, 1.2vw, 1.25rem);
-}
-
-.hero-layer {
-  opacity: 1;
-  transform: none;
-}
-
-[data-hero-loaded="true"] .hero-layer {
-  opacity: 1;
-  transform: none;
-}
 
 .brand-logo {
   display: inline-flex;
