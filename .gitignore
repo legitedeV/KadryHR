@@ -22,6 +22,8 @@ frontend/.env
 !docs/product-feature-map.md
 !docs/product-gap-analysis.md
 !docs/PRODUCT_SCOPE.md
+!docs/ci-workflows.md
+!docs/backlog.md
 !docs/audit/*.md
 !backend-v2/docs/BACKEND_V2_ARCHITECTURE.md
 !backend-v2/docs/FEATURE_GAP_ANALYSIS.md
