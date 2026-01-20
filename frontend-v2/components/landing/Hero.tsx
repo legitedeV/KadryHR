@@ -117,8 +117,8 @@ export function Hero({ content }: { content?: HeroContent }) {
           className="hero-layer absolute inset-0 opacity-[0.03]" 
           aria-hidden="true"
           style={{
-            backgroundImage: `linear-gradient(rgba(34, 197, 94, 0.5) 1px, transparent 1px), 
-                             linear-gradient(90deg, rgba(34, 197, 94, 0.5) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(color-mix(in srgb, var(--color-brand-400) 45%, transparent) 1px, transparent 1px), 
+                             linear-gradient(90deg, color-mix(in srgb, var(--color-brand-400) 45%, transparent) 1px, transparent 1px)`,
             backgroundSize: '60px 60px',
           }}
         />
@@ -133,18 +133,18 @@ export function Hero({ content }: { content?: HeroContent }) {
         />
         <div 
           ref={orbRef} 
-          className="hero-layer floating-orb orb-fast right-12 top-28 h-24 w-24 bg-emerald-400/25" 
+          className="hero-layer floating-orb orb-fast right-12 top-28 h-24 w-24 bg-accent-400/25" 
           aria-hidden="true"
           style={{
             transform: `translate3d(${mousePosition.x * -15}px, ${mousePosition.y * -15}px, 0)`,
           }}
         />
         <div 
-          className="hero-layer floating-orb -bottom-8 right-28 h-32 w-32 bg-cyan-400/20" 
+          className="hero-layer floating-orb -bottom-8 right-28 h-32 w-32 bg-accent-400/20" 
           aria-hidden="true" 
         />
         <div 
-          className="hero-layer floating-orb orb-slow left-1/3 bottom-20 h-20 w-20 bg-purple-400/15" 
+          className="hero-layer floating-orb orb-slow left-1/3 bottom-20 h-20 w-20 bg-brand-400/15" 
           aria-hidden="true" 
         />
         <div className="noise-overlay" aria-hidden="true" />
@@ -154,7 +154,7 @@ export function Hero({ content }: { content?: HeroContent }) {
           className="hero-layer absolute pointer-events-none"
           aria-hidden="true"
           style={{
-            background: `radial-gradient(800px circle at ${50 + mousePosition.x * 30}% ${50 + mousePosition.y * 30}%, rgba(34, 197, 94, 0.08), transparent 50%)`,
+            background: `radial-gradient(800px circle at ${50 + mousePosition.x * 30}% ${50 + mousePosition.y * 30}%, color-mix(in srgb, var(--color-brand-400) 15%, transparent), transparent 55%)`,
             inset: 0,
           }}
         />
@@ -177,7 +177,7 @@ export function Hero({ content }: { content?: HeroContent }) {
                 <>
                   Grafiki, czas pracy i urlopy{" "}
                   <span className="relative inline-block">
-                    <span className="relative z-10 bg-gradient-to-r from-brand-300 via-emerald-300 to-brand-400 bg-clip-text text-transparent">
+                    <span className="relative z-10 bg-gradient-to-r from-brand-300 via-accent-300 to-brand-400 bg-clip-text text-transparent">
                       domknięte
                     </span>
                     <span
@@ -250,14 +250,14 @@ export function Hero({ content }: { content?: HeroContent }) {
         <Reveal className="relative z-10" delay={240} distance={28}>
           <div ref={mockupRef} className="transition-transform duration-500">
             <div 
-              className="relative mx-auto max-w-md rounded-[32px] border border-white/[0.08] bg-gradient-to-b from-surface-900/80 to-surface-950/90 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_40px_80px_-20px_rgba(16,185,129,0.15)]"
+              className="relative mx-auto max-w-md rounded-[32px] border border-white/[0.08] bg-gradient-to-b from-surface-900/80 to-surface-950/90 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_40px_80px_-20px_color-mix(in_srgb,var(--color-brand-400)_18%,transparent)]"
               style={{
                 transform: `perspective(1000px) rotateY(${mousePosition.x * 3}deg) rotateX(${mousePosition.y * -3}deg)`,
               }}
             >
               {/* Glow effects */}
               <div className="absolute -left-16 top-8 hidden h-40 w-40 rounded-full bg-brand-600/20 blur-3xl md:block" />
-              <div className="absolute -right-16 bottom-8 hidden h-40 w-40 rounded-full bg-emerald-600/15 blur-3xl md:block" />
+              <div className="absolute -right-16 bottom-8 hidden h-40 w-40 rounded-full bg-accent-600/15 blur-3xl md:block" />
               
               {/* Card content */}
               <div className="space-y-5">
@@ -270,8 +270,8 @@ export function Hero({ content }: { content?: HeroContent }) {
                   </div>
                   <span className="flex items-center gap-1.5 rounded-full bg-brand-950/60 px-3 py-1.5 text-xs font-semibold text-brand-200 ring-1 ring-brand-700/40">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-400" />
                     </span>
                     Live
                   </span>
@@ -340,7 +340,7 @@ export function Hero({ content }: { content?: HeroContent }) {
             viewBox="0 0 400 400"
             aria-hidden="true"
           >
-            <g className="topo-lines" fill="none" stroke="rgba(16, 124, 87, 0.3)" strokeWidth="1">
+            <g className="topo-lines text-brand-500/40" fill="none" stroke="currentColor" strokeWidth="1">
               <path d="M10 80 C120 40, 180 120, 300 80" />
               <path d="M20 130 C140 90, 200 170, 320 130" />
               <path d="M30 180 C160 140, 220 220, 340 180" />
@@ -355,7 +355,7 @@ export function Hero({ content }: { content?: HeroContent }) {
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-surface-500">
         <span className="text-xs font-medium tracking-wider uppercase">Scroll</span>
         <div className="h-10 w-6 rounded-full border-2 border-surface-700/50 p-1">
-          <div className="h-2 w-1.5 mx-auto rounded-full bg-brand-500 animate-bounce" />
+          <div className="ambient-float h-2 w-1.5 mx-auto rounded-full bg-brand-500" />
         </div>
       </div>
     </section>

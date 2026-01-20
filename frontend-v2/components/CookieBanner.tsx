@@ -40,6 +40,8 @@ export function CookieBanner() {
   const { visible, consent } = state;
   const setVisible = (v: boolean) => setState((s) => ({ ...s, visible: v }));
   const setConsent = (c: ConsentState) => setState((s) => ({ ...s, consent: c }));
+  const updateConsent = (updater: (prev: ConsentState) => ConsentState) =>
+    setState((s) => ({ ...s, consent: updater(s.consent) }));
 
   const saveConsent = (next: ConsentState) => {
     setConsent(next);
@@ -120,7 +122,7 @@ export function CookieBanner() {
             <input
               type="checkbox"
               checked={consent.analytics}
-              onChange={(e) => setConsent((prev) => ({ ...prev, analytics: e.target.checked }))}
+              onChange={(e) => updateConsent((prev) => ({ ...prev, analytics: e.target.checked }))}
               className="mt-1 h-4 w-4 rounded border-surface-300 text-brand-600"
             />
             <span>
@@ -131,7 +133,7 @@ export function CookieBanner() {
             <input
               type="checkbox"
               checked={consent.marketing}
-              onChange={(e) => setConsent((prev) => ({ ...prev, marketing: e.target.checked }))}
+              onChange={(e) => updateConsent((prev) => ({ ...prev, marketing: e.target.checked }))}
               className="mt-1 h-4 w-4 rounded border-surface-300 text-brand-600"
             />
             <span>
