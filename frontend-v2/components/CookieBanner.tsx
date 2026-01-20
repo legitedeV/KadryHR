@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const STORAGE_KEY = "kadryhr-cookie-consent";
 
@@ -18,23 +18,28 @@ const defaultConsent: ConsentState = {
   timestamp: new Date().toISOString(),
 };
 
-export function CookieBanner() {
-  const [visible, setVisible] = useState(false);
-  const [consent, setConsent] = useState<ConsentState>(defaultConsent);
-  const [showPreferences, setShowPreferences] = useState(false);
+function getInitialConsentState(): { visible: boolean; consent: ConsentState } {
+  if (typeof window === "undefined") {
+    return { visible: false, consent: defaultConsent };
+  }
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) {
+    return { visible: true, consent: defaultConsent };
+  }
+  try {
+    return { visible: false, consent: JSON.parse(stored) };
+  } catch {
+    return { visible: true, consent: defaultConsent };
+  }
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      setVisible(true);
-      return;
-    }
-    try {
-      setConsent(JSON.parse(stored));
-    } catch {
-      setVisible(true);
-    }
-  }, []);
+export function CookieBanner() {
+  const [state, setState] = useState<{ visible: boolean; consent: ConsentState }>(() => getInitialConsentState());
+  const [showPreferences, setShowPreferences] = useState(false);
+  
+  const { visible, consent } = state;
+  const setVisible = (v: boolean) => setState((s) => ({ ...s, visible: v }));
+  const setConsent = (c: ConsentState) => setState((s) => ({ ...s, consent: c }));
 
   const saveConsent = (next: ConsentState) => {
     setConsent(next);

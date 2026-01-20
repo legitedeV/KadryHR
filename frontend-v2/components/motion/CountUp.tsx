@@ -22,33 +22,32 @@ export function CountUp({
   decimals = 0,
   className,
 }: CountUpProps) {
-  const [displayValue, setDisplayValue] = useState(value);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  // Calculate reduced motion preference once during initial render
+  const [initialReducedMotion] = useState(() => typeof window !== "undefined" && prefersReducedMotion());
+  const [displayValue, setDisplayValue] = useState(() => initialReducedMotion ? value : 0);
+  const hasAnimatedRef = useRef(initialReducedMotion);
   const ref = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     // Show immediate value if reduced motion is preferred
-    if (prefersReducedMotion()) {
-      setDisplayValue(value);
-      setHasAnimated(true);
+    if (initialReducedMotion) {
+      hasAnimatedRef.current = true;
+      requestAnimationFrame(() => setDisplayValue(value));
       return;
     }
 
     const element = ref.current;
     if (!element || typeof IntersectionObserver === "undefined") {
-      setDisplayValue(value);
-      setHasAnimated(true);
+      hasAnimatedRef.current = true;
+      requestAnimationFrame(() => setDisplayValue(value));
       return;
     }
 
-    // Reset for animation
-    setDisplayValue(0);
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting || hasAnimated) return;
+        if (!entry.isIntersecting || hasAnimatedRef.current) return;
         
-        setHasAnimated(true);
+        hasAnimatedRef.current = true;
         const start = performance.now();
 
         const animate = (now: number) => {
@@ -70,7 +69,7 @@ export function CountUp({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [duration, hasAnimated, value]);
+  }, [duration, value, initialReducedMotion]);
 
   const formatted = (() => {
     const formatter = new Intl.NumberFormat("pl-PL", {

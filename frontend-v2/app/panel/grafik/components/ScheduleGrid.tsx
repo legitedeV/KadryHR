@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import type { AvailabilityIndicator, ShiftDisplay, WeekRange } from "../types";
@@ -113,12 +113,15 @@ export function ScheduleGrid({
     })
     .filter((promo) => promo.count < REQUIRED_AFTERNOON_COUNT) ?? [];
 
-  const [showPromotionPopup, setShowPromotionPopup] = useState(promotionWarnings.length > 0);
+  const [showPromotionPopup, setShowPromotionPopup] = useState(() => promotionWarnings.length > 0);
 
+  // Update popup state when promotionWarnings changes, using a ref to track previous length
+  const prevWarningsLengthRef = useRef(promotionWarnings.length);
   useEffect(() => {
-    if (promotionWarnings.length > 0) {
-      setShowPromotionPopup(true);
+    if (promotionWarnings.length > 0 && prevWarningsLengthRef.current === 0) {
+      requestAnimationFrame(() => setShowPromotionPopup(true));
     }
+    prevWarningsLengthRef.current = promotionWarnings.length;
   }, [promotionWarnings.length]);
 
   return (
