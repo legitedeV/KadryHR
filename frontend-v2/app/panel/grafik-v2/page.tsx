@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { ClipboardEvent, DragEvent, KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ClipboardEvent, DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
+import { apiListEmployees, EmployeeRecord } from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
+import { formatEmployeeName } from "@/app/panel/grafik/utils";
 
 const weekdayCodes = ["ND", "PO", "WT", "ŚR", "CZ", "PI", "SB"] as const;
 
@@ -19,93 +22,6 @@ const monthDays = Array.from({ length: 31 }, (_, index) => {
   };
 });
 
-const employees = [
-  {
-    id: "emp-1",
-    name: "Alicja Wójcik",
-    role: "Koordynatorka zmian",
-    hours: 168,
-    availability: "Dostępna",
-    avatar:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 12,
-    days: 20,
-    payout: "7 200 zł",
-  },
-  {
-    id: "emp-2",
-    name: "Marek Zieliński",
-    role: "Kierownik dostaw",
-    hours: 154,
-    availability: "Częściowo dostępny",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 9,
-    days: 18,
-    payout: "6 520 zł",
-  },
-  {
-    id: "emp-3",
-    name: "Joanna Nowak",
-    role: "Specjalistka ds. operacji",
-    hours: 176,
-    availability: "Dostępna",
-    avatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 15,
-    days: 22,
-    payout: "7 840 zł",
-  },
-  {
-    id: "emp-4",
-    name: "Konrad Lis",
-    role: "Magazynier",
-    hours: 144,
-    availability: "Niedostępny",
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 6,
-    days: 16,
-    payout: "5 980 zł",
-  },
-  {
-    id: "emp-5",
-    name: "Patrycja Dąbrowska",
-    role: "Planistka",
-    hours: 162,
-    availability: "Dostępna",
-    avatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 11,
-    days: 19,
-    payout: "6 930 zł",
-  },
-  {
-    id: "emp-6",
-    name: "Tomasz Mazur",
-    role: "Kierowca",
-    hours: 171,
-    availability: "Dostępny",
-    avatar:
-      "https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 14,
-    days: 21,
-    payout: "7 050 zł",
-  },
-  {
-    id: "emp-7",
-    name: "Ewelina Kruk",
-    role: "Operator zmian",
-    hours: 150,
-    availability: "Częściowo dostępna",
-    avatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=facearea&w=96&h=96",
-    suppliers: 8,
-    days: 17,
-    payout: "6 310 zł",
-  },
-];
-
 type ShiftCard = {
   id: string;
   code: string;
@@ -116,49 +32,6 @@ type ShiftCard = {
 type CellState = {
   value: string;
   cards: ShiftCard[];
-};
-
-const initialGrid: Record<string, CellState> = {
-  "emp-1-1": {
-    value: "08:00-16:00",
-    cards: [{ id: "card-1", code: "D", label: "Dostawa", time: "08:00-12:00" }],
-  },
-  "emp-1-3": {
-    value: "",
-    cards: [{ id: "card-2", code: "ZM", label: "Zmiana", time: "10:00-18:00" }],
-  },
-  "emp-2-2": {
-    value: "07:00-15:00",
-    cards: [{ id: "card-3", code: "D", label: "Dostawa", time: "07:00-11:00" }],
-  },
-  "emp-2-5": {
-    value: "",
-    cards: [{ id: "card-4", code: "S", label: "Serwis", time: "12:00-20:00" }],
-  },
-  "emp-3-4": {
-    value: "09:00-17:00",
-    cards: [{ id: "card-5", code: "D", label: "Dostawa", time: "09:00-13:00" }],
-  },
-  "emp-3-8": {
-    value: "",
-    cards: [{ id: "card-6", code: "N", label: "Nocna", time: "21:00-05:00" }],
-  },
-  "emp-4-9": {
-    value: "06:00-14:00",
-    cards: [{ id: "card-7", code: "ZM", label: "Zmiana", time: "06:00-14:00" }],
-  },
-  "emp-5-12": {
-    value: "",
-    cards: [{ id: "card-8", code: "D", label: "Dostawa", time: "11:00-15:00" }],
-  },
-  "emp-6-15": {
-    value: "08:00-16:00",
-    cards: [{ id: "card-9", code: "W", label: "Wsparcie", time: "08:00-16:00" }],
-  },
-  "emp-7-18": {
-    value: "",
-    cards: [{ id: "card-10", code: "D", label: "Dostawa", time: "12:00-16:00" }],
-  },
 };
 
 type HistoryEntry = {
@@ -176,6 +49,38 @@ type SelectionAnchor = {
   col: number;
 };
 
+type ShiftPreset = {
+  id: string;
+  label: string;
+  code: string;
+  time: string;
+  value: string;
+};
+
+const shiftPresets: ShiftPreset[] = [
+  {
+    id: "morning",
+    label: "Rano",
+    code: "R",
+    time: "06:00-15:00",
+    value: "06:00-15:00",
+  },
+  {
+    id: "afternoon",
+    label: "Popołudnie",
+    code: "P",
+    time: "14:30-23:00",
+    value: "14:30-23:00",
+  },
+  {
+    id: "delivery",
+    label: "Dostawa",
+    code: "D",
+    time: "06:00-12:00",
+    value: "06:00-12:00",
+  },
+];
+
 function buildKey(employeeId: string, day: number) {
   return `${employeeId}-${day}`;
 }
@@ -186,9 +91,79 @@ function validateCellValue(value: string) {
   return /^([A-ZĄĆĘŁŃÓŚŹŻ]{1,3}|\d{2}:\d{2}-\d{2}:\d{2})$/i.test(trimmed);
 }
 
+function parseTimeRange(value: string) {
+  const match = value.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
+  if (!match) return 0;
+  const [, sh, sm, eh, em] = match;
+  const start = Number(sh) * 60 + Number(sm);
+  const end = Number(eh) * 60 + Number(em);
+  const duration = end >= start ? end - start : 24 * 60 - start + end;
+  return Math.max(duration, 0);
+}
+
+function formatHours(minutes: number) {
+  const hours = minutes / 60;
+  return Math.round(hours * 10) / 10;
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("pl-PL", {
+    style: "currency",
+    currency: "PLN",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function buildSeedGrid(employees: EmployeeRecord[]) {
+  if (!employees.length) return {} as Record<string, CellState>;
+  const grid: Record<string, CellState> = {};
+  const presetMap = shiftPresets.reduce<Record<string, ShiftPreset>>((acc, preset) => {
+    acc[preset.id] = preset;
+    return acc;
+  }, {});
+
+  const seedAssignments = [
+    { employeeIndex: 0, day: 1, preset: presetMap.morning },
+    { employeeIndex: 0, day: 3, preset: presetMap.delivery },
+    { employeeIndex: 1, day: 2, preset: presetMap.delivery },
+    { employeeIndex: 1, day: 5, preset: presetMap.afternoon },
+    { employeeIndex: 2, day: 4, preset: presetMap.morning },
+    { employeeIndex: 2, day: 8, preset: presetMap.afternoon },
+    { employeeIndex: 3, day: 9, preset: presetMap.morning },
+    { employeeIndex: 4, day: 12, preset: presetMap.delivery },
+    { employeeIndex: 5, day: 15, preset: presetMap.afternoon },
+    { employeeIndex: 6, day: 18, preset: presetMap.delivery },
+  ];
+
+  seedAssignments.forEach((assignment) => {
+    const employee = employees[assignment.employeeIndex];
+    if (!employee) return;
+    const key = buildKey(employee.id, assignment.day);
+    const preset = assignment.preset;
+    grid[key] = {
+      value: preset.value,
+      cards: [
+        {
+          id: `card-${employee.id}-${assignment.day}-${preset.id}`,
+          code: preset.code,
+          label: preset.label,
+          time: preset.time,
+        },
+      ],
+    };
+  });
+
+  return grid;
+}
+
 export default function GrafikV2Page() {
-  const [viewState, setViewState] = useState<ViewState>("loaded");
-  const [grid, setGrid] = useState<Record<string, CellState>>(initialGrid);
+  const [hasToken] = useState(() => !!getAccessToken());
+  const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    () => (hasToken ? null : "Zaloguj się, aby zobaczyć grafik."),
+  );
+  const [loading, setLoading] = useState(hasToken);
+  const [gridOverrides, setGridOverrides] = useState<Record<string, CellState>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draftValue, setDraftValue] = useState("");
   const [validationMap, setValidationMap] = useState<Record<string, boolean>>({});
@@ -200,29 +175,118 @@ export default function GrafikV2Page() {
   const [anchor, setAnchor] = useState<SelectionAnchor | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [activeProfile, setActiveProfile] = useState<string | null>(null);
+  const [openPresetKey, setOpenPresetKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const cellRefs = useRef(new Map<string, HTMLDivElement | null>());
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleClick = () => setOpenPresetKey(null);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (!hasToken) return;
+
+    let isMounted = true;
+    apiListEmployees({ take: 50, skip: 0, status: "active" })
+      .then((response) => {
+        if (!isMounted) return;
+        setEmployees(response.data);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (!isMounted) return;
+        setErrorMessage("Nie udało się pobrać pracowników.");
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasToken]);
+
+  const seededGrid = useMemo(() => buildSeedGrid(employees), [employees]);
 
   const gridData = useMemo(() => {
     const data: Record<string, CellState> = {};
     employees.forEach((employee) => {
       monthDays.forEach((day) => {
         const key = buildKey(employee.id, day.day);
-        data[key] = grid[key] ?? { value: "", cards: [] };
+        data[key] = gridOverrides[key] ?? seededGrid[key] ?? { value: "", cards: [] };
       });
     });
     return data;
-  }, [grid]);
+  }, [employees, gridOverrides, seededGrid]);
+
+  const employeeSummaries = useMemo(() => {
+    const summaries: Record<
+      string,
+      { suppliers: number; days: number; hours: number; payout: string; availability: string }
+    > = {};
+    const hourlyRate = 42;
+
+    employees.forEach((employee) => {
+      let suppliers = 0;
+      let days = 0;
+      let minutes = 0;
+      monthDays.forEach((day) => {
+        const key = buildKey(employee.id, day.day);
+        const cell = gridData[key];
+        if (!cell) return;
+        const hasContent = cell.value.trim() || cell.cards.length > 0;
+        if (hasContent) days += 1;
+
+        const valueMinutes = parseTimeRange(cell.value.trim());
+        const cardMinutes = cell.cards.reduce((sum, card) => sum + parseTimeRange(card.time), 0);
+        minutes += valueMinutes > 0 ? valueMinutes : cardMinutes;
+
+        suppliers += cell.cards.filter((card) => card.code.toUpperCase() === "D").length;
+      });
+
+      const hours = formatHours(minutes);
+      summaries[employee.id] = {
+        suppliers,
+        days,
+        hours,
+        payout: formatCurrency(hours * hourlyRate),
+        availability: employee.isActive ? "Dostępny" : "Niedostępny",
+      };
+    });
+
+    return summaries;
+  }, [employees, gridData]);
+
+  const viewState: ViewState = !hasToken
+    ? "error"
+    : loading
+      ? "loading"
+      : errorMessage
+        ? "error"
+        : employees.length > 0
+          ? "loaded"
+          : "empty";
 
   const commitChange = useCallback(
-    (key: string, next: CellState) => {
-      setGrid((prev) => {
-        const previous = prev[key] ?? { value: "", cards: [] };
+    (key: string, next: CellState, options: { autoSave?: boolean } = {}) => {
+      setGridOverrides((prev) => {
+        const previous = gridData[key] ?? { value: "", cards: [] };
         const updated = { ...prev, [key]: next };
         setHistory((entries) => [...entries, { key, previous, next }]);
         setRedoStack([]);
         return updated;
       });
+
+      if (options.autoSave === false) {
+        setSaveStatus("pending");
+        setSaveMessage("Zapisz zmiany");
+        return;
+      }
+
       setSaveStatus("saving");
       setSaveMessage("Zapisywanie...");
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -231,8 +295,18 @@ export default function GrafikV2Page() {
         setSaveMessage("Zapisano");
       }, 900);
     },
-    [setGrid],
+    [gridData],
   );
+
+  const handleManualSave = useCallback(() => {
+    setSaveStatus("saving");
+    setSaveMessage("Zapisywanie...");
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      setSaveStatus("saved");
+      setSaveMessage("Zapisano");
+    }, 900);
+  }, []);
 
   const handleEditStart = useCallback(
     (key: string) => {
@@ -264,7 +338,7 @@ export default function GrafikV2Page() {
     const key = buildKey(employee.id, day.day);
     const node = cellRefs.current.get(key);
     node?.focus();
-  }, []);
+  }, [employees]);
 
   const updateSelection = useCallback((start: SelectionAnchor, end: SelectionAnchor) => {
     const next = new Set<string>();
@@ -279,7 +353,7 @@ export default function GrafikV2Page() {
       }
     }
     setSelectedCells(next);
-  }, []);
+  }, [employees]);
 
   const handleMouseDown = useCallback(
     (row: number, col: number, key: string, shiftKey: boolean) => {
@@ -337,7 +411,7 @@ export default function GrafikV2Page() {
         navigator.clipboard.writeText(payload);
       }
     },
-    [gridData, handleEditStart, moveFocus, selectedCells],
+    [employees.length, gridData, handleEditStart, moveFocus, selectedCells],
   );
 
   const handlePaste = useCallback(
@@ -363,6 +437,7 @@ export default function GrafikV2Page() {
     (event: DragEvent<HTMLDivElement>, targetKey: string) => {
       event.preventDefault();
       const data = event.dataTransfer.getData("text/plain");
+      setDragOverKey(null);
       if (!data) return;
       const parsed = JSON.parse(data) as { key: string; cardId: string };
       if (parsed.key === targetKey) return;
@@ -379,19 +454,19 @@ export default function GrafikV2Page() {
         ...targetCell,
         cards: [...targetCell.cards, card],
       };
-      setGrid((prev) => ({
-        ...prev,
-        [parsed.key]: nextSource,
-        [targetKey]: nextTarget,
-      }));
-      setSaveStatus("pending");
-      setSaveMessage("Zapisz zmiany");
+      commitChange(parsed.key, nextSource, { autoSave: false });
+      commitChange(targetKey, nextTarget, { autoSave: false });
     },
-    [gridData],
+    [commitChange, gridData],
   );
 
-  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>, key: string) => {
     event.preventDefault();
+    setDragOverKey(key);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverKey(null);
   }, []);
 
   const handleUndo = useCallback(() => {
@@ -399,7 +474,7 @@ export default function GrafikV2Page() {
     if (!last) return;
     setHistory((entries) => entries.slice(0, -1));
     setRedoStack((entries) => [...entries, last]);
-    setGrid((prev) => ({ ...prev, [last.key]: last.previous }));
+    setGridOverrides((prev) => ({ ...prev, [last.key]: last.previous }));
   }, [history]);
 
   const handleRedo = useCallback(() => {
@@ -407,15 +482,34 @@ export default function GrafikV2Page() {
     if (!last) return;
     setRedoStack((entries) => entries.slice(0, -1));
     setHistory((entries) => [...entries, last]);
-    setGrid((prev) => ({ ...prev, [last.key]: last.next }));
+    setGridOverrides((prev) => ({ ...prev, [last.key]: last.next }));
   }, [redoStack]);
+
+  const handlePresetApply = useCallback(
+    (key: string, preset: ShiftPreset) => {
+      const nextCard: ShiftCard = {
+        id: `card-${key}-${preset.id}-${Date.now()}`,
+        code: preset.code,
+        label: preset.label,
+        time: preset.time,
+      };
+      const next: CellState = {
+        ...gridData[key],
+        value: preset.value,
+        cards: [...gridData[key].cards, nextCard],
+      };
+      commitChange(key, next, { autoSave: false });
+      setOpenPresetKey(null);
+    },
+    [commitChange, gridData],
+  );
 
   const saveBadgeClass =
     saveStatus === "saved"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-surface-100 text-surface-700"
       : saveStatus === "saving"
-        ? "bg-amber-100 text-amber-700"
-        : "bg-brand-100 text-brand-700";
+        ? "bg-brand-100 text-brand-700"
+        : "bg-accent-100 text-accent-700";
 
   return (
     <div className="panel-page" onMouseUp={handleMouseUp}>
@@ -433,6 +527,15 @@ export default function GrafikV2Page() {
           <div className={`rounded-full px-3 py-1 text-xs font-semibold ${saveBadgeClass}`} aria-live="polite">
             {saveMessage}
           </div>
+          {saveStatus === "pending" && (
+            <button
+              type="button"
+              onClick={handleManualSave}
+              className="rounded-full bg-surface-900 px-4 py-1.5 text-xs font-semibold text-surface-50"
+            >
+              Zapisz
+            </button>
+          )}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -450,28 +553,6 @@ export default function GrafikV2Page() {
             >
               Ponów
             </button>
-          </div>
-          <div className="flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50 p-1">
-            {(["loaded", "loading", "empty", "error"] as ViewState[]).map((state) => (
-              <button
-                key={state}
-                type="button"
-                onClick={() => setViewState(state)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                  viewState === state
-                    ? "bg-surface-900 text-surface-50"
-                    : "text-surface-600 hover:text-surface-900"
-                }`}
-              >
-                {state === "loaded"
-                  ? "Grafik"
-                  : state === "loading"
-                    ? "Loading"
-                    : state === "empty"
-                      ? "Empty"
-                      : "Error"}
-              </button>
-            ))}
           </div>
         </div>
       </div>
@@ -516,7 +597,7 @@ export default function GrafikV2Page() {
             <div className="mt-1 h-2.5 w-2.5 rounded-full bg-accent-400" aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold">Nie udało się wczytać grafiku.</p>
-              <p className="mt-1 text-sm">Sprawdź połączenie lub spróbuj ponownie za chwilę.</p>
+              <p className="mt-1 text-sm">{errorMessage ?? "Sprawdź połączenie lub spróbuj ponownie."}</p>
             </div>
           </div>
         </div>
@@ -586,132 +667,177 @@ export default function GrafikV2Page() {
                 </tr>
               </thead>
               <tbody>
-                {employees.map((employee, rowIndex) => (
-                  <tr key={employee.id} className="border-b border-surface-200">
-                    <td className="sticky left-0 z-10 min-w-[220px] bg-surface-50 px-4 py-4">
-                      <div
-                        className="relative flex items-center gap-3"
-                        onMouseEnter={() => setActiveProfile(employee.id)}
-                        onMouseLeave={() => setActiveProfile(null)}
-                      >
-                        <Avatar name={employee.name} src={employee.avatar} size="md" className="h-9 w-9" />
-                        <div>
-                          <p className="text-sm font-semibold text-surface-900">{employee.name}</p>
-                          <p className="text-xs text-surface-500">{employee.role}</p>
-                        </div>
-                        {activeProfile === employee.id && (
-                          <div className="absolute left-0 top-full z-20 mt-2 w-64 rounded-2xl border border-surface-200 bg-surface-50 p-4 shadow-[0_18px_40px_rgba(0,0,0,0.12)]">
-                            <p className="text-sm font-semibold text-surface-900">{employee.name}</p>
-                            <p className="text-xs text-surface-500">{employee.role}</p>
-                            <div className="mt-3 space-y-2 text-xs text-surface-600">
-                              <div className="flex justify-between">
-                                <span>Godziny w miesiącu</span>
-                                <span className="font-semibold text-surface-900">{employee.hours}h</span>
+                {employees.map((employee, rowIndex) => {
+                  const summary = employeeSummaries[employee.id];
+                  const employeeName = formatEmployeeName(employee);
+                  const employeeRole = employee.position || "Pracownik";
+                  const availability = summary?.availability ?? "Dostępny";
+                  return (
+                    <tr key={employee.id} className="border-b border-surface-200">
+                      <td className="sticky left-0 z-10 min-w-[220px] bg-surface-50 px-4 py-4">
+                        <div
+                          className="relative flex items-center gap-3"
+                          onMouseEnter={() => setActiveProfile(employee.id)}
+                          onMouseLeave={() => setActiveProfile(null)}
+                        >
+                          <Avatar name={employeeName} src={employee.avatarUrl ?? undefined} size="md" className="h-9 w-9" />
+                          <div>
+                            <p className="text-sm font-semibold text-surface-900">{employeeName}</p>
+                            <p className="text-xs text-surface-500">{employeeRole}</p>
+                          </div>
+                          {activeProfile === employee.id && (
+                            <div className="absolute left-0 top-full z-20 mt-2 w-64 rounded-2xl border border-surface-200 bg-surface-50 p-4 shadow-lg">
+                              <p className="text-sm font-semibold text-surface-900">{employeeName}</p>
+                              <p className="text-xs text-surface-500">{employeeRole}</p>
+                              <div className="mt-3 space-y-2 text-xs text-surface-600">
+                                <div className="flex justify-between">
+                                  <span>Godziny w miesiącu</span>
+                                  <span className="font-semibold text-surface-900">{summary?.hours ?? 0}h</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Dostępność</span>
+                                  <span className="font-semibold text-brand-700">{availability}</span>
+                                </div>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Dostępność</span>
-                                <span className="font-semibold text-brand-700">{employee.availability}</span>
-                              </div>
+                              <a
+                                href={`/panel/profil?employeeId=${employee.id}`}
+                                className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-surface-200 bg-surface-100 px-3 py-1.5 text-xs font-semibold text-surface-700"
+                                aria-label="Edytuj profil"
+                              >
+                                Edytuj profil
+                              </a>
                             </div>
-                            <button
-                              type="button"
-                              className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-surface-200 bg-surface-100 px-3 py-1.5 text-xs font-semibold text-surface-700"
-                              aria-label="Edytuj profil"
+                          )}
+                        </div>
+                      </td>
+                      {monthDays.map((day, colIndex) => {
+                        const key = buildKey(employee.id, day.day);
+                        const cell = gridData[key];
+                        const isSelected = selectedCells.has(key);
+                        const isEditing = editingKey === key;
+                        const isValid = validationMap[key] ?? true;
+                        const isPresetOpen = openPresetKey === key;
+                        const isDragOver = dragOverKey === key;
+                        return (
+                          <td key={key} className="border-b border-surface-100">
+                            <div
+                              ref={(node) => {
+                                cellRefs.current.set(key, node);
+                              }}
+                              role="gridcell"
+                              tabIndex={0}
+                              aria-label={`Zmiana ${employeeName}, dzień ${day.day}`}
+                              aria-invalid={!isValid}
+                              onDoubleClick={() => handleEditStart(key)}
+                              onKeyDown={(event) => handleKeyNavigation(event, rowIndex, colIndex, key)}
+                              onMouseDown={(event) => handleMouseDown(rowIndex, colIndex, key, event.shiftKey)}
+                              onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                              onPaste={(event) => handlePaste(event, key)}
+                              onDragOver={(event) => handleDragOver(event, key)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(event) => handleDrop(event, key)}
+                              className={`group relative flex min-h-[64px] min-w-[72px] flex-col justify-center px-2 py-2 text-center align-middle transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
+                                isSelected ? "bg-brand-50" : "bg-surface-50"
+                              } ${!isValid ? "ring-2 ring-accent-400" : ""} ${
+                                isDragOver ? "ring-2 ring-brand-300" : ""
+                              }`}
                             >
-                              Edytuj profil
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    {monthDays.map((day, colIndex) => {
-                      const key = buildKey(employee.id, day.day);
-                      const cell = gridData[key];
-                      const isSelected = selectedCells.has(key);
-                      const isEditing = editingKey === key;
-                      const isValid = validationMap[key] ?? true;
-                      return (
-                        <td key={key} className="border-b border-surface-100">
-                          <div
-                            ref={(node) => {
-                              cellRefs.current.set(key, node);
-                            }}
-                            role="gridcell"
-                            tabIndex={0}
-                            aria-label={`Zmiana ${employee.name}, dzień ${day.day}`}
-                            aria-invalid={!isValid}
-                            onDoubleClick={() => handleEditStart(key)}
-                            onKeyDown={(event) => handleKeyNavigation(event, rowIndex, colIndex, key)}
-                            onMouseDown={(event) => handleMouseDown(rowIndex, colIndex, key, event.shiftKey)}
-                            onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-                            onPaste={(event) => handlePaste(event, key)}
-                            onDragOver={handleDragOver}
-                            onDrop={(event) => handleDrop(event, key)}
-                            className={`group relative min-h-[64px] min-w-[72px] cursor-pointer px-2 py-2 text-center align-middle transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
-                              isSelected ? "bg-brand-50" : "bg-surface-50"
-                            } ${!isValid ? "ring-2 ring-accent-400" : ""}`}
-                          >
-                            {cell.cards.length > 0 && (
-                              <div className="flex flex-col gap-1">
-                                {cell.cards.map((card) => (
-                                  <button
-                                    key={card.id}
-                                    type="button"
-                                    draggable
-                                    onDragStart={(event) => handleDragStart(event, key, card.id)}
-                                    className="flex items-center justify-between gap-2 rounded-xl border border-surface-200 bg-surface-100 px-2 py-1 text-[11px] font-semibold text-surface-700 shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                                    aria-label={`${card.label} ${card.time}`}
-                                  >
-                                    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] text-brand-700">
-                                      {card.code}
-                                    </span>
-                                    <span className="text-[10px] text-surface-500">{card.time}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            {!isEditing && cell.value && (
-                              <div className="mt-1 text-[11px] font-semibold text-surface-700">{cell.value}</div>
-                            )}
-                            {!cell.value && cell.cards.length === 0 && !isEditing && (
-                              <div className="text-[11px] text-surface-400">Wpisz kod</div>
-                            )}
-                            {isEditing && (
-                              <div className="absolute inset-1 rounded-xl border border-brand-300 bg-surface-50 p-1">
-                                <input
-                                  autoFocus
-                                  value={draftValue}
-                                  onChange={(event) => setDraftValue(event.target.value)}
-                                  onBlur={() => handleEditCommit(key)}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                      event.preventDefault();
-                                      handleEditCommit(key);
-                                    }
-                                  }}
-                                  className="h-full w-full rounded-lg border border-surface-200 bg-surface-50 px-2 text-xs font-semibold text-surface-900 outline-none"
-                                  aria-label="Edytuj zmianę"
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                    <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-brand-700">
-                      {employee.suppliers}
-                    </td>
-                    <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-surface-700">
-                      {employee.days}
-                    </td>
-                    <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-surface-700">
-                      {employee.hours}h
-                    </td>
-                    <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-accent-700">
-                      {employee.payout}
-                    </td>
-                  </tr>
-                ))}
+                              <button
+                                type="button"
+                                aria-label="Dodaj zmianę"
+                                onClick={(event: MouseEvent<HTMLButtonElement>) => {
+                                  event.stopPropagation();
+                                  setOpenPresetKey((prev) => (prev === key ? null : key));
+                                }}
+                                className="absolute right-1 top-1 rounded-full border border-surface-200 bg-surface-50 px-1.5 py-0.5 text-[10px] font-semibold text-surface-500 opacity-0 transition group-hover:opacity-100"
+                              >
+                                +
+                              </button>
+                              {isPresetOpen && (
+                                <div
+                                  role="menu"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="absolute right-1 top-7 z-20 w-40 rounded-2xl border border-surface-200 bg-surface-50 p-2 text-left text-xs text-surface-600 shadow-lg"
+                                >
+                                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-surface-400">
+                                    Presety zmian
+                                  </p>
+                                  {shiftPresets.map((preset) => (
+                                    <button
+                                      key={preset.id}
+                                      type="button"
+                                      onClick={() => handlePresetApply(key, preset)}
+                                      className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-surface-700 transition hover:bg-surface-100"
+                                      aria-label={`Dodaj ${preset.label} ${preset.time}`}
+                                    >
+                                      <span>{preset.label}</span>
+                                      <span className="text-[10px] text-surface-500">{preset.time}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              {cell.cards.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                  {cell.cards.map((card) => (
+                                    <button
+                                      key={card.id}
+                                      type="button"
+                                      draggable
+                                      onDragStart={(event) => handleDragStart(event, key, card.id)}
+                                      className="flex items-center justify-between gap-2 rounded-xl border border-surface-200 bg-surface-100 px-2 py-1 text-[11px] font-semibold text-surface-700 shadow-sm"
+                                      aria-label={`${card.label} ${card.time}`}
+                                    >
+                                      <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] text-brand-700">
+                                        {card.code}
+                                      </span>
+                                      <span className="text-[10px] text-surface-500">{card.time}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              {!isEditing && cell.value && (
+                                <div className="mt-1 text-[11px] font-semibold text-surface-700">{cell.value}</div>
+                              )}
+                              {!cell.value && cell.cards.length === 0 && !isEditing && (
+                                <div className="text-[11px] text-surface-400">Wpisz kod</div>
+                              )}
+                              {isEditing && (
+                                <div className="absolute inset-1 rounded-xl border border-brand-300 bg-surface-50 p-1">
+                                  <input
+                                    autoFocus
+                                    value={draftValue}
+                                    onChange={(event) => setDraftValue(event.target.value)}
+                                    onBlur={() => handleEditCommit(key)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        handleEditCommit(key);
+                                      }
+                                    }}
+                                    className="h-full w-full rounded-lg border border-surface-200 bg-surface-50 px-2 text-xs font-semibold text-surface-900 outline-none"
+                                    aria-label="Edytuj zmianę"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-brand-700">
+                        {summary?.suppliers ?? 0}
+                      </td>
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-surface-700">
+                        {summary?.days ?? 0}
+                      </td>
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-surface-700">
+                        {summary?.hours ?? 0}h
+                      </td>
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-accent-700">
+                        {summary?.payout ?? formatCurrency(0)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -731,18 +857,12 @@ export default function GrafikV2Page() {
               <span className="text-[11px] font-semibold text-surface-500">Kody zmian:</span>
               <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">D</span>
               <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold text-surface-600">
-                ZM
+                R
               </span>
               <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold text-surface-600">
-                N
+                P
               </span>
-              <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold text-surface-600">
-                W
-              </span>
-              <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold text-surface-600">
-                S
-              </span>
-              <span className="text-[11px] font-semibold text-surface-500">D = Dostawa</span>
+              <span className="text-[11px] font-semibold text-surface-500">D = Dostawa, R = Rano, P = Popołudnie</span>
             </div>
           </div>
         </div>
