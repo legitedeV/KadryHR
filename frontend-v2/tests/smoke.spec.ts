@@ -47,12 +47,11 @@ test.describe('Smoke Tests', () => {
     }
   });
 
-  test('API health check responds', async ({ request }) => {
+  test('API responds correctly', async ({ request }) => {
     // Verify the backend API is accessible
-    const response = await request.get('/api/health');
+    const response = await request.get('/api/website/settings');
     
-    // Should return 200 or 404 (if health endpoint doesn't exist yet)
-    // We just want to make sure the API is responding
-    expect([200, 404]).toContain(response.status());
+    // Should return 200 (public endpoint)
+    expect(response.status()).toBe(200);
   });
 });
