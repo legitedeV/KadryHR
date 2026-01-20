@@ -15,7 +15,6 @@ frontend/.env
 # allow checked-in audit/reporting notes
 !docs/repo-audit.md
 !docs/feature-parity-matrix.md
-!docs/backlog.md
 !docs/leave-testing.md
 !docs/CHANGELOG.md
 !docs/branding.md
