@@ -2,6 +2,7 @@ import { MarketingHeader } from "@/components/MarketingHeader";
 import { Hero, HeroContent } from "@/components/landing/Hero";
 import { ProblemSolution } from "@/components/landing/ProblemSolution";
 import { ProductTour } from "@/components/landing/ProductTour";
+import { ProductDeliveryHub } from "@/components/landing/ProductDeliveryHub";
 import { StorySection } from "@/components/landing/StorySection";
 import { FeatureGroups } from "@/components/landing/FeatureGroups";
 import { UseCases } from "@/components/landing/UseCases";
@@ -109,6 +110,7 @@ export default async function HomePage() {
       <MarketingHeader />
       <SectionScroller>
         <Hero content={heroContent} />
+        <ProductDeliveryHub />
         <ProblemSolution />
         <ProductTour />
         <StorySection />
