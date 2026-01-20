@@ -88,9 +88,9 @@ jobs:
         working-directory: ./backend-v2
         run: |
           npm run build
-          nohup npm run start > backend.log 2>&1 &
-          echo $! > backend.pid
-          echo "Backend PID: $(cat backend.pid)"
+          nohup npm run start > ../backend.log 2>&1 &
+          echo $! > ../backend.pid
+          echo "Backend PID: $(cat ../backend.pid)"
 
       - name: Wait for backend to be ready
         run: |
@@ -104,12 +104,36 @@ jobs:
             sleep 2
           done
           echo "❌ Backend failed to start"
-          cat backend-v2/backend.log
+          cat backend.log
           exit 1
 
       - name: Install frontend dependencies
         working-directory: ./frontend-v2
         run: npm ci
+
+      - name: Start frontend dev server
+        working-directory: ./frontend-v2
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        run: |
+          nohup npm run dev -- --port 3000 > ../frontend.log 2>&1 &
+          echo $! > ../frontend.pid
+          echo "Frontend PID: $(cat ../frontend.pid)"
+
+      - name: Wait for frontend to be ready
+        run: |
+          echo "⏳ Waiting for frontend to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 2>/dev/null; then
+              echo "✅ Frontend is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30: Frontend not ready yet, waiting..."
+            sleep 2
+          done
+          echo "❌ Frontend failed to start"
+          cat frontend.log
+          exit 1
 
       - name: Install Playwright browsers
         working-directory: ./frontend-v2
@@ -120,8 +144,8 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
         run: |
-          # Override baseURL for CI environment
-          npx playwright test --config=playwright.config.ts
+          # Use CI config that doesn't start webServer (already running)
+          npx playwright test --config=playwright.ci.config.ts --reporter=html
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -135,7 +159,10 @@ jobs:
         if: failure()
         run: |
           echo "📋 Backend logs:"
-          cat backend-v2/backend.log || echo "No backend logs found"
+          cat backend.log || echo "No backend logs found"
+          echo ""
+          echo "📋 Frontend logs:"
+          cat frontend.log || echo "No frontend logs found"
 
       - name: Job Summary
         if: always()
@@ -153,6 +180,9 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          if [ -f backend-v2/backend.pid ]; then
-            kill $(cat backend-v2/backend.pid) 2>/dev/null || true
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) 2>/dev/null || true
+          fi
+          if [ -f frontend.pid ]; then
+            kill $(cat frontend.pid) 2>/dev/null || true
           fi
