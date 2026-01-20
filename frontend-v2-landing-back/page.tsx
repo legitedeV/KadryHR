@@ -2,6 +2,7 @@ import { MarketingHeader } from "@/components/MarketingHeader";
 import { Hero } from "@/components/landing/Hero";
 import { ProblemSolution } from "@/components/landing/ProblemSolution";
 import { ProductTour } from "@/components/landing/ProductTour";
+import { ProductDeliveryHub } from "@/components/landing/ProductDeliveryHub";
 import { StorySection } from "@/components/landing/StorySection";
 import { FeatureGroups } from "@/components/landing/FeatureGroups";
 import { UseCases } from "@/components/landing/UseCases";
@@ -18,6 +19,7 @@ export default function HomePage() {
       <MarketingHeader />
       <main>
         <Hero />
+        <ProductDeliveryHub />
         <ProblemSolution />
         <ProductTour />
         <StorySection />
