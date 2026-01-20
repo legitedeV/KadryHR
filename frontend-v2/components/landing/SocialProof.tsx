@@ -37,16 +37,16 @@ export function SocialProof({ content }: { content?: SocialProofContent }) {
   const metrics = content?.metrics?.length ? content.metrics : defaultMetrics;
 
   return (
-    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="opinie">
+    <section className="landing-section border-t border-surface-900/70 px-6 py-28" id="opinie">
       <div className="mx-auto max-w-6xl space-y-12">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <Reveal className="space-y-3" delay={80} distance={18}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Social proof</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Social proof</p>
             <h2 className="text-3xl font-semibold text-surface-50">
               {content?.heading ?? "Co mówią zespoły z pilotażu."}
             </h2>
           </Reveal>
-          <Reveal className="rounded-full border border-surface-800/60 bg-surface-900/60 px-4 py-2 text-xs font-semibold text-surface-300" delay={120} distance={16}>
+          <Reveal className="rounded-full border border-surface-800/60 bg-surface-900/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-surface-300" delay={120} distance={16}>
             {content?.subheading ?? "Wyniki po 3 miesiącach wdrożenia"}
           </Reveal>
         </div>
@@ -55,7 +55,7 @@ export function SocialProof({ content }: { content?: SocialProofContent }) {
             <Reveal
               key={`${item.quote}-${index}`}
               delay={140 + index * 80}
-              className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1"
+              className="rounded-[28px] border border-surface-800/60 bg-surface-900/60 p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.7)] backdrop-blur transition-transform duration-500 hover:-translate-y-0.5"
               distance={18}
             >
               <p className="text-sm text-surface-300">“{item.quote}”</p>
@@ -68,14 +68,14 @@ export function SocialProof({ content }: { content?: SocialProofContent }) {
           ))}
         </div>
         <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-          <Reveal className="grid gap-4 rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6" delay={160} distance={20}>
+          <Reveal className="grid gap-4 rounded-[28px] border border-brand-800/40 bg-brand-950/40 p-6" delay={160} distance={20}>
             <h3 className="text-xl font-semibold text-surface-50">Wyniki, które robią różnicę</h3>
             <div className="grid gap-4 md:grid-cols-3">
               {metrics.map((metric, index) => (
                 <Reveal
                   key={metric.label}
                   delay={200 + index * 60}
-                  className="rounded-2xl bg-surface-900/70 p-4 text-center shadow-sm transition-transform duration-300 hover:-translate-y-1"
+                  className="rounded-2xl bg-surface-900/70 p-4 text-center shadow-sm transition-transform duration-500 hover:-translate-y-0.5"
                   distance={16}
                 >
                   <p className="text-2xl font-semibold text-brand-200">
@@ -86,8 +86,8 @@ export function SocialProof({ content }: { content?: SocialProofContent }) {
               ))}
             </div>
           </Reveal>
-          <Reveal className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur" delay={220} distance={20}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Security badge</p>
+          <Reveal className="rounded-[28px] border border-surface-800/60 bg-surface-900/60 p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.7)] backdrop-blur" delay={220} distance={20}>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-200">Security badge</p>
             <h3 className="mt-3 text-xl font-semibold text-surface-50">Bezpieczeństwo i zgodność</h3>
             <p className="mt-3 text-sm text-surface-300">
               KadryHR działa w środowisku UE, wspiera role i uprawnienia oraz prowadzi logi zmian. Jesteśmy gotowi na audyty i polityki wewnętrzne.
@@ -99,7 +99,7 @@ export function SocialProof({ content }: { content?: SocialProofContent }) {
                 "Szyfrowanie danych",
                 "Logi aktywności",
               ].map((badge) => (
-                <span key={badge} className="rounded-full border border-brand-800/60 bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-200">
+                <span key={badge} className="rounded-full border border-brand-800/50 bg-brand-950/30 px-3 py-1 text-xs font-semibold text-brand-200">
                   {badge}
                 </span>
               ))}

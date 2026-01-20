@@ -55,19 +55,19 @@ export function ProductTour() {
   const activeStep = useMemo(() => steps[activeIndex], [activeIndex]);
 
   return (
-    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="product-tour">
+    <section className="landing-section border-t border-surface-900/70 px-6 py-28" id="product-tour">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-12 md:grid md:grid-cols-[0.9fr_1.1fr]">
           <Reveal className="space-y-5" delay={80} distance={18}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Product tour</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Product tour</p>
             <h2 className="text-3xl font-semibold text-surface-50">
               Story-mode: od dyspozycyjności do raportu.
             </h2>
             <p className="text-surface-300">
               Przewiń, aby zobaczyć jak KadryHR prowadzi managera przez cały cykl miesiąca.
             </p>
-            <div className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1">
-              <p className="text-sm font-semibold text-surface-400">Aktualny krok</p>
+            <div className="rounded-[28px] border border-surface-800/60 bg-surface-900/60 p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.7)] backdrop-blur transition-transform duration-500 hover:-translate-y-0.5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Aktualny krok</p>
               <h3 className="mt-3 text-xl font-semibold text-surface-50">
                 {activeStep.title}
               </h3>
@@ -78,7 +78,7 @@ export function ProductTour() {
                 {activeStep.bullets.map((bullet) => (
                   <span
                     key={bullet}
-                    className="rounded-full border border-brand-800/60 bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-200"
+                    className="rounded-full border border-brand-800/50 bg-brand-950/30 px-3 py-1 text-xs font-semibold text-brand-200"
                   >
                     {bullet}
                   </span>
@@ -97,15 +97,15 @@ export function ProductTour() {
                     ref={(node) => {
                       sectionsRef.current[index] = node;
                     }}
-                    className={`rounded-3xl border px-6 py-5 transition-all duration-300 hover:-translate-y-1 ${
+                    className={`rounded-[28px] border px-6 py-5 transition-all duration-500 hover:-translate-y-0.5 ${
                       index === activeIndex
-                        ? "border-brand-800/70 bg-surface-900/80 shadow-soft"
+                        ? "border-brand-800/60 bg-surface-900/80 shadow-soft"
                         : "border-surface-800/50 bg-surface-900/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-surface-500">
                           Krok {index + 1}
                         </p>
                         <h4 className="mt-2 text-lg font-semibold text-surface-50">
@@ -125,7 +125,7 @@ export function ProductTour() {
                     </p>
                     <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-surface-400">
                       {step.bullets.map((bullet) => (
-                        <span key={bullet} className="rounded-full bg-surface-800/70 px-2 py-1 text-center">
+                        <span key={bullet} className="rounded-full bg-surface-800/60 px-2 py-1 text-center">
                           {bullet}
                         </span>
                       ))}

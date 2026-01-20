@@ -40,43 +40,44 @@ const solutions = [
 
 export function ProblemSolution() {
   return (
-    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="funkcje">
-      <div className="mx-auto max-w-6xl space-y-12">
+    <section className="landing-section border-t border-surface-900/70 px-6 py-28" id="funkcje">
+      <div className="mx-auto max-w-6xl space-y-14">
         <div className="grid gap-10 md:grid-cols-2">
           <Reveal className="space-y-4" delay={80} distance={18}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Problem</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Problem</p>
             <h2 className="text-3xl font-semibold text-surface-50">
-              Chaos zmianowy kosztuje czas i pieniądze.
+              Chaos zmianowy kosztuje uwagę, rytm i pieniądze.
             </h2>
             <p className="text-surface-300">
-              KadryHR projektujemy z zespołami retail, które żyją na zmianach. Każdy element produktu
-              usuwa pojedyncze źródło chaosu, zanim zamieni się w koszt.
+              Projektujemy KadryHR z zespołami, które pracują w terenie. Każdy moduł usuwa jedno
+              źródło napięcia zanim stanie się kosztem.
             </p>
           </Reveal>
           <Reveal className="space-y-4" delay={160} distance={18}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Rozwiązanie</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Rozwiązanie</p>
             <h3 className="text-2xl font-semibold text-surface-50">
-              Jedna platforma do grafiku, urlopów i czasu pracy.
+              Jedna platforma do grafiku, urlopów i rozliczeń.
             </h3>
             <p className="text-surface-300">
-              Dzięki spójnym przepływom masz te same dane w planowaniu, rozliczeniach i komunikacji z zespołem.
+              Spójne przepływy łączą planowanie, decyzje i raporty. Zespół działa według jednej
+              prawdy operacyjnej.
             </p>
           </Reveal>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Reveal
-            className="space-y-4 rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur"
+            className="space-y-5 rounded-[28px] border border-surface-800/60 bg-surface-900/60 p-6 shadow-[0_25px_60px_-35px_rgba(0,0,0,0.7)] backdrop-blur"
             delay={120}
             distance={20}
           >
-            <p className="text-sm font-semibold text-surface-400">Co boli dziś</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Co boli dziś</p>
             <div className="grid gap-4">
               {problems.map((item, index) => (
                 <Reveal
                   key={item.title}
                   delay={180 + index * 60}
-                  className="rounded-2xl border border-surface-700/60 bg-surface-800/70 p-4 transition-transform duration-300 hover:-translate-y-1"
+                  className="rounded-2xl border border-surface-700/50 bg-surface-800/60 p-4 transition-transform duration-500 hover:-translate-y-0.5"
                 >
                   <p className="font-semibold text-surface-50">{item.title}</p>
                   <p className="mt-2 text-sm text-surface-300">{item.desc}</p>
@@ -84,14 +85,18 @@ export function ProblemSolution() {
               ))}
             </div>
           </Reveal>
-          <Reveal className="space-y-4 rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6 shadow-sm" delay={180} distance={20}>
-            <p className="text-sm font-semibold text-brand-200">Co daje KadryHR</p>
+          <Reveal
+            className="space-y-5 rounded-[28px] border border-brand-800/40 bg-brand-950/40 p-6 shadow-[0_25px_60px_-35px_rgba(0,0,0,0.7)]"
+            delay={180}
+            distance={20}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">Co daje KadryHR</p>
             <div className="grid gap-4">
               {solutions.map((item, index) => (
                 <Reveal
                   key={item.title}
                   delay={200 + index * 60}
-                  className="rounded-2xl border border-brand-800/50 bg-surface-900/60 p-4 shadow-sm transition-transform duration-300 hover:-translate-y-1"
+                  className="rounded-2xl border border-brand-800/40 bg-surface-900/60 p-4 transition-transform duration-500 hover:-translate-y-0.5"
                 >
                   <p className="font-semibold text-surface-50">{item.title}</p>
                   <p className="mt-2 text-sm text-surface-300">{item.desc}</p>

@@ -155,20 +155,18 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
     <NotificationsProvider>
       <div className="min-h-screen flex panel-shell relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="hero-aurora" />
-          <div className="floating-orb orb-slow -left-32 top-1/4 h-56 w-56 bg-brand-700/25" />
-          <div className="floating-orb orb-fast -right-28 bottom-10 h-48 w-48 bg-accent-700/20" />
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(201,155,100,0.12),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(79,159,158,0.12),transparent_60%)]" />
         </div>
         {/* sidebar */}
-        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl sidebar-glass shadow-[12px_0_40px_color-mix(in_srgb,var(--color-surface-900)_35%,transparent)]">
+        <aside className="hidden md:flex md:flex-col w-64 rounded-r-[28px] sidebar-glass shadow-[12px_0_40px_color-mix(in_srgb,var(--color-surface-900)_35%,transparent)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
             <Link href="/panel/dashboard" className="shrink-0">
               <BrandLogoStatic size={36} variant="icon" ariaLabel="KadryHR" />
             </Link>
           </div>
           <nav className="flex-1 py-6 px-4 space-y-1">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
+            <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
@@ -186,10 +184,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-500 ${
                     active
-                      ? "bg-brand-900/40 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.18)] ring-1 ring-brand-700/60"
-                      : "text-surface-400 hover:bg-surface-900/60 hover:text-surface-100"
+                      ? "bg-brand-900/35 text-brand-100 shadow-[0_14px_34px_rgba(0,0,0,0.35)] ring-1 ring-brand-700/50"
+                      : "text-surface-400 hover:bg-surface-900/50 hover:text-surface-100"
                   }`}
                 >
                   {active && (
@@ -206,7 +204,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-800/60 px-5 py-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-100 font-semibold">
+                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/50 flex items-center justify-center text-brand-100 font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -218,7 +216,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               </div>
               <button
                 onClick={handleLogout}
-                className="text-xs rounded-full border border-surface-700/70 px-3 py-1 font-medium text-surface-300 hover:bg-surface-800/70 hover:text-surface-100 transition-colors"
+                className="text-xs rounded-full border border-surface-700/70 px-3 py-1 font-medium text-surface-300 transition-colors duration-500 hover:bg-surface-800/60 hover:text-surface-100"
               >
                 Wyloguj
               </button>
@@ -251,7 +249,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </Link>
             <button
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 text-surface-300 hover:text-surface-50 transition-colors"
+              className="p-2 text-surface-300 transition-colors duration-500 hover:text-surface-50"
               aria-label="Close menu"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -260,7 +258,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
           <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto" style={{ maxHeight: MOBILE_MENU_CONTENT_HEIGHT }}>
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">
+            <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-surface-500 mb-3">
               Nawigacja
             </p>
             {navItems
@@ -276,10 +274,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-500 ${
                     active
-                      ? "bg-brand-900/40 text-brand-100 shadow-[0_8px_24px_rgba(16,185,129,0.18)] ring-1 ring-brand-700/60"
-                      : "text-surface-400 hover:bg-surface-900/60 hover:text-surface-100"
+                      ? "bg-brand-900/35 text-brand-100 shadow-[0_14px_34px_rgba(0,0,0,0.35)] ring-1 ring-brand-700/50"
+                      : "text-surface-400 hover:bg-surface-900/50 hover:text-surface-100"
                   }`}
                 >
                   {active && (
@@ -296,7 +294,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="border-t border-surface-800 px-4 py-3">
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/60 flex items-center justify-center text-brand-100 font-semibold">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-900/60 via-brand-800/40 to-accent-900/50 flex items-center justify-center text-brand-100 font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -310,7 +308,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
               </div>
                 <button
                   onClick={handleLogout}
-                  className="text-xs rounded-lg border border-surface-700/70 px-2 py-1 font-medium text-surface-300 hover:bg-surface-800/70 hover:text-surface-100 transition-colors"
+                  className="text-xs rounded-lg border border-surface-700/70 px-2 py-1 font-medium text-surface-300 transition-colors duration-500 hover:bg-surface-800/60 hover:text-surface-100"
                 >
                   Wyloguj
                 </button>
@@ -331,7 +329,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 -ml-2 text-surface-300 hover:text-surface-50 transition-colors"
+                className="md:hidden p-2 -ml-2 text-surface-300 transition-colors duration-500 hover:text-surface-50"
                 aria-label="Open menu"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -345,7 +343,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs font-medium text-surface-400">
                   KadryHR · panel
                 </p>
-                <p className="text-sm font-bold text-surface-50 truncate">
+                <p className="text-sm font-semibold text-surface-50 truncate">
                   {titleByPath[pathname] ??
                     titleByPath[`/panel/admin${pathname === "/" ? "" : pathname}`] ??
                     "Dashboard"}
@@ -366,7 +364,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-3">
               <Link
                 href="/panel/powiadomienia"
-                className="rounded-full border border-surface-800/70 bg-surface-950/70 p-2 text-surface-300 transition hover:text-surface-50"
+                className="rounded-full border border-surface-800/70 bg-surface-950/70 p-2 text-surface-300 transition duration-500 hover:text-surface-50"
                 aria-label="Powiadomienia"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -390,7 +388,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           </header>
 
           <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-[var(--panel-bg)]">
-            <div className="max-w-[1600px] w-full mx-auto">{children}</div>
+            <div className="max-w-[1600px] w-full mx-auto panel-page">{children}</div>
           </main>
         </div>
       </div>

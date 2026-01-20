@@ -43,10 +43,10 @@ export function UseCases() {
   const [active, setActive] = useState(cases[0]);
 
   return (
-    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="dla-kogo">
+    <section className="landing-section border-t border-surface-900/70 px-6 py-28" id="dla-kogo">
       <div className="mx-auto max-w-6xl space-y-12">
         <Reveal className="space-y-4" delay={80} distance={18}>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Dla kogo</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Dla kogo</p>
           <h2 className="text-3xl font-semibold text-surface-50">
             Trzy branże, jeden rytm pracy zmianowej.
           </h2>
@@ -57,10 +57,10 @@ export function UseCases() {
               key={item.id}
               type="button"
               onClick={() => setActive(item)}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 ${
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition duration-500 hover:-translate-y-0.5 ${
                 active.id === item.id
                   ? "bg-brand-600 text-white shadow-soft"
-                  : "border border-surface-800/60 bg-surface-900/60 text-surface-300 hover:border-brand-600"
+                  : "border border-surface-800/60 bg-surface-900/60 text-surface-300 hover:border-brand-500"
               }`}
             >
               {item.label}
@@ -69,7 +69,7 @@ export function UseCases() {
         </div>
         <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
           <Reveal
-            className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1"
+            className="rounded-[28px] border border-surface-800/60 bg-surface-900/60 p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.7)] backdrop-blur transition-transform duration-500 hover:-translate-y-0.5"
             delay={120}
             distance={20}
           >
@@ -80,14 +80,14 @@ export function UseCases() {
             <ul className="mt-6 space-y-3 text-sm text-surface-300">
               {active.stats.map((stat) => (
                 <li key={stat} className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-brand-500" />
+                  <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-brand-400" />
                   {stat}
                 </li>
               ))}
             </ul>
           </Reveal>
           <Reveal
-            className="relative overflow-hidden rounded-3xl border border-brand-800/50 bg-brand-950/40 p-6 transition-transform duration-300 hover:-translate-y-1"
+            className="relative overflow-hidden rounded-[28px] border border-brand-800/40 bg-brand-950/40 p-6 transition-transform duration-500 hover:-translate-y-0.5"
             delay={180}
             distance={20}
           >
@@ -102,7 +102,7 @@ export function UseCases() {
               </svg>
             </div>
             <div className="relative space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Mini animacja</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-200">Mini animacja</p>
               <div className="grid gap-3">
                 {["Zmiana poranna", "Zmiana popołudniowa", "Zmiana weekend"].map((item, index) => (
                   <div
