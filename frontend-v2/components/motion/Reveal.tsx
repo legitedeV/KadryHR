@@ -18,8 +18,8 @@ export function Reveal({
   className,
   delay = 0,
   once = true,
-  distance = 16,
-  duration = 700,
+  distance = 20,
+  duration = 1100,
   scale = 0.98,
 }: RevealProps) {
   // Calculate reduced motion preference once during initial render

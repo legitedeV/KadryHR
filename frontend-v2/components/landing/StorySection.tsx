@@ -55,7 +55,7 @@ export function StorySection() {
   }, [reducedMotion]);
 
   return (
-    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="story">
+    <section className="landing-section border-t border-surface-900/70 px-6 py-28" id="story">
       <div className="mx-auto max-w-6xl">
         <Reveal className="max-w-2xl space-y-4" delay={80} distance={18}>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">Historia wdrożenia</p>
@@ -76,20 +76,20 @@ export function StorySection() {
                 ref={(node) => {
                   refs.current[index] = node;
                 }}
-                className={`rounded-3xl border px-6 py-5 transition-all hover:-translate-y-1 ${
+                className={`rounded-[28px] border px-6 py-5 transition-all duration-500 hover:-translate-y-0.5 ${
                   activeIndex === index
-                    ? "border-brand-700/60 bg-surface-900/70 shadow-[0_20px_50px_rgba(16,185,129,0.18)]"
-                    : "border-surface-800/70 bg-surface-950/60"
+                    ? "border-brand-700/50 bg-surface-900/70 shadow-[0_22px_60px_rgba(0,0,0,0.45)]"
+                    : "border-surface-800/60 bg-surface-950/60"
                 }`}
               >
                 <Reveal className="space-y-3" delay={140 + index * 80} distance={16}>
                   <div className="flex items-center gap-3 text-xs font-semibold text-brand-200">
-                    <span className="rounded-full bg-brand-950/40 px-3 py-1">{step.highlight}</span>
+                    <span className="rounded-full border border-brand-800/40 bg-brand-950/30 px-3 py-1">{step.highlight}</span>
                     <span className="text-surface-400">Krok {index + 1}</span>
                   </div>
                   <h3 className="text-xl font-semibold text-surface-50">{step.title}</h3>
                   <p className="text-sm text-surface-300">{step.description}</p>
-                  <div className="rounded-2xl border border-surface-800/60 bg-surface-900/60 px-4 py-3 text-sm text-surface-200">
+                  <div className="rounded-2xl border border-surface-800/50 bg-surface-900/60 px-4 py-3 text-sm text-surface-200">
                     {step.stat}
                   </div>
                 </Reveal>
@@ -97,14 +97,14 @@ export function StorySection() {
             ))}
           </div>
 
-          <Reveal className="relative overflow-hidden rounded-[32px] border border-surface-800/70 bg-surface-900/60 p-8" delay={180} distance={20}>
-            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-brand-900/40 blur-3xl" aria-hidden="true" />
-            <div className="absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-900/40 blur-3xl" aria-hidden="true" />
+          <Reveal className="relative overflow-hidden rounded-[32px] border border-surface-800/60 bg-surface-900/60 p-8" delay={180} distance={20}>
+            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-brand-900/35 blur-3xl" aria-hidden="true" />
+            <div className="absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-accent-900/30 blur-3xl" aria-hidden="true" />
             <div className="relative space-y-6">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">
                 Podgląd w czasie rzeczywistym
               </p>
-              <div className="rounded-3xl border border-surface-800/70 bg-surface-950/70 p-5">
+              <div className="rounded-3xl border border-surface-800/60 bg-surface-950/70 p-5">
                 <div className="flex items-center justify-between text-xs text-surface-400">
                   <span>Aktualny etap</span>
                   <span>{steps[activeIndex].highlight}</span>
@@ -118,8 +118,8 @@ export function StorySection() {
                     key={step.highlight}
                     className={`rounded-2xl border px-4 py-3 text-sm transition-all ${
                       activeIndex === index
-                        ? "border-brand-700/60 bg-brand-950/40 text-brand-100"
-                        : "border-surface-800/70 bg-surface-950/40 text-surface-400"
+                        ? "border-brand-700/50 bg-brand-950/30 text-brand-100"
+                        : "border-surface-800/60 bg-surface-950/40 text-surface-400"
                     }`}
                   >
                     <p className="text-xs uppercase tracking-[0.2em]">{step.highlight}</p>
