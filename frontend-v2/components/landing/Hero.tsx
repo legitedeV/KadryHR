@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
-import { prefersReducedMotion } from "@/components/motion/prefersReducedMotion";
 
 const defaultHighlights = [
   "Grafik i dyspozycyjność w jednej osi czasu.",
@@ -30,69 +29,7 @@ export type HeroContent = {
 };
 
 export function Hero({ content }: { content?: HeroContent }) {
-  const [loaded, setLoaded] = useState(() => typeof window !== "undefined");
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const auroraRef = useRef<HTMLDivElement | null>(null);
-  const orbRef = useRef<HTMLDivElement | null>(null);
-  const mockupRef = useRef<HTMLDivElement | null>(null);
-  const heroRef = useRef<HTMLElement | null>(null);
-  const loadedRef = useRef(false);
-
-  useEffect(() => {
-    if (!loadedRef.current) {
-      loadedRef.current = true;
-      // Use requestAnimationFrame to batch with browser paint
-      requestAnimationFrame(() => setLoaded(true));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-
-    let frame = 0;
-    const handleScroll = () => {
-      const offset = Math.min(window.scrollY, 800);
-      if (auroraRef.current) {
-        auroraRef.current.style.transform = `translate3d(0, ${offset * 0.08}px, 0)`;
-      }
-      if (orbRef.current) {
-        orbRef.current.style.transform = `translate3d(0, ${offset * -0.05}px, 0)`;
-      }
-      if (mockupRef.current) {
-        mockupRef.current.style.transform = `translate3d(0, ${offset * -0.06}px, 0)`;
-      }
-    };
-
-    const onScroll = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        handleScroll();
-      });
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!heroRef.current) return;
-      const rect = heroRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      setMousePosition({ x, y });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  const [loaded] = useState(() => typeof window !== "undefined");
 
   const highlights = content?.highlights?.length
     ? content.highlights
@@ -101,29 +38,21 @@ export function Hero({ content }: { content?: HeroContent }) {
 
   return (
     <section
-      ref={heroRef}
       className="landing-section relative min-h-[92vh] overflow-hidden px-6 pb-24 pt-28 md:pt-36"
       id="produkt"
       data-hero-loaded={loaded}
     >
       <div className="absolute inset-0">
-        <div ref={auroraRef} className="hero-layer absolute inset-0" aria-hidden="true">
+        <div className="hero-layer absolute inset-0" aria-hidden="true">
           <div className="hero-aurora" />
         </div>
         <div
           className="hero-layer floating-orb orb-slow -left-16 top-20 h-44 w-44 bg-brand-500/20"
           aria-hidden="true"
-          style={{
-            transform: `translate3d(${mousePosition.x * 14}px, ${mousePosition.y * 14}px, 0)`,
-          }}
         />
         <div
-          ref={orbRef}
           className="hero-layer floating-orb orb-fast right-10 top-32 h-28 w-28 bg-accent-400/20"
           aria-hidden="true"
-          style={{
-            transform: `translate3d(${mousePosition.x * -10}px, ${mousePosition.y * -10}px, 0)`,
-          }}
         />
         <div className="hero-layer floating-orb -bottom-10 right-28 h-36 w-36 bg-accent-400/15" aria-hidden="true" />
         <div className="noise-overlay" aria-hidden="true" />
@@ -201,12 +130,9 @@ export function Hero({ content }: { content?: HeroContent }) {
         </Reveal>
 
         <Reveal className="relative z-10" delay={240} distance={26}>
-          <div ref={mockupRef} className="transition-transform duration-[900ms]">
+          <div className="transition-transform duration-[900ms]">
             <div
-              className="relative mx-auto max-w-md rounded-[34px] border border-white/[0.08] bg-gradient-to-b from-surface-900/85 to-surface-950/95 p-6 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.7)] backdrop-blur-2xl transition-all duration-700 hover:-translate-y-1"
-              style={{
-                transform: `perspective(1000px) rotateY(${mousePosition.x * 2.5}deg) rotateX(${mousePosition.y * -2.5}deg)`,
-              }}
+              className="relative mx-auto max-w-md rounded-[34px] border border-white/[0.08] bg-gradient-to-b from-surface-900/85 to-surface-950/95 p-6 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.7)] backdrop-blur-2xl"
             >
               <div className="absolute -left-16 top-6 hidden h-40 w-40 rounded-full bg-brand-500/15 blur-3xl md:block" />
               <div className="absolute -right-16 bottom-6 hidden h-40 w-40 rounded-full bg-accent-500/15 blur-3xl md:block" />
@@ -274,7 +200,7 @@ export function Hero({ content }: { content?: HeroContent }) {
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-surface-500">
         <span className="text-[10px] font-semibold uppercase tracking-[0.3em]">Scroll</span>
         <div className="h-10 w-6 rounded-full border border-surface-700/50 p-1">
-          <div className="ambient-float mx-auto h-2 w-1.5 rounded-full bg-brand-500" />
+          <div className="mx-auto h-2 w-1.5 rounded-full bg-brand-500" />
         </div>
       </div>
     </section>

@@ -6,10 +6,8 @@ import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 
 const navLinks = [
   { label: "Produkt", href: "/#produkt" },
-  { label: "Funkcje", href: "/#funkcje" },
-  { label: "Cennik", href: "/#cennik" },
-  { label: "Bezpieczeństwo", href: "/security" },
-  { label: "Kontakt", href: "/kontakt" },
+  { label: "System", href: "/#product-delivery-hub" },
+  { label: "Kontakt", href: "/#kontakt" },
 ];
 
 export function MarketingHeader() {

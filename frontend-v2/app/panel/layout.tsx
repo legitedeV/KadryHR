@@ -155,10 +155,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
     <NotificationsProvider>
       <div className="min-h-screen flex panel-shell relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="hero-aurora" />
-          <div className="floating-orb orb-slow -left-32 top-1/4 h-56 w-56 bg-brand-600/20" />
-          <div className="floating-orb orb-fast -right-28 bottom-10 h-48 w-48 bg-accent-600/15" />
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(201,155,100,0.12),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(79,159,158,0.12),transparent_60%)]" />
         </div>
         {/* sidebar */}
         <aside className="hidden md:flex md:flex-col w-64 rounded-r-[28px] sidebar-glass shadow-[12px_0_40px_color-mix(in_srgb,var(--color-surface-900)_35%,transparent)]">
@@ -390,7 +388,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           </header>
 
           <main className="flex-1 px-3 sm:px-5 lg:px-6 py-6 bg-[var(--panel-bg)]">
-            <div className="max-w-[1600px] w-full mx-auto">{children}</div>
+            <div className="max-w-[1600px] w-full mx-auto panel-page">{children}</div>
           </main>
         </div>
       </div>
