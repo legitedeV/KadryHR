@@ -58,7 +58,7 @@ jobs:
           rsync -a frontend-v2/package.json frontend-v2/package-lock.json frontend-v2/next.config.mjs artifact/frontend-v2/
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: kadryhr-build-${{ github.sha }}
           path: artifact
