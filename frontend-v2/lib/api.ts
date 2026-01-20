@@ -883,6 +883,10 @@ export async function apiListShiftPresets(): Promise<ShiftPresetRecord[]> {
 // AVATAR UPLOAD API
 // ============================================
 
+function getApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
+}
+
 export async function apiUploadEmployeeAvatar(
   employeeId: string,
   file: File
@@ -891,7 +895,7 @@ export async function apiUploadEmployeeAvatar(
   formData.append("file", file);
   
   const token = getAccessToken();
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
+  const baseUrl = getApiBaseUrl();
   const response = await fetch(
     `${baseUrl}/avatars/employees/${employeeId}/avatar`,
     {
@@ -929,7 +933,7 @@ export async function apiUploadOrganisationLogo(
   formData.append("file", file);
   
   const token = getAccessToken();
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
+  const baseUrl = getApiBaseUrl();
   const response = await fetch(
     `${baseUrl}/avatars/organisations/me/avatar`,
     {

@@ -65,6 +65,8 @@ test.describe('Grafik-v2 Page', () => {
 
     // Mock shifts
     await page.route('**/api/shifts**', async (route) => {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -72,8 +74,8 @@ test.describe('Grafik-v2 Page', () => {
           {
             id: '1',
             employeeId: '1',
-            startsAt: new Date().toISOString().split('T')[0] + 'T06:00:00.000Z',
-            endsAt: new Date().toISOString().split('T')[0] + 'T15:00:00.000Z',
+            startsAt: `${todayStr}T06:00:00.000Z`,
+            endsAt: `${todayStr}T15:00:00.000Z`,
             locationId: '1',
             employee: {
               id: '1',
