@@ -71,8 +71,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang={DEFAULT_LANG}>
-      <body className="antialiased bg-surface-50 text-surface-900">
+    <html lang={DEFAULT_LANG} className="dark">
+      <body className="antialiased bg-surface-950 text-surface-50">
         <ToastProvider>
           <AuthProvider>
             {children}

@@ -55,30 +55,30 @@ export function ProductTour() {
   const activeStep = useMemo(() => steps[activeIndex], [activeIndex]);
 
   return (
-    <section className="landing-section border-t border-surface-200/70 px-6 py-24 dark:border-surface-900/80" id="product-tour">
+    <section className="landing-section border-t border-surface-900/80 px-6 py-24" id="product-tour">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-12 md:grid md:grid-cols-[0.9fr_1.1fr]">
           <Reveal className="space-y-5" delay={80} distance={18}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-300">Product tour</p>
-            <h2 className="text-3xl font-semibold text-surface-900 dark:text-surface-50">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Product tour</p>
+            <h2 className="text-3xl font-semibold text-surface-50">
               Story-mode: od dyspozycyjności do raportu.
             </h2>
-            <p className="text-surface-600 dark:text-surface-300">
+            <p className="text-surface-300">
               Przewiń, aby zobaczyć jak KadryHR prowadzi managera przez cały cykl miesiąca.
             </p>
-            <div className="rounded-3xl border border-surface-200/70 bg-white/80 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1 dark:border-surface-800/60 dark:bg-surface-900/60">
-              <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">Aktualny krok</p>
-              <h3 className="mt-3 text-xl font-semibold text-surface-900 dark:text-surface-50">
+            <div className="rounded-3xl border border-surface-800/60 bg-surface-900/60 p-6 shadow-sm backdrop-blur transition-transform duration-300 hover:-translate-y-1">
+              <p className="text-sm font-semibold text-surface-400">Aktualny krok</p>
+              <h3 className="mt-3 text-xl font-semibold text-surface-50">
                 {activeStep.title}
               </h3>
-              <p className="mt-3 text-sm text-surface-600 dark:text-surface-300">
+              <p className="mt-3 text-sm text-surface-300">
                 {activeStep.desc}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {activeStep.bullets.map((bullet) => (
                   <span
                     key={bullet}
-                    className="rounded-full border border-brand-200/70 bg-brand-50/70 px-3 py-1 text-xs font-semibold text-brand-700 dark:border-brand-800/60 dark:bg-brand-950/40 dark:text-brand-200"
+                    className="rounded-full border border-brand-800/60 bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-200"
                   >
                     {bullet}
                   </span>
@@ -99,33 +99,33 @@ export function ProductTour() {
                     }}
                     className={`rounded-3xl border px-6 py-5 transition-all duration-300 hover:-translate-y-1 ${
                       index === activeIndex
-                        ? "border-brand-300/70 bg-white/90 shadow-soft dark:border-brand-800/70 dark:bg-surface-900/80"
-                        : "border-surface-200/70 bg-white/60 dark:border-surface-800/50 dark:bg-surface-900/40"
+                        ? "border-brand-800/70 bg-surface-900/80 shadow-soft"
+                        : "border-surface-800/50 bg-surface-900/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
                           Krok {index + 1}
                         </p>
-                        <h4 className="mt-2 text-lg font-semibold text-surface-900 dark:text-surface-50">
+                        <h4 className="mt-2 text-lg font-semibold text-surface-50">
                           {step.title}
                         </h4>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         index === activeIndex
                           ? "bg-brand-600 text-white"
-                          : "bg-surface-200 text-surface-600 dark:bg-surface-800 dark:text-surface-300"
+                          : "bg-surface-800 text-surface-300"
                       }`}>
                         {index === activeIndex ? "Aktywne" : "Kolejny"}
                       </span>
                     </div>
-                    <p className="mt-3 text-sm text-surface-600 dark:text-surface-300">
+                    <p className="mt-3 text-sm text-surface-300">
                       {step.desc}
                     </p>
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-surface-500 dark:text-surface-400">
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-surface-400">
                       {step.bullets.map((bullet) => (
-                        <span key={bullet} className="rounded-full bg-surface-100/80 px-2 py-1 text-center dark:bg-surface-800/70">
+                        <span key={bullet} className="rounded-full bg-surface-800/70 px-2 py-1 text-center">
                           {bullet}
                         </span>
                       ))}
