@@ -4,16 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ClipboardEvent, DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
-import { 
-  apiListEmployees, 
-  apiGetShifts,
-  apiListShiftPresets,
-  apiListLocations,
-  EmployeeRecord,
-  ShiftRecord,
-  ShiftPresetRecord,
-  LocationRecord,
-} from "@/lib/api";
+import { apiListEmployees, EmployeeRecord } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 import { formatEmployeeName } from "@/app/panel/grafik/utils";
 
@@ -66,21 +57,29 @@ type ShiftPreset = {
   value: string;
 };
 
-function convertShiftPresetToLocal(preset: ShiftPresetRecord): ShiftPreset {
-  const startHours = Math.floor(preset.startMinutes / 60);
-  const startMins = preset.startMinutes % 60;
-  const endHours = Math.floor(preset.endMinutes / 60);
-  const endMins = preset.endMinutes % 60;
-  const time = `${String(startHours).padStart(2, '0')}:${String(startMins).padStart(2, '0')}-${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
-  
-  return {
-    id: preset.id,
-    label: preset.name,
-    code: preset.code,
-    time,
-    value: time,
-  };
-}
+const shiftPresets: ShiftPreset[] = [
+  {
+    id: "morning",
+    label: "Rano",
+    code: "R",
+    time: "06:00-15:00",
+    value: "06:00-15:00",
+  },
+  {
+    id: "afternoon",
+    label: "Popołudnie",
+    code: "P",
+    time: "14:30-23:00",
+    value: "14:30-23:00",
+  },
+  {
+    id: "delivery",
+    label: "Dostawa",
+    code: "D",
+    time: "06:00-12:00",
+    value: "06:00-12:00",
+  },
+];
 
 function buildKey(employeeId: string, day: number) {
   return `${employeeId}-${day}`;
@@ -115,73 +114,51 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function buildGridFromShifts(
-  employees: EmployeeRecord[],
-  shifts: ShiftRecord[],
-  shiftPresets: ShiftPresetRecord[],
-  currentYear: number,
-  currentMonth: number
-) {
+function buildSeedGrid(employees: EmployeeRecord[]) {
+  if (!employees.length) return {} as Record<string, CellState>;
   const grid: Record<string, CellState> = {};
-  
-  // Build a map of preset codes for lookup
-  const presetMap = new Map<string, ShiftPresetRecord>();
-  shiftPresets.forEach(preset => {
-    presetMap.set(preset.code, preset);
-  });
-  
-  // Process each shift
-  shifts.forEach((shift) => {
-    const shiftDate = new Date(shift.startsAt);
-    const day = shiftDate.getDate();
-    const key = buildKey(shift.employeeId, day);
-    
-    // Parse time from shift
-    const startTime = new Date(shift.startsAt);
-    const endTime = new Date(shift.endsAt);
-    const timeStr = `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}-${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
-    
-    // Try to match with a preset
-    let matchedPreset: ShiftPresetRecord | undefined;
-    const shiftStartMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-    const shiftEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-    
-    for (const preset of shiftPresets) {
-      if (preset.startMinutes === shiftStartMinutes && preset.endMinutes === shiftEndMinutes) {
-        matchedPreset = preset;
-        break;
-      }
-    }
-    
-    const card: ShiftCard = {
-      id: shift.id,
-      code: matchedPreset?.code || "?",
-      label: matchedPreset?.name || "Zmiana",
-      time: timeStr,
+  const presetMap = shiftPresets.reduce<Record<string, ShiftPreset>>((acc, preset) => {
+    acc[preset.id] = preset;
+    return acc;
+  }, {});
+
+  const seedAssignments = [
+    { employeeIndex: 0, day: 1, preset: presetMap.morning },
+    { employeeIndex: 0, day: 3, preset: presetMap.delivery },
+    { employeeIndex: 1, day: 2, preset: presetMap.delivery },
+    { employeeIndex: 1, day: 5, preset: presetMap.afternoon },
+    { employeeIndex: 2, day: 4, preset: presetMap.morning },
+    { employeeIndex: 2, day: 8, preset: presetMap.afternoon },
+    { employeeIndex: 3, day: 9, preset: presetMap.morning },
+    { employeeIndex: 4, day: 12, preset: presetMap.delivery },
+    { employeeIndex: 5, day: 15, preset: presetMap.afternoon },
+    { employeeIndex: 6, day: 18, preset: presetMap.delivery },
+  ];
+
+  seedAssignments.forEach((assignment) => {
+    const employee = employees[assignment.employeeIndex];
+    if (!employee) return;
+    const key = buildKey(employee.id, assignment.day);
+    const preset = assignment.preset;
+    grid[key] = {
+      value: preset.value,
+      cards: [
+        {
+          id: `card-${employee.id}-${assignment.day}-${preset.id}`,
+          code: preset.code,
+          label: preset.label,
+          time: preset.time,
+        },
+      ],
     };
-    
-    if (!grid[key]) {
-      grid[key] = {
-        value: timeStr,
-        cards: [card],
-      };
-    } else {
-      grid[key].cards.push(card);
-    }
   });
-  
+
   return grid;
 }
 
 export default function GrafikV2Page() {
   const [hasToken] = useState(() => !!getAccessToken());
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
-  const [shifts, setShifts] = useState<ShiftRecord[]>([]);
-  const [shiftPresets, setShiftPresets] = useState<ShiftPresetRecord[]>([]);
-  const [locations, setLocations] = useState<LocationRecord[]>([]);
-  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
-  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth());
   const [errorMessage, setErrorMessage] = useState<string | null>(
     () => (hasToken ? null : "Zaloguj się, aby zobaczyć grafik."),
   );
@@ -213,31 +190,15 @@ export default function GrafikV2Page() {
     if (!hasToken) return;
 
     let isMounted = true;
-    setLoading(true);
-    setErrorMessage(null);
-    
-    // Calculate month range
-    const monthDaysCount = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-    const monthEnd = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(monthDaysCount).padStart(2, '0')}`;
-    
-    Promise.all([
-      apiListEmployees({ take: 100, skip: 0, status: "active" }),
-      apiGetShifts({ from: monthStart, to: monthEnd, locationId: selectedLocationId || undefined }),
-      apiListShiftPresets(),
-      apiListLocations(),
-    ])
-      .then(([employeesRes, shiftsRes, presetsRes, locationsRes]) => {
+    apiListEmployees({ take: 50, skip: 0, status: "active" })
+      .then((response) => {
         if (!isMounted) return;
-        setEmployees(employeesRes.data);
-        setShifts(shiftsRes);
-        setShiftPresets(presetsRes);
-        setLocations(locationsRes);
+        setEmployees(response.data);
       })
       .catch((error) => {
         console.error(error);
         if (!isMounted) return;
-        setErrorMessage("Nie udało się pobrać danych.");
+        setErrorMessage("Nie udało się pobrać pracowników.");
       })
       .finally(() => {
         if (!isMounted) return;
@@ -247,30 +208,9 @@ export default function GrafikV2Page() {
     return () => {
       isMounted = false;
     };
-  }, [hasToken, currentYear, currentMonth, selectedLocationId]);
+  }, [hasToken]);
 
-  const monthDaysCount = useMemo(() => {
-    return new Date(currentYear, currentMonth + 1, 0).getDate();
-  }, [currentYear, currentMonth]);
-  
-  const monthDays = useMemo(() => {
-    return Array.from({ length: monthDaysCount }, (_, index) => {
-      const day = index + 1;
-      const date = new Date(currentYear, currentMonth, day);
-      const weekday = weekdayCodes[date.getDay()] ?? "PO";
-      return {
-        day,
-        weekday,
-        isHoliday: date.getDay() === 0 || date.getDay() === 6, // Weekend
-        isAlert: false,
-      };
-    });
-  }, [currentYear, currentMonth, monthDaysCount]);
-
-  const seededGrid = useMemo(
-    () => buildGridFromShifts(employees, shifts, shiftPresets, currentYear, currentMonth),
-    [employees, shifts, shiftPresets, currentYear, currentMonth]
-  );
+  const seededGrid = useMemo(() => buildSeedGrid(employees), [employees]);
 
   const gridData = useMemo(() => {
     const data: Record<string, CellState> = {};
@@ -563,11 +503,6 @@ export default function GrafikV2Page() {
     },
     [commitChange, gridData],
   );
-  
-  const localShiftPresets = useMemo(
-    () => shiftPresets.map(convertShiftPresetToLocal),
-    [shiftPresets]
-  );
 
   const saveBadgeClass =
     saveStatus === "saved"
@@ -581,28 +516,14 @@ export default function GrafikV2Page() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Grafik zmian v2</h1>
-            <span className="panel-pill">
-              {new Date(currentYear, currentMonth).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}
-            </span>
+            <h1 className="text-2xl font-semibold text-surface-900">Grafik zmian v2</h1>
+            <span className="panel-pill">Lipiec 2025</span>
           </div>
-          <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">
+          <p className="mt-2 text-sm text-surface-600">
             Widok tabeli kalendarzowej z edycją inline, przeciąganiem zmian i podsumowaniami.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {locations.length > 0 && (
-            <select
-              value={selectedLocationId}
-              onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="input text-sm"
-            >
-              <option value="">Wszystkie lokalizacje</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>{loc.name}</option>
-              ))}
-            </select>
-          )}
           <div className={`rounded-full px-3 py-1 text-xs font-semibold ${saveBadgeClass}`} aria-live="polite">
             {saveMessage}
           </div>
@@ -610,7 +531,7 @@ export default function GrafikV2Page() {
             <button
               type="button"
               onClick={handleManualSave}
-              className="rounded-full bg-surface-900 dark:bg-surface-50 px-4 py-1.5 text-xs font-semibold text-surface-50 dark:text-surface-900"
+              className="rounded-full bg-surface-900 px-4 py-1.5 text-xs font-semibold text-surface-50"
             >
               Zapisz
             </button>
@@ -619,7 +540,7 @@ export default function GrafikV2Page() {
             <button
               type="button"
               onClick={handleUndo}
-              className="rounded-full border border-surface-200/80 dark:border-surface-700/80 px-3 py-1 text-xs font-semibold text-surface-600 dark:text-surface-300 transition hover:border-surface-300 hover:text-surface-900 dark:hover:border-surface-600 dark:hover:text-surface-50"
+              className="rounded-full border border-surface-200 px-3 py-1 text-xs font-semibold text-surface-600 transition hover:border-surface-300 hover:text-surface-900"
               aria-label="Cofnij"
             >
               Cofnij
@@ -627,7 +548,7 @@ export default function GrafikV2Page() {
             <button
               type="button"
               onClick={handleRedo}
-              className="rounded-full border border-surface-200/80 dark:border-surface-700/80 px-3 py-1 text-xs font-semibold text-surface-600 dark:text-surface-300 transition hover:border-surface-300 hover:text-surface-900 dark:hover:border-surface-600 dark:hover:text-surface-50"
+              className="rounded-full border border-surface-200 px-3 py-1 text-xs font-semibold text-surface-600 transition hover:border-surface-300 hover:text-surface-900"
               aria-label="Ponów"
             >
               Ponów
@@ -690,37 +611,37 @@ export default function GrafikV2Page() {
                 <tr>
                   <th
                     rowSpan={2}
-                    className="sticky left-0 z-10 min-w-[220px] bg-surface-50 dark:bg-surface-900/70 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400"
+                    className="sticky left-0 z-10 min-w-[220px] bg-surface-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-surface-500"
                   >
                     Kto?
                   </th>
                   <th
                     colSpan={monthDays.length}
-                    className="bg-surface-50 dark:bg-surface-900/70 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400"
+                    className="bg-surface-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-surface-500"
                   >
                     DNI
                   </th>
                   <th
                     rowSpan={2}
-                    className="bg-surface-50 dark:bg-surface-900/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400"
+                    className="bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500"
                   >
                     Dostawcy
                   </th>
                   <th
                     rowSpan={2}
-                    className="bg-surface-50 dark:bg-surface-900/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400"
+                    className="bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500"
                   >
                     Dni
                   </th>
                   <th
                     rowSpan={2}
-                    className="bg-surface-50 dark:bg-surface-900/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400"
+                    className="bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500"
                   >
                     Godziny
                   </th>
                   <th
                     rowSpan={2}
-                    className="bg-surface-50 dark:bg-surface-900/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500 dark:text-surface-400"
+                    className="bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-500"
                   >
                     Wypłata
                   </th>
@@ -729,16 +650,16 @@ export default function GrafikV2Page() {
                   {monthDays.map((day) => (
                     <th
                       key={day.day}
-                      className={`min-w-[72px] border-b border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-900/70 px-2 py-2 text-center text-xs font-semibold text-surface-600 dark:text-surface-300 ${
+                      className={`min-w-[72px] border-b border-surface-200 bg-surface-50 px-2 py-2 text-center text-xs font-semibold text-surface-600 ${
                         day.isHoliday
-                          ? "bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400"
+                          ? "bg-accent-50 text-accent-700"
                           : day.isAlert
-                            ? "bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
+                            ? "bg-brand-50 text-brand-700"
                             : ""
                       }`}
                     >
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">{day.day}</span>
+                        <span className="text-sm font-semibold text-surface-900">{day.day}</span>
                         <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">{day.weekday}</span>
                       </div>
                     </th>
@@ -752,8 +673,8 @@ export default function GrafikV2Page() {
                   const employeeRole = employee.position || "Pracownik";
                   const availability = summary?.availability ?? "Dostępny";
                   return (
-                    <tr key={employee.id} className="border-b border-surface-200/80 dark:border-surface-700/80">
-                      <td className="sticky left-0 z-10 min-w-[220px] bg-surface-50 dark:bg-surface-900/70 px-4 py-4">
+                    <tr key={employee.id} className="border-b border-surface-200">
+                      <td className="sticky left-0 z-10 min-w-[220px] bg-surface-50 px-4 py-4">
                         <div
                           className="relative flex items-center gap-3"
                           onMouseEnter={() => setActiveProfile(employee.id)}
@@ -761,26 +682,26 @@ export default function GrafikV2Page() {
                         >
                           <Avatar name={employeeName} src={employee.avatarUrl ?? undefined} size="md" className="h-9 w-9" />
                           <div>
-                            <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">{employeeName}</p>
-                            <p className="text-xs text-surface-500 dark:text-surface-400">{employeeRole}</p>
+                            <p className="text-sm font-semibold text-surface-900">{employeeName}</p>
+                            <p className="text-xs text-surface-500">{employeeRole}</p>
                           </div>
                           {activeProfile === employee.id && (
-                            <div className="absolute left-0 top-full z-20 mt-2 w-64 rounded-2xl border border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800 p-4 shadow-lg">
-                              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">{employeeName}</p>
-                              <p className="text-xs text-surface-500 dark:text-surface-400">{employeeRole}</p>
-                              <div className="mt-3 space-y-2 text-xs text-surface-600 dark:text-surface-300">
+                            <div className="absolute left-0 top-full z-20 mt-2 w-64 rounded-2xl border border-surface-200 bg-surface-50 p-4 shadow-lg">
+                              <p className="text-sm font-semibold text-surface-900">{employeeName}</p>
+                              <p className="text-xs text-surface-500">{employeeRole}</p>
+                              <div className="mt-3 space-y-2 text-xs text-surface-600">
                                 <div className="flex justify-between">
                                   <span>Godziny w miesiącu</span>
-                                  <span className="font-semibold text-surface-900 dark:text-surface-50">{summary?.hours ?? 0}h</span>
+                                  <span className="font-semibold text-surface-900">{summary?.hours ?? 0}h</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Dostępność</span>
-                                  <span className="font-semibold text-brand-700 dark:text-brand-400">{availability}</span>
+                                  <span className="font-semibold text-brand-700">{availability}</span>
                                 </div>
                               </div>
                               <a
                                 href={`/panel/profil?employeeId=${employee.id}`}
-                                className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-surface-200/80 dark:border-surface-700/80 bg-surface-100 dark:bg-surface-800 px-3 py-1.5 text-xs font-semibold text-surface-700 dark:text-surface-200"
+                                className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-surface-200 bg-surface-100 px-3 py-1.5 text-xs font-semibold text-surface-700"
                                 aria-label="Edytuj profil"
                               >
                                 Edytuj profil
@@ -798,7 +719,7 @@ export default function GrafikV2Page() {
                         const isPresetOpen = openPresetKey === key;
                         const isDragOver = dragOverKey === key;
                         return (
-                          <td key={key} className="border-b border-surface-100 dark:border-surface-800">
+                          <td key={key} className="border-b border-surface-100">
                             <div
                               ref={(node) => {
                                 cellRefs.current.set(key, node);
@@ -816,7 +737,7 @@ export default function GrafikV2Page() {
                               onDragLeave={handleDragLeave}
                               onDrop={(event) => handleDrop(event, key)}
                               className={`group relative flex min-h-[64px] min-w-[72px] flex-col justify-center px-2 py-2 text-center align-middle transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
-                                isSelected ? "bg-brand-50 dark:bg-brand-900/30" : "bg-surface-50 dark:bg-surface-900/50"
+                                isSelected ? "bg-brand-50" : "bg-surface-50"
                               } ${!isValid ? "ring-2 ring-accent-400" : ""} ${
                                 isDragOver ? "ring-2 ring-brand-300" : ""
                               }`}
@@ -828,7 +749,7 @@ export default function GrafikV2Page() {
                                   event.stopPropagation();
                                   setOpenPresetKey((prev) => (prev === key ? null : key));
                                 }}
-                                className="absolute right-1 top-1 rounded-full border border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800 px-1.5 py-0.5 text-[10px] font-semibold text-surface-500 dark:text-surface-400 opacity-0 transition group-hover:opacity-100"
+                                className="absolute right-1 top-1 rounded-full border border-surface-200 bg-surface-50 px-1.5 py-0.5 text-[10px] font-semibold text-surface-500 opacity-0 transition group-hover:opacity-100"
                               >
                                 +
                               </button>
@@ -836,21 +757,21 @@ export default function GrafikV2Page() {
                                 <div
                                   role="menu"
                                   onClick={(event) => event.stopPropagation()}
-                                  className="absolute right-1 top-7 z-20 w-40 rounded-2xl border border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800 p-2 text-left text-xs text-surface-600 dark:text-surface-300 shadow-lg"
+                                  className="absolute right-1 top-7 z-20 w-40 rounded-2xl border border-surface-200 bg-surface-50 p-2 text-left text-xs text-surface-600 shadow-lg"
                                 >
-                                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-surface-400 dark:text-surface-500">
+                                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-surface-400">
                                     Presety zmian
                                   </p>
-                                  {localShiftPresets.map((preset) => (
+                                  {shiftPresets.map((preset) => (
                                     <button
                                       key={preset.id}
                                       type="button"
                                       onClick={() => handlePresetApply(key, preset)}
-                                      className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-surface-700 dark:text-surface-200 transition hover:bg-surface-100 dark:hover:bg-surface-700"
+                                      className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-surface-700 transition hover:bg-surface-100"
                                       aria-label={`Dodaj ${preset.label} ${preset.time}`}
                                     >
                                       <span>{preset.label}</span>
-                                      <span className="text-[10px] text-surface-500 dark:text-surface-400">{preset.time}</span>
+                                      <span className="text-[10px] text-surface-500">{preset.time}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -863,25 +784,25 @@ export default function GrafikV2Page() {
                                       type="button"
                                       draggable
                                       onDragStart={(event) => handleDragStart(event, key, card.id)}
-                                      className="flex items-center justify-between gap-2 rounded-xl border border-surface-200/80 dark:border-surface-700/80 bg-surface-100 dark:bg-surface-800 px-2 py-1 text-[11px] font-semibold text-surface-700 dark:text-surface-200 shadow-sm"
+                                      className="flex items-center justify-between gap-2 rounded-xl border border-surface-200 bg-surface-100 px-2 py-1 text-[11px] font-semibold text-surface-700 shadow-sm"
                                       aria-label={`${card.label} ${card.time}`}
                                     >
-                                      <span className="rounded-full bg-brand-100 dark:bg-brand-900/50 px-2 py-0.5 text-[10px] text-brand-700 dark:text-brand-400">
+                                      <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] text-brand-700">
                                         {card.code}
                                       </span>
-                                      <span className="text-[10px] text-surface-500 dark:text-surface-400">{card.time}</span>
+                                      <span className="text-[10px] text-surface-500">{card.time}</span>
                                     </button>
                                   ))}
                                 </div>
                               )}
                               {!isEditing && cell.value && (
-                                <div className="mt-1 text-[11px] font-semibold text-surface-700 dark:text-surface-200">{cell.value}</div>
+                                <div className="mt-1 text-[11px] font-semibold text-surface-700">{cell.value}</div>
                               )}
                               {!cell.value && cell.cards.length === 0 && !isEditing && (
-                                <div className="text-[11px] text-surface-400 dark:text-surface-500">Wpisz kod</div>
+                                <div className="text-[11px] text-surface-400">Wpisz kod</div>
                               )}
                               {isEditing && (
-                                <div className="absolute inset-1 rounded-xl border border-brand-300 bg-surface-50 dark:bg-surface-900 p-1">
+                                <div className="absolute inset-1 rounded-xl border border-brand-300 bg-surface-50 p-1">
                                   <input
                                     autoFocus
                                     value={draftValue}
@@ -893,7 +814,7 @@ export default function GrafikV2Page() {
                                         handleEditCommit(key);
                                       }
                                     }}
-                                    className="h-full w-full rounded-lg border border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-900 px-2 text-xs font-semibold text-surface-900 dark:text-surface-50 outline-none"
+                                    className="h-full w-full rounded-lg border border-surface-200 bg-surface-50 px-2 text-xs font-semibold text-surface-900 outline-none"
                                     aria-label="Edytuj zmianę"
                                   />
                                 </div>
@@ -902,16 +823,16 @@ export default function GrafikV2Page() {
                           </td>
                         );
                       })}
-                      <td className="bg-surface-50 dark:bg-surface-900/70 px-3 py-4 text-center text-sm font-semibold text-brand-700 dark:text-brand-400">
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-brand-700">
                         {summary?.suppliers ?? 0}
                       </td>
-                      <td className="bg-surface-50 dark:bg-surface-900/70 px-3 py-4 text-center text-sm font-semibold text-surface-700 dark:text-surface-200">
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-surface-700">
                         {summary?.days ?? 0}
                       </td>
-                      <td className="bg-surface-50 dark:bg-surface-900/70 px-3 py-4 text-center text-sm font-semibold text-surface-700 dark:text-surface-200">
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-surface-700">
                         {summary?.hours ?? 0}h
                       </td>
-                      <td className="bg-surface-50 dark:bg-surface-900/70 px-3 py-4 text-center text-sm font-semibold text-accent-700 dark:text-accent-400">
+                      <td className="bg-surface-50 px-3 py-4 text-center text-sm font-semibold text-accent-700">
                         {summary?.payout ?? formatCurrency(0)}
                       </td>
                     </tr>
@@ -921,29 +842,27 @@ export default function GrafikV2Page() {
             </table>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-surface-600 dark:text-surface-300">
-            <div className="flex items-center gap-2 rounded-full border border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-900/50 px-3 py-1">
-              <span className="text-[11px] font-semibold text-surface-500 dark:text-surface-400">Legenda dni:</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">ND</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">PO</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">WT</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">ŚR</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">CZ</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">PI</span>
-              <span className="text-[11px] font-semibold text-surface-700 dark:text-surface-200">SB</span>
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-surface-600">
+            <div className="flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50 px-3 py-1">
+              <span className="text-[11px] font-semibold text-surface-500">Legenda dni:</span>
+              <span className="text-[11px] font-semibold text-surface-700">ND</span>
+              <span className="text-[11px] font-semibold text-surface-700">PO</span>
+              <span className="text-[11px] font-semibold text-surface-700">WT</span>
+              <span className="text-[11px] font-semibold text-surface-700">ŚR</span>
+              <span className="text-[11px] font-semibold text-surface-700">CZ</span>
+              <span className="text-[11px] font-semibold text-surface-700">PI</span>
+              <span className="text-[11px] font-semibold text-surface-700">SB</span>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-surface-200/80 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-900/50 px-3 py-1">
-              <span className="text-[11px] font-semibold text-surface-500 dark:text-surface-400">Kody zmian:</span>
-              {localShiftPresets.slice(0, 3).map((preset) => (
-                <span key={preset.id} className="rounded-full bg-brand-100 dark:bg-brand-900/50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 dark:text-brand-400">
-                  {preset.code}
-                </span>
-              ))}
-              {localShiftPresets.length > 0 && (
-                <span className="text-[11px] font-semibold text-surface-500 dark:text-surface-400">
-                  {localShiftPresets.slice(0, 3).map(p => `${p.code} = ${p.label}`).join(', ')}
-                </span>
-              )}
+            <div className="flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50 px-3 py-1">
+              <span className="text-[11px] font-semibold text-surface-500">Kody zmian:</span>
+              <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">D</span>
+              <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold text-surface-600">
+                R
+              </span>
+              <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[10px] font-semibold text-surface-600">
+                P
+              </span>
+              <span className="text-[11px] font-semibold text-surface-500">D = Dostawa, R = Rano, P = Popołudnie</span>
             </div>
           </div>
         </div>
