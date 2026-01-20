@@ -163,7 +163,7 @@ export function Hero({ content }: { content?: HeroContent }) {
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 md:grid-cols-[1.15fr_0.85fr]">
         <Reveal className="relative z-10 space-y-8" delay={120} distance={24}>
           {/* Badge with pulse animation */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-brand-100/70 px-4 py-2 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/70 backdrop-blur-sm dark:bg-brand-950/50 dark:text-brand-200 dark:ring-brand-700/40">
+          <div className="inline-flex items-center gap-2 rounded-full bg-brand-950/50 px-4 py-2 text-xs font-semibold text-brand-200 ring-1 ring-brand-700/40 backdrop-blur-sm">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-500" />
@@ -172,7 +172,7 @@ export function Hero({ content }: { content?: HeroContent }) {
           </div>
           
           <div className="space-y-6">
-            <h1 className="hero-title text-4xl font-bold leading-[1.1] tracking-tight text-surface-900 md:text-5xl lg:text-[3.5rem] dark:text-surface-50">
+            <h1 className="hero-title text-4xl font-bold leading-[1.1] tracking-tight text-surface-50 md:text-5xl lg:text-[3.5rem]">
               {content?.title ?? (
                 <>
                   Grafiki, czas pracy i urlopy{" "}
@@ -189,7 +189,7 @@ export function Hero({ content }: { content?: HeroContent }) {
                 </>
               )}
             </h1>
-            <p className="hero-lede max-w-xl text-lg leading-relaxed text-surface-600 dark:text-surface-300">
+            <p className="hero-lede max-w-xl text-lg leading-relaxed text-surface-300">
               {content?.subtitle ??
                 "KadryHR porządkuje grafikowanie w sklepach i sieciach usługowych: mniej telefonów, mniej kolizji, szybsze rozliczenia i stały wgląd w obsadę na każdej zmianie."}
             </p>
@@ -217,29 +217,29 @@ export function Hero({ content }: { content?: HeroContent }) {
           </div>
           
           {/* Stats row */}
-          <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-surface-200/70 dark:border-surface-800/50">
+          <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-surface-800/50">
             {stats.map((stat, index) => (
               <div key={stat.label} className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-brand-600 dark:text-brand-400">{stat.value}</span>
-                <span className="text-sm text-surface-500 dark:text-surface-400">{stat.label}</span>
+                <span className="text-2xl font-bold text-brand-400">{stat.value}</span>
+                <span className="text-sm text-surface-400">{stat.label}</span>
                 {index < stats.length - 1 && (
-                  <span className="hidden sm:block ml-3 h-8 w-px bg-surface-200 dark:bg-surface-800" aria-hidden="true" />
+                  <span className="hidden sm:block ml-3 h-8 w-px bg-surface-800" aria-hidden="true" />
                 )}
               </div>
             ))}
           </div>
           
           {/* Feature highlights */}
-          <div className="grid gap-3 text-sm text-surface-600 dark:text-surface-300">
+          <div className="grid gap-3 text-sm text-surface-300">
             {highlights.map((item, index) => (
               <Reveal key={item} delay={280 + index * 60} distance={16}>
                 <div className="flex items-start gap-3 group">
-                  <span className="mt-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand-100/70 ring-1 ring-brand-200/70 transition-all group-hover:bg-brand-200/70 group-hover:ring-brand-300/70 dark:bg-brand-900/50 dark:ring-brand-700/50 dark:group-hover:bg-brand-800/60 dark:group-hover:ring-brand-600/60">
-                    <svg className="h-3 w-3 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span className="mt-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand-900/50 ring-1 ring-brand-700/50 transition-all group-hover:bg-brand-800/60 group-hover:ring-brand-600/60">
+                    <svg className="h-3 w-3 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
                   </span>
-                  <span className="transition-colors group-hover:text-surface-900 dark:group-hover:text-surface-200">{item}</span>
+                  <span className="transition-colors group-hover:text-surface-200">{item}</span>
                 </div>
               </Reveal>
             ))}
@@ -250,7 +250,7 @@ export function Hero({ content }: { content?: HeroContent }) {
         <Reveal className="relative z-10" delay={240} distance={28}>
           <div ref={mockupRef} className="transition-transform duration-500">
             <div 
-              className="relative mx-auto max-w-md rounded-[32px] border border-surface-200/70 bg-gradient-to-b from-white/85 to-surface-100/80 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_40px_80px_-20px_rgba(16,185,129,0.15)] dark:border-white/[0.08] dark:from-surface-900/80 dark:to-surface-950/90"
+              className="relative mx-auto max-w-md rounded-[32px] border border-white/[0.08] bg-gradient-to-b from-surface-900/80 to-surface-950/90 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_40px_80px_-20px_rgba(16,185,129,0.15)]"
               style={{
                 transform: `perspective(1000px) rotateY(${mousePosition.x * 3}deg) rotateX(${mousePosition.y * -3}deg)`,
               }}
@@ -263,12 +263,12 @@ export function Hero({ content }: { content?: HeroContent }) {
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand-600 dark:text-brand-300">Panel managera</p>
-                    <p className="mt-1 text-lg font-semibold text-surface-900 dark:text-surface-50">
+                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand-300">Panel managera</p>
+                    <p className="mt-1 text-lg font-semibold text-surface-50">
                       Widzisz cały miesiąc w 2 minuty
                     </p>
                   </div>
-                  <span className="flex items-center gap-1.5 rounded-full bg-brand-100/70 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200/70 dark:bg-brand-950/60 dark:text-brand-200 dark:ring-brand-700/40">
+                  <span className="flex items-center gap-1.5 rounded-full bg-brand-950/60 px-3 py-1.5 text-xs font-semibold text-brand-200 ring-1 ring-brand-700/40">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -278,23 +278,23 @@ export function Hero({ content }: { content?: HeroContent }) {
                 </div>
                 
                 {/* Calendar mockup */}
-                <div className="rounded-2xl border border-surface-200/70 bg-surface-50/90 p-4 shadow-inner dark:border-surface-700/50 dark:bg-surface-900/90">
-                  <div className="flex items-center justify-between text-xs text-surface-500 dark:text-surface-400">
+                <div className="rounded-2xl border border-surface-700/50 bg-surface-900/90 p-4 shadow-inner">
+                  <div className="flex items-center justify-between text-xs text-surface-400">
                     <span className="font-medium">Sklep Gdańsk Wrzeszcz</span>
                     <span>Październik 2026</span>
                   </div>
                   <div className="mt-4 grid grid-cols-7 gap-1.5 text-[10px]">
                     {["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"].map((day, index) => (
                       <div key={day} className="text-center">
-                        <span className="text-surface-500 font-medium dark:text-surface-500">{day}</span>
+                        <span className="text-surface-500 font-medium">{day}</span>
                         <div 
                           className={`mt-2 h-11 rounded-lg flex items-center justify-center transition-all duration-300 ${
                             index % 2 === 0 
-                              ? "bg-brand-100/70 border border-brand-200/60 hover:bg-brand-200/70 dark:bg-brand-900/50 dark:border-brand-700/30 dark:hover:bg-brand-800/50" 
-                              : "bg-surface-100/80 border border-surface-200/70 hover:bg-surface-200/70 dark:bg-surface-800/60 dark:border-surface-700/30 dark:hover:bg-surface-700/60"
+                              ? "bg-brand-900/50 border border-brand-700/30 hover:bg-brand-800/50" 
+                              : "bg-surface-800/60 border border-surface-700/30 hover:bg-surface-700/60"
                           }`}
                         >
-                          <span className={`text-[9px] font-semibold px-1 ${index % 2 === 0 ? "text-brand-700 dark:text-brand-200" : "text-surface-600 dark:text-surface-300"}`}>
+                          <span className={`text-[9px] font-semibold px-1 ${index % 2 === 0 ? "text-brand-200" : "text-surface-300"}`}>
                             {index % 2 === 0 ? "Pełna" : "3 luki"}
                           </span>
                         </div>
@@ -305,27 +305,27 @@ export function Hero({ content }: { content?: HeroContent }) {
                 
                 {/* Stats cards */}
                 <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-2xl border border-surface-200/70 bg-white/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-surface-100/80 hover:border-brand-300/40 dark:border-surface-700/50 dark:bg-surface-800/50 dark:hover:bg-surface-800/70 dark:hover:border-brand-700/30">
-                    <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide dark:text-surface-400">
+                  <div className="rounded-2xl border border-surface-700/50 bg-surface-800/50 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-surface-800/70 hover:border-brand-700/30">
+                    <p className="text-xs font-semibold text-surface-400 uppercase tracking-wide">
                       Dyspozycyjność
                     </p>
-                    <p className="mt-2 text-lg font-bold text-surface-900 dark:text-surface-50">
-                      92% <span className="text-sm font-normal text-surface-500 dark:text-surface-400">w 24h</span>
+                    <p className="mt-2 text-lg font-bold text-surface-50">
+                      92% <span className="text-sm font-normal text-surface-400">w 24h</span>
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-surface-200/70 bg-white/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-surface-100/80 hover:border-brand-300/40 dark:border-surface-700/50 dark:bg-surface-800/50 dark:hover:bg-surface-800/70 dark:hover:border-brand-700/30">
-                    <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide dark:text-surface-400">
+                  <div className="rounded-2xl border border-surface-700/50 bg-surface-800/50 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-surface-800/70 hover:border-brand-700/30">
+                    <p className="text-xs font-semibold text-surface-400 uppercase tracking-wide">
                       Czas pracy
                     </p>
-                    <p className="mt-2 text-lg font-bold text-surface-900 dark:text-surface-50">
-                      1 klik <span className="text-sm font-normal text-surface-500 dark:text-surface-400">→ raport</span>
+                    <p className="mt-2 text-lg font-bold text-surface-50">
+                      1 klik <span className="text-sm font-normal text-surface-400">→ raport</span>
                     </p>
                   </div>
                 </div>
                 
                 {/* Quote */}
-                <div className="rounded-2xl border border-brand-200/70 bg-gradient-to-r from-brand-50/80 to-brand-100/70 p-4 text-sm text-brand-800 transition-all duration-300 hover:-translate-y-1 dark:border-brand-800/40 dark:from-brand-950/50 dark:to-brand-900/30 dark:text-brand-100">
-                  <svg className="mb-2 h-4 w-4 text-brand-400/70 dark:text-brand-500/60" fill="currentColor" viewBox="0 0 24 24">
+                <div className="rounded-2xl border border-brand-800/40 bg-gradient-to-r from-brand-950/50 to-brand-900/30 p-4 text-sm text-brand-100 transition-all duration-300 hover:-translate-y-1">
+                  <svg className="mb-2 h-4 w-4 text-brand-500/60" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                   </svg>
                   Zamknięcie miesiąca zajmuje nam teraz 2 godziny zamiast całego dnia.
@@ -352,9 +352,9 @@ export function Hero({ content }: { content?: HeroContent }) {
       </div>
       
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-surface-500 dark:text-surface-500">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-surface-500">
         <span className="text-xs font-medium tracking-wider uppercase">Scroll</span>
-        <div className="h-10 w-6 rounded-full border-2 border-surface-300/70 p-1 dark:border-surface-700/50">
+        <div className="h-10 w-6 rounded-full border-2 border-surface-700/50 p-1">
           <div className="h-2 w-1.5 mx-auto rounded-full bg-brand-500 animate-bounce" />
         </div>
       </div>
