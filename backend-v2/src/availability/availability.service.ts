@@ -603,7 +603,7 @@ export class AvailabilityService {
           userId: employee.id,
           type: NotificationType.AVAILABILITY_WINDOW_CLOSED,
           title: 'Okno dyspozycji zamknięte',
-          body: `Okno \"${updated.title}\" zostało zamknięte. Nie można już składać nowych dyspozycji.`,
+          body: `Okno "${updated.title}" zostało zamknięte. Nie można już składać nowych dyspozycji.`,
           data: {
             windowId: updated.id,
           },

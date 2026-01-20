@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -792,15 +792,24 @@ export default function AdminWebsitePageEditor() {
 }
 
 function BlockExtraEditor({ block, onSave }: { block: WebsiteBlock; onSave: (extra: Record<string, unknown>) => void }) {
-  const [extraDraft, setExtraDraft] = useState<Record<string, unknown>>(() => (block.extra ?? {}) as Record<string, unknown>);
+  // Derive state from props using useMemo, synchronize when block.extra changes
+  const extraFromBlock = useMemo(() => (block.extra ?? {}) as Record<string, unknown>, [block.extra]);
+  const [extraDraft, setExtraDraft] = useState<Record<string, unknown>>(() => extraFromBlock);
   const [jsonValue, setJsonValue] = useState(() =>
-    Object.keys(extraDraft).length ? JSON.stringify(extraDraft, null, 2) : "",
+    Object.keys(extraFromBlock).length ? JSON.stringify(extraFromBlock, null, 2) : "",
   );
 
+  // Track previous extra reference to detect external changes
+  const prevExtraRef = useRef(block.extra);
   useEffect(() => {
-    const nextExtra = (block.extra ?? {}) as Record<string, unknown>;
-    setExtraDraft(nextExtra);
-    setJsonValue(Object.keys(nextExtra).length ? JSON.stringify(nextExtra, null, 2) : "");
+    if (prevExtraRef.current !== block.extra) {
+      prevExtraRef.current = block.extra;
+      const nextExtra = (block.extra ?? {}) as Record<string, unknown>;
+      requestAnimationFrame(() => {
+        setExtraDraft(nextExtra);
+        setJsonValue(Object.keys(nextExtra).length ? JSON.stringify(nextExtra, null, 2) : "");
+      });
+    }
   }, [block.extra]);
 
   const handleSaveJson = () => {
@@ -980,8 +989,15 @@ function BlockDraftExtraEditor({
     Object.keys(draft.extra).length ? JSON.stringify(draft.extra, null, 2) : "",
   );
 
+  // Track previous extra reference to detect external changes
+  const prevExtraRef = useRef(draft.extra);
   useEffect(() => {
-    setJsonValue(Object.keys(draft.extra).length ? JSON.stringify(draft.extra, null, 2) : "");
+    if (prevExtraRef.current !== draft.extra) {
+      prevExtraRef.current = draft.extra;
+      requestAnimationFrame(() => {
+        setJsonValue(Object.keys(draft.extra).length ? JSON.stringify(draft.extra, null, 2) : "");
+      });
+    }
   }, [draft.extra]);
 
   const handleSaveJson = () => {

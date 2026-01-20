@@ -30,15 +30,20 @@ export type HeroContent = {
 };
 
 export function Hero({ content }: { content?: HeroContent }) {
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(() => typeof window !== "undefined");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const auroraRef = useRef<HTMLDivElement | null>(null);
   const orbRef = useRef<HTMLDivElement | null>(null);
   const mockupRef = useRef<HTMLDivElement | null>(null);
   const heroRef = useRef<HTMLElement | null>(null);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    setLoaded(true);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      // Use requestAnimationFrame to batch with browser paint
+      requestAnimationFrame(() => setLoaded(true));
+    }
   }, []);
 
   useEffect(() => {

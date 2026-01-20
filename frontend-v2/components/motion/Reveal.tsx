@@ -22,22 +22,19 @@ export function Reveal({
   duration = 700,
   scale = 0.98,
 }: RevealProps) {
-  const [visible, setVisible] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(true);
+  const reducedMotion = typeof window !== "undefined" && prefersReducedMotion();
+  const [visible, setVisible] = useState(() => reducedMotion);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setReducedMotion(prefersReducedMotion());
-  }, []);
-
-  useEffect(() => {
-    if (reducedMotion) {
-      setVisible(true);
+    const isReduced = prefersReducedMotion();
+    if (isReduced) {
+      requestAnimationFrame(() => setVisible(true));
       return;
     }
     const element = ref.current;
     if (!element || typeof IntersectionObserver === "undefined") {
-      setVisible(true);
+      requestAnimationFrame(() => setVisible(true));
       return;
     }
 
@@ -55,7 +52,7 @@ export function Reveal({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [once, reducedMotion]);
+  }, [once]);
 
   const style = useMemo(
     () =>
