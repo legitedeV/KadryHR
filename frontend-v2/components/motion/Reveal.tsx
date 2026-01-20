@@ -22,13 +22,13 @@ export function Reveal({
   duration = 700,
   scale = 0.98,
 }: RevealProps) {
-  const reducedMotion = typeof window !== "undefined" && prefersReducedMotion();
-  const [visible, setVisible] = useState(() => reducedMotion);
+  // Calculate reduced motion preference once during initial render
+  const [initialReducedMotion] = useState(() => typeof window !== "undefined" && prefersReducedMotion());
+  const [visible, setVisible] = useState(() => initialReducedMotion);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const isReduced = prefersReducedMotion();
-    if (isReduced) {
+    if (initialReducedMotion) {
       requestAnimationFrame(() => setVisible(true));
       return;
     }
@@ -52,7 +52,7 @@ export function Reveal({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [once]);
+  }, [once, initialReducedMotion]);
 
   const style = useMemo(
     () =>

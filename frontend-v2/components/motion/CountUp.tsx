@@ -22,14 +22,15 @@ export function CountUp({
   decimals = 0,
   className,
 }: CountUpProps) {
-  const reducedMotion = typeof window !== "undefined" && prefersReducedMotion();
-  const [displayValue, setDisplayValue] = useState(() => reducedMotion ? value : 0);
-  const hasAnimatedRef = useRef(reducedMotion);
+  // Calculate reduced motion preference once during initial render
+  const [initialReducedMotion] = useState(() => typeof window !== "undefined" && prefersReducedMotion());
+  const [displayValue, setDisplayValue] = useState(() => initialReducedMotion ? value : 0);
+  const hasAnimatedRef = useRef(initialReducedMotion);
   const ref = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     // Show immediate value if reduced motion is preferred
-    if (prefersReducedMotion()) {
+    if (initialReducedMotion) {
       hasAnimatedRef.current = true;
       requestAnimationFrame(() => setDisplayValue(value));
       return;
@@ -68,7 +69,7 @@ export function CountUp({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [duration, value]);
+  }, [duration, value, initialReducedMotion]);
 
   const formatted = (() => {
     const formatter = new Intl.NumberFormat("pl-PL", {
