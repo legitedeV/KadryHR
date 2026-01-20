@@ -27,13 +27,13 @@ export function MarketingHeader() {
     <header
       className={`sticky top-0 z-40 border-b transition-all duration-300 ${
         scrolled
-          ? "border-surface-800/50 bg-surface-950/90 backdrop-blur-xl shadow-lg shadow-surface-950/20"
+          ? "border-surface-200/70 bg-surface-50/90 backdrop-blur-xl shadow-lg shadow-surface-200/40 dark:border-surface-800/50 dark:bg-surface-950/90 dark:shadow-surface-950/20"
           : "border-transparent bg-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="group flex items-center gap-2 relative">
-          <BrandLogoMotion size={40} variant="full" withPL className="text-surface-50" />
+          <BrandLogoMotion size={40} variant="full" withPL className="text-surface-900 dark:text-surface-50" />
         </Link>
         
         <nav className="hidden items-center gap-6 lg:gap-8 text-sm md:flex">
@@ -41,12 +41,12 @@ export function MarketingHeader() {
             <Link
               key={link.label}
               href={link.href}
-              className="relative font-medium text-surface-300 transition-colors hover:text-surface-50 after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:bg-brand-500 after:transition-all hover:after:w-full"
+              className="relative font-medium text-surface-600 transition-colors hover:text-surface-900 after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:bg-brand-500 after:transition-all hover:after:w-full dark:text-surface-300 dark:hover:text-surface-50"
             >
               {link.label}
             </Link>
           ))}
-          <div className="h-5 w-px bg-surface-700/50" />
+          <div className="h-5 w-px bg-surface-300/60 dark:bg-surface-700/50" />
           <Link 
             href="/kontakt" 
             className="btn-secondary px-4 py-2 text-sm"
@@ -70,7 +70,7 @@ export function MarketingHeader() {
         <div className="flex items-center gap-3 md:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="rounded-xl border border-surface-800/60 bg-surface-900/80 p-2.5 text-surface-300 shadow-sm backdrop-blur hover:text-surface-50 hover:border-surface-700/60 transition-all"
+            className="rounded-xl border border-surface-200/70 bg-white/80 p-2.5 text-surface-600 shadow-sm backdrop-blur hover:text-surface-900 hover:border-surface-300/70 transition-all dark:border-surface-800/60 dark:bg-surface-900/80 dark:text-surface-300 dark:hover:text-surface-50 dark:hover:border-surface-700/60"
             aria-label="Toggle menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -87,19 +87,19 @@ export function MarketingHeader() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="border-t border-surface-800/50 bg-surface-950/98 backdrop-blur-xl md:hidden">
+        <div className="border-t border-surface-200/70 bg-surface-50/98 backdrop-blur-xl md:hidden dark:border-surface-800/50 dark:bg-surface-950/98">
           <nav className="mx-auto max-w-6xl space-y-2 px-6 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="block rounded-xl px-4 py-3 font-medium text-surface-300 transition-all hover:bg-surface-800/50 hover:text-surface-50"
+                className="block rounded-xl px-4 py-3 font-medium text-surface-600 transition-all hover:bg-surface-100/80 hover:text-surface-900 dark:text-surface-300 dark:hover:bg-surface-800/50 dark:hover:text-surface-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 space-y-3 border-t border-surface-800/50 mt-2">
+            <div className="pt-4 space-y-3 border-t border-surface-200/70 mt-2 dark:border-surface-800/50">
               <Link
                 href="/kontakt"
                 className="block btn-secondary text-center py-3"
