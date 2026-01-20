@@ -147,6 +147,64 @@ describe('AvailabilityService', () => {
     expect(mockAuditService.record).toHaveBeenCalled();
   });
 
+  it('allows editing submitted availability while window open and resets to draft', async () => {
+    const window = {
+      id: 'window-1',
+      organisationId: 'org',
+      startDate: new Date('2024-04-01'),
+      endDate: new Date('2024-04-30'),
+      deadline: new Date('2099-04-01'),
+      isOpen: true,
+      closedAt: null,
+      title: 'Kwiecień',
+    };
+
+    mockPrisma.availabilityWindow.findFirst.mockResolvedValue(window);
+    mockEmployeesService.ensureEmployeeProfile.mockResolvedValue({
+      id: 'emp-1',
+      firstName: 'Anna',
+      lastName: 'Nowak',
+      isActive: true,
+      isDeleted: false,
+    });
+    mockPrisma.availabilitySubmission.findUnique.mockResolvedValue({
+      id: 'sub-1',
+      status: 'SUBMITTED',
+      submittedAt: new Date('2024-03-01'),
+      reviewedAt: null,
+      reviewedByUserId: null,
+    });
+    mockPrisma.availability.create.mockResolvedValue({ id: 'avail-1' });
+    mockPrisma.availabilitySubmission.upsert.mockResolvedValue({
+      id: 'sub-1',
+      status: 'DRAFT',
+      submittedAt: null,
+      reviewedAt: null,
+      reviewedByUserId: null,
+    });
+
+    const result = await service.saveWindowAvailabilityForEmployee(
+      'org',
+      'user-1',
+      'window-1',
+      [
+        {
+          date: '2024-04-03',
+          startMinutes: 480,
+          endMinutes: 960,
+        },
+      ],
+      false,
+    );
+
+    expect(result.status).toBe('DRAFT');
+    expect(mockAuditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'AVAILABILITY_SUBMISSION_EDIT_AFTER_SUBMIT',
+      }),
+    );
+  });
+
   it('closes an active window and notifies employees', async () => {
     const window = {
       id: 'window-1',

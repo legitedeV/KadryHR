@@ -429,7 +429,9 @@ function MonthlyAvailabilityTab({
 
   const status = submission?.status ?? "DRAFT";
   const statusMeta = getSubmissionStatusLabel(status);
-  const isLocked = status === "SUBMITTED" || status === "REVIEWED";
+  const windowClosed = !window.isOpen || !!window.closedAt;
+  const isLocked =
+    (status === "SUBMITTED" || status === "REVIEWED") && windowClosed;
 
   const startDate = useMemo(() => new Date(window.startDate), [window.startDate]);
   const endDate = useMemo(() => new Date(window.endDate), [window.endDate]);
@@ -765,7 +767,7 @@ function MonthlyAvailabilityTab({
           </button>
           {isLocked && (
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              Dyspozycja została wysłana. Skontaktuj się z managerem, aby ją odblokować.
+              Dyspozycja wysłana. Możesz ją edytować do zamknięcia okna.
             </p>
           )}
         </div>

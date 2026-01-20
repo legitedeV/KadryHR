@@ -130,6 +130,32 @@ describe('Availability Window Submissions (e2e)', () => {
     expect(submission?.status).toBe(AvailabilitySubmissionStatus.SUBMITTED);
   });
 
+  it('allows editing submission while window open and resets to draft', async () => {
+    await request(app.getHttpServer())
+      .put(`/availability/windows/${windowId}/me`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({
+        availabilities: [
+          { date: '2024-04-10', startMinutes: 480, endMinutes: 960 },
+        ],
+        submit: true,
+      })
+      .expect(200);
+
+    const editRes = await request(app.getHttpServer())
+      .put(`/availability/windows/${windowId}/me`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({
+        availabilities: [
+          { date: '2024-04-11', startMinutes: 480, endMinutes: 960 },
+        ],
+        submit: false,
+      })
+      .expect(200);
+
+    expect(editRes.body.status).toBe(AvailabilitySubmissionStatus.DRAFT);
+  });
+
   it('closes an active window and blocks new submissions', async () => {
     await request(app.getHttpServer())
       .patch(`/availability/windows/${windowId}/close`)

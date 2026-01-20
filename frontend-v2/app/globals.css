@@ -222,7 +222,7 @@ body::before {
     color-mix(in srgb, var(--panel-card-soft-bg) 70%, transparent)
   );
   box-shadow: 0 30px 90px -60px color-mix(in srgb, var(--color-surface-950) 60%, transparent);
-  padding: clamp(1.25rem, 2vw, 2rem);
+  padding: clamp(1.25rem, 3vw, 2.5rem);
 }
 
 .panel-page > * + * {
