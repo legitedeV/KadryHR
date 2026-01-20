@@ -161,7 +161,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           <div className="floating-orb orb-fast -right-28 bottom-10 h-48 w-48 bg-accent-700/20" />
         </div>
         {/* sidebar */}
-        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.6)]">
+        <aside className="hidden md:flex md:flex-col w-64 rounded-r-3xl bg-gradient-to-b from-surface-950/90 via-surface-900/80 to-surface-950/95 border-r border-surface-800/60 shadow-[12px_0_40px_rgba(2,6,23,0.5)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
             <Link href="/panel/dashboard" className="shrink-0">
               <BrandLogoStatic size={36} variant="icon" ariaLabel="KadryHR" />
@@ -244,8 +244,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         {/* Mobile menu sidebar */}
         <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } bg-gradient-to-b from-[#0b1411] via-[#0f1a15] to-[#0b1411] border-r border-surface-800/80`}>
-          <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800">
+        } bg-gradient-to-b from-surface-950/90 via-surface-900/85 to-surface-950/95 border-r border-surface-800/70`}>
+          <div className="h-16 flex items-center justify-between gap-3 px-4 border-b border-surface-800/60">
             <Link href="/panel/dashboard" className="shrink-0">
               <BrandLogoStatic size={34} variant="icon" ariaLabel="KadryHR" />
             </Link>
@@ -327,7 +327,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
         {/* main area */}
         <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-surface-800/80 bg-surface-950/70 px-4 lg:px-6 flex items-center justify-between gap-4 backdrop-blur">
+          <header className="h-16 border-b border-surface-800/70 bg-gradient-to-r from-surface-950/80 via-surface-900/70 to-surface-950/80 px-4 lg:px-6 flex items-center justify-between gap-4 backdrop-blur">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
