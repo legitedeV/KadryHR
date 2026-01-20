@@ -6,7 +6,7 @@ import { CookieBanner } from "@/components/CookieBanner";
 import { DEFAULT_LANG } from "@/lib/site-config";
 
 export const viewport: Viewport = {
-  themeColor: "#1EA574",
+  themeColor: "#0ea371",
 };
 
 export const metadata: Metadata = {
@@ -72,7 +72,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang={DEFAULT_LANG} className="dark">
-      <body className="antialiased bg-surface-950 text-surface-50">
+      <body className="antialiased">
         <ToastProvider>
           <AuthProvider>
             {children}
