@@ -4,43 +4,22 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
-import { apiGetMe, apiGetPublicFrontendConfig, User } from "@/lib/api";
+import { apiGetMe, User } from "@/lib/api";
 import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
-import { NotificationsProvider } from "@/lib/notifications-context";
-import { ScheduleNotificationPopups } from "@/components/notifications/ScheduleNotificationPopups";
-import { ADMIN_APP_URL } from "@/lib/site-config";
 
 type NavItem = {
   href: string;
   label: string;
   icon: string;
-  roles?: string[];
 };
 
 const navItems: NavItem[] = [
   { href: "/panel/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
   { href: "/panel/grafik", label: "Grafik", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
   { href: "/panel/dyspozycje", label: "Dyspozycje", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
-  { href: "/panel/pracownicy", label: "Pracownicy", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z", roles: ["OWNER", "ADMIN", "MANAGER"] },
-  { href: "/panel/wnioski", label: "Wnioski", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
-  { href: "/panel/zespol", label: "Zespół", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z", roles: ["OWNER", "ADMIN", "MANAGER"] },
-  { href: "/panel/lokalizacje", label: "Lokalizacje", icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z", roles: ["OWNER", "ADMIN", "MANAGER"] },
-  { href: "/panel/raporty", label: "Raporty", icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", roles: ["OWNER", "ADMIN", "MANAGER"] },
-  { href: "/panel/powiadomienia", label: "Powiadomienia", icon: "M15 17h5l-1.405-1.405M19 10A7 7 0 115 10a7 7 0 0114 0z" },
-  { href: "/panel/audit", label: "Audit", icon: "M9 12h6m-6 4h6M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v12a2 2 0 002 2h10a2 2 0 002-2V8", roles: ["OWNER", "ADMIN"] },
-  { href: "/panel/organizacja", label: "Organizacja", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", roles: ["OWNER", "ADMIN"] },
-  { href: "/panel/rozliczenia", label: "Rozliczenia", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z", roles: ["OWNER"] },
-  { href: "/panel/uzytkownicy", label: "Użytkownicy", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", roles: ["OWNER"] },
-  { href: `${ADMIN_APP_URL}/console`, label: "Panel admina", icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", roles: ["ADMIN", "OWNER"] },
   { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
-
-const defaultPanelNavConfig = {
-  showAudit: true,
-  showReports: true,
-  showBilling: true,
-};
 
 // Height for mobile menu content area (viewport height minus header and footer)
 const MOBILE_MENU_CONTENT_HEIGHT = 'calc(100vh - 180px)';
@@ -48,29 +27,8 @@ const MOBILE_MENU_CONTENT_HEIGHT = 'calc(100vh - 180px)';
 const titleByPath: Record<string, string> = {
   "/panel/grafik": "Grafik zmian",
   "/panel/dyspozycje": "Dyspozycje",
-  "/panel/pracownicy": "Pracownicy",
-  "/panel/wnioski": "Wnioski",
   "/panel/profil": "Profil użytkownika",
   "/panel/dashboard": "Dashboard",
-  "/panel/powiadomienia": "Powiadomienia",
-  "/panel/powiadomienia/wyslij": "Nowa kampania",
-  "/panel/powiadomienia/historia": "Historia kampanii",
-  "/panel/audit": "Audit log",
-  "/panel/organizacja": "Ustawienia organizacji",
-  "/panel/uzytkownicy": "Użytkownicy",
-  "/panel/admin": "Panel admina",
-  "/panel/admin/organisations": "Organizacje",
-  "/panel/admin/users": "Użytkownicy systemu",
-  "/panel/admin/audit": "System audit log",
-  "/panel/admin/settings": "Ustawienia systemu",
-  "/panel/admin/website": "Treści strony",
-  "/": "Panel admina",
-  "/organisations": "Organizacje",
-  "/users": "Użytkownicy systemu",
-  "/panel/zespol": "Zarządzanie zespołem",
-  "/panel/lokalizacje": "Lokalizacje",
-  "/panel/raporty": "Raporty",
-  "/panel/rozliczenia": "Rozliczenia",
 };
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
@@ -80,7 +38,6 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(hasSession);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [panelNavConfig, setPanelNavConfig] = useState(defaultPanelNavConfig);
 
   useEffect(() => {
     if (!hasSession) {
@@ -110,28 +67,6 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
     };
   }, [hasSession, router]);
 
-  useEffect(() => {
-    let cancelled = false;
-    apiGetPublicFrontendConfig()
-      .then((data) => {
-        if (cancelled) return;
-        const navigation = (data.frontendConfig as { navigation?: Partial<typeof defaultPanelNavConfig> })
-          ?.navigation;
-        setPanelNavConfig({
-          ...defaultPanelNavConfig,
-          ...(navigation ?? {}),
-        });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setPanelNavConfig(defaultPanelNavConfig);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   function handleLogout() {
     clearAuthTokens();
     router.push("/login");
@@ -153,11 +88,10 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   if (!user) return null;
 
   return (
-    <NotificationsProvider>
-      <div className="min-h-screen flex panel-shell relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(201,155,100,0.12),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(79,159,158,0.12),transparent_60%)]" />
-        </div>
+    <div className="min-h-screen flex panel-shell relative overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(201,155,100,0.12),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(79,159,158,0.12),transparent_60%)]" />
+      </div>
         {/* sidebar */}
         <aside className="hidden md:flex md:flex-col w-64 rounded-r-[28px] sidebar-glass shadow-[12px_0_40px_color-mix(in_srgb,var(--color-surface-900)_35%,transparent)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
@@ -169,16 +103,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-surface-500 mb-3">
               Nawigacja
             </p>
-            {navItems
-              .filter((item) => {
-                if (item.href === "/panel/audit" && !panelNavConfig.showAudit) return false;
-                if (item.href === "/panel/raporty" && !panelNavConfig.showReports) return false;
-                if (item.href === "/panel/rozliczenia" && !panelNavConfig.showBilling) return false;
-                // Filter by roles if specified
-                if (!item.roles) return true;
-                return item.roles.includes(user.role);
-              })
-              .map((item) => {
+            {navItems.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -261,13 +186,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-surface-500 mb-3">
               Nawigacja
             </p>
-            {navItems
-              .filter((item) => {
-                // Filter by roles if specified
-                if (!item.roles) return true;
-                return item.roles.includes(user.role);
-              })
-              .map((item) => {
+            {navItems.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -344,33 +263,11 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
                   KadryHR · panel
                 </p>
                 <p className="text-sm font-semibold text-surface-50 truncate">
-                  {titleByPath[pathname] ??
-                    titleByPath[`/panel/admin${pathname === "/" ? "" : pathname}`] ??
-                    "Dashboard"}
+                  {titleByPath[pathname] ?? "Dashboard"}
                 </p>
               </div>
             </div>
-            <div className="flex-1 hidden lg:flex justify-center">
-              <div className="relative w-full max-w-md">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.5 5.5a7.5 7.5 0 0011.15 11.15z" />
-                </svg>
-                <input
-                  className="panel-input pl-10"
-                  placeholder="Szukaj pracownika, zmiany, lokalizacji..."
-                />
-              </div>
-            </div>
             <div className="flex items-center gap-3">
-              <Link
-                href="/panel/powiadomienia"
-                className="rounded-full border border-surface-800/70 bg-surface-950/70 p-2 text-surface-300 transition duration-500 hover:text-surface-50"
-                aria-label="Powiadomienia"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
-                </svg>
-              </Link>
               <div className="hidden sm:flex items-center gap-3 rounded-full border border-surface-800/70 bg-surface-950/70 px-3 py-1.5">
                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-900/50 to-brand-800/50 flex items-center justify-center text-brand-200 font-semibold text-xs">
                   {user.email.charAt(0).toUpperCase()}
@@ -392,7 +289,5 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
-      <ScheduleNotificationPopups />
-    </NotificationsProvider>
   );
 }

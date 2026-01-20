@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/lib/auth-context";
-import { CookieBanner } from "@/components/CookieBanner";
 import { DEFAULT_LANG } from "@/lib/site-config";
 
 export const viewport: Viewport = {
@@ -12,19 +11,18 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://kadryhr.pl"),
   title: {
-    default: "KadryHR — grafiki zmianowe, RCP i kadry dla retail",
+    default: "KadryHR — planowanie, dyspozycyjność i realizacja zmian",
     template: "%s · KadryHR",
   },
   description:
-    "KadryHR to platforma HR i grafiku zmianowego dla retail i firm usługowych. Dyspozycyjność, urlopy i czas pracy w jednym miejscu.",
+    "KadryHR to spokojny, skoncentrowany panel do planowania grafiku i dyspozycyjności zespołu.",
   applicationName: "KadryHR",
   keywords: [
     "grafik zmianowy",
-    "RCP",
-    "kadry",
-    "time tracking",
-    "retail HR",
-    "urlopy",
+    "planowanie",
+    "dyspozycyjność",
+    "grafik",
+    "operacje",
   ],
   alternates: {
     canonical: "/",
@@ -34,9 +32,9 @@ export const metadata: Metadata = {
     locale: "pl_PL",
     url: "https://kadryhr.pl",
     siteName: "KadryHR",
-    title: "KadryHR — grafiki zmianowe, RCP i kadry",
+    title: "KadryHR — planowanie grafiku i dyspozycyjności",
     description:
-      "Zamknij grafiki i rozliczenia czasu pracy szybciej. KadryHR dla retail i zespołów zmianowych.",
+      "KadryHR to spokojny panel do planowania grafiku i dyspozycyjności zespołu.",
     images: [
       {
         url: "/og-image.svg",
@@ -48,9 +46,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "KadryHR — grafiki zmianowe, RCP i kadry",
+    title: "KadryHR — planowanie grafiku i dyspozycyjności",
     description:
-      "KadryHR porządkuje grafikowanie, urlopy i czas pracy w sieciach retail.",
+      "KadryHR porządkuje planowanie grafiku i dyspozycyjności zespołu.",
     images: ["/og-image.svg"],
   },
   icons: {
@@ -76,7 +74,6 @@ export default function RootLayout({
         <ToastProvider>
           <AuthProvider>
             {children}
-            <CookieBanner />
           </AuthProvider>
         </ToastProvider>
       </body>

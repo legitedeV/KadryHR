@@ -4,12 +4,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://kadryhr.pl";
   const routes = [
     "",
-    "/cennik",
-    "/security",
-    "/polityka-prywatnosci",
-    "/cookies",
-    "/kontakt",
-    "/regulamin",
+    "/login",
+    "/register",
   ];
 
   return routes.map((route) => ({

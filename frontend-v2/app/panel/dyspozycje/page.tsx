@@ -1436,12 +1436,12 @@ function WindowEmployeeDetailPanel({
     setDayOffs(initialData.dayOffs);
   }, [initialData]);
 
-  const windowStart = window ? new Date(window.startDate) : null;
-  const windowEnd = window ? new Date(window.endDate) : null;
   const weeks = useMemo(() => {
-    if (!windowStart || !windowEnd) return [];
+    if (!window) return [];
+    const windowStart = new Date(window.startDate);
+    const windowEnd = new Date(window.endDate);
     return buildCalendarWeeks(windowStart, windowEnd);
-  }, [windowStart, windowEnd]);
+  }, [window]);
 
   useEffect(() => {
     if (!selectedDate && weeks[0]?.[0]) {
@@ -1911,13 +1911,6 @@ export default function DyspozycjePage() {
     };
   }, [hasSession, router]);
 
-  // Load team data when switching to team tab
-  useEffect(() => {
-    if (activeTab === "team" && userIsAdmin) {
-      loadTeamData();
-    }
-  }, [activeTab, userIsAdmin, activeWindow]);
-
   useEffect(() => {
     if (!activeWindow) {
       setWindowSubmission(null);
@@ -1942,7 +1935,7 @@ export default function DyspozycjePage() {
     return () => {
       cancelled = true;
     };
-  }, [activeWindow?.id]);
+  }, [activeWindow]);
 
   const refreshWindows = useCallback(async () => {
     try {
@@ -1971,7 +1964,7 @@ export default function DyspozycjePage() {
     }
   }, [userIsAdmin]);
 
-  const loadTeamData = async () => {
+  const loadTeamData = useCallback(async () => {
     setTeamLoading(true);
     try {
       if (activeWindow) {
@@ -1997,7 +1990,14 @@ export default function DyspozycjePage() {
     } finally {
       setTeamLoading(false);
     }
-  };
+  }, [activeWindow]);
+
+  // Load team data when switching to team tab
+  useEffect(() => {
+    if (activeTab === "team" && userIsAdmin) {
+      loadTeamData();
+    }
+  }, [activeTab, userIsAdmin, loadTeamData]);
 
   const loadTeamEmployees = useCallback(async () => {
     if (!userIsAdmin) return;

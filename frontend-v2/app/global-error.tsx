@@ -5,7 +5,6 @@ import "./globals.css";
 import { DEFAULT_LANG } from "@/lib/site-config";
 
 export default function GlobalError({
-  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };

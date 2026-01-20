@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Modal } from "@/components/Modal";
-import type { ApprovedLeaveForSchedule, AvailabilityRecord, EmployeeRecord, LocationRecord, ShiftPresetRecord } from "@/lib/api";
+import type { AvailabilityRecord, EmployeeRecord, LocationRecord, ShiftPresetRecord } from "@/lib/api";
 import type { ShiftFormState } from "../types";
 import { SHIFT_COLORS, SHIFT_TEMPLATES } from "../constants";
 
@@ -20,7 +20,6 @@ interface ShiftEditorModalProps {
   shiftPresets?: ShiftPresetRecord[];
   availabilityLabel?: string;
   availabilityWindows?: AvailabilityRecord[];
-  approvedLeaves?: ApprovedLeaveForSchedule[];
   saving: boolean;
   formError: string | null;
   onClose: () => void;
@@ -38,7 +37,6 @@ export function ShiftEditorModal({
   shiftPresets = [],
   availabilityLabel,
   availabilityWindows = [],
-  approvedLeaves = [],
   saving,
   formError,
   onClose,
@@ -267,20 +265,6 @@ export function ShiftEditorModal({
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Dostępność</p>
               <p className="mt-2 text-sm font-medium text-surface-700 dark:text-surface-200">{availabilityLabel || "Brak danych"}</p>
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{availabilityText}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-200/60 bg-amber-50 px-4 py-4 text-sm text-amber-700 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500 dark:text-amber-300">Urlopy / konflikty</p>
-              {approvedLeaves.length > 0 ? (
-                <ul className="mt-2 space-y-1 text-xs">
-                  {approvedLeaves.map((leave) => (
-                    <li key={leave.id}>
-                      {leave.leaveType?.name ?? "Urlop"} · {leave.startDate} → {leave.endDate}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-xs text-amber-600/80 dark:text-amber-200/80">Brak zatwierdzonych urlopów.</p>
-              )}
             </div>
           </aside>
         )}
