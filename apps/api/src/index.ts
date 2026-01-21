@@ -79,7 +79,7 @@ await fastify.register(fastifySwaggerUi, {
 });
 
 // Global error handler
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error, _request, reply) => {
   fastify.log.error(error);
   
   if (error.validation) {

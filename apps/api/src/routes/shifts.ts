@@ -4,7 +4,7 @@ import { db } from '../db/index.js';
 import { shifts, schedules } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { logAudit } from '../lib/audit.js';
-import { eq, and, gte, lte, or, between, lt, gt } from 'drizzle-orm';
+import { eq, and, gte, lte, or, lt, gt } from 'drizzle-orm';
 
 const createShiftSchema = z.object({
   scheduleId: z.string().uuid(),
@@ -32,21 +32,18 @@ export default async function shiftRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Schedule not found' });
       }
 
-      let whereConditions = and(
+      const conditions = [
         eq(shifts.scheduleId, id),
         eq(shifts.tenantId, request.user!.tenantId)
-      );
+      ];
 
       if (startDate && endDate) {
-        whereConditions = and(
-          whereConditions,
-          gte(shifts.startTime, new Date(startDate)),
-          lte(shifts.startTime, new Date(endDate))
-        );
+        conditions.push(gte(shifts.startTime, new Date(startDate)));
+        conditions.push(lte(shifts.startTime, new Date(endDate)));
       }
 
       const results = await db.query.shifts.findMany({
-        where: whereConditions,
+        where: and(...conditions),
         with: {
           employee: true,
           position: true,
@@ -176,8 +173,8 @@ export default async function shiftRoutes(fastify: FastifyInstance) {
             eq(shifts.employeeId, employeeId),
             lt(shifts.startTime, endTime),
             gt(shifts.endTime, startTime),
-            // Exclude current shift
-            // @ts-ignore - SQL comparison works but TS doesn't recognize it
+            // Exclude current shift - SQL comparison works
+            // @ts-expect-error - Drizzle type system limitation
             sql`${shifts.id} != ${id}`
           ),
         });

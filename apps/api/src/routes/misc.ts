@@ -1,10 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { positions, tags, schedules, shifts, availability, holidays, integrations, auditLogs, files } from '../db/schema.js';
+import { positions, tags, schedules, shifts, availability, holidays, integrations, files, employees } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { logAudit } from '../lib/audit.js';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, count } from 'drizzle-orm';
 import { uploadFile, getPresignedUrl, ensureBucket, bucket } from '../lib/minio.js';
 import { nanoid } from 'nanoid';
 
@@ -82,7 +82,10 @@ export default async function miscRoutes(fastify: FastifyInstance) {
   fastify.get('/dashboard/stats', { preHandler: requireAuth() }, async (request, reply) => {
     const tenantId = request.user!.tenantId;
     
-    const employeesCount = await db.$count(sql`${positions.tenantId} = ${tenantId}`, positions);
+    const [employeesResult] = await db
+      .select({ count: count() })
+      .from(employees)
+      .where(eq(employees.tenantId, tenantId));
     
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -105,7 +108,7 @@ export default async function miscRoutes(fastify: FastifyInstance) {
 
     return reply.send({
       data: {
-        employeesCount: employeesCount || 0,
+        employeesCount: employeesResult?.count || 0,
         shiftsThisMonth: shiftsThisMonth.length,
         pendingAvailability: pendingAvailability.length,
       },

@@ -4,7 +4,7 @@ import { db } from '../db/index.js';
 import { users, tenants, sessions } from '../db/schema.js';
 import { hashPassword, verifyPassword, generateSessionId, getSessionExpiry, generateToken } from '../lib/auth.js';
 import { logAudit } from '../lib/audit.js';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
 
 const registerSchema = z.object({
@@ -252,7 +252,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Reset password (simplified - in production verify token from database)
   fastify.post('/auth/reset', async (request, reply) => {
     try {
-      const body = resetSchema.parse(request.body);
+      resetSchema.parse(request.body);
 
       // In production, verify token from database and get user
       // For now, this is a stub that always fails

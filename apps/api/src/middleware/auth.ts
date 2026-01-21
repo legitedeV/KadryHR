@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { db } from '../db/index.js';
-import { sessions, users, tenants } from '../db/schema.js';
+import { sessions, users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export interface AuthUser {

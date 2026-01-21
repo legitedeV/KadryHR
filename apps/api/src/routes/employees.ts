@@ -4,7 +4,7 @@ import { db } from '../db/index.js';
 import { employees } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { logAudit } from '../lib/audit.js';
-import { eq, and, ilike, inArray, or } from 'drizzle-orm';
+import { eq, and, ilike, or } from 'drizzle-orm';
 
 const createEmployeeSchema = z.object({
   firstName: z.string().min(1),
@@ -23,7 +23,7 @@ export default async function employeeRoutes(fastify: FastifyInstance) {
   // List employees
   fastify.get('/employees', { preHandler: requireAuth() }, async (request, reply) => {
     try {
-      const { search, status, position, tags, role } = request.query as {
+      const { search, status, position } = request.query as {
         search?: string;
         status?: string;
         position?: string;
@@ -31,26 +31,33 @@ export default async function employeeRoutes(fastify: FastifyInstance) {
         role?: string;
       };
 
-      let query = db.query.employees.findMany({
-        where: and(
-          eq(employees.tenantId, request.user!.tenantId),
-          search
-            ? or(
-                ilike(employees.firstName, `%${search}%`),
-                ilike(employees.lastName, `%${search}%`),
-                ilike(employees.email, `%${search}%`)
-              )
-            : undefined,
-          status ? eq(employees.status, status as typeof employees.status.$inferSelect) : undefined,
-          position ? eq(employees.positionId, position) : undefined
-        ),
+      const conditions = [eq(employees.tenantId, request.user!.tenantId)];
+      
+      if (search) {
+        conditions.push(
+          or(
+            ilike(employees.firstName, `%${search}%`),
+            ilike(employees.lastName, `%${search}%`),
+            ilike(employees.email, `%${search}%`)
+          )!
+        );
+      }
+      
+      if (status) {
+        conditions.push(eq(employees.status, status as 'active' | 'inactive' | 'terminated'));
+      }
+      
+      if (position) {
+        conditions.push(eq(employees.positionId, position));
+      }
+
+      const results = await db.query.employees.findMany({
+        where: and(...conditions),
         with: {
           position: true,
         },
         orderBy: (employees, { asc }) => [asc(employees.firstName)],
       });
-
-      const results = await query;
       return reply.send({ data: results });
     } catch (error) {
       console.error('List employees error:', error);

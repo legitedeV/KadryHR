@@ -28,11 +28,11 @@ export default async function availabilityRoutes(fastify: FastifyInstance) {
         endDate?: string;
       };
 
-      let whereConditions = eq(availability.tenantId, request.user!.tenantId);
+      const whereConditions = eq(availability.tenantId, request.user!.tenantId);
 
       const conditions = [whereConditions];
       if (status) {
-        conditions.push(eq(availability.status, status as typeof availability.status.$inferSelect));
+        conditions.push(eq(availability.status, status as 'pending' | 'approved' | 'rejected'));
       }
       if (employeeId) {
         conditions.push(eq(availability.employeeId, employeeId));
