@@ -69,12 +69,16 @@ jobs:
 
       - name: Generate Prisma Client and push schema
         working-directory: ./backend-v2
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kadryhr_test?schema=public
         run: |
           npx prisma generate
           npx prisma db push --skip-generate --accept-data-loss
 
       - name: Seed test data
         working-directory: ./backend-v2
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kadryhr_test?schema=public
         run: |
           if [ -f "prisma/seed/index.ts" ]; then
             echo "📦 Seeding test database..."
