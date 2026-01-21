@@ -126,7 +126,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         },
       });
 
-      if (!user) {
+      if (!user || !user.tenant) {
         return reply.code(401).send({ error: 'Invalid credentials' });
       }
 
@@ -168,9 +168,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
           avatarUrl: user.avatarUrl,
         },
         tenant: {
-          id: user.tenant.id,
-          name: user.tenant.name,
-          slug: user.tenant.slug,
+          id: (user.tenant as any).id,
+          name: (user.tenant as any).name,
+          slug: (user.tenant as any).slug,
         },
       });
     } catch (error) {

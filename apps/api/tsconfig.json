@@ -6,7 +6,8 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "skipLibCheck": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

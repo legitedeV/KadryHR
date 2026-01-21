@@ -53,7 +53,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       },
     });
 
-    if (!user) {
+    if (!user || !user.tenant) {
       return reply.code(401).send({ error: 'User not found' });
     }
 
@@ -65,9 +65,9 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       role: user.role,
       avatarUrl: user.avatarUrl,
       tenant: {
-        id: user.tenant.id,
-        name: user.tenant.name,
-        slug: user.tenant.slug,
+        id: (user.tenant as any).id,
+        name: (user.tenant as any).name,
+        slug: (user.tenant as any).slug,
       },
     };
   } catch (error) {

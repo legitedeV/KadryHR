@@ -145,18 +145,18 @@ export default async function shiftRoutes(fastify: FastifyInstance) {
         with: { schedule: true },
       });
 
-      if (!existingShift) {
+      if (!existingShift || !existingShift.schedule) {
         return reply.code(404).send({ error: 'Shift not found' });
       }
 
       // Check publish lock
-      if (existingShift.schedule.publishedUntil) {
-        const publishedUntil = new Date(existingShift.schedule.publishedUntil);
+      if ((existingShift.schedule as any).publishedUntil) {
+        const publishedUntil = new Date((existingShift.schedule as any).publishedUntil);
         const shiftStart = new Date(body.startTime || existingShift.startTime);
         if (shiftStart <= publishedUntil) {
           return reply.code(400).send({
             error: 'Cannot modify shift in published period',
-            publishedUntil: existingShift.schedule.publishedUntil,
+            publishedUntil: (existingShift.schedule as any).publishedUntil,
           });
         }
       }
@@ -224,18 +224,18 @@ export default async function shiftRoutes(fastify: FastifyInstance) {
         with: { schedule: true },
       });
 
-      if (!existingShift) {
+      if (!existingShift || !existingShift.schedule) {
         return reply.code(404).send({ error: 'Shift not found' });
       }
 
       // Check publish lock
-      if (existingShift.schedule.publishedUntil) {
-        const publishedUntil = new Date(existingShift.schedule.publishedUntil);
+      if ((existingShift.schedule as any).publishedUntil) {
+        const publishedUntil = new Date((existingShift.schedule as any).publishedUntil);
         const shiftStart = new Date(existingShift.startTime);
         if (shiftStart <= publishedUntil) {
           return reply.code(400).send({
             error: 'Cannot delete shift in published period',
-            publishedUntil: existingShift.schedule.publishedUntil,
+            publishedUntil: (existingShift.schedule as any).publishedUntil,
           });
         }
       }
