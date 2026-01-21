@@ -1,0 +1,17 @@
+node_modules
+.DS_Store
+.env
+.env.local
+.pnpm-store
+coverage
+/dist
+.drizzle
+.drizzle-kit
+apps/api/drizzle
+apps/api/build
+apps/web/dist
+apps/web/.vite
+apps/web/node_modules
+apps/api/node_modules
+apps/web/.playwright
+playwright-report
