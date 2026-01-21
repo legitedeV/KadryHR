@@ -1,0 +1,26 @@
+{
+  "name": "kadryhr",
+  "version": "2.0.0",
+  "private": true,
+  "description": "KadryHR v2 - Modern HR Management System",
+  "scripts": {
+    "dev": "pnpm --parallel --stream -r dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "pnpm --filter @kadryhr/api db:migrate",
+    "db:seed": "pnpm --filter @kadryhr/api db:seed",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.2",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
