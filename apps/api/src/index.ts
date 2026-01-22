@@ -21,7 +21,7 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
-const apiPort = parseInt(process.env.PORT || process.env.API_PORT || '3000');
+const apiPort = parseInt(process.env.API_PORT || process.env.PORT || '3000');
 
 const fastify = Fastify({
   logger: {

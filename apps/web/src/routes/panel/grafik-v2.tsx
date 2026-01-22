@@ -107,7 +107,7 @@ export default function SchedulePage() {
           ) : (
             <div className="grid grid-cols-7 gap-2">
               {/* Day headers */}
-              {['Nd', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb'].map((day) => (
+              {['Nie', 'Pn', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob'].map((day) => (
                 <div key={day} className="text-center font-semibold text-sm text-secondary-700 py-2">
                   {day}
                 </div>
