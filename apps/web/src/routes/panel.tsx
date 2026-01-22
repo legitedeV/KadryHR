@@ -22,9 +22,9 @@ export default function PanelLayout() {
   });
 
   const navItems = [
-    { to: '/panel/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/panel/zespol', icon: Users, label: 'Team' },
-    { to: '/panel/grafik-v2', icon: Calendar, label: 'Schedule' },
+    { to: '/panel/dashboard', icon: LayoutDashboard, label: 'Panel' },
+    { to: '/panel/zespol', icon: Users, label: 'Zespół' },
+    { to: '/panel/grafik-v2', icon: Calendar, label: 'Grafik' },
   ];
 
   return (

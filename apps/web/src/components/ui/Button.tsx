@@ -31,7 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         {...props}
       >
-        {isLoading ? 'Loading...' : children}
+        {isLoading ? 'Ładowanie...' : children}
       </button>
     );
   }

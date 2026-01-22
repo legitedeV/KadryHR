@@ -53,8 +53,8 @@ export default function SchedulePage() {
     return shiftsData?.data.filter((shift: Shift) => shift.date.startsWith(dateStr)) || [];
   };
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 
+                      'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 
   const previousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -67,11 +67,11 @@ export default function SchedulePage() {
   if (!activeSchedule) {
     return (
       <div>
-        <h1 className="text-3xl font-bold text-secondary-900 mb-6">Schedule</h1>
+        <h1 className="text-3xl font-bold text-secondary-900 mb-6">Grafik</h1>
         <EmptyState
           icon={<Calendar className="h-12 w-12" />}
-          title="No schedules created"
-          description="Create your first schedule to start managing shifts."
+          title="Brak utworzonych grafików"
+          description="Utwórz pierwszy grafik, aby rozpocząć zarządzanie zmianami."
         />
       </div>
     );
@@ -80,7 +80,7 @@ export default function SchedulePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-secondary-900">Schedule</h1>
+        <h1 className="text-3xl font-bold text-secondary-900">Grafik</h1>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={previousMonth}>
             <ChevronLeft className="h-4 w-4" />
@@ -107,7 +107,7 @@ export default function SchedulePage() {
           ) : (
             <div className="grid grid-cols-7 gap-2">
               {/* Day headers */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              {['Nie', 'Pn', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob'].map((day) => (
                 <div key={day} className="text-center font-semibold text-sm text-secondary-700 py-2">
                   {day}
                 </div>
@@ -140,7 +140,7 @@ export default function SchedulePage() {
                         </div>
                       ))}
                       {shifts.length === 0 && (
-                        <div className="text-xs text-secondary-400">No shifts</div>
+                        <div className="text-xs text-secondary-400">Brak zmian</div>
                       )}
                     </div>
                   </div>

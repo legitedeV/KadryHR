@@ -34,7 +34,7 @@ export function Drawer({ open, onOpenChange, children, title, side = 'right' }: 
                 </Dialog.Title>
                 <Dialog.Close className="rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                   <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">Zamknij</span>
                 </Dialog.Close>
               </div>
             )}
