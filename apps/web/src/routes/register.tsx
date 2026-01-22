@@ -29,36 +29,36 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-secondary-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Create Your Account</CardTitle>
+          <CardTitle className="text-2xl text-center">Utwórz konto</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {registerMutation.isError && (
               <div className="bg-error-50 text-error-700 p-3 rounded-md text-sm">
-                {registerMutation.error?.message || 'Registration failed. Please try again.'}
+                {registerMutation.error?.message || 'Rejestracja nie powiodła się. Spróbuj ponownie.'}
               </div>
             )}
 
             <Input
-              label="Full Name"
+              label="Imię i nazwisko"
               type="text"
-              placeholder="John Doe"
+              placeholder="Jan Kowalski"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
 
             <Input
-              label="Organization Name"
+              label="Nazwa organizacji"
               type="text"
-              placeholder="Acme Corp"
+              placeholder="Acme Sp. z o.o."
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               required
             />
 
             <Input
-              label="Email"
+              label="Adres email"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -67,7 +67,7 @@ export default function RegisterPage() {
             />
 
             <Input
-              label="Password"
+              label="Hasło"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -81,13 +81,13 @@ export default function RegisterPage() {
               className="w-full"
               isLoading={registerMutation.isPending}
             >
-              Create Account
+              Utwórz konto
             </Button>
 
             <div className="text-center text-sm text-secondary-600">
-              Already have an account?{' '}
+              Masz już konto?{' '}
               <Link to="/login" className="text-primary-600 hover:underline">
-                Sign in
+                Zaloguj się
               </Link>
             </div>
           </form>

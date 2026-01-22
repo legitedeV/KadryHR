@@ -57,10 +57,10 @@ export default function TeamPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-secondary-900">Team Management</h1>
+        <h1 className="text-3xl font-bold text-secondary-900">Zarządzanie zespołem</h1>
         <Button onClick={() => setAddModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Employee
+          Dodaj pracownika
         </Button>
       </div>
 
@@ -73,12 +73,12 @@ export default function TeamPage() {
       ) : !data?.data.length ? (
         <EmptyState
           icon={<Users className="h-12 w-12" />}
-          title="No employees yet"
-          description="Get started by adding your first team member."
+          title="Brak pracowników"
+          description="Dodaj pierwszego członka zespołu, aby rozpocząć."
           action={
             <Button onClick={() => setAddModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Employee
+              Dodaj pracownika
             </Button>
           }
         />
@@ -87,12 +87,12 @@ export default function TeamPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Position</TableHead>
+                <TableHead>Imię i nazwisko</TableHead>
+                <TableHead>Adres email</TableHead>
+                <TableHead>Telefon</TableHead>
+                <TableHead>Stanowisko</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
+                <TableHead className="w-20">Akcje</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -104,7 +104,7 @@ export default function TeamPage() {
                   <TableCell>{employee.position?.name || '-'}</TableCell>
                   <TableCell>
                     <Badge variant={employee.active ? 'success' : 'default'}>
-                      {employee.active ? 'Active' : 'Inactive'}
+                      {employee.active ? 'Aktywny' : 'Nieaktywny'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -127,25 +127,25 @@ export default function TeamPage() {
       <Modal
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
-        title="Add New Employee"
-        description="Enter employee details to add them to your team."
+        title="Dodaj pracownika"
+        description="Wpisz dane pracownika, aby dodać go do zespołu."
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {createMutation.isError && (
             <div className="bg-error-50 text-error-700 p-3 rounded-md text-sm">
-              {createMutation.error?.message || 'Failed to create employee'}
+              {createMutation.error?.message || 'Nie udało się dodać pracownika'}
             </div>
           )}
 
           <Input
-            label="Full Name"
+            label="Imię i nazwisko"
             value={newEmployee.name}
             onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
             required
           />
 
           <Input
-            label="Email"
+            label="Adres email"
             type="email"
             value={newEmployee.email}
             onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
@@ -153,7 +153,7 @@ export default function TeamPage() {
           />
 
           <Input
-            label="Phone"
+            label="Telefon"
             value={newEmployee.phone}
             onChange={(e) => setNewEmployee({ ...newEmployee, phone: e.target.value })}
           />
@@ -164,10 +164,10 @@ export default function TeamPage() {
               variant="ghost"
               onClick={() => setAddModalOpen(false)}
             >
-              Cancel
+              Anuluj
             </Button>
             <Button type="submit" isLoading={createMutation.isPending}>
-              Add Employee
+              Dodaj pracownika
             </Button>
           </div>
         </form>

@@ -21,6 +21,8 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
+const apiPort = parseInt(process.env.PORT || process.env.API_PORT || '3000');
+
 const fastify = Fastify({
   logger: {
     level: process.env.LOG_LEVEL || 'info',
@@ -68,7 +70,7 @@ await fastify.register(fastifySwagger, {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.API_PORT || 3000}`,
+        url: `http://localhost:${apiPort}`,
       },
     ],
   },
@@ -109,13 +111,12 @@ await fastify.register(miscRoutes, { prefix: '/api' });
 // Start server
 const start = async () => {
   try {
-    const port = parseInt(process.env.API_PORT || '3000');
     const host = process.env.API_HOST || '0.0.0.0';
     
-    await fastify.listen({ port, host });
+    await fastify.listen({ port: apiPort, host });
     
-    console.log(`Server listening on ${host}:${port}`);
-    console.log(`API docs available at http://localhost:${port}/docs`);
+    console.log(`Server listening on ${host}:${apiPort}`);
+    console.log(`API docs available at http://localhost:${apiPort}/docs`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

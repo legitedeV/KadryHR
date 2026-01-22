@@ -27,18 +27,18 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-secondary-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Sign In to KadryHR</CardTitle>
+          <CardTitle className="text-2xl text-center">Zaloguj się do KadryHR</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {loginMutation.isError && (
               <div className="bg-error-50 text-error-700 p-3 rounded-md text-sm">
-                {loginMutation.error?.message || 'Login failed. Please try again.'}
+                {loginMutation.error?.message || 'Logowanie nie powiodło się. Spróbuj ponownie.'}
               </div>
             )}
 
             <Input
-              label="Email"
+              label="Adres email"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -47,7 +47,7 @@ export default function LoginPage() {
             />
 
             <Input
-              label="Password"
+              label="Hasło"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -60,13 +60,13 @@ export default function LoginPage() {
               className="w-full"
               isLoading={loginMutation.isPending}
             >
-              Sign In
+              Zaloguj się
             </Button>
 
             <div className="text-center text-sm text-secondary-600">
-              Don't have an account?{' '}
+              Nie masz konta?{' '}
               <Link to="/register" className="text-primary-600 hover:underline">
-                Sign up
+                Zarejestruj się
               </Link>
             </div>
           </form>

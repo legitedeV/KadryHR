@@ -13,14 +13,14 @@ export default function LandingPage() {
             KadryHR v2
           </h1>
           <p className="text-xl text-secondary-600 mb-8">
-            Complete HR management solution for modern teams. Manage employees, schedules, and availability in one place.
+            Kompleksowe rozwiązanie HR dla nowoczesnych zespołów. Zarządzaj pracownikami, grafikami i dostępnością w jednym miejscu.
           </p>
           <div className="flex gap-4 justify-center">
             <Link to="/register">
-              <Button size="lg">Get Started</Button>
+              <Button size="lg">Zacznij teraz</Button>
             </Link>
             <Link to="/login">
-              <Button variant="secondary" size="lg">Sign In</Button>
+              <Button variant="secondary" size="lg">Zaloguj się</Button>
             </Link>
           </div>
         </div>
@@ -29,17 +29,17 @@ export default function LandingPage() {
       {/* Features Section */}
       <div className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">
-          Everything you need to manage your team
+          Wszystko, czego potrzebujesz do zarządzania zespołem
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader>
               <Users className="h-8 w-8 text-primary-600 mb-2" />
-              <CardTitle className="text-lg">Team Management</CardTitle>
+              <CardTitle className="text-lg">Zarządzanie zespołem</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-secondary-600">
-                Manage employee data, positions, and tags in one central location.
+                Zarządzaj danymi pracowników, stanowiskami i tagami w jednym miejscu.
               </p>
             </CardContent>
           </Card>
@@ -47,11 +47,11 @@ export default function LandingPage() {
           <Card>
             <CardHeader>
               <Calendar className="h-8 w-8 text-primary-600 mb-2" />
-              <CardTitle className="text-lg">Smart Scheduling</CardTitle>
+              <CardTitle className="text-lg">Inteligentne grafiki</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-secondary-600">
-                Create and publish schedules with ease. Handle shifts and availability.
+                Twórz i publikuj grafiki z łatwością. Zarządzaj zmianami i dostępnością.
               </p>
             </CardContent>
           </Card>
@@ -59,11 +59,11 @@ export default function LandingPage() {
           <Card>
             <CardHeader>
               <Clock className="h-8 w-8 text-primary-600 mb-2" />
-              <CardTitle className="text-lg">Availability Tracking</CardTitle>
+              <CardTitle className="text-lg">Śledzenie dostępności</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-secondary-600">
-                Track employee availability and time-off requests automatically.
+                Automatycznie śledź dostępność i wnioski urlopowe pracowników.
               </p>
             </CardContent>
           </Card>
@@ -71,11 +71,11 @@ export default function LandingPage() {
           <Card>
             <CardHeader>
               <BarChart3 className="h-8 w-8 text-primary-600 mb-2" />
-              <CardTitle className="text-lg">Analytics</CardTitle>
+              <CardTitle className="text-lg">Analityka</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-secondary-600">
-                Get insights into your team performance and scheduling patterns.
+                Zyskaj wgląd w wydajność zespołu i schematy planowania.
               </p>
             </CardContent>
           </Card>
@@ -86,14 +86,14 @@ export default function LandingPage() {
       <div className="bg-primary-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">
-            Ready to streamline your HR processes?
+            Gotowy, aby usprawnić procesy HR?
           </h2>
           <p className="text-xl mb-8 text-primary-100">
-            Join teams that trust KadryHR to manage their workforce.
+            Dołącz do zespołów, które ufają KadryHR w zarządzaniu personelem.
           </p>
           <Link to="/register">
             <Button size="lg" variant="secondary">
-              Start Free Trial
+              Rozpocznij darmowy okres próbny
             </Button>
           </Link>
         </div>

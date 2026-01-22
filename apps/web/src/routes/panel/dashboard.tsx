@@ -12,19 +12,19 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      title: 'Total Employees',
+      title: 'Liczba pracowników',
       value: data?.data.employeesCount ?? 0,
       icon: Users,
       color: 'text-primary-600',
     },
     {
-      title: 'Shifts This Month',
+      title: 'Zmiany w tym miesiącu',
       value: data?.data.shiftsThisMonth ?? 0,
       icon: Calendar,
       color: 'text-success-600',
     },
     {
-      title: 'Pending Availability',
+      title: 'Oczekujące dostępności',
       value: data?.data.pendingAvailability ?? 0,
       icon: Clock,
       color: 'text-warning-600',
@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-secondary-900 mb-6">Dashboard</h1>
+      <h1 className="text-3xl font-bold text-secondary-900 mb-6">Panel</h1>
       
       <div className="grid md:grid-cols-3 gap-6">
         {stats.map((stat) => (
@@ -58,12 +58,12 @@ export default function DashboardPage() {
       <div className="mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Welcome to KadryHR v2</CardTitle>
+            <CardTitle>Witamy w KadryHR v2</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-secondary-600">
-              Your HR management dashboard. Use the navigation menu to manage your team, 
-              create schedules, and track availability.
+              To jest panel HR. Użyj menu nawigacji, aby zarządzać zespołem,
+              tworzyć grafiki i śledzić dostępność.
             </p>
           </CardContent>
         </Card>
