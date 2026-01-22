@@ -1,0 +1,10 @@
+.git
+**/.git
+node_modules
+**/node_modules
+dist
+**/dist
+.pnpm-store
+**/.pnpm-store
+.env
+**/.env

@@ -1,15 +1,13 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
     container_name: kadryhr-postgres
     environment:
       POSTGRES_USER: kadryhr
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: kadryhr
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -17,12 +15,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     container_name: kadryhr-redis
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
     volumes:
       - redis-data:/data
     healthcheck:
@@ -30,17 +29,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   minio:
     image: minio/minio:latest
     container_name: kadryhr-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     volumes:
       - minio-data:/data
     healthcheck:
@@ -48,8 +48,48 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: kadryhr-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_PORT: ${MINIO_PORT}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
+      API_PORT: ${API_PORT}
+
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: kadryhr-web
+    depends_on:
+      - api
+    ports:
+      - '80:80'
+    restart: unless-stopped
 
 volumes:
   postgres-data:
   redis-data:
   minio-data:
+

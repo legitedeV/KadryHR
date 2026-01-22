@@ -12,3 +12,6 @@ coverage
 .cache
 playwright-report
 test-results
+
+# pnpm local store
+.pnpm-store/
