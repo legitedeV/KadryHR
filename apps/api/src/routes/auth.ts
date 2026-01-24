@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { users, tenants, sessions } from '../db/schema.js';
+import { users, tenants, sessions, type Tenant } from '../db/schema.js';
 import { hashPassword, verifyPassword, generateSessionId, getSessionExpiry, generateToken } from '../lib/auth.js';
 import { logAudit } from '../lib/audit.js';
 import { eq } from 'drizzle-orm';
@@ -159,6 +159,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
         expires: expiresAt,
       });
 
+      const tenant = user.tenant as Tenant;
+
       return reply.send({
         user: {
           id: user.id,
@@ -168,9 +170,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
           avatarUrl: user.avatarUrl,
         },
         tenant: {
-          id: (user.tenant as any).id,
-          name: (user.tenant as any).name,
-          slug: (user.tenant as any).slug,
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
         },
       });
     } catch (error) {
