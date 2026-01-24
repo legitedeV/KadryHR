@@ -30,10 +30,10 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://www.kadryhr.pl/ap}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://kadryhr.pl/api}
     container_name: kadryhr-web
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://www.kadryhr.pl/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://kadryhr.pl/api}
     depends_on:
       - kadryhr-api
     ports:

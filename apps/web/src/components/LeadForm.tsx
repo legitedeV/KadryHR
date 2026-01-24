@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { KadryButton } from "@kadryhr/ui";
+import { API_URL } from "../lib/api-config";
 
 const initialState = {
   firstName: "",
@@ -23,21 +24,18 @@ export function LeadForm({ source }: { source: string }) {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "https://kadryhr.pl/api"}/leads`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: `${form.firstName} ${form.lastName}`.trim(),
-            email: form.email,
-            company: form.company,
-            employeesCount: form.employeesCount,
-            message: form.message,
-            source,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/leads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email,
+          company: form.company,
+          employeesCount: form.employeesCount,
+          message: form.message,
+          source,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Nie udało się wysłać formularza.");
