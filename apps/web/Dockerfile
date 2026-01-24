@@ -7,7 +7,7 @@ COPY package.json pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/config/package.json packages/config/package.json
-RUN pnpm install --filter @kadryhr/web... --frozen-lockfile || pnpm install --filter @kadryhr/web...
+RUN pnpm install --filter @kadryhr/web... --filter @kadryhr/ui... --frozen-lockfile || pnpm install --filter @kadryhr/web... --filter @kadryhr/ui...
 
 FROM base AS build
 COPY package.json pnpm-workspace.yaml ./
@@ -17,6 +17,7 @@ COPY packages/ui packages/ui
 COPY packages/config packages/config
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
 RUN pnpm --filter @kadryhr/web build
 
 FROM node:20-alpine AS runner
