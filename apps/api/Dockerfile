@@ -21,10 +21,11 @@ RUN pnpm --filter @kadryhr/api prisma:generate
 RUN pnpm --filter @kadryhr/api build
 
 FROM node:20-alpine AS runner
-WORKDIR /app
+WORKDIR /app/apps/api
 ENV NODE_ENV=production
 COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/apps/api/node_modules ./node_modules
 EXPOSE 4000
 CMD ["node", "dist/main.js"]

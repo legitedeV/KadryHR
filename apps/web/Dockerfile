@@ -21,12 +21,13 @@ COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
 RUN pnpm --filter @kadryhr/web build
 
 FROM node:20-alpine AS runner
-WORKDIR /app
+WORKDIR /app/apps/web
 ENV NODE_ENV=production
 ENV PORT=3000
 COPY --from=build /app/apps/web/.next ./.next
 COPY --from=build /app/apps/web/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/apps/web/node_modules ./node_modules
 COPY --from=build /app/apps/web/public ./public
 EXPOSE 3000
 CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]
