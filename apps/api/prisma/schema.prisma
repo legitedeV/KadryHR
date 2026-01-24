@@ -66,7 +66,7 @@ model Employee {
   employeeCode   String?
   email          String?
   organizationId String
-  userId         String?
+  userId         String?  @unique
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
