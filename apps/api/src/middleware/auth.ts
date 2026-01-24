@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { db } from '../db/index.js';
-import { sessions, users } from '../db/schema.js';
+import { sessions, users, type Tenant } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export interface AuthUser {
@@ -57,6 +57,8 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       return reply.code(401).send({ error: 'User not found' });
     }
 
+    const tenant = user.tenant as Tenant;
+
     request.user = {
       id: user.id,
       tenantId: user.tenantId,
@@ -65,9 +67,9 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       role: user.role,
       avatarUrl: user.avatarUrl,
       tenant: {
-        id: (user.tenant as any).id,
-        name: (user.tenant as any).name,
-        slug: (user.tenant as any).slug,
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
       },
     };
   } catch (error) {

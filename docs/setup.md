@@ -350,6 +350,20 @@ docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
+### One-command Deploy (Docker Compose)
+
+For VPS deployments, you can use the helper script which builds containers and runs DB migrations:
+
+```bash
+./scripts/deploy.sh
+```
+
+To use a different env file, set `DEPLOY_ENV_FILE`:
+
+```bash
+DEPLOY_ENV_FILE=/path/to/.env ./scripts/deploy.sh
+```
+
 ## Next Steps
 
 - [ ] Set up Google OAuth (optional)
