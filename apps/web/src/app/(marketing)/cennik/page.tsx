@@ -1,4 +1,4 @@
-import { PricingTable, PricingField, Section } from "@kadryhr/ui";
+import { KadryButton, PricingField, PricingTable, Section } from "@kadryhr/ui";
 import { LeadForm } from "@/components/LeadForm";
 
 const plans = [
@@ -49,6 +49,16 @@ export default function CennikPage() {
         title="Dobierz plan do skali zespołu"
         description="Elastyczne plany i moduły, które rosną razem z Twoją organizacją."
       >
+        <div className="mb-8 flex flex-wrap gap-3">
+          <PricingField label="Start w 5 minut" value="Panel gotowy od razu" />
+          <PricingField label="Rejestracja" value="Bez kontaktu z handlowcem" />
+        </div>
+        <div className="mb-10 flex flex-wrap gap-3">
+          <KadryButton href="/panel/register">Załóż konto</KadryButton>
+          <KadryButton variant="secondary" href="/panel/login">
+            Zaloguj się
+          </KadryButton>
+        </div>
         <PricingTable plans={plans} />
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           <PricingField label="Lokalizacje" value="1-30" />

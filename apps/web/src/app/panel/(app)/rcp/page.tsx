@@ -18,17 +18,23 @@ export default function RcpPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const now = new Date();
-    const weekAgo = new Date();
-    weekAgo.setDate(now.getDate() - 7);
-    const [entriesData, employeesData] = await Promise.all([
-      api.getTimeEntries({ from: weekAgo.toISOString(), to: now.toISOString() }),
-      api.getEmployees(),
-    ]);
-    setEntries(entriesData);
-    setEmployees(employeesData);
+    try {
+      const now = new Date();
+      const weekAgo = new Date();
+      weekAgo.setDate(now.getDate() - 7);
+      const [entriesData, employeesData] = await Promise.all([
+        api.getTimeEntries({ from: weekAgo.toISOString(), to: now.toISOString() }),
+        api.getEmployees(),
+      ]);
+      setEntries(entriesData);
+      setEmployees(employeesData);
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się pobrać wpisów RCP.";
+      setError(messageText);
+    }
   };
 
   useEffect(() => {
@@ -37,26 +43,44 @@ export default function RcpPage() {
 
   const handleClockIn = async () => {
     setMessage(null);
-    await api.clockIn();
-    setMessage("Zalogowano wejście.");
-    await load();
+    setError(null);
+    try {
+      await api.clockIn();
+      setMessage("Zalogowano wejście.");
+      await load();
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się zalogować wejścia.";
+      setError(messageText);
+    }
   };
 
   const handleClockOut = async () => {
     setMessage(null);
-    await api.clockOut();
-    setMessage("Zalogowano wyjście.");
-    await load();
+    setError(null);
+    try {
+      await api.clockOut();
+      setMessage("Zalogowano wyjście.");
+      await load();
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się zalogować wyjścia.";
+      setError(messageText);
+    }
   };
 
   const handleTimesheet = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const response = await api.getTimesheet({
-      from: from || undefined,
-      to: to || undefined,
-      employeeId: employeeId || undefined,
-    });
-    setTimesheet({ totalHours: response.totalHours, totalEntries: response.totalEntries });
+    setError(null);
+    try {
+      const response = await api.getTimesheet({
+        from: from || undefined,
+        to: to || undefined,
+        employeeId: employeeId || undefined,
+      });
+      setTimesheet({ totalHours: response.totalHours, totalEntries: response.totalEntries });
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się pobrać raportu.";
+      setError(messageText);
+    }
   };
 
   return (
@@ -73,6 +97,7 @@ export default function RcpPage() {
             Zaloguj wyjście
           </KadryButton>
           {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </KadryCard>
 
         <KadryCard className="p-5">
