@@ -378,6 +378,7 @@ DEPLOY_ENV_FILE=/path/to/.env ./scripts/deploy.sh
 
 - **Issues**: GitHub Issues
 - **Documentation**: [Feature Matrix](./feature-parity-matrix.md)
+- **Production checklist**: [Production Checklist](./production-checklist.md)
 - **API Docs**: http://localhost:3000/docs
 
 ---
