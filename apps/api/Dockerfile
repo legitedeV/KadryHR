@@ -11,6 +11,7 @@ RUN pnpm install --filter @kadryhr/api... --frozen-lockfile || pnpm install --fi
 
 FROM base AS build
 COPY package.json pnpm-workspace.yaml ./
+COPY tsconfig.base.json ./tsconfig.base.json
 COPY apps/api apps/api
 COPY packages/ui packages/ui
 COPY packages/config packages/config
