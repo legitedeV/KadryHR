@@ -1,11 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
 import { CreateLeadDto } from "./dto/create-lead.dto";
 
 @Injectable()
 export class LeadsService {
-  private readonly prisma = new PrismaClient();
   private readonly logger = new Logger(LeadsService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async createLead(data: CreateLeadDto, metadata: { userAgent?: string; ip?: string }) {
     const lead = await this.prisma.lead.create({
