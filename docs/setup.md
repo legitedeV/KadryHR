@@ -330,6 +330,13 @@ For production, update `.env`:
    - Set `NODE_ENV=production`
    - Set `MINIO_USE_SSL=true` (if using HTTPS)
 
+4. **Docker Compose defaults** (when using the included compose file):
+   - `MINIO_ENDPOINT=minio`
+   - `MINIO_PORT=9000`
+   - `MINIO_BUCKET=kadryhr-files`
+   - `MINIO_USE_SSL=true` (when behind HTTPS)
+   - `PORT=3001` and `API_PORT=3001` for the API container
+
 ### Build for Production
 
 ```bash
