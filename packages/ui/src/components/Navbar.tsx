@@ -25,11 +25,11 @@ export function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <KadryButton variant="ghost" size="sm" href="/kontakt">
-            Umów prezentację
+          <KadryButton variant="ghost" size="sm" href="/panel/login">
+            Zaloguj się
           </KadryButton>
-          <KadryButton size="sm" href="/cennik">
-            Wypróbuj za darmo
+          <KadryButton size="sm" href="/panel/register">
+            Załóż konto
           </KadryButton>
         </div>
       </div>

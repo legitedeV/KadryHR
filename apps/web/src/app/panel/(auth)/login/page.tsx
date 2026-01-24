@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { KadryButton, KadryCard, Section } from "@kadryhr/ui";
@@ -65,6 +66,14 @@ export default function PanelLoginPage() {
               <KadryButton type="submit" disabled={loading}>
                 {loading ? "Logowanie..." : "Zaloguj się"}
               </KadryButton>
+              <div className="flex flex-col gap-2 text-sm text-emerald-700">
+                <Link href="/panel/register" className="font-medium text-emerald-600 hover:text-emerald-700">
+                  Nie masz jeszcze konta? Załóż konto
+                </Link>
+                <Link href="/panel/forgot-password" className="text-emerald-600 hover:text-emerald-700">
+                  Zapomniałem hasła
+                </Link>
+              </div>
             </form>
           </KadryCard>
         </div>

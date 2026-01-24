@@ -1,6 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { UserRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ListEntriesDto } from "./dto/list-entries.dto";
+import { ManualEntryDto } from "./dto/manual-entry.dto";
 
 @Injectable()
 export class RcpService {
@@ -81,5 +83,48 @@ export class RcpService {
       include: { employee: true },
       orderBy: { clockIn: "desc" },
     });
+  }
+
+  async manual(organizationId: string, role: UserRole, data: ManualEntryDto) {
+    this.ensureManager(role);
+
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: data.employeeId, organizationId },
+    });
+    if (!employee) {
+      throw new BadRequestException("Employee not found in organization");
+    }
+
+    const clockIn = new Date(data.clockIn);
+    const clockOut = data.clockOut ? new Date(data.clockOut) : null;
+
+    if (clockOut && clockOut <= clockIn) {
+      throw new BadRequestException("Clock-out must be after clock-in");
+    }
+
+    if (!clockOut) {
+      const existing = await this.prisma.timeEntry.findFirst({
+        where: { employeeId: employee.id, organizationId, clockOut: null },
+      });
+      if (existing) {
+        throw new BadRequestException("Open time entry already exists");
+      }
+    }
+
+    return this.prisma.timeEntry.create({
+      data: {
+        organizationId,
+        employeeId: employee.id,
+        clockIn,
+        clockOut,
+        source: "manual",
+      },
+    });
+  }
+
+  private ensureManager(role: UserRole) {
+    if (role === UserRole.EMPLOYEE) {
+      throw new ForbiddenException("Insufficient permissions");
+    }
   }
 }

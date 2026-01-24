@@ -9,6 +9,11 @@ const formatDate = (date: Date) => date.toISOString().split("T")[0];
 const formatTime = (date: Date) =>
   date.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
 
+const toDateInput = (value: string) => new Date(value).toLocaleDateString("en-CA");
+
+const toTimeInput = (value: string) =>
+  new Date(value).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit", hour12: false });
+
 export default function GrafikPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -27,7 +32,16 @@ export default function GrafikPage() {
     startTime: "08:00",
     endTime: "16:00",
   });
+  const [editingShift, setEditingShift] = useState<Shift | null>(null);
+  const [editData, setEditData] = useState({
+    employeeId: "",
+    locationId: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+  });
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const days = useMemo(() => {
     const start = new Date(from);
@@ -42,14 +56,20 @@ export default function GrafikPage() {
   }, [from, to]);
 
   const load = async () => {
-    const [locationsData, employeesData, shiftsData] = await Promise.all([
-      api.getLocations(),
-      api.getEmployees(),
-      api.getShifts({ from: new Date(from).toISOString(), to: new Date(to).toISOString(), locationId }),
-    ]);
-    setLocations(locationsData);
-    setEmployees(employeesData);
-    setShifts(shiftsData);
+    try {
+      setError(null);
+      const [locationsData, employeesData, shiftsData] = await Promise.all([
+        api.getLocations(),
+        api.getEmployees(),
+        api.getShifts({ from: new Date(from).toISOString(), to: new Date(to).toISOString(), locationId }),
+      ]);
+      setLocations(locationsData);
+      setEmployees(employeesData);
+      setShifts(shiftsData);
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się pobrać grafiku.";
+      setError(messageText);
+    }
   };
 
   useEffect(() => {
@@ -66,20 +86,94 @@ export default function GrafikPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
+    setError(null);
 
     const start = new Date(`${formData.date}T${formData.startTime}:00`);
     const end = new Date(`${formData.date}T${formData.endTime}:00`);
 
-    await api.createShift({
-      employeeId: formData.employeeId,
-      locationId: formData.locationId,
-      start: start.toISOString(),
-      end: end.toISOString(),
-      published: true,
-    });
+    if (start >= end) {
+      setError("Godzina zakończenia musi być późniejsza niż start.");
+      return;
+    }
 
-    setMessage("Zmiana została dodana.");
-    await load();
+    try {
+      await api.createShift({
+        employeeId: formData.employeeId,
+        locationId: formData.locationId,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        published: true,
+      });
+
+      setMessage("Zmiana została dodana.");
+      await load();
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się dodać zmiany.";
+      setError(messageText);
+    }
+  };
+
+  const openEdit = (shift: Shift) => {
+    setEditingShift(shift);
+    setEditData({
+      employeeId: shift.employeeId,
+      locationId: shift.locationId,
+      date: toDateInput(shift.start),
+      startTime: toTimeInput(shift.start),
+      endTime: toTimeInput(shift.end),
+    });
+  };
+
+  const closeEdit = () => {
+    setEditingShift(null);
+    setError(null);
+  };
+
+  const handleEditChange = (field: keyof typeof editData) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setEditData((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingShift) return;
+    setError(null);
+
+    const start = new Date(`${editData.date}T${editData.startTime}:00`);
+    const end = new Date(`${editData.date}T${editData.endTime}:00`);
+
+    if (start >= end) {
+      setError("Godzina zakończenia musi być późniejsza niż start.");
+      return;
+    }
+
+    try {
+      await api.updateShift(editingShift.id, {
+        employeeId: editData.employeeId,
+        locationId: editData.locationId,
+        start: start.toISOString(),
+        end: end.toISOString(),
+      });
+      setMessage("Zmiana została zaktualizowana.");
+      setEditingShift(null);
+      await load();
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się zaktualizować zmiany.";
+      setError(messageText);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingShift) return;
+    setError(null);
+    try {
+      await api.deleteShift(editingShift.id);
+      setMessage("Zmiana została usunięta.");
+      setEditingShift(null);
+      await load();
+    } catch (err) {
+      const messageText = err instanceof Error ? err.message : "Nie udało się usunąć zmiany.";
+      setError(messageText);
+    }
   };
 
   return (
@@ -88,10 +182,12 @@ export default function GrafikPage() {
         <div>
           <h1 className="text-3xl font-semibold text-emerald-950">Grafik pracy</h1>
           <p className="mt-2 text-emerald-700">Zarządzaj zmianami w wybranym zakresie.</p>
+          {message ? <p className="mt-2 text-sm text-emerald-600">{message}</p> : null}
+          {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
         </div>
 
         <KadryCard className="p-5">
-          <form className="grid gap-4 md:grid-cols-3" onSubmit={handleSubmit}>
+          <div className="grid gap-4 md:grid-cols-3">
             <label className="text-sm font-medium text-emerald-900">
               Lokalizacja
               <select
@@ -127,7 +223,7 @@ export default function GrafikPage() {
                 className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
               />
             </label>
-          </form>
+          </div>
         </KadryCard>
 
         <KadryCard className="p-5">
@@ -184,7 +280,6 @@ export default function GrafikPage() {
               </KadryButton>
             </div>
           </form>
-          {message ? <p className="mt-3 text-sm text-emerald-600">{message}</p> : null}
         </KadryCard>
 
         <KadryCard className="overflow-x-auto p-5">
@@ -221,9 +316,13 @@ export default function GrafikPage() {
                               const start = new Date(shift.start);
                               const end = new Date(shift.end);
                               return (
-                                <div key={shift.id}>
+                                <button
+                                  key={shift.id}
+                                  className="block text-left text-sm text-emerald-800 hover:text-emerald-600"
+                                  onClick={() => openEdit(shift)}
+                                >
                                   {formatTime(start)}–{formatTime(end)}
-                                </div>
+                                </button>
                               );
                             })}
                       </td>
@@ -235,6 +334,95 @@ export default function GrafikPage() {
           </table>
         </KadryCard>
       </div>
+
+      {editingShift ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-emerald-950">Edytuj zmianę</h2>
+              <button className="text-sm text-emerald-600" onClick={closeEdit}>
+                Zamknij
+              </button>
+            </div>
+            <form className="mt-4 flex flex-col gap-4" onSubmit={handleUpdate}>
+              <label className="text-sm font-medium text-emerald-900">
+                Pracownik
+                <select
+                  value={editData.employeeId}
+                  onChange={handleEditChange("employeeId")}
+                  className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                  required
+                >
+                  {employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.firstName} {employee.lastName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-emerald-900">
+                Lokalizacja
+                <select
+                  value={editData.locationId}
+                  onChange={handleEditChange("locationId")}
+                  className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                  required
+                >
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-emerald-900">
+                Data
+                <input
+                  type="date"
+                  value={editData.date}
+                  onChange={handleEditChange("date")}
+                  className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                  required
+                />
+              </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="text-sm font-medium text-emerald-900">
+                  Start
+                  <input
+                    type="time"
+                    value={editData.startTime}
+                    onChange={handleEditChange("startTime")}
+                    className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                    required
+                  />
+                </label>
+                <label className="text-sm font-medium text-emerald-900">
+                  Koniec
+                  <input
+                    type="time"
+                    value={editData.endTime}
+                    onChange={handleEditChange("endTime")}
+                    className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                    required
+                  />
+                </label>
+              </div>
+              {error ? <p className="text-sm text-red-600">{error}</p> : null}
+              <div className="flex flex-wrap justify-between gap-3">
+                <KadryButton type="button" variant="ghost" onClick={handleDelete}>
+                  Usuń zmianę
+                </KadryButton>
+                <div className="flex gap-3">
+                  <KadryButton type="button" variant="ghost" onClick={closeEdit}>
+                    Anuluj
+                  </KadryButton>
+                  <KadryButton type="submit">Zapisz</KadryButton>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </Section>
   );
 }

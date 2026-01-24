@@ -1,3 +1,5 @@
+import { API_URL } from "./api-config";
+
 export type ApiUser = {
   id: string;
   email: string;
@@ -47,8 +49,6 @@ export type TimeEntry = {
   employee?: Employee;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-
 const getToken = () => {
   if (typeof window === "undefined") {
     return null;
@@ -78,10 +78,18 @@ const request = async <T>(path: string, options: RequestInit = {}): Promise<T> =
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("Brak połączenia z serwerem. Spróbuj ponownie za chwilę.");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const message = await response.text();
@@ -136,6 +144,17 @@ export const api = {
       body: JSON.stringify(data),
     });
   },
+  updateLocation(id: string, data: { name?: string; address?: string }) {
+    return request<Location>(`/locations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+  deleteLocation(id: string) {
+    return request<{ success: boolean }>(`/locations/${id}`, {
+      method: "DELETE",
+    });
+  },
   getEmployees() {
     return request<Employee[]>("/employees");
   },
@@ -143,6 +162,20 @@ export const api = {
     return request<Employee>("/employees", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+  updateEmployee(
+    id: string,
+    data: { firstName?: string; lastName?: string; employeeCode?: string; email?: string }
+  ) {
+    return request<Employee>(`/employees/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+  deleteEmployee(id: string) {
+    return request<{ success: boolean }>(`/employees/${id}`, {
+      method: "DELETE",
     });
   },
   getShifts(params: { from?: string; to?: string; locationId?: string }) {
@@ -165,11 +198,38 @@ export const api = {
       body: JSON.stringify(data),
     });
   },
+  updateShift(
+    id: string,
+    data: {
+      employeeId?: string;
+      locationId?: string;
+      start?: string;
+      end?: string;
+      published?: boolean;
+      status?: string;
+    }
+  ) {
+    return request<Shift>(`/shifts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+  deleteShift(id: string) {
+    return request<{ success: boolean }>(`/shifts/${id}`, {
+      method: "DELETE",
+    });
+  },
   clockIn() {
     return request<TimeEntry>("/rcp/clock-in", { method: "POST" });
   },
   clockOut() {
     return request<TimeEntry>("/rcp/clock-out", { method: "POST" });
+  },
+  createManualEntry(data: { employeeId: string; clockIn: string; clockOut?: string }) {
+    return request<TimeEntry>("/rcp/manual", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
   getTimeEntries(params: { from?: string; to?: string; employeeId?: string }) {
     const query = new URLSearchParams();

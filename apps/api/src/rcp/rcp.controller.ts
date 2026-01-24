@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AuthUser } from "../auth/auth.types";
 import { RcpService } from "./rcp.service";
 import { ListEntriesDto } from "./dto/list-entries.dto";
+import { ManualEntryDto } from "./dto/manual-entry.dto";
 
 @Controller("rcp")
 @UseGuards(JwtAuthGuard)
@@ -22,5 +23,10 @@ export class RcpController {
   @Get("entries")
   list(@Req() req: { user: AuthUser }, @Query() query: ListEntriesDto) {
     return this.rcpService.list(req.user.organizationId, query);
+  }
+
+  @Post("manual")
+  manual(@Req() req: { user: AuthUser }, @Body() body: ManualEntryDto) {
+    return this.rcpService.manual(req.user.organizationId, req.user.role, body);
   }
 }
