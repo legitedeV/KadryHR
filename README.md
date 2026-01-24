@@ -46,3 +46,4 @@ Aplikacje będą dostępne pod adresami:
 - `pnpm build:web` – build aplikacji web
 - `pnpm build:api` – build API
 - `pnpm lint` – lint frontend
+
