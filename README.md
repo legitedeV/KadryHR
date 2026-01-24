@@ -1,1 +1,0 @@
-# KadryHR v2
