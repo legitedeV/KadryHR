@@ -10,6 +10,8 @@ COPY packages/config/package.json packages/config/package.json
 RUN pnpm install --filter @kadryhr/web... --filter @kadryhr/ui... --frozen-lockfile || pnpm install --filter @kadryhr/web... --filter @kadryhr/ui...
 
 FROM base AS build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY package.json pnpm-workspace.yaml ./
 COPY tsconfig.base.json ./tsconfig.base.json
 COPY apps/web apps/web
@@ -24,6 +26,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app/apps/web
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY --from=build /app/apps/web/.next ./.next
 COPY --from=build /app/apps/web/package.json ./package.json
 COPY --from=build /app/node_modules /app/node_modules
