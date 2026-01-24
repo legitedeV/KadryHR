@@ -7,6 +7,117 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  OWNER
+  MANAGER
+  EMPLOYEE
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  locations  Location[]
+  employees  Employee[]
+  shifts     Shift[]
+  timeEntries TimeEntry[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           UserRole @default(EMPLOYEE)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  employee     Employee?
+
+  @@index([organizationId])
+}
+
+model Location {
+  id             String   @id @default(cuid())
+  name           String
+  address        String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  shifts       Shift[]
+
+  @@index([organizationId])
+}
+
+model Employee {
+  id             String   @id @default(cuid())
+  firstName      String
+  lastName       String
+  employeeCode   String?
+  email          String?
+  organizationId String
+  userId         String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User?       @relation(fields: [userId], references: [id])
+  shifts       Shift[]
+  timeEntries  TimeEntry[]
+
+  @@unique([organizationId, employeeCode])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Shift {
+  id             String   @id @default(cuid())
+  organizationId String
+  locationId     String
+  employeeId     String
+  start          DateTime
+  end            DateTime
+  published      Boolean  @default(false)
+  status         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  location     Location    @relation(fields: [locationId], references: [id])
+  employee     Employee    @relation(fields: [employeeId], references: [id])
+
+  @@index([organizationId, start])
+  @@index([employeeId])
+  @@index([locationId])
+}
+
+model TimeEntry {
+  id             String   @id @default(cuid())
+  organizationId String
+  employeeId     String
+  clockIn        DateTime
+  clockOut       DateTime?
+  source         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  employee     Employee    @relation(fields: [employeeId], references: [id])
+
+  @@index([organizationId, clockIn])
+  @@index([employeeId])
+}
+
 model Lead {
   id             String   @id @default(cuid())
   createdAt      DateTime @default(now())
@@ -19,4 +130,5 @@ model Lead {
   source         String?
   userAgent      String?
   ip             String?
+  organizationId String?
 }
