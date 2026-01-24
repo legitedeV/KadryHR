@@ -44,7 +44,11 @@ services:
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://localhost:9000/minio/health/live >/dev/null || curl -f http://localhost:9000/minio/health/live >/dev/null',
+        ]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -92,4 +96,3 @@ volumes:
   postgres-data:
   redis-data:
   minio-data:
-
