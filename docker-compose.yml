@@ -17,13 +17,14 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: kadryhr-api
     environment:
-      PORT: ${API_PORT:-4000}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://kadryhr:kadryhr@kadryhr-postgres:5432/kadryhr}
-      JWT_SECRET: ${JWT_SECRET:-change-me}
+      PORT: 4000
+      DATABASE_URL: postgresql://kadryhr:kadryhr@kadryhr-postgres:5432/kadryhr
+      JWT_SECRET: change-me
     depends_on:
       - kadryhr-postgres
     ports:
       - "127.0.0.1:4000:4000"
+
 
   kadryhr-web:
     build:
