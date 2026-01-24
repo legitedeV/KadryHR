@@ -1,0 +1,12 @@
+{
+  "name": "kadryhr",
+  "private": true,
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "dev:web": "pnpm --filter @kadryhr/web dev",
+    "dev:api": "pnpm --filter @kadryhr/api dev",
+    "build:web": "pnpm --filter @kadryhr/web build",
+    "build:api": "pnpm --filter @kadryhr/api build",
+    "lint": "pnpm --filter @kadryhr/web lint"
+  }
+}
