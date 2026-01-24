@@ -187,14 +187,14 @@ http://localhost:3000/docs
 
 ### Port Already in Use
 
-If ports 3000, 5173, 5432, 6379, 9000, or 9001 are in use:
+If ports 80, 3000, 5173, 5432, 6379, 9000, or 9001 are in use:
 
 1. **Check running processes**:
    ```bash
    lsof -i :3000  # Check specific port
    ```
 
-2. **Stop conflicting services** or change ports in `.env` and `docker-compose.yml`
+2. **Stop conflicting services** or change ports in `.env` and `docker-compose.yml` (e.g. set `WEB_PORT=8080` if Nginx already uses port 80).
 
 ### Docker Services Not Starting
 
@@ -350,6 +350,20 @@ docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
+### One-command Deploy (Docker Compose)
+
+For VPS deployments, you can use the helper script which builds containers and runs DB migrations:
+
+```bash
+./scripts/deploy.sh
+```
+
+To use a different env file, set `DEPLOY_ENV_FILE`:
+
+```bash
+DEPLOY_ENV_FILE=/path/to/.env ./scripts/deploy.sh
+```
+
 ## Next Steps
 
 - [ ] Set up Google OAuth (optional)
@@ -364,6 +378,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - **Issues**: GitHub Issues
 - **Documentation**: [Feature Matrix](./feature-parity-matrix.md)
+- **Production checklist**: [Production Checklist](./production-checklist.md)
 - **API Docs**: http://localhost:3000/docs
 
 ---

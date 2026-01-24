@@ -150,8 +150,9 @@ class ApiClient {
     });
   }
 
-  async getScheduleShifts(scheduleId: string, params?: Record<string, string>) {
-    const query = new URLSearchParams(params).toString();
+  async getScheduleShifts(scheduleId: string, params?: Record<string, string> | string) {
+    const query =
+      typeof params === 'string' ? params : new URLSearchParams(params).toString();
     return this.request<{ data: unknown[] }>(
       `/api/schedules/${scheduleId}/shifts${query ? `?${query}` : ''}`
     );
