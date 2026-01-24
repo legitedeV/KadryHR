@@ -78,6 +78,59 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   }
 }
 
+export async function optionalAuth(request: FastifyRequest) {
+  const sessionId = request.cookies.sessionId;
+  if (!sessionId) {
+    return;
+  }
+
+  try {
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, sessionId),
+      with: {
+        user: {
+          with: {
+            tenant: true,
+          },
+        },
+      },
+    });
+
+    if (!session || session.expiresAt < new Date()) {
+      return;
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+      with: {
+        tenant: true,
+      },
+    });
+
+    if (!user || !user.tenant) {
+      return;
+    }
+
+    const tenant = user.tenant as Tenant;
+
+    request.user = {
+      id: user.id,
+      tenantId: user.tenantId,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+      },
+    };
+  } catch (error) {
+    console.error('Optional authentication error:', error);
+  }
+}
+
 export function requireAuth(permissions?: string[]) {
   return async function (request: FastifyRequest, reply: FastifyReply) {
     await authenticate(request, reply);

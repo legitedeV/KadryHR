@@ -1,0 +1,43 @@
+name: Create Pull Request
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to open PR from'
+        required: true
+        default: 'feature/infra-auth-ci'
+      title:
+        description: 'PR title'
+        required: true
+        default: 'Infra: OAuth, email recovery, CI/CD, backups, monitoring'
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.PR_GITHUB_TOKEN }}
+          branch: ${{ inputs.branch }}
+          base: main
+          title: ${{ inputs.title }}
+          body: |
+            ## Summary
+            - Google OAuth login + link/unlink accounts
+            - Email-based password recovery
+            - CI/CD workflows with deploy to VPS
+            - Backups for Postgres and MinIO
+            - Monitoring & logging updates
+            - Security hardening & SSL/TLS config
+
+            ## Checklist
+            - [ ] Environment variables configured
+            - [ ] DNS + SSL configured
+            - [ ] Backups scheduled
+            - [ ] Monitoring wired
+
+            ## Screenshots
+            - (attach screenshots from docs/screenshots/<branch>/)

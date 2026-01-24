@@ -10,6 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const googleAuthUrl = `${import.meta.env.VITE_API_BASE ?? ''}/api/auth/google`;
 
   const loginMutation = useMutation({
     mutationFn: () => apiClient.login({ email, password }),
@@ -31,6 +32,26 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full border border-secondary-200"
+              onClick={() => {
+                window.location.href = googleAuthUrl;
+              }}
+            >
+              <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-semibold text-primary-600">
+                G
+              </span>
+              Zaloguj się z Google
+            </Button>
+
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-secondary-200" />
+              <span className="mx-3 text-xs uppercase text-secondary-500">lub</span>
+              <div className="flex-grow border-t border-secondary-200" />
+            </div>
+
             {loginMutation.isError && (
               <div className="bg-error-50 text-error-700 p-3 rounded-md text-sm">
                 {loginMutation.error?.message || 'Logowanie nie powiodło się. Spróbuj ponownie.'}
@@ -62,6 +83,12 @@ export default function LoginPage() {
             >
               Zaloguj się
             </Button>
+
+            <div className="text-center text-sm text-secondary-600">
+              <Link to="/pomoc-logowanie" className="text-primary-600 hover:underline">
+                Nie pamiętasz hasła?
+              </Link>
+            </div>
 
             <div className="text-center text-sm text-secondary-600">
               Nie masz konta?{' '}

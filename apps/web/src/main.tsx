@@ -9,6 +9,8 @@ import RootLayout from './routes/__root';
 import LandingPage from './routes/index';
 import LoginPage from './routes/login';
 import RegisterPage from './routes/register';
+import LoginHelpPage from './routes/pomoc-logowanie';
+import ResetPasswordPage from './routes/reset-hasla';
 import PanelLayout from './routes/panel';
 import DashboardPage from './routes/panel/dashboard';
 import TeamPage from './routes/panel/zespol';
@@ -46,6 +48,18 @@ const registerRoute = createRoute({
   component: RegisterPage,
 });
 
+const loginHelpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pomoc-logowanie',
+  component: LoginHelpPage,
+});
+
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reset-hasla',
+  component: ResetPasswordPage,
+});
+
 const panelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/panel',
@@ -75,6 +89,8 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   registerRoute,
+  loginHelpRoute,
+  resetPasswordRoute,
   panelRoute.addChildren([
     dashboardRoute,
     teamRoute,

@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [orgName, setOrgName] = useState('');
+  const googleAuthUrl = `${import.meta.env.VITE_API_BASE ?? ''}/api/auth/google`;
 
   const registerMutation = useMutation({
     mutationFn: () => apiClient.register({ email, password, name, orgName }),
@@ -33,6 +34,26 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full border border-secondary-200"
+              onClick={() => {
+                window.location.href = googleAuthUrl;
+              }}
+            >
+              <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-semibold text-primary-600">
+                G
+              </span>
+              Kontynuuj z Google
+            </Button>
+
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-secondary-200" />
+              <span className="mx-3 text-xs uppercase text-secondary-500">lub</span>
+              <div className="flex-grow border-t border-secondary-200" />
+            </div>
+
             {registerMutation.isError && (
               <div className="bg-error-50 text-error-700 p-3 rounded-md text-sm">
                 {registerMutation.error?.message || 'Rejestracja nie powiodła się. Spróbuj ponownie.'}

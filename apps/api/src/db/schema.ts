@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, integer, boolean, date, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, integer, boolean, date, pgEnum, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['owner', 'admin', 'manager', 'employee']);
@@ -181,11 +181,28 @@ export const oauthAccounts = pgTable('oauth_accounts', {
   userId: uuid('user_id').references(() => users.id).notNull(),
   provider: oauthProviderEnum('provider').notNull(),
   providerUserId: text('provider_user_id').notNull(),
+  email: text('email'),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
+  lastUsedAt: timestamp('last_used_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  providerUserUnique: uniqueIndex('oauth_accounts_provider_user_unique').on(table.provider, table.providerUserId),
+  userProviderUnique: uniqueIndex('oauth_accounts_user_provider_unique').on(table.userId, table.provider),
+}));
+
+// Password Reset Tokens
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  tokenHash: text('token_hash').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  tokenHashUnique: uniqueIndex('password_reset_tokens_hash_unique').on(table.tokenHash),
+}));
 
 export type Tenant = typeof tenants.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -203,3 +220,4 @@ export type Holiday = typeof holidays.$inferSelect;
 export type Integration = typeof integrations.$inferSelect;
 export type File = typeof files.$inferSelect;
 export type OAuthAccount = typeof oauthAccounts.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

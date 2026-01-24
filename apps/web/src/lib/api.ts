@@ -77,6 +77,20 @@ class ApiClient {
     return this.request<{ user: User & { tenant: Tenant } }>('/api/auth/me');
   }
 
+  async forgotPassword(email: string) {
+    return this.request<{ success: boolean; message: string }>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.request<{ success: boolean }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
   // Dashboard
   async getDashboardStats() {
     return this.request<{

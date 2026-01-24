@@ -61,9 +61,12 @@ REDIS_URL=redis://localhost:6379
 # MinIO (S3-compatible storage)
 MINIO_ENDPOINT=localhost
 MINIO_PORT=9000
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin123
 MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=kadryhr-files
+MINIO_SECRET_KEY=minioadmin123
+MINIO_BUCKET_AVATARS=kadryhr-avatars
+MINIO_BUCKET_FILES=kadryhr-files
 MINIO_USE_SSL=false
 
 # Application
@@ -109,7 +112,7 @@ You should see three containers running:
 
 Access MinIO web console at http://localhost:9001:
 - Username: `minioadmin`
-- Password: `minioadmin`
+- Password: `minioadmin123`
 
 ### 5. Run Database Migrations
 
@@ -333,7 +336,8 @@ For production, update `.env`:
 4. **Docker Compose defaults** (when using the included compose file):
    - `MINIO_ENDPOINT=minio`
    - `MINIO_PORT=9000`
-   - `MINIO_BUCKET=kadryhr-files`
+   - `MINIO_BUCKET_AVATARS=kadryhr-avatars`
+   - `MINIO_BUCKET_FILES=kadryhr-files`
    - `MINIO_USE_SSL=true` (when behind HTTPS)
    - `PORT=3001` and `API_PORT=3001` for the API container
 

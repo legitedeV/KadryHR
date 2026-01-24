@@ -5,7 +5,7 @@ import { positions, tags, schedules, shifts, availability, holidays, integration
 import { requireAuth } from '../middleware/auth.js';
 import { logAudit } from '../lib/audit.js';
 import { eq, and, gte, lte, count } from 'drizzle-orm';
-import { uploadFile, getPresignedUrl, ensureBucket, bucket } from '../lib/minio.js';
+import { uploadFile, getPresignedUrl, buckets } from '../lib/storage.js';
 import { nanoid } from 'nanoid';
 
 export default async function miscRoutes(fastify: FastifyInstance) {
@@ -185,26 +185,29 @@ export default async function miscRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'No file uploaded' });
       }
 
+      if (!data.mimetype.startsWith('image/')) {
+        return reply.code(400).send({ error: 'Invalid file type' });
+      }
+
       const buffer = await data.toBuffer();
       const ext = data.filename.split('.').pop() || 'jpg';
       const key = `avatars/${nanoid()}.${ext}`;
 
-      await ensureBucket();
-      await uploadFile(key, buffer, data.mimetype);
+      await uploadFile('avatars', key, buffer, data.mimetype);
 
       const [file] = await db
         .insert(files)
         .values({
           tenantId: request.user!.tenantId,
           key,
-          bucket,
+          bucket: buckets.avatars,
           mimeType: data.mimetype,
           size: buffer.length,
           uploadedBy: request.user!.id,
         })
         .returning();
 
-      const url = await getPresignedUrl(key);
+      const url = await getPresignedUrl('avatars', key);
       await logAudit(request.user!.tenantId, request.user!.id, 'upload', 'file', file.id);
 
       return reply.send({ data: { id: file.id, url } });
@@ -222,7 +225,8 @@ export default async function miscRoutes(fastify: FastifyInstance) {
     if (!file) {
       return reply.code(404).send({ error: 'File not found' });
     }
-    const url = await getPresignedUrl(file.key);
+    const bucketKey = file.bucket === buckets.avatars ? 'avatars' : 'files';
+    const url = await getPresignedUrl(bucketKey, file.key);
     return reply.send({ data: { url } });
   });
 }
