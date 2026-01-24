@@ -33,6 +33,8 @@ Aplikacje będą dostępne pod adresami:
 - Web: http://localhost:8080
 - API: http://localhost:4000/health
 
+Uwaga: katalog `apps/web/public` jest wymagany przez Dockerfile dla aplikacji web. Zawiera bazowe assety (favicon, robots.txt, site.webmanifest) i jest kopiowany do obrazu podczas budowania kontenera.
+
 ## Deploy (VPS)
 
 Skrypt wdrożeniowy pobiera najnowsze zmiany z `main` i uruchamia kontenery:
@@ -60,4 +62,3 @@ Start usług bez aktualizacji repozytorium:
 - `pnpm build:web` – build aplikacji web
 - `pnpm build:api` – build API
 - `pnpm lint` – lint frontend
-

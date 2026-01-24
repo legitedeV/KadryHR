@@ -1,0 +1,8 @@
+{
+  "name": "KadryHR",
+  "short_name": "KadryHR",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#24a05f",
+  "background_color": "#effaf3"
+}
