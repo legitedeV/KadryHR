@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { shifts, schedules } from '../db/schema.js';
+import { shifts, schedules, type Schedule } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { logAudit } from '../lib/audit.js';
 import { eq, and, gte, lte, or, lt, gt } from 'drizzle-orm';
@@ -150,13 +150,15 @@ export default async function shiftRoutes(fastify: FastifyInstance) {
       }
 
       // Check publish lock
-      if ((existingShift.schedule as any).publishedUntil) {
-        const publishedUntil = new Date((existingShift.schedule as any).publishedUntil);
+      const schedule = existingShift.schedule as Schedule;
+
+      if (schedule.publishedUntil) {
+        const publishedUntil = new Date(schedule.publishedUntil);
         const shiftStart = new Date(body.startTime || existingShift.startTime);
         if (shiftStart <= publishedUntil) {
           return reply.code(400).send({
             error: 'Cannot modify shift in published period',
-            publishedUntil: (existingShift.schedule as any).publishedUntil,
+            publishedUntil: schedule.publishedUntil,
           });
         }
       }
@@ -229,13 +231,15 @@ export default async function shiftRoutes(fastify: FastifyInstance) {
       }
 
       // Check publish lock
-      if ((existingShift.schedule as any).publishedUntil) {
-        const publishedUntil = new Date((existingShift.schedule as any).publishedUntil);
+      const schedule = existingShift.schedule as Schedule;
+
+      if (schedule.publishedUntil) {
+        const publishedUntil = new Date(schedule.publishedUntil);
         const shiftStart = new Date(existingShift.startTime);
         if (shiftStart <= publishedUntil) {
           return reply.code(400).send({
             error: 'Cannot delete shift in published period',
-            publishedUntil: (existingShift.schedule as any).publishedUntil,
+            publishedUntil: schedule.publishedUntil,
           });
         }
       }
