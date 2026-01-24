@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,12 +20,21 @@ if (!connectionString) {
 
 const runMigrations = async () => {
   console.log('Running migrations...');
-  
+
   const client = postgres(connectionString, { max: 1 });
   const db = drizzle(client);
-  
+  const migrationsFolder = resolve(__dirname, './migrations');
+  const journalPath = resolve(migrationsFolder, 'meta', '_journal.json');
+
   try {
-    await migrate(db, { migrationsFolder: resolve(__dirname, './migrations') });
+    if (!existsSync(journalPath)) {
+      console.warn(
+        `No migrations found at ${migrationsFolder}. Run "pnpm --filter @kadryhr/api db:generate" to create them.`
+      );
+      return;
+    }
+
+    await migrate(db, { migrationsFolder });
     console.log('Migrations completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);
