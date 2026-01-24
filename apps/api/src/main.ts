@@ -13,8 +13,9 @@ async function bootstrap() {
     })
   );
 
+  // If we introduce additional KadryHR subdomains (e.g. panel.kadryhr.pl), add them to the allowlist.
   app.enableCors({
-    origin: ["http://localhost:3000", "http://localhost:8080", "https://kadryhr.pl"],
+    origin: ["https://kadryhr.pl", "http://localhost:3000", "http://localhost:8080"],
     credentials: true,
   });
 

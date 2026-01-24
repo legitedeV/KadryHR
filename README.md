@@ -30,8 +30,8 @@ docker compose up --build
 ```
 
 Aplikacje będą dostępne pod adresami:
-- Web: http://localhost:8080
-- API: http://localhost:4000/health
+- Web: https://kadryhr.pl
+- API: https://kadryhr.pl/api/health
 
 Uwaga: katalog `apps/web/public` jest wymagany przez Dockerfile dla aplikacji web. Zawiera bazowe assety (favicon, robots.txt, site.webmanifest) i jest kopiowany do obrazu podczas budowania kontenera.
 
