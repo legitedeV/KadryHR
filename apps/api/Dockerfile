@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+RUN apk add --no-cache openssl1.1-compat
 RUN corepack enable
 
 FROM base AS deps
@@ -20,7 +21,7 @@ COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 RUN pnpm --filter @kadryhr/api prisma:generate
 RUN pnpm --filter @kadryhr/api build
 
-FROM node:20-alpine AS runner
+FROM base AS runner
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
 COPY --from=build /app/apps/api/dist ./dist
