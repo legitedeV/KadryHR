@@ -24,7 +24,7 @@ export function LeadForm({ source }: { source: string }) {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/leads`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? "https://kadryhr.pl/api"}/leads`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

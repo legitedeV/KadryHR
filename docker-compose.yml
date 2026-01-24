@@ -23,21 +23,21 @@ services:
     depends_on:
       - kadryhr-postgres
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
 
   kadryhr-web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://kadryhr-api:4000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://www.kadryhr.pl/ap}
     container_name: kadryhr-web
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://kadryhr-api:4000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://www.kadryhr.pl/api}
     depends_on:
       - kadryhr-api
     ports:
-      - "8080:3000"
+      - "127.0.0.1:3000:3000"
 
 volumes:
   kadryhr-db:
