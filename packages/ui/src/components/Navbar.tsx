@@ -2,6 +2,7 @@ import Link from "next/link";
 import { KadryButton } from "./KadryButton";
 
 const navItems = [
+  { label: "Panel", href: "/panel/dashboard" },
   { label: "Funkcje", href: "/funkcje" },
   { label: "Cennik", href: "/cennik" },
   { label: "Materiały", href: "/materialy" },
