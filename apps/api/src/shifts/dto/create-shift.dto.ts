@@ -3,17 +3,17 @@ import { IsBoolean, IsDateString, IsNotEmpty, IsOptional, IsString } from "class
 export class CreateShiftDto {
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employeeId!: string;
 
   @IsString()
   @IsNotEmpty()
-  locationId: string;
+  locationId!: string;
 
   @IsDateString()
-  start: string;
+  start!: string;
 
   @IsDateString()
-  end: string;
+  end!: string;
 
   @IsOptional()
   @IsBoolean()
