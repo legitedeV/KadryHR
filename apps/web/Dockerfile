@@ -15,6 +15,7 @@ COPY apps/web apps/web
 COPY packages/ui packages/ui
 COPY packages/config packages/config
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 RUN pnpm --filter @kadryhr/web build
 
 FROM node:20-alpine AS runner

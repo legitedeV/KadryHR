@@ -15,6 +15,7 @@ COPY apps/api apps/api
 COPY packages/ui packages/ui
 COPY packages/config packages/config
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 RUN pnpm --filter @kadryhr/api prisma:generate
 RUN pnpm --filter @kadryhr/api build
 
