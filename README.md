@@ -33,6 +33,20 @@ Aplikacje będą dostępne pod adresami:
 - Web: http://localhost:8080
 - API: http://localhost:4000/health
 
+## Deploy (VPS)
+
+Skrypt wdrożeniowy pobiera najnowsze zmiany z `main` i uruchamia kontenery:
+
+```bash
+./infra/deploy/deploy.sh
+```
+
+Start usług bez aktualizacji repozytorium:
+
+```bash
+./infra/deploy/start.sh
+```
+
 ## Struktura repozytorium
 
 - `apps/web` – Next.js (marketing + przyszły panel)
