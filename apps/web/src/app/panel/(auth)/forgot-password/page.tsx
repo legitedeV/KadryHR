@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
                 kontakt@kadryhr.pl
               </a>
             </p>
-            <Link href="/panel/login" className="mt-4 inline-block text-sm font-medium text-emerald-600">
+            <Link href="/auth/login" className="mt-4 inline-block text-sm font-medium text-emerald-600">
               Wróć do logowania
             </Link>
           </KadryCard>

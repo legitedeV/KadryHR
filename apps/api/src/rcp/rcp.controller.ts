@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AuthUser } from "../auth/auth.types";
 import { RcpService } from "./rcp.service";
 import { ListEntriesDto } from "./dto/list-entries.dto";
 import { ManualEntryDto } from "./dto/manual-entry.dto";
+import { CurrentOrganization, CurrentUser } from "../auth/auth.decorators";
 
 @Controller("rcp")
 @UseGuards(JwtAuthGuard)
@@ -11,22 +12,22 @@ export class RcpController {
   constructor(private readonly rcpService: RcpService) {}
 
   @Post("clock-in")
-  clockIn(@Req() req: { user: AuthUser }) {
-    return this.rcpService.clockIn(req.user.userId, req.user.organizationId);
+  clockIn(@CurrentUser() user: AuthUser) {
+    return this.rcpService.clockIn(user.organizationId, user.userId);
   }
 
   @Post("clock-out")
-  clockOut(@Req() req: { user: AuthUser }) {
-    return this.rcpService.clockOut(req.user.userId, req.user.organizationId);
+  clockOut(@CurrentUser() user: AuthUser) {
+    return this.rcpService.clockOut(user.organizationId, user.userId);
   }
 
-  @Get("entries")
-  list(@Req() req: { user: AuthUser }, @Query() query: ListEntriesDto) {
-    return this.rcpService.list(req.user.organizationId, query);
+  @Get()
+  list(@CurrentOrganization() organizationId: string, @Query() query: ListEntriesDto) {
+    return this.rcpService.list(organizationId, query);
   }
 
   @Post("manual")
-  manual(@Req() req: { user: AuthUser }, @Body() body: ManualEntryDto) {
-    return this.rcpService.manual(req.user.organizationId, req.user.role, body);
+  manual(@CurrentUser() user: AuthUser, @Body() body: ManualEntryDto) {
+    return this.rcpService.manual(user.organizationId, user.role, body);
   }
 }
