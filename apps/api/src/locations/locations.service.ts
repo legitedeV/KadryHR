@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateLocationDto } from "./dto/create-location.dto";
 import { UpdateLocationDto } from "./dto/update-location.dto";
-import { UserRole } from "@prisma/client";
+import { MembershipRole } from "@prisma/client";
 
 @Injectable()
 export class LocationsService {
@@ -15,18 +15,21 @@ export class LocationsService {
     });
   }
 
-  async create(organizationId: string, role: UserRole, data: CreateLocationDto) {
+  async create(organizationId: string, role: MembershipRole, data: CreateLocationDto) {
     this.ensureManager(role);
     return this.prisma.location.create({
       data: {
         name: data.name,
         address: data.address ?? null,
+        city: data.city ?? null,
+        code: data.code ?? null,
+        timezone: data.timezone ?? null,
         organizationId,
       },
     });
   }
 
-  async update(organizationId: string, role: UserRole, id: string, data: UpdateLocationDto) {
+  async update(organizationId: string, role: MembershipRole, id: string, data: UpdateLocationDto) {
     this.ensureManager(role);
     const location = await this.prisma.location.findFirst({
       where: { id, organizationId },
@@ -37,11 +40,17 @@ export class LocationsService {
 
     return this.prisma.location.update({
       where: { id },
-      data,
+      data: {
+        name: data.name ?? undefined,
+        address: data.address ?? undefined,
+        city: data.city ?? undefined,
+        code: data.code ?? undefined,
+        timezone: data.timezone ?? undefined,
+      },
     });
   }
 
-  async remove(organizationId: string, role: UserRole, id: string) {
+  async remove(organizationId: string, role: MembershipRole, id: string) {
     this.ensureManager(role);
     const location = await this.prisma.location.findFirst({
       where: { id, organizationId },
@@ -54,8 +63,8 @@ export class LocationsService {
     return { success: true };
   }
 
-  private ensureManager(role: UserRole) {
-    if (role === UserRole.EMPLOYEE) {
+  private ensureManager(role: MembershipRole) {
+    if (role === MembershipRole.EMPLOYEE) {
       throw new ForbiddenException("Insufficient permissions");
     }
   }

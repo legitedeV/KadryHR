@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateEmployeeDto } from "./dto/create-employee.dto";
 import { UpdateEmployeeDto } from "./dto/update-employee.dto";
-import { UserRole } from "@prisma/client";
+import { MembershipRole } from "@prisma/client";
 
 @Injectable()
 export class EmployeesService {
@@ -15,15 +15,15 @@ export class EmployeesService {
     });
   }
 
-  async create(organizationId: string, role: UserRole, data: CreateEmployeeDto) {
+  async create(organizationId: string, role: MembershipRole, data: CreateEmployeeDto) {
     this.ensureManager(role);
 
-    if (data.userId) {
-      const user = await this.prisma.user.findFirst({
-        where: { id: data.userId, organizationId },
+    if (data.locationId) {
+      const location = await this.prisma.location.findFirst({
+        where: { id: data.locationId, organizationId },
       });
-      if (!user) {
-        throw new NotFoundException("User not found in organization");
+      if (!location) {
+        throw new NotFoundException("Location not found in organization");
       }
     }
 
@@ -31,15 +31,17 @@ export class EmployeesService {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        employeeCode: data.employeeCode ?? null,
+        externalCode: data.externalCode ?? null,
         email: data.email ?? null,
+        phone: data.phone ?? null,
+        employmentType: data.employmentType,
         organizationId,
-        userId: data.userId ?? null,
+        locationId: data.locationId ?? null,
       },
     });
   }
 
-  async update(organizationId: string, role: UserRole, id: string, data: UpdateEmployeeDto) {
+  async update(organizationId: string, role: MembershipRole, id: string, data: UpdateEmployeeDto) {
     this.ensureManager(role);
 
     const employee = await this.prisma.employee.findFirst({
@@ -49,12 +51,12 @@ export class EmployeesService {
       throw new NotFoundException("Employee not found");
     }
 
-    if (data.userId) {
-      const user = await this.prisma.user.findFirst({
-        where: { id: data.userId, organizationId },
+    if (data.locationId) {
+      const location = await this.prisma.location.findFirst({
+        where: { id: data.locationId, organizationId },
       });
-      if (!user) {
-        throw new NotFoundException("User not found in organization");
+      if (!location) {
+        throw new NotFoundException("Location not found in organization");
       }
     }
 
@@ -63,14 +65,17 @@ export class EmployeesService {
       data: {
         firstName: data.firstName ?? undefined,
         lastName: data.lastName ?? undefined,
-        employeeCode: data.employeeCode ?? undefined,
+        externalCode: data.externalCode ?? undefined,
         email: data.email ?? undefined,
-        userId: data.userId === null ? null : data.userId ?? undefined,
+        phone: data.phone ?? undefined,
+        locationId: data.locationId === null ? null : data.locationId ?? undefined,
+        employmentType: data.employmentType ?? undefined,
+        active: data.active ?? undefined,
       },
     });
   }
 
-  async remove(organizationId: string, role: UserRole, id: string) {
+  async remove(organizationId: string, role: MembershipRole, id: string) {
     this.ensureManager(role);
 
     const employee = await this.prisma.employee.findFirst({
@@ -84,8 +89,8 @@ export class EmployeesService {
     return { success: true };
   }
 
-  private ensureManager(role: UserRole) {
-    if (role === UserRole.EMPLOYEE) {
+  private ensureManager(role: MembershipRole) {
+    if (role === MembershipRole.EMPLOYEE) {
       throw new ForbiddenException("Insufficient permissions");
     }
   }

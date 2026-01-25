@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { UserRole } from "@prisma/client";
+import { MembershipRole, TimeEntrySource, TimeEntryType } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ListEntriesDto } from "./dto/list-entries.dto";
 import { ManualEntryDto } from "./dto/manual-entry.dto";
@@ -9,49 +9,55 @@ export class RcpService {
   constructor(private readonly prisma: PrismaService) {}
 
   async clockIn(userId: string, organizationId: string) {
-    const employee = await this.prisma.employee.findFirst({
-      where: { userId, organizationId },
-    });
+    const employee = await this.findEmployeeForUser(userId, organizationId);
     if (!employee) {
       throw new BadRequestException("No employee linked to this user");
     }
 
-    const existing = await this.prisma.timeEntry.findFirst({
-      where: { employeeId: employee.id, organizationId, clockOut: null },
+    const lastEntry = await this.prisma.timeEntry.findFirst({
+      where: { employeeId: employee.id, organizationId },
+      orderBy: { timestamp: "desc" },
     });
-    if (existing) {
-      throw new BadRequestException("Open time entry already exists");
+    if (lastEntry && lastEntry.type !== TimeEntryType.CLOCK_OUT) {
+      throw new BadRequestException("Employee is already clocked in");
     }
 
     return this.prisma.timeEntry.create({
       data: {
         organizationId,
         employeeId: employee.id,
-        clockIn: new Date(),
-        source: "web-panel",
+        type: TimeEntryType.CLOCK_IN,
+        timestamp: new Date(),
+        source: TimeEntrySource.WEB,
       },
     });
   }
 
   async clockOut(userId: string, organizationId: string) {
-    const employee = await this.prisma.employee.findFirst({
-      where: { userId, organizationId },
-    });
+    const employee = await this.findEmployeeForUser(userId, organizationId);
     if (!employee) {
       throw new BadRequestException("No employee linked to this user");
     }
 
-    const entry = await this.prisma.timeEntry.findFirst({
-      where: { employeeId: employee.id, organizationId, clockOut: null },
-      orderBy: { clockIn: "desc" },
+    const lastEntry = await this.prisma.timeEntry.findFirst({
+      where: { employeeId: employee.id, organizationId },
+      orderBy: { timestamp: "desc" },
     });
-    if (!entry) {
+    if (!lastEntry || lastEntry.type === TimeEntryType.CLOCK_OUT) {
       throw new NotFoundException("No open time entry");
     }
+    if (lastEntry.type === TimeEntryType.BREAK_START) {
+      throw new BadRequestException("Cannot clock out during break");
+    }
 
-    return this.prisma.timeEntry.update({
-      where: { id: entry.id },
-      data: { clockOut: new Date() },
+    return this.prisma.timeEntry.create({
+      data: {
+        organizationId,
+        employeeId: employee.id,
+        type: TimeEntryType.CLOCK_OUT,
+        timestamp: new Date(),
+        source: TimeEntrySource.WEB,
+      },
     });
   }
 
@@ -59,7 +65,7 @@ export class RcpService {
     const where: {
       organizationId: string;
       employeeId?: string;
-      clockIn?: { gte?: Date; lte?: Date };
+      timestamp?: { gte?: Date; lte?: Date };
     } = {
       organizationId,
     };
@@ -69,23 +75,23 @@ export class RcpService {
     }
 
     if (filters.from || filters.to) {
-      where.clockIn = {};
+      where.timestamp = {};
       if (filters.from) {
-        where.clockIn.gte = new Date(filters.from);
+        where.timestamp.gte = new Date(filters.from);
       }
       if (filters.to) {
-        where.clockIn.lte = new Date(filters.to);
+        where.timestamp.lte = new Date(filters.to);
       }
     }
 
     return this.prisma.timeEntry.findMany({
       where,
       include: { employee: true },
-      orderBy: { clockIn: "desc" },
+      orderBy: { timestamp: "desc" },
     });
   }
 
-  async manual(organizationId: string, role: UserRole, data: ManualEntryDto) {
+  async manual(organizationId: string, role: MembershipRole, data: ManualEntryDto) {
     this.ensureManager(role);
 
     const employee = await this.prisma.employee.findFirst({
@@ -95,36 +101,51 @@ export class RcpService {
       throw new BadRequestException("Employee not found in organization");
     }
 
-    const clockIn = new Date(data.clockIn);
-    const clockOut = data.clockOut ? new Date(data.clockOut) : null;
+    const timestamp = new Date(data.timestamp);
+    const lastEntry = await this.prisma.timeEntry.findFirst({
+      where: { employeeId: employee.id, organizationId },
+      orderBy: { timestamp: "desc" },
+    });
 
-    if (clockOut && clockOut <= clockIn) {
-      throw new BadRequestException("Clock-out must be after clock-in");
+    if (data.type === TimeEntryType.CLOCK_IN && lastEntry && lastEntry.type !== TimeEntryType.CLOCK_OUT) {
+      throw new BadRequestException("Employee is already clocked in");
     }
 
-    if (!clockOut) {
-      const existing = await this.prisma.timeEntry.findFirst({
-        where: { employeeId: employee.id, organizationId, clockOut: null },
-      });
-      if (existing) {
-        throw new BadRequestException("Open time entry already exists");
-      }
+    if (
+      data.type === TimeEntryType.CLOCK_OUT &&
+      (!lastEntry || lastEntry.type === TimeEntryType.CLOCK_OUT)
+    ) {
+      throw new BadRequestException("Cannot clock out without an open shift");
     }
 
     return this.prisma.timeEntry.create({
       data: {
         organizationId,
         employeeId: employee.id,
-        clockIn,
-        clockOut,
-        source: "manual",
+        type: data.type,
+        timestamp,
+        source: data.source ?? TimeEntrySource.WEB,
       },
     });
   }
 
-  private ensureManager(role: UserRole) {
-    if (role === UserRole.EMPLOYEE) {
+  private ensureManager(role: MembershipRole) {
+    if (role === MembershipRole.EMPLOYEE) {
       throw new ForbiddenException("Insufficient permissions");
     }
+  }
+
+  private async findEmployeeForUser(userId: string, organizationId: string) {
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_organizationId: { userId, organizationId } },
+      include: { user: { select: { email: true } } },
+    });
+    if (!membership?.user.email) {
+      return null;
+    }
+
+    return this.prisma.employee.findFirst({
+      where: { email: membership.user.email, organizationId, active: true },
+    });
   }
 }

@@ -54,8 +54,9 @@ export class ShiftsService {
         locationId: data.locationId,
         start: new Date(data.start),
         end: new Date(data.end),
-        published: data.published ?? false,
-        status: data.status ?? null,
+        breakMinutes: data.breakMinutes ?? 0,
+        note: data.note ?? null,
+        status: data.status ?? undefined,
       },
       include: {
         employee: true,
@@ -97,7 +98,8 @@ export class ShiftsService {
         locationId: data.locationId ?? undefined,
         start: data.start ? new Date(data.start) : undefined,
         end: data.end ? new Date(data.end) : undefined,
-        published: data.published ?? undefined,
+        breakMinutes: data.breakMinutes ?? undefined,
+        note: data.note ?? undefined,
         status: data.status ?? undefined,
       },
       include: {
