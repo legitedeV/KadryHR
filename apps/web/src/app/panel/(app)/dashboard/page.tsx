@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge, KadryCard, Section } from "@kadryhr/ui";
 import { api, Employee, Location, Shift, TimeEntry } from "@/lib/api";
+import { useAuth } from "../auth-provider";
 
 export default function DashboardPage() {
-  const [organizationName, setOrganizationName] = useState("...");
+  const { currentOrganization } = useAuth();
   const [locations, setLocations] = useState<Location[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -15,10 +16,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const me = await api.getMe();
-        if ("organization" in me) {
-          setOrganizationName(me.organization.name);
-        }
         const [locationsData, employeesData] = await Promise.all([
           api.getLocations(),
           api.getEmployees(),
@@ -55,7 +52,9 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6">
         <div>
           <Badge>Organizacja</Badge>
-          <h1 className="mt-2 text-3xl font-semibold text-emerald-950">{organizationName}</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-emerald-950">
+            {currentOrganization?.name ?? "..."}
+          </h1>
           <p className="mt-2 text-emerald-700">Szybki podgląd stanu Twojej organizacji.</p>
           {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
         </div>

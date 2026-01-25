@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import { KadryButton } from "@kadryhr/ui";
-import { api, ApiOrganization, ApiUser } from "@/lib/api";
+import { api } from "@/lib/api";
+import { AuthProvider, useAuth } from "./auth-provider";
 
 const navItems = [
   { label: "Dashboard", href: "/panel/dashboard" },
@@ -15,37 +15,10 @@ const navItems = [
   { label: "RCP", href: "/panel/rcp" },
 ];
 
-export default function PanelLayout({ children }: { children: ReactNode }) {
+function PanelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<ApiUser | null>(null);
-  const [organization, setOrganization] = useState<ApiOrganization | null>(null);
-
-  useEffect(() => {
-    if (!api.getToken()) {
-      router.replace("/panel/login");
-      return;
-    }
-
-    const load = async () => {
-      try {
-        const me = await api.getMe();
-        setUser(me.user);
-        setOrganization(me.organization);
-        setReady(true);
-      } catch {
-        api.clearToken();
-        router.replace("/panel/login");
-      }
-    };
-
-    void load();
-  }, [router]);
-
-  if (!ready) {
-    return null;
-  }
+  const { user, currentOrganization } = useAuth();
 
   return (
     <div className="min-h-screen bg-emerald-50">
@@ -55,9 +28,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <Link href="/" className="text-lg font-semibold text-emerald-950">
               KadryHR Panel
             </Link>
-            {organization ? (
+            {currentOrganization ? (
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                {organization.name}
+                {currentOrganization.name}
               </span>
             ) : null}
           </div>
@@ -76,17 +49,15 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-3">
-            {user ? (
-              <span className="text-sm text-emerald-700">
-                {user.firstName} {user.lastName}
-              </span>
-            ) : null}
+            <span className="text-sm text-emerald-700">
+              {user.firstName} {user.lastName}
+            </span>
             <KadryButton
               variant="ghost"
               size="sm"
               onClick={() => {
                 api.clearToken();
-                router.replace("/panel/login");
+                router.replace("/auth/login");
               }}
             >
               Wyloguj
@@ -96,5 +67,13 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       </header>
       <main className="mx-auto w-full max-w-6xl px-6 py-8">{children}</main>
     </div>
+  );
+}
+
+export default function PanelLayout({ children }: { children: ReactNode }) {
+  return (
+    <AuthProvider>
+      <PanelShell>{children}</PanelShell>
+    </AuthProvider>
   );
 }

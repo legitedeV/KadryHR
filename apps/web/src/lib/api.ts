@@ -5,7 +5,7 @@ export type ApiUser = {
   email: string;
   firstName: string;
   lastName: string;
-  role: "OWNER" | "MANAGER" | "EMPLOYEE";
+  role: "OWNER" | "ADMIN" | "MANAGER" | "EMPLOYEE";
 };
 
 export type ApiOrganization = {
@@ -13,6 +13,17 @@ export type ApiOrganization = {
   name: string;
   email?: string | null;
   phone?: string | null;
+  slug?: string | null;
+  timezone?: string | null;
+  weekStart?: string | null;
+  locale?: string | null;
+  industry?: string | null;
+};
+
+export type ApiMembership = {
+  id: string;
+  role: ApiUser["role"];
+  organization: ApiOrganization;
 };
 
 export type Location = {
@@ -108,11 +119,14 @@ export const api = {
   setToken,
   clearToken,
   async login(email: string, password: string) {
-    const response = await request<{ token: string; user: ApiUser }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    setToken(response.token);
+    const response = await request<{ accessToken: string; user: ApiUser; organization: ApiOrganization }>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      }
+    );
+    setToken(response.accessToken);
     return response;
   },
   async register(payload: {
@@ -122,18 +136,19 @@ export const api = {
     firstName: string;
     lastName: string;
   }) {
-    const response = await request<{ token: string; user: ApiUser; organization: ApiOrganization }>(
-      "/auth/register",
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }
-    );
-    setToken(response.token);
+    const response = await request<{
+      accessToken: string;
+      user: ApiUser;
+      organization: ApiOrganization;
+    }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    setToken(response.accessToken);
     return response;
   },
   getMe() {
-    return request<{ user: ApiUser; organization: ApiOrganization }>("/auth/me");
+    return request<{ user: ApiUser; memberships: ApiMembership[]; currentOrganizationId: string }>("/auth/me");
   },
   getLocations() {
     return request<Location[]>("/locations");
@@ -145,13 +160,13 @@ export const api = {
     });
   },
   updateLocation(id: string, data: { name?: string; address?: string }) {
-    return request<Location>(`/locations/${id}`, {
+    return request<Location>(`/locations/${id}` as const, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
   },
   deleteLocation(id: string) {
-    return request<{ success: boolean }>(`/locations/${id}`, {
+    return request<{ success: boolean }>(`/locations/${id}` as const, {
       method: "DELETE",
     });
   },
@@ -168,13 +183,13 @@ export const api = {
     id: string,
     data: { firstName?: string; lastName?: string; employeeCode?: string; email?: string }
   ) {
-    return request<Employee>(`/employees/${id}`, {
+    return request<Employee>(`/employees/${id}` as const, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
   },
   deleteEmployee(id: string) {
-    return request<{ success: boolean }>(`/employees/${id}`, {
+    return request<{ success: boolean }>(`/employees/${id}` as const, {
       method: "DELETE",
     });
   },
@@ -184,7 +199,7 @@ export const api = {
     if (params.to) query.set("to", params.to);
     if (params.locationId) query.set("locationId", params.locationId);
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return request<Shift[]>(`/shifts${suffix}`);
+    return request<Shift[]>(`/shifts${suffix}` as const);
   },
   createShift(data: {
     employeeId: string;
@@ -200,35 +215,16 @@ export const api = {
   },
   updateShift(
     id: string,
-    data: {
-      employeeId?: string;
-      locationId?: string;
-      start?: string;
-      end?: string;
-      published?: boolean;
-      status?: string;
-    }
+    data: { start?: string; end?: string; employeeId?: string; locationId?: string; published?: boolean }
   ) {
-    return request<Shift>(`/shifts/${id}`, {
+    return request<Shift>(`/shifts/${id}` as const, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
   },
   deleteShift(id: string) {
-    return request<{ success: boolean }>(`/shifts/${id}`, {
+    return request<{ success: boolean }>(`/shifts/${id}` as const, {
       method: "DELETE",
-    });
-  },
-  clockIn() {
-    return request<TimeEntry>("/rcp/clock-in", { method: "POST" });
-  },
-  clockOut() {
-    return request<TimeEntry>("/rcp/clock-out", { method: "POST" });
-  },
-  createManualEntry(data: { employeeId: string; clockIn: string; clockOut?: string }) {
-    return request<TimeEntry>("/rcp/manual", {
-      method: "POST",
-      body: JSON.stringify(data),
     });
   },
   getTimeEntries(params: { from?: string; to?: string; employeeId?: string }) {
@@ -237,25 +233,22 @@ export const api = {
     if (params.to) query.set("to", params.to);
     if (params.employeeId) query.set("employeeId", params.employeeId);
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return request<TimeEntry[]>(`/rcp/entries${suffix}`);
+    return request<TimeEntry[]>(`/rcp${suffix}` as const);
   },
-  getTimesheet(params: { from?: string; to?: string; employeeId?: string }) {
-    const query = new URLSearchParams();
-    if (params.from) query.set("from", params.from);
-    if (params.to) query.set("to", params.to);
-    if (params.employeeId) query.set("employeeId", params.employeeId);
-    const suffix = query.toString() ? `?${query.toString()}` : "";
-    return request<{
-      totalHours: number;
-      totalEntries: number;
-      entries: Array<{
-        id: string;
-        employeeId: string;
-        employeeName: string;
-        clockIn: string;
-        clockOut: string;
-        durationHours: number;
-      }>;
-    }>(`/reports/timesheets${suffix}`);
+  clockIn() {
+    return request<TimeEntry>("/rcp/clock-in", {
+      method: "POST",
+    });
+  },
+  clockOut() {
+    return request<TimeEntry>("/rcp/clock-out", {
+      method: "POST",
+    });
+  },
+  manualEntry(data: { employeeId: string; clockIn: string; clockOut: string }) {
+    return request<TimeEntry>("/rcp/manual", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 };
