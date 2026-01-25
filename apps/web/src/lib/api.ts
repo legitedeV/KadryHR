@@ -26,6 +26,13 @@ export type ApiMembership = {
   organization: ApiOrganization;
 };
 
+export type OrganizationSummary = {
+  locationsCount: number;
+  employeesCount: number;
+  shiftsLast7DaysCount: number;
+  openTimeAnomaliesCount: number;
+};
+
 export type Location = {
   id: string;
   name: string;
@@ -170,6 +177,18 @@ export const api = {
   },
   getMe() {
     return request<{ user: ApiUser; memberships: ApiMembership[]; currentOrganizationId: string }>("/auth/me");
+  },
+  switchOrganization(organizationId: string) {
+    return request<{ accessToken: string }>("/auth/switch-organization", {
+      method: "POST",
+      body: JSON.stringify({ organizationId }),
+    }).then((response) => {
+      setToken(response.accessToken);
+      return response;
+    });
+  },
+  getOrganizationSummary() {
+    return request<OrganizationSummary>("/organizations/current/summary");
   },
   getLocations() {
     return request<Location[]>("/locations");

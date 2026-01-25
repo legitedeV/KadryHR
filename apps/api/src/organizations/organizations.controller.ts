@@ -18,4 +18,9 @@ export class OrganizationsController {
   updateMe(@CurrentOrganization() organizationId: string, @Body() body: UpdateOrganizationDto) {
     return this.organizationsService.updateMe(organizationId, body);
   }
+
+  @Get("current/summary")
+  getCurrentSummary(@CurrentOrganization() organizationId: string) {
+    return this.organizationsService.getCurrentSummary(organizationId);
+  }
 }
