@@ -54,8 +54,8 @@ export default function CennikPage() {
           <PricingField label="Rejestracja" value="Bez kontaktu z handlowcem" />
         </div>
         <div className="mb-10 flex flex-wrap gap-3">
-          <KadryButton href="/panel/register">Załóż konto</KadryButton>
-          <KadryButton variant="secondary" href="/panel/login">
+          <KadryButton href="/auth/register">Załóż konto</KadryButton>
+          <KadryButton variant="secondary" href="/auth/login">
             Zaloguj się
           </KadryButton>
         </div>
