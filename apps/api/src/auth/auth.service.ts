@@ -183,6 +183,28 @@ export class AuthService {
     };
   }
 
+  async switchOrganization(userId: string, organizationId: string) {
+    const membership = await this.prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new UnauthorizedException("User has no access to this organization");
+    }
+
+    const accessToken = this.jwtService.sign({
+      sub: userId,
+      orgId: organizationId,
+    });
+
+    return { accessToken };
+  }
+
   private async createUniqueSlug(name: string) {
     const base = this.slugify(name);
     let slug = base;

@@ -5,6 +5,7 @@ import { LoginDto } from "./dto/login.dto";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { AuthUser } from "./auth.types";
 import { CurrentUser } from "./auth.decorators";
+import { SwitchOrganizationDto } from "./dto/switch-organization.dto";
 
 @Controller("auth")
 export class AuthController {
@@ -24,5 +25,11 @@ export class AuthController {
   @Get("me")
   me(@CurrentUser() user: AuthUser) {
     return this.authService.me(user.userId, user.organizationId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("switch-organization")
+  switchOrganization(@CurrentUser() user: AuthUser, @Body() body: SwitchOrganizationDto) {
+    return this.authService.switchOrganization(user.userId, body.organizationId);
   }
 }
