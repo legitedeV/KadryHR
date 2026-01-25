@@ -60,6 +60,27 @@ export type TimeEntry = {
   employee?: Employee;
 };
 
+export type TimesheetEntry = {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  clockIn: string;
+  clockOut: string;
+  durationHours: number;
+};
+
+export type TimesheetFilters = {
+  from?: string;
+  to?: string;
+  employeeId?: string;
+};
+
+export type TimesheetResponse = {
+  totalHours: number;
+  totalEntries: number;
+  entries: TimesheetEntry[];
+};
+
 const getToken = () => {
   if (typeof window === "undefined") {
     return null;
@@ -250,5 +271,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     });
+  },
+  getTimesheet(filters: TimesheetFilters) {
+    const query = new URLSearchParams();
+    if (filters.from) query.set("from", filters.from);
+    if (filters.to) query.set("to", filters.to);
+    if (filters.employeeId) query.set("employeeId", filters.employeeId);
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return request<TimesheetResponse>(`/reports/timesheets${suffix}` as const);
   },
 };
