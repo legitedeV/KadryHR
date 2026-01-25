@@ -1,14 +1,18 @@
-import { IsDateString, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { TimeEntrySource, TimeEntryType } from "@prisma/client";
+import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class ManualEntryDto {
   @IsString()
   @IsNotEmpty()
   employeeId!: string;
 
+  @IsEnum(TimeEntryType)
+  type!: TimeEntryType;
+
   @IsDateString()
-  clockIn!: string;
+  timestamp!: string;
 
   @IsOptional()
-  @IsDateString()
-  clockOut?: string;
+  @IsEnum(TimeEntrySource)
+  source?: TimeEntrySource;
 }

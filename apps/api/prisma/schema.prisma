@@ -7,90 +7,144 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
+enum MembershipRole {
   OWNER
+  ADMIN
   MANAGER
   EMPLOYEE
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  B2B
+  CIVIL_CONTRACT
+}
+
+enum ShiftStatus {
+  PLANNED
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum TimeEntryType {
+  CLOCK_IN
+  CLOCK_OUT
+  BREAK_START
+  BREAK_END
+}
+
+enum TimeEntrySource {
+  WEB
+  MOBILE
+  KIOSK
+  QR
 }
 
 model Organization {
   id        String   @id @default(cuid())
   name      String
+  slug      String   @unique
+  timezone  String   @default("Europe/Warsaw")
+  weekStart String   @default("MONDAY")
+  locale    String   @default("pl-PL")
+  industry  String   @default("general")
   email     String?
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users      User[]
-  locations  Location[]
-  employees  Employee[]
-  shifts     Shift[]
+  memberships Membership[]
+  locations   Location[]
+  employees   Employee[]
+  shifts      Shift[]
   timeEntries TimeEntry[]
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  passwordHash   String
-  firstName      String
-  lastName       String
-  role           UserRole @default(EMPLOYEE)
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+}
+
+model Membership {
+  id             String          @id @default(cuid())
+  createdAt      DateTime        @default(now())
+  role           MembershipRole  @default(EMPLOYEE)
+  userId         String
   organizationId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 
+  user         User         @relation(fields: [userId], references: [id])
   organization Organization @relation(fields: [organizationId], references: [id])
-  employee     Employee?
 
+  @@unique([userId, organizationId])
   @@index([organizationId])
+  @@index([userId])
 }
 
 model Location {
   id             String   @id @default(cuid())
   name           String
+  code           String?
   address        String?
+  city           String?
+  timezone       String?
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
   shifts       Shift[]
+  employees    Employee[]
 
   @@index([organizationId])
+  @@unique([organizationId, code])
 }
 
 model Employee {
   id             String   @id @default(cuid())
   firstName      String
   lastName       String
-  employeeCode   String?
   email          String?
+  phone          String?
+  employmentType EmploymentType
+  externalCode   String?
+  active         Boolean  @default(true)
   organizationId String
-  userId         String?  @unique
+  locationId     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
-  user         User?       @relation(fields: [userId], references: [id])
+  location     Location?   @relation(fields: [locationId], references: [id])
   shifts       Shift[]
   timeEntries  TimeEntry[]
 
-  @@unique([organizationId, employeeCode])
+  @@unique([organizationId, externalCode])
   @@index([organizationId])
-  @@index([userId])
+  @@index([locationId])
 }
 
 model Shift {
-  id             String   @id @default(cuid())
+  id             String      @id @default(cuid())
   organizationId String
   locationId     String
   employeeId     String
   start          DateTime
   end            DateTime
-  published      Boolean  @default(false)
-  status         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  breakMinutes   Int         @default(0)
+  note           String?
+  status         ShiftStatus @default(PLANNED)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
   location     Location    @relation(fields: [locationId], references: [id])
@@ -102,19 +156,18 @@ model Shift {
 }
 
 model TimeEntry {
-  id             String   @id @default(cuid())
+  id             String          @id @default(cuid())
   organizationId String
   employeeId     String
-  clockIn        DateTime
-  clockOut       DateTime?
-  source         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  type           TimeEntryType
+  timestamp      DateTime
+  source         TimeEntrySource
+  createdAt      DateTime        @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
   employee     Employee    @relation(fields: [employeeId], references: [id])
 
-  @@index([organizationId, clockIn])
+  @@index([organizationId, timestamp])
   @@index([employeeId])
 }
 

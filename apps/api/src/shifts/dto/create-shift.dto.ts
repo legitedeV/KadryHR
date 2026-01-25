@@ -1,4 +1,5 @@
-import { IsBoolean, IsDateString, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { ShiftStatus } from "@prisma/client";
+import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
 
 export class CreateShiftDto {
   @IsString()
@@ -16,10 +17,15 @@ export class CreateShiftDto {
   end!: string;
 
   @IsOptional()
-  @IsBoolean()
-  published?: boolean;
+  @IsInt()
+  @Min(0)
+  breakMinutes?: number;
 
   @IsOptional()
   @IsString()
-  status?: string;
+  note?: string;
+
+  @IsOptional()
+  @IsEnum(ShiftStatus)
+  status?: ShiftStatus;
 }

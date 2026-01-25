@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { TimeEntryType } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { TimesheetQueryDto } from "./dto/timesheet-query.dto";
 
@@ -10,11 +11,11 @@ export class ReportsService {
     const where: {
       organizationId: string;
       employeeId?: string;
-      clockIn?: { gte?: Date; lte?: Date };
-      clockOut?: { not: null };
+      timestamp?: { gte?: Date; lte?: Date };
+      type?: { in: TimeEntryType[] };
     } = {
       organizationId,
-      clockOut: { not: null },
+      type: { in: [TimeEntryType.CLOCK_IN, TimeEntryType.CLOCK_OUT] },
     };
 
     if (query.employeeId) {
@@ -22,18 +23,19 @@ export class ReportsService {
     }
 
     if (query.from || query.to) {
-      where.clockIn = {};
+      where.timestamp = {};
       if (query.from) {
-        where.clockIn.gte = new Date(query.from);
+        where.timestamp.gte = new Date(query.from);
       }
       if (query.to) {
-        where.clockIn.lte = new Date(query.to);
+        where.timestamp.lte = new Date(query.to);
       }
     }
 
     const entries = await this.prisma.timeEntry.findMany({
       where,
       include: { employee: true },
+      orderBy: [{ employeeId: "asc" }, { timestamp: "asc" }],
     });
 
     if (entries.length === 0) {
@@ -44,20 +46,44 @@ export class ReportsService {
       };
     }
 
-    const mapped = entries.map((entry) => {
-      if (!entry.clockOut) {
-        throw new BadRequestException("All entries must have clockOut");
+    const mapped: Array<{
+      id: string;
+      employeeId: string;
+      employeeName: string;
+      clockIn: Date;
+      clockOut: Date;
+      durationHours: number;
+    }> = [];
+
+    const openClockIn: Record<string, { id: string; timestamp: Date } | null> = {};
+
+    for (const entry of entries) {
+      if (!openClockIn[entry.employeeId]) {
+        openClockIn[entry.employeeId] = null;
       }
-      const durationMs = entry.clockOut.getTime() - entry.clockIn.getTime();
-      return {
-        id: entry.id,
-        employeeId: entry.employeeId,
-        employeeName: `${entry.employee.firstName} ${entry.employee.lastName}`,
-        clockIn: entry.clockIn,
-        clockOut: entry.clockOut,
-        durationHours: Math.max(durationMs / 1000 / 60 / 60, 0),
-      };
-    });
+
+      if (entry.type === TimeEntryType.CLOCK_IN) {
+        openClockIn[entry.employeeId] = { id: entry.id, timestamp: entry.timestamp };
+        continue;
+      }
+
+      if (entry.type === TimeEntryType.CLOCK_OUT) {
+        const start = openClockIn[entry.employeeId];
+        if (!start) {
+          continue;
+        }
+        const durationMs = entry.timestamp.getTime() - start.timestamp.getTime();
+        mapped.push({
+          id: entry.id,
+          employeeId: entry.employeeId,
+          employeeName: `${entry.employee.firstName} ${entry.employee.lastName}`,
+          clockIn: start.timestamp,
+          clockOut: entry.timestamp,
+          durationHours: Math.max(durationMs / 1000 / 60 / 60, 0),
+        });
+        openClockIn[entry.employeeId] = null;
+      }
+    }
 
     const totalHours = mapped.reduce((sum, entry) => sum + entry.durationHours, 0);
 

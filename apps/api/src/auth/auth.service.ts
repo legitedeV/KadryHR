@@ -3,8 +3,9 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { UserRole } from "@prisma/client";
+import { EmploymentType, MembershipRole } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -20,10 +21,12 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(data.password, 10);
+    const slug = await this.createUniqueSlug(data.organizationName);
 
     const organization = await this.prisma.organization.create({
       data: {
         name: data.organizationName,
+        slug,
         email: data.organizationEmail ?? null,
         phone: data.organizationPhone ?? null,
       },
@@ -35,8 +38,14 @@ export class AuthService {
         passwordHash,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: UserRole.OWNER,
+      },
+    });
+
+    const membership = await this.prisma.membership.create({
+      data: {
+        userId: user.id,
         organizationId: organization.id,
+        role: MembershipRole.OWNER,
       },
     });
 
@@ -45,15 +54,15 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         organizationId: organization.id,
-        userId: user.id,
         email: user.email,
+        employmentType: EmploymentType.FULL_TIME,
       },
     });
 
     const token = this.jwtService.sign({
       sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
+      organizationId: membership.organizationId,
+      role: membership.role,
     });
 
     return {
@@ -63,13 +72,14 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
+        role: membership.role,
       },
       organization: {
         id: organization.id,
         name: organization.name,
         email: organization.email,
         phone: organization.phone,
+        slug: organization.slug,
       },
     };
   }
@@ -85,10 +95,20 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    const membership = await this.prisma.membership.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+      include: { organization: true },
+    });
+
+    if (!membership) {
+      throw new UnauthorizedException("User has no organization membership");
+    }
+
     const token = this.jwtService.sign({
       sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
+      organizationId: membership.organizationId,
+      role: membership.role,
     });
 
     return {
@@ -98,44 +118,80 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
+        role: membership.role,
       },
     };
   }
 
   async me(userId: string, organizationId: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { id: userId, organizationId },
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_organizationId: { userId, organizationId } },
       select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
         role: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
         organization: {
           select: {
             id: true,
             name: true,
             email: true,
             phone: true,
+            slug: true,
+            timezone: true,
+            weekStart: true,
+            locale: true,
+            industry: true,
           },
         },
       },
     });
 
-    if (!user) {
+    if (!membership) {
       throw new UnauthorizedException();
     }
 
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
+        id: membership.user.id,
+        email: membership.user.email,
+        firstName: membership.user.firstName,
+        lastName: membership.user.lastName,
+        role: membership.role,
       },
-      organization: user.organization,
+      organization: membership.organization,
     };
+  }
+
+  private async createUniqueSlug(name: string) {
+    const base = this.slugify(name);
+    let slug = base;
+    let attempt = 0;
+
+    while (attempt < 5) {
+      const existing = await this.prisma.organization.findUnique({ where: { slug } });
+      if (!existing) {
+        return slug;
+      }
+      slug = `${base}-${randomUUID().slice(0, 8)}`;
+      attempt += 1;
+    }
+
+    return `${base}-${randomUUID()}`;
+  }
+
+  private slugify(value: string) {
+    const cleaned = value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    return cleaned.length > 0 ? cleaned : `org-${randomUUID().slice(0, 8)}`;
   }
 }
