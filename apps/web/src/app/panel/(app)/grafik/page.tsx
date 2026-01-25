@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { KadryButton, KadryCard, Section } from "@kadryhr/ui";
 import { api, Employee, Location, Shift } from "@/lib/api";
 
@@ -55,7 +55,7 @@ export default function GrafikPage() {
     return result;
   }, [from, to]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setError(null);
       const [locationsData, employeesData, shiftsData] = await Promise.all([
@@ -70,11 +70,11 @@ export default function GrafikPage() {
       const messageText = err instanceof Error ? err.message : "Nie udało się pobrać grafiku.";
       setError(messageText);
     }
-  };
+  }, [from, to, locationId]);
 
   useEffect(() => {
     void load();
-  }, [from, to, locationId]);
+  }, [load]);
 
   useEffect(() => {
     if (!locationId && locations.length > 0) {

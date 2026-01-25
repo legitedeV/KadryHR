@@ -99,10 +99,10 @@ export default function HomePage() {
         description="Twórz grafiki, rejestruj czas pracy i rozliczaj zespoły w jednym systemie. KadryHR łączy harmonogramy, RCP online, ewidencję godzin i aplikację mobilną dla pracowników."
         actions={
           <>
-            <KadryButton size="lg" href="/panel/register">
+            <KadryButton size="lg" href="/auth/register">
               Załóż konto
             </KadryButton>
-            <KadryButton variant="secondary" size="lg" href="/panel/login">
+            <KadryButton variant="secondary" size="lg" href="/auth/login">
               Zaloguj się
             </KadryButton>
           </>

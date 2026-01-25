@@ -27,8 +27,6 @@ export class AuthService {
       data: {
         name: data.organizationName,
         slug,
-        email: data.organizationEmail ?? null,
-        phone: data.organizationPhone ?? null,
       },
     });
 
@@ -59,14 +57,13 @@ export class AuthService {
       },
     });
 
-    const token = this.jwtService.sign({
+    const accessToken = this.jwtService.sign({
       sub: user.id,
-      organizationId: membership.organizationId,
-      role: membership.role,
+      orgId: membership.organizationId,
     });
 
     return {
-      token,
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
@@ -105,14 +102,13 @@ export class AuthService {
       throw new UnauthorizedException("User has no organization membership");
     }
 
-    const token = this.jwtService.sign({
+    const accessToken = this.jwtService.sign({
       sub: user.id,
-      organizationId: membership.organizationId,
-      role: membership.role,
+      orgId: membership.organizationId,
     });
 
     return {
-      token,
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
@@ -120,22 +116,35 @@ export class AuthService {
         lastName: user.lastName,
         role: membership.role,
       },
+      organization: {
+        id: membership.organization.id,
+        name: membership.organization.name,
+        email: membership.organization.email,
+        phone: membership.organization.phone,
+        slug: membership.organization.slug,
+      },
     };
   }
 
   async me(userId: string, organizationId: string) {
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
       select: {
-        role: true,
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      include: {
         organization: {
           select: {
             id: true,
@@ -152,37 +161,39 @@ export class AuthService {
       },
     });
 
-    if (!membership) {
+    const currentMembership = memberships.find(
+      (membershipItem) => membershipItem.organizationId === organizationId
+    );
+
+    if (!currentMembership) {
       throw new UnauthorizedException();
     }
 
     return {
       user: {
-        id: membership.user.id,
-        email: membership.user.email,
-        firstName: membership.user.firstName,
-        lastName: membership.user.lastName,
-        role: membership.role,
+        ...user,
+        role: currentMembership.role,
       },
-      organization: membership.organization,
+      currentOrganizationId: organizationId,
+      memberships: memberships.map((membershipItem) => ({
+        id: membershipItem.id,
+        role: membershipItem.role,
+        organization: membershipItem.organization,
+      })),
     };
   }
 
   private async createUniqueSlug(name: string) {
     const base = this.slugify(name);
     let slug = base;
-    let attempt = 0;
+    let suffix = 1;
 
-    while (attempt < 5) {
-      const existing = await this.prisma.organization.findUnique({ where: { slug } });
-      if (!existing) {
-        return slug;
-      }
-      slug = `${base}-${randomUUID().slice(0, 8)}`;
-      attempt += 1;
+    while (await this.prisma.organization.findUnique({ where: { slug } })) {
+      suffix += 1;
+      slug = `${base}-${suffix}`;
     }
 
-    return `${base}-${randomUUID()}`;
+    return slug;
   }
 
   private slugify(value: string) {

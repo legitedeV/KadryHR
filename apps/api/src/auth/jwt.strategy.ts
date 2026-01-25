@@ -6,8 +6,7 @@ import { AuthUser } from "./auth.types";
 
 export type JwtPayload = {
   sub: string;
-  organizationId: string;
-  role: string;
+  orgId: string;
 };
 
 @Injectable()
@@ -29,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: {
         userId_organizationId: {
           userId: payload.sub,
-          organizationId: payload.organizationId,
+          organizationId: payload.orgId,
         },
       },
       select: {
