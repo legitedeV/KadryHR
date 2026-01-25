@@ -33,6 +33,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const shouldRedirect = !token || isError;
+  const currentOrganization = useMemo(() => {
+    if (!data) {
+      return null;
+    }
+
+    return (
+      data.memberships.find((membership) => membership.organization.id === data.currentOrganizationId)
+        ?.organization ?? data.memberships[0]?.organization ?? null
+    );
+  }, [data]);
 
   useEffect(() => {
     if (shouldRedirect) {
@@ -41,22 +51,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [router, shouldRedirect]);
 
-  if (shouldRedirect || isLoading || !data) {
-    return null;
-  }
-
-  const currentOrganization =
-    data.memberships.find((membership) => membership.organization.id === data.currentOrganizationId)
-      ?.organization ?? data.memberships[0]?.organization ?? null;
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
+  const value = useMemo<AuthContextValue | null>(() => {
+    if (!data) {
+      return null;
+    }
+    return {
       user: data.user,
       memberships: data.memberships,
       currentOrganization,
-    }),
-    [data.user, data.memberships, currentOrganization]
-  );
+    };
+  }, [data, currentOrganization]);
+
+  if (shouldRedirect || isLoading || !data || !value) {
+    return null;
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
