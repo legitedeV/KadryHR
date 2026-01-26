@@ -7,6 +7,8 @@ import {
   ShiftRecord,
   apiGetShifts,
   apiListEmployees,
+  apiListLocations,
+  LocationRecord,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 
@@ -25,6 +27,7 @@ type ShiftView = {
 type DashboardData = {
   shifts: ShiftView[];
   employees: EmployeeRecord[];
+  locations: LocationRecord[];
 };
 
 function parseTimeLabel(value: string): [number, number] | null {
@@ -144,10 +147,11 @@ export default function DashboardPage() {
     Promise.all([
       apiGetShifts({ from: range.from, to: range.to }),
       apiListEmployees({ take: 50, skip: 0 }),
+      apiListLocations(),
     ])
-      .then(([shifts, employeesResponse]) => {
+      .then(([shifts, employeesResponse, locations]) => {
         if (cancelled) return;
-        setData({ shifts: shifts.map(mapShift), employees: employeesResponse.data });
+        setData({ shifts: shifts.map(mapShift), employees: employeesResponse.data, locations });
       })
       .catch((err) => {
         console.error(err);
@@ -195,12 +199,67 @@ export default function DashboardPage() {
     );
   }
 
-  const { shifts, employees } = data;
+  const { shifts, employees, locations } = data;
   const todaysDate = new Date().toISOString().slice(0, 10);
   const todaysShifts = shifts.filter((s) => s.date === todaysDate);
   const assignedEmployees = employees.filter((e) => e.locations.length > 0);
   const pendingEmployees = employees.filter((e) => e.locations.length === 0);
-  
+  const employeeWithEmail = employees.find((employee) => Boolean(employee.email));
+
+  const onboardingSteps = [
+    {
+      id: "organisation",
+      title: "Załóż organizację",
+      description: "Twoja organizacja jest już aktywna po rejestracji.",
+      status: "done" as const,
+      actionLabel: "Zobacz profil organizacji",
+      href: "/panel/profil",
+    },
+    {
+      id: "employee",
+      title: "Dodaj pierwszego pracownika",
+      description: "Zbuduj bazę zespołu i przypisz role w organizacji.",
+      status: employees.length > 0 ? ("done" as const) : ("todo" as const),
+      actionLabel: employees.length > 0 ? "Przejrzyj zespół" : "Skontaktuj się z wdrożeniem",
+      href: employees.length > 0 ? "/panel/grafik" : "mailto:kontakt@kadryhr.pl?subject=Dodanie%20pracownika",
+    },
+    {
+      id: "location",
+      title: "Dodaj pierwszą lokalizację",
+      description: "Lokalizacje porządkują grafiki i raporty w wielu oddziałach.",
+      status: locations.length > 0 ? ("done" as const) : ("todo" as const),
+      actionLabel: locations.length > 0 ? "Zobacz grafik lokalizacji" : "Skontaktuj się z wdrożeniem",
+      href: locations.length > 0 ? "/panel/grafik" : "mailto:kontakt@kadryhr.pl?subject=Dodanie%20lokalizacji",
+    },
+    {
+      id: "first-shift",
+      title: "Zaplanuj pierwszą zmianę",
+      description: "Utwórz pierwszy blok pracy w grafiku.",
+      status: shifts.length > 0 ? ("done" as const) : ("todo" as const),
+      actionLabel: "Otwórz grafik",
+      href: "/panel/grafik",
+    },
+    {
+      id: "publish",
+      title: "Opublikuj pierwszy grafik",
+      description: "Opublikuj plan, aby pracownicy widzieli swoje zmiany.",
+      status: shifts.length > 0 ? ("in-progress" as const) : ("todo" as const),
+      actionLabel: "Publikuj grafik",
+      href: "/panel/grafik-v2",
+    },
+    {
+      id: "invite",
+      title: "Zaproś pracownika do systemu",
+      description: "Wyślij zaproszenie, aby pracownik potwierdził konto.",
+      status: employeeWithEmail ? ("in-progress" as const) : ("todo" as const),
+      actionLabel: employeeWithEmail ? "Wyślij zaproszenie" : "Skontaktuj się z wdrożeniem",
+      href: employeeWithEmail
+        ? `mailto:${employeeWithEmail.email}?subject=Zaproszenie%20do%20KadryHR`
+        : "mailto:kontakt@kadryhr.pl?subject=Zaproszenie%20pracownika",
+    },
+  ];
+  const completedSteps = onboardingSteps.filter((step) => step.status === "done").length;
+
   const totalHoursWeek = shifts.reduce((sum, s) => {
     const startParts = parseTimeLabel(s.start);
     const endParts = parseTimeLabel(s.end);
@@ -240,6 +299,61 @@ export default function DashboardPage() {
           <span className="panel-pill">
             Plan godzin: <strong className="text-surface-100">{Math.round(totalHoursWeek)} h</strong>
           </span>
+        </div>
+      </div>
+
+      <div className="panel-card p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Onboarding</p>
+            <p className="text-base font-semibold text-surface-50 mt-1">Zaczynajmy! {completedSteps}/6 kroków</p>
+            <p className="text-sm text-surface-400 mt-1">
+              Prowadzimy Cię przez konfigurację – każdy krok aktualizuje się automatycznie po wykonaniu.
+            </p>
+          </div>
+          <div className="w-full max-w-xs">
+            <div className="flex items-center justify-between text-xs font-semibold text-surface-300">
+              <span>Postęp</span>
+              <span>{completedSteps}/6</span>
+            </div>
+            <div className="mt-2 h-2 w-full rounded-full bg-surface-800/80">
+              <div
+                className="h-2 rounded-full bg-brand-500"
+                style={{ width: `${Math.min(100, (completedSteps / 6) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {onboardingSteps.map((step) => {
+            const statusLabel =
+              step.status === "done" ? "Ukończony" : step.status === "in-progress" ? "W trakcie" : "Do zrobienia";
+            const statusTone =
+              step.status === "done"
+                ? "bg-emerald-500/15 text-emerald-200"
+                : step.status === "in-progress"
+                ? "bg-amber-500/15 text-amber-200"
+                : "bg-surface-800/70 text-surface-300";
+            return (
+              <div key={step.id} className="flex items-start justify-between gap-4 rounded-2xl border border-surface-800/70 bg-surface-900/60 px-4 py-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusTone}`}>
+                      {statusLabel}
+                    </span>
+                    <p className="text-sm font-semibold text-surface-100">{step.title}</p>
+                  </div>
+                  <p className="text-xs text-surface-400">{step.description}</p>
+                </div>
+                <a
+                  href={step.href}
+                  className="whitespace-nowrap rounded-full border border-surface-700/80 px-3 py-1 text-xs font-semibold text-surface-200 transition hover:border-brand-400/60 hover:text-brand-200"
+                >
+                  {step.actionLabel}
+                </a>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -432,6 +546,38 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          <div className="panel-card p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Potrzebujesz pomocy?</p>
+            <p className="text-base font-semibold text-surface-50 mt-1">Jesteśmy dostępni w 3 kanałach</p>
+            <p className="text-sm text-surface-400 mt-2">
+              Wybierz najszybszą formę kontaktu – odpowiadamy w ciągu 24h.
+            </p>
+            <div className="mt-4 grid gap-2">
+              <a
+                href="mailto:kontakt@kadryhr.pl?subject=Komunikator%20KadryHR"
+                className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 text-sm font-semibold text-surface-100 transition hover:border-brand-400/60 hover:text-brand-200"
+              >
+                Komunikator
+                <span className="block text-xs font-normal text-surface-400">Napisz do zespołu wdrożeń</span>
+              </a>
+              <a
+                href="https://kadryhr.pl/konsultacja"
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 text-sm font-semibold text-surface-100 transition hover:border-brand-400/60 hover:text-brand-200"
+              >
+                Konsultacja online
+                <span className="block text-xs font-normal text-surface-400">Umów demo z doradcą</span>
+              </a>
+              <a
+                href="tel:+48221234567"
+                className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 text-sm font-semibold text-surface-100 transition hover:border-brand-400/60 hover:text-brand-200"
+              >
+                Telefon
+                <span className="block text-xs font-normal text-surface-400">+48 22 123 45 67</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
