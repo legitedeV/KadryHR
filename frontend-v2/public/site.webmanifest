@@ -1,0 +1,20 @@
+{
+  "name": "KadryHR",
+  "short_name": "KadryHR",
+  "description": "KadryHR – Kadry i płace bez tajemnic",
+  "icons": [
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#12BBD1",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}

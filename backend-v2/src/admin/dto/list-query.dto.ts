@@ -1,0 +1,23 @@
+import { IsOptional, IsInt, Min, Max, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ListQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  perPage?: number = 20;
+}
+
+export class ListUsersQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsString()
+  role?: string;
+}

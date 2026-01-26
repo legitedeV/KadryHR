@@ -1,0 +1,15 @@
+<svg width="192" height="192" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ringApp" x1="18" y1="22" x2="148" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12BBD1" />
+      <stop offset="0.6" stop-color="#1F9BD7" />
+      <stop offset="1" stop-color="#0F6FB7" />
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="70" fill="#F2FCFF" />
+  <circle cx="80" cy="80" r="70" stroke="url(#ringApp)" stroke-width="16" fill="none" />
+  <circle cx="75" cy="79" r="30" fill="#12BBD1" opacity="0.9" />
+  <circle cx="99" cy="70" r="18" fill="#0F6FB7" opacity="0.92" />
+  <path d="M60 105C63.6 98.7 67.9 95.5 73.7 95.5C80.5 95.5 83.7 98.8 87.5 105" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M93 97C96.3 91.2 100.5 88.5 105.5 88.5C111 88.5 114 91 117 95.8" stroke="white" stroke-width="6" stroke-linecap="round"/>
+</svg>

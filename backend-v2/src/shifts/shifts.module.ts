@@ -1,0 +1,22 @@
+import { Module } from '@nestjs/common';
+import { ShiftsController } from './shifts.controller';
+import { ShiftsService } from './shifts.service';
+import { PrismaModule } from '../prisma/prisma.module';
+import { EmployeesModule } from '../employees/employees.module';
+import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { AuthModule } from '../auth/auth.module';
+
+@Module({
+  imports: [
+    PrismaModule,
+    EmployeesModule,
+    AuditModule,
+    NotificationsModule,
+    AuthModule,
+  ],
+  controllers: [ShiftsController],
+  providers: [ShiftsService],
+  exports: [ShiftsService],
+})
+export class ShiftsModule {}

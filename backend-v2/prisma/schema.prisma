@@ -1,0 +1,947 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  WON
+  LOST
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  DAY_OFF
+}
+
+enum LeaveCategory {
+  PAID_LEAVE
+  SICK
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum NotificationType {
+  TEST
+  LEAVE_STATUS
+  SHIFT_ASSIGNMENT
+  SCHEDULE_PUBLISHED
+  SWAP_STATUS
+  AVAILABILITY_SUBMITTED
+  AVAILABILITY_WINDOW_CLOSED
+  USER_CREATED
+  LOGO_PROPOSAL_APPROVED
+  CUSTOM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH // Future-proof: web push / mobile push
+}
+
+enum NotificationDeliveryStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum NotificationCampaignStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
+enum NotificationRecipientStatus {
+  PENDING
+  DELIVERED_IN_APP
+  EMAIL_SENT
+  EMAIL_FAILED
+  SMS_SENT
+  SMS_FAILED
+  SKIPPED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum AvailabilitySubmissionStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  REOPENED
+}
+
+enum NewsletterSubscriptionStatus {
+  PENDING_CONFIRMATION
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+model Organisation {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  category    String?
+  logoUrl     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  preventShiftOnApprovedLeave Boolean @default(false)
+  
+  // Delivery days configuration (Task 4.4)
+  deliveryDays      Weekday[] @default([])
+  deliveryLabelColor String?  @default("#22c55e")
+  
+  // Promotion change configuration (Task 4.5)
+  promotionCycleStartDate  DateTime?
+  promotionCycleFrequency  Int?      @default(14) // Every N days
+
+  users       User[]
+  employees   Employee[]
+  locations   Location[]
+  locationAssignments LocationAssignment[]
+  shifts      Shift[]
+  availability Availability[]
+  availabilitySubmissions AvailabilitySubmission[]
+  availabilityWindows AvailabilityWindow[]
+  leaveRequests LeaveRequest[]
+  leaveTypes  LeaveType[]
+  auditLogs   AuditLog[]
+  leads       Lead[]
+  leadAuditLogs LeadAuditLog[]
+  notifications Notification[]
+  notificationPreferences NotificationPreference[]
+  notificationCampaigns NotificationCampaign[]
+  newsletterSubscribers NewsletterSubscriber[]
+  newsletterAuditLogs NewsletterAuditLog[]
+  employeeInvitations EmployeeInvitation[]
+  passwordResetTokens PasswordResetToken[]
+  rolePermissions RolePermission[]
+  employmentContracts EmploymentContract[]
+  compensations Compensation[]
+  employeeDocuments EmployeeDocument[]
+  scheduleTemplates ScheduleTemplate[]
+  leaveBalances LeaveBalance[]
+  shiftPresets ShiftPreset[]
+  subscription Subscription?
+}
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  passwordHash      String
+  role              Role
+  organisationId    String
+  firstName         String?
+  lastName          String?
+  avatarUrl         String?
+  refreshTokenHash  String?
+  twoFactorEnabled  Boolean  @default(false)
+  twoFactorSecret   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee?
+  leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
+  leaveRequestsApproved LeaveRequest[] @relation("LeaveRequestApprovedBy")
+  auditLogs  AuditLog[]
+  leadAuditLogs LeadAuditLog[]
+  notifications Notification[]
+  notificationPreferences NotificationPreference[]
+  createdCampaigns NotificationCampaign[]
+  campaignRecipients NotificationRecipient[]
+  scheduleTemplatesCreated ScheduleTemplate[] @relation("ScheduleTemplateCreatedBy")
+  availabilitySubmissions AvailabilitySubmission[] @relation("AvailabilitySubmissionSubmittedBy")
+  availabilityReviews AvailabilitySubmission[] @relation("AvailabilitySubmissionReviewedBy")
+  passwordResetTokens PasswordResetToken[]
+
+  @@index([organisationId])
+}
+
+model PlatformConfig {
+  id             String   @id @default("platform")
+  frontendConfig Json?
+  backendConfig  Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Employee {
+  id             String        @id @default(uuid())
+  organisationId String
+  userId         String?       @unique
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  position       String?
+  avatarUrl      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  isActive       Boolean       @default(true)
+  isDeleted      Boolean       @default(false)
+  employmentEndDate DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shifts       Shift[]
+  availability Availability[]
+  locations    LocationAssignment[]
+  leaveRequests LeaveRequest[]
+  scheduleTemplateShifts ScheduleTemplateShift[]
+  invitations EmployeeInvitation[]
+  contracts    EmploymentContract[]
+  documents    EmployeeDocument[]
+  leaveBalances LeaveBalance[]
+  availabilitySubmissions AvailabilitySubmission[]
+
+  @@index([organisationId])
+}
+
+// HR Management & Payroll models
+enum ContractType {
+  UOP  // Umowa o pracę (Employment contract)
+  UZ   // Umowa zlecenie (Contract of mandate)
+  UOD  // Umowa o dzieło (Contract for specific work)
+  B2B  // Business to business
+}
+
+enum ContractStatus {
+  ACTIVE
+  ENDED
+  SUSPENDED
+}
+
+enum WorkTimeType {
+  FULL_TIME
+  PART_TIME
+  TEMPORARY
+}
+
+enum CompensationType {
+  MONTHLY_SALARY
+  HOURLY_RATE
+}
+
+model EmploymentContract {
+  id             String         @id @default(uuid())
+  organisationId String
+  employeeId     String
+  type           ContractType
+  status         ContractStatus @default(ACTIVE)
+  workTimeType   WorkTimeType   @default(FULL_TIME)
+  startDate      DateTime
+  endDate        DateTime?
+  position       String?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  compensations Compensation[]
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+model Compensation {
+  id             String           @id @default(uuid())
+  organisationId String
+  contractId     String
+  type           CompensationType
+  amount         Float            // Monthly salary or hourly rate in PLN
+  currency       String           @default("PLN")
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organisation Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  contract     EmploymentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([contractId])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model EmployeeDocument {
+  id             String   @id @default(uuid())
+  organisationId String
+  employeeId     String
+  name           String
+  description    String?
+  filename       String   // Original filename
+  storagePath    String   // Path to file in storage
+  mimeType       String
+  fileSize       Int      // Size in bytes
+  uploadedBy     String?  // User ID who uploaded
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([employeeId])
+}
+
+model Location {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  address        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  shifts       Shift[]
+  employees    LocationAssignment[]
+  scheduleTemplateShifts ScheduleTemplateShift[]
+
+  @@index([organisationId])
+}
+
+model LocationAssignment {
+  id             String   @id @default(uuid())
+  organisationId String
+  employeeId     String
+  locationId     String
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, employeeId, locationId])
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([locationId])
+}
+
+model Shift {
+  id             String    @id @default(uuid())
+  organisationId String
+  employeeId     String
+  locationId     String?
+  position       String?
+  notes          String?
+  availabilityOverrideReason String?
+  color          String?   // Task 4.2: Shift color
+  startsAt       DateTime
+  endsAt         DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location     Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([locationId])
+}
+
+model ScheduleTemplate {
+  id             String    @id @default(uuid())
+  organisationId String
+  name           String
+  description    String?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ScheduleTemplateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  shifts       ScheduleTemplateShift[]
+
+  @@index([organisationId])
+}
+
+model ScheduleTemplateShift {
+  id         String   @id @default(uuid())
+  templateId String
+  employeeId String
+  locationId String?
+  position   String?
+  notes      String?
+  color      String?
+  weekday    Weekday
+  startMinutes Int
+  endMinutes   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  template ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([templateId])
+  @@index([employeeId])
+  @@index([locationId])
+}
+
+model Availability {
+  id             String    @id @default(uuid())
+  organisationId String
+  employeeId     String
+  availabilityWindowId String?
+  date           DateTime?
+  weekday        Weekday?
+  startMinutes   Int
+  endMinutes     Int
+  status         AvailabilityStatus @default(AVAILABLE)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  window       AvailabilityWindow? @relation(fields: [availabilityWindowId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([organisationId, employeeId])
+  @@index([employeeId, weekday])
+  @@index([employeeId, date])
+  @@index([availabilityWindowId])
+  @@index([availabilityWindowId, employeeId])
+}
+
+model LeaveRequest {
+  id               String      @id @default(uuid())
+  organisationId   String
+  employeeId       String
+  createdByUserId  String
+  approvedByUserId String?
+  type             LeaveCategory
+  leaveTypeId      String?
+  status           LeaveStatus @default(PENDING)
+  startDate        DateTime
+  endDate          DateTime
+  reason           String?
+  rejectionReason  String?
+  attachmentUrl    String?
+  decisionAt       DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("LeaveRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  approvedBy   User?        @relation("LeaveRequestApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  leaveType    LeaveType?   @relation(fields: [leaveTypeId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model LeaveType {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  code           LeaveCategory?
+  isPaid         Boolean  @default(true)
+  color          String?
+  isActive       Boolean  @default(true)
+  defaultDaysPerYear Int?     @default(26) // Default annual allocation
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+
+  @@unique([organisationId, name])
+  @@index([organisationId])
+}
+
+model LeaveBalance {
+  id             String   @id @default(uuid())
+  organisationId String
+  employeeId     String
+  leaveTypeId    String
+  year           Int      // Calendar year for the balance
+  allocated      Int      @default(0)  // Total days allocated for the year
+  used           Int      @default(0)  // Days used (approved leaves)
+  adjustment     Int      @default(0)  // Manual adjustments (carry-over, etc.)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType    LeaveType    @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, employeeId, leaveTypeId, year])
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([leaveTypeId])
+}
+
+model Lead {
+  id               String     @id @default(uuid())
+  organisationId   String?
+  email            String
+  name             String
+  company          String
+  headcount        Int?
+  message          String?
+  consentMarketing Boolean
+  consentPrivacy   Boolean
+  utmSource        String?
+  utmCampaign      String?
+  status           LeadStatus @default(NEW)
+  ipHash           String?
+  userAgent        String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  audits       LeadAuditLog[]
+
+  @@index([organisationId])
+  @@index([status])
+  @@index([email])
+}
+
+model LeadAuditLog {
+  id             String   @id @default(uuid())
+  leadId         String
+  organisationId String?
+  actorUserId    String?
+  action         String
+  before         Json?
+  after          Json?
+  ipHash         String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  lead         Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  actor        User?         @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+  @@index([organisationId])
+  @@index([actorUserId])
+}
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  organisationId  String
+  actorUserId     String
+  action          String
+  entityType      String
+  entityId        String?
+  before          Json?
+  after           Json?
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  actor        User         @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+}
+
+model Notification {
+  id              String                @id @default(uuid())
+  organisationId  String
+  userId          String
+  type            NotificationType
+  title           String
+  body            String?
+  data            Json?
+  channels        NotificationChannel[] @default([IN_APP])
+  readAt          DateTime?
+  createdAt       DateTime              @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryAttempts NotificationDeliveryAttempt[]
+
+  @@index([organisationId, userId])
+  @@index([userId, readAt])
+}
+
+model NotificationPreference {
+  id              String            @id @default(uuid())
+  organisationId  String
+  userId          String
+  type            NotificationType
+  inApp           Boolean           @default(true)
+  email           Boolean           @default(true)
+  sms             Boolean           @default(false)
+  push            Boolean           @default(false) // Future: web/mobile push
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([organisationId])
+}
+
+model NotificationDeliveryAttempt {
+  id             String                     @id @default(uuid())
+  notificationId String
+  channel        NotificationChannel
+  status         NotificationDeliveryStatus
+  errorMessage   String?
+  createdAt      DateTime                   @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+}
+
+model WebsitePage {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  seoTitle       String?
+  seoDescription String?
+  seoImageUrl    String?
+  isPublished    Boolean  @default(false)
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sections WebsiteSection[]
+}
+
+model WebsiteSection {
+  id        String   @id @default(uuid())
+  pageId    String
+  key       String
+  title     String?
+  subtitle  String?
+  order     Int      @default(0)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page   WebsitePage   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  blocks WebsiteBlock[]
+
+  @@index([pageId])
+  @@index([pageId, order])
+}
+
+model WebsiteBlock {
+  id        String   @id @default(uuid())
+  sectionId String
+  type      String
+  title     String?
+  body      String?
+  mediaUrl  String?
+  extra     Json?
+  order     Int      @default(0)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section WebsiteSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+  @@index([sectionId, order])
+}
+
+model WebsiteSettings {
+  id                 String   @id @default(uuid())
+  contactEmails      String[] @default([])
+  socialLinks        Json?
+  footerLinks        Json?
+  cookieBannerText   String?
+  cookiePolicyUrl    String?
+  privacyPolicyUrl   String?
+  termsOfServiceUrl  String?
+  version            Int      @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model NotificationCampaign {
+  id              String                      @id @default(uuid())
+  organisationId  String
+  createdByUserId String
+  title           String
+  body            String?
+  type            NotificationType            @default(CUSTOM)
+  audienceFilter  Json?
+  channels        NotificationChannel[]       @default([IN_APP])
+  status          NotificationCampaignStatus  @default(DRAFT)
+  sentAt          DateTime?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  recipients   NotificationRecipient[]
+
+  @@index([organisationId])
+  @@index([createdByUserId])
+  @@index([status])
+}
+
+model NotificationRecipient {
+  id                String                       @id @default(uuid())
+  campaignId        String
+  userId            String
+  deliveredInAppAt  DateTime?
+  emailAttemptId    String?
+  status            NotificationRecipientStatus  @default(PENDING)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  campaign NotificationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@index([status])
+}
+
+model NewsletterSubscriber {
+  id               String                        @id @default(uuid())
+  email            String
+  name             String?
+  organisationId   String?
+  status           NewsletterSubscriptionStatus  @default(PENDING_CONFIRMATION)
+  marketingConsent Boolean                       @default(false)
+  subscribedAt     DateTime                      @default(now())
+  confirmedAt      DateTime?
+  unsubscribedAt   DateTime?
+  tokens           NewsletterToken[]
+  auditLogs        NewsletterAuditLog[]
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+
+  @@unique([email, organisationId])
+}
+
+model NewsletterToken {
+  id           String    @id @default(uuid())
+  subscriberId String
+  tokenHash    String
+  type         String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  subscriber NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@index([subscriberId])
+  @@index([tokenHash, type])
+}
+
+model NewsletterAuditLog {
+  id             String   @id @default(uuid())
+  subscriberId   String
+  organisationId String?
+  action         String
+  before         Json?
+  after          Json?
+  createdAt      DateTime @default(now())
+
+  subscriber   NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  organisation Organisation?        @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+
+  @@index([subscriberId])
+  @@index([organisationId])
+}
+
+model EmployeeInvitation {
+  id              String           @id @default(uuid())
+  organisationId  String
+  employeeId      String
+  invitedEmail    String
+  tokenHash       String
+  status          InvitationStatus @default(PENDING)
+  expiresAt       DateTime         @default(dbgenerated("now() + interval '24 hours'"))
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([employeeId])
+  @@index([tokenHash])
+  @@index([status])
+}
+
+model PasswordResetToken {
+  id             String   @id @default(uuid())
+  organisationId String
+  userId         String
+  tokenHash      String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+// Task 1: Availability Windows for submission periods
+model AvailabilityWindow {
+  id             String   @id @default(uuid())
+  organisationId String
+  title          String   @default("Składanie dyspozycji")
+  startDate      DateTime // Window covers availability from this date
+  endDate        DateTime // Window covers availability until this date
+  deadline       DateTime // Deadline for submitting availability
+  isOpen         Boolean  @default(true)
+  closedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  availability Availability[]
+  submissions AvailabilitySubmission[]
+
+  @@index([organisationId])
+  @@index([deadline])
+  @@index([isOpen])
+  @@index([closedAt])
+}
+
+model AvailabilitySubmission {
+  id             String                      @id @default(uuid())
+  organisationId String
+  windowId       String
+  employeeId     String
+  status         AvailabilitySubmissionStatus @default(DRAFT)
+  submittedAt    DateTime?
+  submittedByUserId String?
+  reviewedAt     DateTime?
+  reviewedByUserId String?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  window       AvailabilityWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  submittedBy  User?        @relation("AvailabilitySubmissionSubmittedBy", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy   User?        @relation("AvailabilitySubmissionReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([windowId, employeeId])
+  @@index([organisationId])
+  @@index([windowId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+// Task 2: Role Permissions for granular access control
+enum PermissionType {
+  SCHEDULE_MANAGE
+  SCHEDULE_VIEW
+  LEAVE_APPROVE
+  LEAVE_REQUEST
+  EMPLOYEE_MANAGE
+  EMPLOYEE_VIEW
+  ORGANISATION_SETTINGS
+  AUDIT_VIEW
+  REPORTS_EXPORT
+  AVAILABILITY_MANAGE
+}
+
+model RolePermission {
+  id             String         @id @default(uuid())
+  organisationId String
+  role           Role
+  permission     PermissionType
+  enabled        Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, role, permission])
+  @@index([organisationId])
+  @@index([role])
+}
+
+model ShiftPreset {
+  id             String   @id @default(uuid())
+  organisationId String
+  name           String
+  code           String   // e.g., "MORNING", "AFTERNOON", "DELIVERY", "NIGHT"
+  startMinutes   Int      // e.g., 345 for 05:45
+  endMinutes     Int      // e.g., 900 for 15:00
+  color          String?  // Optional color for this preset
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, code])
+  @@index([organisationId])
+  @@index([isActive])
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  organisationId String   @unique
+  plan           String   @default("FREE_TRIAL")
+  status         String   @default("ACTIVE")
+  trialEndsAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+}

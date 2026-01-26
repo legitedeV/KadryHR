@@ -1,0 +1,33 @@
+{
+  "name": "frontend-v2",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "ci:check": "npm run lint && npm run typecheck",
+    "test": "node --loader ./ts-node-loader.mjs --test app/panel/grafik/page.test.tsx components/avatar.test.tsx components/brand/brandLogo.test.tsx",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "next": "16.1.1",
+    "postcss": "8.4.41",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1"
+  }
+}
