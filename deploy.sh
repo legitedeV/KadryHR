@@ -1,113 +1,132 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/home/deploy/apps/kadryhr-app"
-BACKEND_DIR="$APP_DIR/backend-v2"
-FRONTEND_DIR="$APP_DIR/frontend-v2"
+### KONFIG POD TWOJE ŚRODOWISKO ###
 
-# dostosuj nazwy procesów PM2 do tego, co masz
-PM2_BACKEND_NAME="kadryhr-backend-v2"
-PM2_FRONTEND_NAME="kadryhr-frontend-v2"
+# Script dir = root repo (KadryHR)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
-echo "==> KadryHR deploy start"
-cd "$APP_DIR"
+APP_ROOT="$SCRIPT_DIR"
+BACKEND_DIR="$APP_ROOT/backend-v2"
+FRONTEND_DIR="$APP_ROOT/frontend-v2"
 
-OLD_REV=$(git rev-parse HEAD)
-echo "Current HEAD: $OLD_REV"
+BACKEND_PM2_NAME="kadryhr-api"
+FRONTEND_PM2_NAME="kadryhr-web"
 
-echo "==> git pull origin main"
-git pull origin main
+BACKEND_PORT=4000   # NestJS APP_PORT
+FRONTEND_PORT=3000  # Next.js PORT
 
-NEW_REV=$(git rev-parse HEAD)
-echo "New HEAD: $NEW_REV"
+###################################
 
-echo "==> Detecting changed files"
-CHANGED_FILES=$(git diff --name-only "$OLD_REV" "$NEW_REV")
+log() {
+  echo -e "\033[1;32m[deploy]\033[0m $*"
+}
 
-BACKEND_CHANGED="false"
-if echo "$CHANGED_FILES" | rg -q "^backend-v2/"; then
-  BACKEND_CHANGED="true"
-fi
+fail() {
+  echo -e "\033[1;31m[deploy ERROR]\033[0m $*" >&2
+  exit 1
+}
 
-FRONTEND_CHANGED="false"
-if echo "$CHANGED_FILES" | rg -q "^frontend-v2/"; then
-  FRONTEND_CHANGED="true"
-fi
+### 1. Sprawdzenie narzędzi ###
 
-BACKEND_LOCK_CHANGED="false"
-if echo "$CHANGED_FILES" | rg -q "^backend-v2/package-lock.json$"; then
-  BACKEND_LOCK_CHANGED="true"
-fi
+for cmd in node npm pm2; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    fail "Brak komendy '$cmd' w PATH. Zainstaluj ją zanim odpalisz deploy."
+  fi
+done
 
-FRONTEND_LOCK_CHANGED="false"
-if echo "$CHANGED_FILES" | rg -q "^frontend-v2/package-lock.json$"; then
-  FRONTEND_LOCK_CHANGED="true"
-fi
+log "Node: $(node -v)"
+log "npm:  $(npm -v)"
+log "pm2:  $(pm2 -v)"
 
-if [ "$BACKEND_CHANGED" = "false" ] && [ "$FRONTEND_CHANGED" = "false" ]; then
-  echo "No backend-v2 or frontend-v2 changes detected. Nothing to build."
-  exit 0
-fi
+### 2. Backend (NestJS + Prisma) ###
 
-# ---------------- BACKEND ----------------
+deploy_backend() {
+  log "== Backend (backend-v2) =="
 
-if [ "$BACKEND_CHANGED" = "true" ]; then
   cd "$BACKEND_DIR"
 
-  if [ "$BACKEND_LOCK_CHANGED" = "true" ]; then
-    echo "==> Backend lockfile changed – running npm ci --omit=dev"
-    npm ci --omit=dev
-  else
-    echo "==> Backend lockfile unchanged – skipping npm ci"
+  if [ ! -f .env ]; then
+    if [ -f .env.example ]; then
+      cp .env.example .env
+      log "Skopiowano .env.example -> .env (PAMIĘTAJ, żeby podmienić hasła/maile itp.)"
+    else
+      fail "Brak .env oraz .env.example w $BACKEND_DIR"
+    fi
   fi
 
-  echo "==> Running database migrations"
-  npx prisma migrate deploy
+  if [ "${SKIP_INSTALL:-0}" != "1" ]; then
+    log "Backend: npm install (może chwilę potrwać)"
+    npm install
+  else
+    log "Backend: SKIP_INSTALL=1 – pomijam npm install"
+  fi
 
-  echo "==> Generating Prisma client"
-  npx prisma generate
+  log "Backend: Prisma migrate deploy"
+  # Prisma sam wczyta .env z backend-v2
+  npx prisma migrate deploy --schema=prisma/schema.prisma
 
-  echo "==> Building backend"
+  log "Backend: build (npm run build)"
   npm run build
 
-  echo "==> Reloading backend with PM2 ($PM2_BACKEND_NAME)"
-  if pm2 describe "$PM2_BACKEND_NAME" > /dev/null 2>&1; then
-    pm2 reload "$PM2_BACKEND_NAME"
-  else
-    # dopasuj ścieżkę startową do swojej aplikacji Nest
-    pm2 start dist/main.js --name "$PM2_BACKEND_NAME"
+  log "Backend: restart przez pm2 (${BACKEND_PM2_NAME})"
+
+  if pm2 describe "$BACKEND_PM2_NAME" >/dev/null 2>&1; then
+    pm2 stop "$BACKEND_PM2_NAME" || true
+    pm2 delete "$BACKEND_PM2_NAME" || true
   fi
-else
-  echo "==> No backend-v2 changes – skipping backend build"
-fi
 
-# ---------------- FRONTEND ----------------
+  APP_PORT="$BACKEND_PORT" NODE_ENV=production \
+    pm2 start dist/main.js \
+      --name "$BACKEND_PM2_NAME"
 
-if [ "$FRONTEND_CHANGED" = "true" ]; then
+  log "Backend wystartowany na porcie ${BACKEND_PORT} (za Nginxem /api/)"
+}
+
+### 3. Frontend (Next.js) ###
+
+deploy_frontend() {
+  log "== Frontend (frontend-v2) =="
+
   cd "$FRONTEND_DIR"
 
-  if [ "$FRONTEND_LOCK_CHANGED" = "true" ]; then
-    echo "==> Frontend lockfile changed – running npm ci --omit=dev"
-    npm ci --omit=dev
-  else
-    echo "==> Frontend lockfile unchanged – skipping npm ci"
+  if [ ! -f .env.local ] && [ -f .env.example ]; then
+    log "Frontend: brak .env.local – jeśli potrzebujesz zmiennych, skopiuj .env.example do .env.local i podmień wartości."
   fi
 
-  echo "==> Clearing Next.js cache to prevent stale Server Actions"
-  rm -rf .next
+  if [ "${SKIP_INSTALL:-0}" != "1" ]; then
+    log "Frontend: npm install"
+    npm install
+  else
+    log "Frontend: SKIP_INSTALL=1 – pomijam npm install"
+  fi
 
-  echo "==> Building frontend"
+  log "Frontend: build (npm run build)"
   npm run build
 
-  echo "==> Restarting frontend with PM2 ($PM2_FRONTEND_NAME)"
-  if pm2 describe "$PM2_FRONTEND_NAME" > /dev/null 2>&1; then
-    pm2 restart "$PM2_FRONTEND_NAME"
-  else
-    # jeśli masz Next.js w trybie `next start`:
-    pm2 start "npm -- start -p 3000" --name "$PM2_FRONTEND_NAME"
-  fi
-else
-  echo "==> No frontend-v2 changes – skipping frontend build"
-fi
+  log "Frontend: restart przez pm2 (${FRONTEND_PM2_NAME})"
 
-echo "==> Deploy finished successfully"
+  if pm2 describe "$FRONTEND_PM2_NAME" >/dev/null 2>&1; then
+    pm2 stop "$FRONTEND_PM2_NAME" || true
+    pm2 delete "$FRONTEND_PM2_NAME" || true
+  fi
+
+  NODE_ENV=production PORT="$FRONTEND_PORT" \
+    pm2 start npm --name "$FRONTEND_PM2_NAME" -- start
+
+  log "Frontend wystartowany na porcie ${FRONTEND_PORT} (proxy z kadryhr.pl przez Nginx)"
+}
+
+### 4. Odpalamy całość ###
+
+deploy_backend
+deploy_frontend
+
+log "Zapisuję konfigurację PM2 (restart po reboocie)..."
+pm2 save
+
+log "Deploy zakończony."
+log "Szybki healthcheck:"
+log "  curl -k https://kadryhr.pl/api/config/frontend   # API"
+log "  curl -k https://kadryhr.pl                      # frontend"

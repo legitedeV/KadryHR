@@ -67,3 +67,21 @@ frontend-v2/generated/
 .next
 
 .tmp-tests
+
+# Local environment
+.env
+.env.*
+*.local
+
+# Local tooling / agents / temp
+.agent/
+.blackbox/
+tmp/
+uploads/
+frontend-v2-landing-back/
+R
+1
+= 
+pr_body.json
+pr_payload.json
+*.log
