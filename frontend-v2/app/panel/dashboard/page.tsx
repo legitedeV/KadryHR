@@ -30,6 +30,12 @@ type DashboardData = {
   locations: LocationRecord[];
 };
 
+type TourStep = {
+  id: string;
+  title: string;
+  description: string;
+};
+
 function parseTimeLabel(value: string): [number, number] | null {
   const parts = value.split(":");
   if (parts.length !== 2) return null;
@@ -130,6 +136,30 @@ function buildChartSeries(shifts: ShiftView[], range: { from: string }) {
   return { totals, maxValue };
 }
 
+function getShiftStatusLabel(shift: ShiftView, now: Date) {
+  if (shift.status === "UNASSIGNED") {
+    return { label: "Nieobsadzona", tone: "bg-rose-500/15 text-rose-200" };
+  }
+  const today = now.toISOString().slice(0, 10);
+  if (shift.date !== today) {
+    return { label: "Zaplanowana", tone: "bg-surface-800/70 text-surface-300" };
+  }
+  const timeParts = parseTimeLabel(shift.start);
+  const endParts = parseTimeLabel(shift.end);
+  if (!timeParts || !endParts) {
+    return { label: "Zaplanowana", tone: "bg-surface-800/70 text-surface-300" };
+  }
+  const [startHour, startMinute] = timeParts;
+  const [endHour, endMinute] = endParts;
+  const start = new Date(now);
+  start.setHours(startHour, startMinute, 0, 0);
+  const end = new Date(now);
+  end.setHours(endHour, endMinute, 0, 0);
+  if (now >= end) return { label: "Zakończona", tone: "bg-emerald-500/15 text-emerald-200" };
+  if (now >= start) return { label: "W trakcie", tone: "bg-amber-500/15 text-amber-200" };
+  return { label: "Zaplanowana", tone: "bg-surface-800/70 text-surface-300" };
+}
+
 export default function DashboardPage() {
   const [range] = useState(getWeekRange);
   const hasSession = useMemo(() => !!getAccessToken(), []);
@@ -139,6 +169,11 @@ export default function DashboardPage() {
     hasSession ? null : "Zaloguj się, aby zobaczyć dashboard.",
   );
   const [activeTab, setActiveTab] = useState("all");
+  const [tourOpen, setTourOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("kadryhrPanelTourSeen") !== "true";
+  });
+  const [tourStepIndex, setTourStepIndex] = useState(0);
 
   useEffect(() => {
     if (!hasSession) return;
@@ -205,6 +240,7 @@ export default function DashboardPage() {
   const assignedEmployees = employees.filter((e) => e.locations.length > 0);
   const pendingEmployees = employees.filter((e) => e.locations.length === 0);
   const employeeWithEmail = employees.find((employee) => Boolean(employee.email));
+  const now = new Date();
 
   const onboardingSteps = [
     {
@@ -220,30 +256,30 @@ export default function DashboardPage() {
       title: "Dodaj pierwszego pracownika",
       description: "Zbuduj bazę zespołu i przypisz role w organizacji.",
       status: employees.length > 0 ? ("done" as const) : ("todo" as const),
-      actionLabel: employees.length > 0 ? "Przejrzyj zespół" : "Skontaktuj się z wdrożeniem",
-      href: employees.length > 0 ? "/panel/grafik" : "mailto:kontakt@kadryhr.pl?subject=Dodanie%20pracownika",
+      actionLabel: employees.length > 0 ? "Przejrzyj zespół" : "Dodaj pracownika",
+      href: employees.length > 0 ? "/panel/grafik" : "/panel/profil",
     },
     {
-      id: "location",
-      title: "Dodaj pierwszą lokalizację",
-      description: "Lokalizacje porządkują grafiki i raporty w wielu oddziałach.",
-      status: locations.length > 0 ? ("done" as const) : ("todo" as const),
-      actionLabel: locations.length > 0 ? "Zobacz grafik lokalizacji" : "Skontaktuj się z wdrożeniem",
-      href: locations.length > 0 ? "/panel/grafik" : "mailto:kontakt@kadryhr.pl?subject=Dodanie%20lokalizacji",
+      id: "device",
+      title: "Dodaj metodę rejestracji czasu",
+      description: "Skonfiguruj Web, kiosk lub QR do rejestracji czasu pracy.",
+      status: "todo" as const,
+      actionLabel: "Funkcja w przygotowaniu",
+      href: "#",
+    },
+    {
+      id: "attendance",
+      title: "Zarejestruj pierwszą obecność",
+      description: "Zaloguj pierwsze wejście/wyjście w RCP.",
+      status: "todo" as const,
+      actionLabel: "Funkcja w przygotowaniu",
+      href: "#",
     },
     {
       id: "first-shift",
-      title: "Zaplanuj pierwszą zmianę",
-      description: "Utwórz pierwszy blok pracy w grafiku.",
-      status: shifts.length > 0 ? ("done" as const) : ("todo" as const),
-      actionLabel: "Otwórz grafik",
-      href: "/panel/grafik",
-    },
-    {
-      id: "publish",
       title: "Opublikuj pierwszy grafik",
-      description: "Opublikuj plan, aby pracownicy widzieli swoje zmiany.",
-      status: shifts.length > 0 ? ("in-progress" as const) : ("todo" as const),
+      description: "Udostępnij plan pracy zespołowi.",
+      status: shifts.length > 0 ? ("done" as const) : ("todo" as const),
       actionLabel: "Publikuj grafik",
       href: "/panel/grafik-v2",
     },
@@ -278,12 +314,41 @@ export default function DashboardPage() {
 
   const { totals: chartTotals, maxValue } = buildChartSeries(shifts, range);
   const todaysHours = chartTotals.find((day) => day.date === todaysDate)?.value ?? 0;
+  const workedHoursToday = 0;
+  const differenceToday = Number((workedHoursToday - todaysHours).toFixed(1));
   const employeeTabs = [
     { key: "all", label: "Wszyscy", data: employees },
     { key: "active", label: "Aktywni", data: assignedEmployees },
-    { key: "pending", label: "Pending", data: pendingEmployees },
+    { key: "pending", label: "Oczekujący", data: pendingEmployees },
   ];
   const activeEmployees = employeeTabs.find((tab) => tab.key === activeTab)?.data ?? employees;
+  const tourSteps: TourStep[] = [
+    {
+      id: "schedule",
+      title: "Grafik zmian",
+      description: "W zakładce „Grafik” zaplanujesz zmiany i sprawdzisz obsadę na tydzień.",
+    },
+    {
+      id: "availability",
+      title: "Dyspozycje",
+      description: "Sekcja „Dyspozycje” zbiera preferencje pracowników przed publikacją grafiku.",
+    },
+    {
+      id: "rcp",
+      title: "Czas pracy (RCP)",
+      description: "Moduł RCP pokaże wejścia i wyjścia pracowników oraz korekty czasu.",
+    },
+    {
+      id: "team",
+      title: "Zespół i role",
+      description: "Zarządzanie pracownikami i zaproszeniami będzie dostępne w module Zespół.",
+    },
+    {
+      id: "help",
+      title: "Pomoc i konsultacje",
+      description: "W każdej chwili uruchomisz wsparcie lub konsultację z doradcą.",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -297,6 +362,9 @@ export default function DashboardPage() {
             Łącznie pracowników: <strong className="text-surface-100">{employees.length}</strong>
           </span>
           <span className="panel-pill">
+            Lokalizacje: <strong className="text-surface-100">{locations.length}</strong>
+          </span>
+          <span className="panel-pill">
             Plan godzin: <strong className="text-surface-100">{Math.round(totalHoursWeek)} h</strong>
           </span>
         </div>
@@ -305,7 +373,7 @@ export default function DashboardPage() {
       <div className="panel-card p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Onboarding</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Wdrożenie</p>
             <p className="text-base font-semibold text-surface-50 mt-1">Zaczynajmy! {completedSteps}/6 kroków</p>
             <p className="text-sm text-surface-400 mt-1">
               Prowadzimy Cię przez konfigurację – każdy krok aktualizuje się automatycznie po wykonaniu.
@@ -362,7 +430,7 @@ export default function DashboardPage() {
           <div className="panel-card p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Today&apos;s schedule</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Dzisiejsze zmiany</p>
                 <p className="text-base font-semibold text-surface-50">
                   {new Date(todaysDate).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
@@ -379,15 +447,21 @@ export default function DashboardPage() {
               ) : (
                 todaysShifts.map((shift) => {
                   const tone = getShiftTone(shift);
+                  const status = getShiftStatusLabel(shift, now);
                   return (
                     <div
                       key={shift.id}
                       className={`min-w-[220px] rounded-2xl border px-4 py-3 shadow-sm ${tone.className}`}
                       style={tone.style}
                     >
-                      <p className="text-xs font-semibold uppercase tracking-[0.02em] text-surface-300">
-                        {shift.start}–{shift.end}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.02em] text-surface-300">
+                          {shift.start}–{shift.end}
+                        </p>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status.tone}`}>
+                          {status.label}
+                        </span>
+                      </div>
                       <p className="text-sm font-semibold text-surface-100 mt-1">
                         {shift.employeeName}
                       </p>
@@ -402,7 +476,7 @@ export default function DashboardPage() {
           <div className="panel-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Employees & Roles</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Zespół i role</p>
                 <p className="text-base font-semibold text-surface-50">
                   Zespół w organizacji
                 </p>
@@ -444,7 +518,17 @@ export default function DashboardPage() {
                       <span className="rounded-full bg-surface-800/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-surface-300">
                         {employee.position ?? "Pracownik"}
                       </span>
-                      <div className="flex items-center gap-2 text-surface-400">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                          employee.locations.length > 0
+                            ? "bg-emerald-500/15 text-emerald-200"
+                            : "bg-amber-500/15 text-amber-200"
+                        }`}
+                      >
+                        {employee.locations.length > 0 ? "Aktywny" : "Oczekujący"}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 text-surface-400">
                         {employee.phone && (
                           <a
                             href={`tel:${employee.phone}`}
@@ -463,7 +547,6 @@ export default function DashboardPage() {
                             ✉️
                           </a>
                         )}
-                      </div>
                     </div>
                   </div>
                 ))
@@ -476,14 +559,33 @@ export default function DashboardPage() {
           <div className="panel-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Work time statistics</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Statystyki czasu pracy</p>
                 <p className="text-base font-semibold text-surface-50">Plan godzin</p>
               </div>
               <span className="rounded-full bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-200">
                 Dziś: {todaysHours} h
               </span>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 grid gap-3 text-sm text-surface-300">
+              <div className="flex items-center justify-between">
+                <span>Zaplanowane godziny</span>
+                <strong className="text-surface-100">{todaysHours} h</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Przepracowane (RCP)</span>
+                <strong className="text-surface-100">{workedHoursToday} h</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Różnica</span>
+                <strong className={differenceToday >= 0 ? "text-emerald-200" : "text-rose-200"}>
+                  {differenceToday} h
+                </strong>
+              </div>
+              <p className="text-xs text-surface-500">
+                Dane RCP będą widoczne po uruchomieniu modułu rejestracji czasu pracy.
+              </p>
+            </div>
+            <div className="mt-6">
               <svg viewBox="0 0 300 120" className="w-full h-28">
                 <defs>
                   <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
@@ -523,12 +625,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="panel-card p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Analytics</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Analityka</p>
             <p className="text-base font-semibold text-surface-50 mt-1">Szybkie statystyki</p>
             <div className="mt-4 space-y-4">
               {[
                 { label: "Zaplanowani dzisiaj", value: todaysShifts.length, max: employees.length || 1 },
                 { label: "Aktywni w grafiku", value: assignedEmployees.length, max: employees.length || 1 },
+                { label: "Nieobecności w tym tygodniu", value: 0, max: employees.length || 1 },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-sm text-surface-300">
@@ -543,6 +646,27 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="panel-card p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Alerty</p>
+            <p className="text-base font-semibold text-surface-50 mt-1">Stan systemu</p>
+            <div className="mt-4 space-y-3 text-sm text-surface-300">
+              <div className="flex items-center justify-between rounded-2xl border border-surface-800/70 bg-surface-900/60 px-4 py-3">
+                <div>
+                  <p className="font-semibold text-surface-100">Wnioski urlopowe</p>
+                  <p className="text-xs text-surface-500">Brak danych do wyświetlenia.</p>
+                </div>
+                <span className="rounded-full bg-surface-800/70 px-3 py-1 text-xs font-semibold text-surface-300">0</span>
+              </div>
+              <div className="flex items-center justify-between rounded-2xl border border-surface-800/70 bg-surface-900/60 px-4 py-3">
+                <div>
+                  <p className="font-semibold text-surface-100">Konflikty w grafiku</p>
+                  <p className="text-xs text-surface-500">Moduł w przygotowaniu.</p>
+                </div>
+                <span className="rounded-full bg-surface-800/70 px-3 py-1 text-xs font-semibold text-surface-300">—</span>
+              </div>
             </div>
           </div>
 
@@ -577,9 +701,76 @@ export default function DashboardPage() {
                 <span className="block text-xs font-normal text-surface-400">+48 22 123 45 67</span>
               </a>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTourStepIndex(0);
+                setTourOpen(true);
+                window.localStorage.setItem("kadryhrPanelTourSeen", "true");
+              }}
+              className="mt-4 w-full rounded-2xl border border-brand-500/40 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-100 transition hover:border-brand-400/70 hover:bg-brand-500/20"
+            >
+              Uruchom przewodnik po panelu
+            </button>
           </div>
         </div>
       </div>
+
+      {tourOpen && hasSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-950/80 px-4">
+          <div className="w-full max-w-lg rounded-3xl border border-surface-800/70 bg-surface-900/90 p-6 shadow-[0_25px_50px_rgba(0,0,0,0.45)]">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+                Krok {tourStepIndex + 1}/{tourSteps.length}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setTourOpen(false);
+                  window.localStorage.setItem("kadryhrPanelTourSeen", "true");
+                }}
+                className="text-xs font-semibold text-surface-400 hover:text-surface-100"
+              >
+                Pomiń
+              </button>
+            </div>
+            <div className="mt-4">
+              <p className="text-lg font-semibold text-surface-50">{tourSteps[tourStepIndex].title}</p>
+              <p className="text-sm text-surface-300 mt-2">{tourSteps[tourStepIndex].description}</p>
+            </div>
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setTourStepIndex((prev) => Math.max(0, prev - 1))}
+                disabled={tourStepIndex === 0}
+                className="rounded-full border border-surface-800/70 px-4 py-2 text-xs font-semibold text-surface-300 transition disabled:opacity-40"
+              >
+                Wstecz
+              </button>
+              {tourStepIndex < tourSteps.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setTourStepIndex((prev) => Math.min(tourSteps.length - 1, prev + 1))}
+                  className="rounded-full bg-brand-500 px-5 py-2 text-xs font-semibold text-white shadow-sm"
+                >
+                  Dalej
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTourOpen(false);
+                    window.localStorage.setItem("kadryhrPanelTourSeen", "true");
+                  }}
+                  className="rounded-full bg-emerald-500 px-5 py-2 text-xs font-semibold text-white shadow-sm"
+                >
+                  Zakończ
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
