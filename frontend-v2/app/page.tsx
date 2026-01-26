@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { LandingLayout } from "@/components/landing/LandingLayout";
 
 export default function HomePage() {
-  redirect("/panel");
+  return <LandingLayout />;
 }
