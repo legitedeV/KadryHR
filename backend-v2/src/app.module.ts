@@ -29,6 +29,7 @@ import { ReportsModule } from './reports/reports.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { WebsiteModule } from './website/website.module';
 import { PlatformConfigModule } from './platform-config/platform-config.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -68,5 +69,6 @@ import { PlatformConfigModule } from './platform-config/platform-config.module';
     WebsiteModule,
     PlatformConfigModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

@@ -9,17 +9,20 @@ import { NewsletterEmailProcessor } from './newsletter-email.processor';
 
 @Module({
   imports: [
+    ConfigModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig, true>) => {
         const host = configService.get('redis.host', { infer: true });
         const port = configService.get('redis.port', { infer: true });
+        const enabled = configService.get('redis.enabled', { infer: true });
 
         return {
           connection: {
             host,
             port,
+            lazyConnect: !enabled,
             // Graceful degradation: if Redis connection fails, the app continues
             maxRetriesPerRequest: 3,
             retryStrategy: (times: number) => {

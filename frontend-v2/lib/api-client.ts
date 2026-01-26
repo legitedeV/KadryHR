@@ -2,7 +2,7 @@ import { AuthTokens, clearAuthTokens, getAuthTokens, saveAuthTokens } from "./au
 import { pushToast } from "./toast";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://api.kadryhr.pl/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "https://kadryhr.pl/api";
 const DEFAULT_TIMEOUT_MS = 15000;
 
 type RequestOptions = RequestInit & {

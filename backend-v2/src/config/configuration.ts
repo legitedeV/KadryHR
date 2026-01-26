@@ -30,6 +30,7 @@ export interface AppConfig {
     fromNumber: string;
   };
   redis: {
+    enabled: boolean;
     host: string;
     port: number;
   };
@@ -46,7 +47,7 @@ export interface AppConfig {
 
 export const configuration = (): AppConfig => ({
   app: {
-    port: Number(process.env.APP_PORT ?? 3000),
+    port: Number(process.env.APP_PORT ?? 4000),
     jwt: {
       secret: process.env.JWT_ACCESS_SECRET ?? 'changeme-access',
       accessTokenTtl: process.env.JWT_ACCESS_TTL ?? '15m',
@@ -77,6 +78,7 @@ export const configuration = (): AppConfig => ({
     fromNumber: process.env.SMS_FROM_NUMBER ?? '',
   },
   redis: {
+    enabled: (process.env.REDIS_ENABLED ?? 'true') !== 'false',
     host: process.env.REDIS_HOST ?? 'localhost',
     port: Number(process.env.REDIS_PORT ?? 6379),
   },

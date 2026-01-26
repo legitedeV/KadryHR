@@ -71,6 +71,18 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  REDIS_ENABLED?: string;
+
+  @IsOptional()
+  @IsString()
+  REDIS_HOST?: string;
+
+  @IsOptional()
+  @IsNumber()
+  REDIS_PORT?: number;
+
+  @IsOptional()
+  @IsString()
   LEADS_DEFAULT_ORGANISATION_ID?: string;
 
   @IsOptional()
