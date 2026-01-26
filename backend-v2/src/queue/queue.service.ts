@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -23,14 +24,24 @@ export interface NewsletterEmailJob {
 export class QueueService {
   private readonly logger = new Logger(QueueService.name);
   private queueAvailable = true;
+  private readonly redisEnabled: boolean;
 
   constructor(
     @InjectQueue('email-delivery')
     private readonly emailQueue: Queue<EmailDeliveryJob>,
     @InjectQueue('newsletter-email')
     private readonly newsletterQueue: Queue<NewsletterEmailJob>,
+    private readonly configService: ConfigService,
   ) {
-    // Check if queue is available
+    this.redisEnabled = this.configService.get<boolean>('redis.enabled', true);
+    if (!this.redisEnabled) {
+      this.queueAvailable = false;
+      this.logger.warn(
+        'Redis disabled via REDIS_ENABLED=false. Email queues will run in synchronous fallback mode.',
+      );
+      return;
+    }
+
     this.checkQueueAvailability();
   }
 

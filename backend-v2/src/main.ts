@@ -9,11 +9,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.use(helmet());
 
-  const baseOrigins = [
-    'https://kadryhr.pl',
-    'https://admin.kadryhr.pl',
-    'https://panel.kadryhr.pl',
-  ];
+  const baseOrigins = ['https://kadryhr.pl', 'http://localhost:3000'];
   const envOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim())

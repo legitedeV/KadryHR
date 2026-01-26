@@ -7,6 +7,6 @@
 
 ## App scope
 - The frontend only ships the core panel modules: Dashboard, Grafik, Dyspozycje, Profil.
-- Default API base: `https://api.kadryhr.pl/api` (override with `NEXT_PUBLIC_API_URL`).
-- Panel URL: `NEXT_PUBLIC_PANEL_APP_URL` (defaults to `https://panel.kadryhr.pl`).
+- Default API base: `https://kadryhr.pl/api` (override with `NEXT_PUBLIC_API_URL`).
+- Panel URL: `NEXT_PUBLIC_PANEL_APP_URL` (defaults to `https://kadryhr.pl`).
 - Optional E2E: `npm run test:e2e` (Playwright).
