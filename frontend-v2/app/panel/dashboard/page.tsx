@@ -11,6 +11,7 @@ import {
   LocationRecord,
 } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+import { useOnboarding } from "@/features/onboarding/OnboardingProvider";
 
 type ShiftView = {
   id: string;
@@ -28,12 +29,6 @@ type DashboardData = {
   shifts: ShiftView[];
   employees: EmployeeRecord[];
   locations: LocationRecord[];
-};
-
-type TourStep = {
-  id: string;
-  title: string;
-  description: string;
 };
 
 function parseTimeLabel(value: string): [number, number] | null {
@@ -169,11 +164,7 @@ export default function DashboardPage() {
     hasSession ? null : "Zaloguj się, aby zobaczyć dashboard.",
   );
   const [activeTab, setActiveTab] = useState("all");
-  const [tourOpen, setTourOpen] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("kadryhrPanelTourSeen") !== "true";
-  });
-  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const { startMainPanelTour, hasBeenCompleted, hasBeenSkipped, isReady } = useOnboarding();
 
   useEffect(() => {
     if (!hasSession) return;
@@ -202,6 +193,15 @@ export default function DashboardPage() {
       cancelled = true;
     };
   }, [hasSession, range.from, range.to]);
+
+  useEffect(() => {
+    if (!hasSession || loading || !isReady) return;
+    if (hasBeenCompleted || hasBeenSkipped) return;
+    const timer = window.setTimeout(() => {
+      startMainPanelTour();
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [hasBeenCompleted, hasBeenSkipped, hasSession, isReady, loading, startMainPanelTour]);
 
   if (loading) {
     return (
@@ -322,34 +322,6 @@ export default function DashboardPage() {
     { key: "pending", label: "Oczekujący", data: pendingEmployees },
   ];
   const activeEmployees = employeeTabs.find((tab) => tab.key === activeTab)?.data ?? employees;
-  const tourSteps: TourStep[] = [
-    {
-      id: "schedule",
-      title: "Grafik zmian",
-      description: "W zakładce „Grafik” zaplanujesz zmiany i sprawdzisz obsadę na tydzień.",
-    },
-    {
-      id: "availability",
-      title: "Dyspozycje",
-      description: "Sekcja „Dyspozycje” zbiera preferencje pracowników przed publikacją grafiku.",
-    },
-    {
-      id: "rcp",
-      title: "Czas pracy (RCP)",
-      description: "Moduł RCP pokaże wejścia i wyjścia pracowników oraz korekty czasu.",
-    },
-    {
-      id: "team",
-      title: "Zespół i role",
-      description: "Zarządzanie pracownikami i zaproszeniami będzie dostępne w module Zespół.",
-    },
-    {
-      id: "help",
-      title: "Pomoc i konsultacje",
-      description: "W każdej chwili uruchomisz wsparcie lub konsultację z doradcą.",
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -703,11 +675,7 @@ export default function DashboardPage() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                setTourStepIndex(0);
-                setTourOpen(true);
-                window.localStorage.setItem("kadryhrPanelTourSeen", "true");
-              }}
+              onClick={() => startMainPanelTour()}
               className="mt-4 w-full rounded-2xl border border-brand-500/40 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-100 transition hover:border-brand-400/70 hover:bg-brand-500/20"
             >
               Uruchom przewodnik po panelu
@@ -715,62 +683,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {tourOpen && hasSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-950/80 px-4">
-          <div className="w-full max-w-lg rounded-3xl border border-surface-800/70 bg-surface-900/90 p-6 shadow-[0_25px_50px_rgba(0,0,0,0.45)]">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
-                Krok {tourStepIndex + 1}/{tourSteps.length}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setTourOpen(false);
-                  window.localStorage.setItem("kadryhrPanelTourSeen", "true");
-                }}
-                className="text-xs font-semibold text-surface-400 hover:text-surface-100"
-              >
-                Pomiń
-              </button>
-            </div>
-            <div className="mt-4">
-              <p className="text-lg font-semibold text-surface-50">{tourSteps[tourStepIndex].title}</p>
-              <p className="text-sm text-surface-300 mt-2">{tourSteps[tourStepIndex].description}</p>
-            </div>
-            <div className="mt-6 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setTourStepIndex((prev) => Math.max(0, prev - 1))}
-                disabled={tourStepIndex === 0}
-                className="rounded-full border border-surface-800/70 px-4 py-2 text-xs font-semibold text-surface-300 transition disabled:opacity-40"
-              >
-                Wstecz
-              </button>
-              {tourStepIndex < tourSteps.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setTourStepIndex((prev) => Math.min(tourSteps.length - 1, prev + 1))}
-                  className="rounded-full bg-brand-500 px-5 py-2 text-xs font-semibold text-white shadow-sm"
-                >
-                  Dalej
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTourOpen(false);
-                    window.localStorage.setItem("kadryhrPanelTourSeen", "true");
-                  }}
-                  className="rounded-full bg-emerald-500 px-5 py-2 text-xs font-semibold text-white shadow-sm"
-                >
-                  Zakończ
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
