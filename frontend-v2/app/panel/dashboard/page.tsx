@@ -528,7 +528,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="panel-card p-6">
+          <div className="panel-card p-6" data-onboarding-target="nav-time-tracking">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Statystyki czasu pracy</p>
@@ -642,7 +642,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="panel-card p-6">
+          <div className="panel-card p-6" data-onboarding-target="nav-help">
             <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Potrzebujesz pomocy?</p>
             <p className="text-base font-semibold text-surface-50 mt-1">Jesteśmy dostępni w 3 kanałach</p>
             <p className="text-sm text-surface-400 mt-2">

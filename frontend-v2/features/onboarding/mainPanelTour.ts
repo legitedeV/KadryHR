@@ -8,31 +8,45 @@ export const mainPanelTour: OnboardingTourConfig = {
       id: "schedule",
       title: "Grafik zmian",
       description:
-        "W zakładce „Grafik” zaplanujesz zmiany i sprawdzisz obsadę na cały tydzień – to serce planowania pracy.",
+        'W zakladce "Grafik" zaplanujesz zmiany i sprawdzisz obsade na caly tydzien - to serce planowania pracy.',
+      targetId: "nav-schedule",
+      moduleRouteName: "schedule",
+      primaryActionType: "go-to-module",
     },
     {
       id: "availability",
       title: "Dyspozycje",
       description:
-        "Moduł „Dyspozycje” zbiera preferencje pracowników, zanim opublikujesz grafik – dzięki temu łatwiej unikniesz konfliktów.",
+        'Modul "Dyspozycje" zbiera preferencje pracownikow, zanim opublikujesz grafik - dzieki temu latwiej unikniesz konfliktow.',
+      targetId: "nav-availability",
+      moduleRouteName: "availability",
+      primaryActionType: "go-to-module",
     },
     {
       id: "time-tracking",
       title: "Czas pracy (RCP)",
       description:
-        "W module RCP widzisz wejścia i wyjścia pracowników, korekty czasu i różnice względem grafiku.",
+        "W module RCP widzisz wejscia i wyjscia pracownikow, korekty czasu i roznice wzgledem grafiku.",
+      targetId: "nav-time-tracking",
+      moduleRouteName: "profile",
+      primaryActionType: "go-to-module",
     },
     {
       id: "team-and-roles",
-      title: "Zespół i role",
+      title: "Zespol i role",
       description:
-        "W sekcji „Pracownicy / Zespół” dodasz nowych pracowników, przypiszesz role oraz wyślesz zaproszenia do logowania.",
+        'W sekcji "Pracownicy / Zespol" dodasz nowych pracownikow, przypiszesz role oraz wyslesz zaproszenia do logowania.',
+      targetId: "nav-employees",
+      moduleRouteName: "profile",
+      primaryActionType: "go-to-module",
     },
     {
       id: "help-and-consulting",
       title: "Pomoc i konsultacje",
       description:
-        "Gdy potrzebujesz wsparcia, uruchom komunikator, umów konsultację lub zadzwoń – kontakt znajdziesz w panelu pomocy.",
+        "Gdy potrzebujesz wsparcia, uruchom komunikator, umow konsultacje lub zadzwon - kontakt znajdziesz w panelu pomocy.",
+      targetId: "nav-help",
+      primaryActionType: "finish",
     },
   ],
 };

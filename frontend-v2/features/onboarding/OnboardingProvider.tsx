@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import { mainPanelTour } from "./mainPanelTour";
-import { OnboardingTourConfig } from "./onboarding.types";
+import { OnboardingTourConfig, OnboardingState } from "./onboarding.types";
 import { OnboardingOverlay } from "./OnboardingOverlay";
 
 const STORAGE_PREFIX = "kadryhr:onboarding";
@@ -35,6 +35,17 @@ function getStorageKey(userId: string, tourId: string) {
   return `${STORAGE_PREFIX}:${tourId}:${userId}`;
 }
 
+function getStoredState(userId: string, tourId: string): OnboardingState | null {
+  if (typeof window === "undefined" || !userId) return null;
+  try {
+    const stored = window.localStorage.getItem(getStorageKey(userId, tourId));
+    if (!stored) return null;
+    return JSON.parse(stored) as OnboardingState;
+  } catch {
+    return null;
+  }
+}
+
 type OnboardingProviderProps = {
   userId: string;
   children: ReactNode;
@@ -45,38 +56,27 @@ export function OnboardingProvider({ userId, children }: OnboardingProviderProps
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [hasBeenCompleted, setHasBeenCompleted] = useState(() => {
-    if (typeof window === "undefined" || !userId) return false;
-    try {
-      const stored = window.localStorage.getItem(getStorageKey(userId, tour.id));
-      if (!stored) return false;
-      const parsed = JSON.parse(stored) as { completed?: boolean };
-      return Boolean(parsed.completed);
-    } catch {
-      return false;
-    }
+    const stored = getStoredState(userId, tour.id);
+    return Boolean(stored?.completed);
   });
   const [hasBeenSkipped, setHasBeenSkipped] = useState(() => {
-    if (typeof window === "undefined" || !userId) return false;
-    try {
-      const stored = window.localStorage.getItem(getStorageKey(userId, tour.id));
-      if (!stored) return false;
-      const parsed = JSON.parse(stored) as { skipped?: boolean };
-      return Boolean(parsed.skipped);
-    } catch {
-      return false;
-    }
+    const stored = getStoredState(userId, tour.id);
+    return Boolean(stored?.skipped);
   });
   const isReady = typeof window !== "undefined" && Boolean(userId);
 
   useEffect(() => {
     if (!userId) return;
     const storageKey = getStorageKey(userId, tour.id);
-    const payload = JSON.stringify({
+    const existingState = getStoredState(userId, tour.id);
+    const payload: OnboardingState = {
       completed: hasBeenCompleted,
       skipped: hasBeenSkipped,
-    });
-    window.localStorage.setItem(storageKey, payload);
-  }, [hasBeenCompleted, hasBeenSkipped, tour.id, userId]);
+      lastStepIndex: existingState?.lastStepIndex ?? currentStepIndex,
+      completedAt: hasBeenCompleted ? (existingState?.completedAt ?? new Date().toISOString()) : undefined,
+    };
+    window.localStorage.setItem(storageKey, JSON.stringify(payload));
+  }, [hasBeenCompleted, hasBeenSkipped, tour.id, userId, currentStepIndex]);
 
   const startMainPanelTour = useCallback(
     (options?: { reset?: boolean }) => {

@@ -8,31 +8,18 @@ import { apiGetMe, User } from "@/lib/api";
 import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
 import { OnboardingProvider } from "@/features/onboarding/OnboardingProvider";
+import { panelNavItems, titleByPath, PanelNavItemId } from "@/lib/panel-navigation";
+import { OnboardingTargetId } from "@/features/onboarding/onboarding.types";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: string;
+// Map nav item IDs to onboarding target IDs
+const navItemToOnboardingTarget: Partial<Record<PanelNavItemId, OnboardingTargetId>> = {
+  schedule: "nav-schedule",
+  availability: "nav-availability",
+  profile: "nav-employees",
 };
-
-const navItems: NavItem[] = [
-  { href: "/panel/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-  { href: "/panel/grafik", label: "Grafik", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
-  { href: "/panel/grafik-v2", label: "Grafik v2", icon: "M4 6h16M4 12h16M4 18h16" },
-  { href: "/panel/dyspozycje", label: "Dyspozycje", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
-  { href: "/panel/profil", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-];
 
 // Height for mobile menu content area (viewport height minus header and footer)
 const MOBILE_MENU_CONTENT_HEIGHT = 'calc(100vh - 180px)';
-
-const titleByPath: Record<string, string> = {
-  "/panel/grafik": "Grafik zmian",
-  "/panel/grafik-v2": "Grafik zmian v2",
-  "/panel/dyspozycje": "Dyspozycje",
-  "/panel/profil": "Profil użytkownika",
-  "/panel/dashboard": "Dashboard",
-};
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -107,12 +94,14 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-surface-500 mb-3">
               Nawigacja
             </p>
-            {navItems.map((item) => {
+            {panelNavItems.map((item) => {
               const active = pathname === item.href;
+              const onboardingTarget = navItemToOnboardingTarget[item.id];
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  data-onboarding-target={onboardingTarget}
                   className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-500 ${
                     active
                       ? "bg-brand-900/35 text-brand-100 shadow-[0_14px_34px_rgba(0,0,0,0.35)] ring-1 ring-brand-700/50"
@@ -190,13 +179,15 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-surface-500 mb-3">
               Nawigacja
             </p>
-            {navItems.map((item) => {
+            {panelNavItems.map((item) => {
               const active = pathname === item.href;
+              const onboardingTarget = navItemToOnboardingTarget[item.id];
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
+                  data-onboarding-target={onboardingTarget}
                   className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-500 ${
                     active
                       ? "bg-brand-900/35 text-brand-100 shadow-[0_14px_34px_rgba(0,0,0,0.35)] ring-1 ring-brand-700/50"
