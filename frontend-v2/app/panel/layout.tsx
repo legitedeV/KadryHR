@@ -7,6 +7,7 @@ import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { BrandLogoMotion } from "@/components/brand/BrandLogoMotion";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
+import { OnboardingProvider } from "@/features/onboarding/OnboardingProvider";
 
 type NavItem = {
   href: string;
@@ -90,12 +91,13 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex panel-shell relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(201,155,100,0.12),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(79,159,158,0.12),transparent_60%)]" />
-      </div>
-        {/* sidebar */}
-        <aside className="hidden md:flex md:flex-col w-64 rounded-r-[28px] sidebar-glass shadow-[12px_0_40px_color-mix(in_srgb,var(--color-surface-900)_35%,transparent)]">
+    <OnboardingProvider userId={user.id}>
+      <div className="min-h-screen flex panel-shell relative overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(201,155,100,0.12),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(79,159,158,0.12),transparent_60%)]" />
+        </div>
+          {/* sidebar */}
+          <aside className="hidden md:flex md:flex-col w-64 rounded-r-[28px] sidebar-glass shadow-[12px_0_40px_color-mix(in_srgb,var(--color-surface-900)_35%,transparent)]">
           <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-800/60 backdrop-blur">
             <Link href="/panel/dashboard" className="shrink-0">
               <BrandLogoStatic size={36} variant="icon" ariaLabel="KadryHR" />
@@ -291,5 +293,6 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
+    </OnboardingProvider>
   );
 }
