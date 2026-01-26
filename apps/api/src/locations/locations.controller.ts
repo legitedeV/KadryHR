@@ -21,6 +21,11 @@ export class LocationsController {
     return this.locationsService.create(user.organizationId, user.role, body);
   }
 
+  @Get(":id")
+  getById(@CurrentOrganization() organizationId: string, @Param("id") id: string) {
+    return this.locationsService.getById(organizationId, id);
+  }
+
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,

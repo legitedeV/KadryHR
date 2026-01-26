@@ -1,24 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KadryButton, KadryCard, Section } from "@kadryhr/ui";
-import { api, Location } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type LocationFormState = {
   name: string;
+  code: string;
   address: string;
+  city: string;
+  timezone: string;
 };
 
 const emptyForm: LocationFormState = {
   name: "",
+  code: "",
   address: "",
+  city: "",
+  timezone: "",
 };
 
 export default function LocationsPage() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
-  const [editing, setEditing] = useState<Location | null>(null);
   const [form, setForm] = useState<LocationFormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,15 +41,6 @@ export default function LocationsPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<LocationFormState> }) =>
-      api.updateLocation(id, data),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["locations"] });
-      closeModal();
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: api.deleteLocation,
     onSuccess: async () => {
@@ -52,25 +49,13 @@ export default function LocationsPage() {
   });
 
   const openCreate = () => {
-    setEditing(null);
     setForm(emptyForm);
-    setError(null);
-    setIsOpen(true);
-  };
-
-  const openEdit = (location: Location) => {
-    setEditing(location);
-    setForm({
-      name: location.name,
-      address: location.address ?? "",
-    });
     setError(null);
     setIsOpen(true);
   };
 
   const closeModal = () => {
     setIsOpen(false);
-    setEditing(null);
     setForm(emptyForm);
     setError(null);
   };
@@ -82,22 +67,21 @@ export default function LocationsPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    if (!form.name.trim()) {
-      setError("Podaj nazwę lokalizacji.");
+    if (form.name.trim().length < 2) {
+      setError("Nazwa lokalizacji musi mieć co najmniej 2 znaki.");
       return;
     }
 
     const payload = {
       name: form.name.trim(),
+      code: form.code.trim() || undefined,
       address: form.address.trim() || undefined,
+      city: form.city.trim() || undefined,
+      timezone: form.timezone.trim() || undefined,
     };
 
     try {
-      if (editing) {
-        await updateMutation.mutateAsync({ id: editing.id, data: payload });
-      } else {
-        await createMutation.mutateAsync(payload);
-      }
+      await createMutation.mutateAsync(payload);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Nie udało się zapisać lokalizacji.";
       setError(message);
@@ -127,6 +111,12 @@ export default function LocationsPage() {
           <KadryButton onClick={openCreate}>Dodaj lokalizację</KadryButton>
         </div>
 
+        {locationsQuery.isLoading ? (
+          <KadryCard className="p-5">
+            <p className="text-sm text-emerald-700">Ładowanie lokalizacji...</p>
+          </KadryCard>
+        ) : null}
+
         {locationsQuery.isError ? (
           <KadryCard className="p-5">
             <p className="text-sm text-red-600">Nie udało się pobrać lokalizacji.</p>
@@ -144,7 +134,8 @@ export default function LocationsPage() {
             <thead>
               <tr className="text-emerald-700">
                 <th className="py-2 pr-4">Nazwa</th>
-                <th className="py-2 pr-4">Adres</th>
+                <th className="py-2 pr-4">Kod</th>
+                <th className="py-2 pr-4">Miasto</th>
                 <th className="py-2 pr-4 text-right">Akcje</th>
               </tr>
             </thead>
@@ -152,15 +143,16 @@ export default function LocationsPage() {
               {locations.map((location) => (
                 <tr key={location.id} className="border-t border-emerald-100">
                   <td className="py-3 pr-4 text-emerald-950">{location.name}</td>
-                  <td className="py-3 pr-4 text-emerald-800">{location.address ?? "-"}</td>
+                  <td className="py-3 pr-4 text-emerald-800">{location.code ?? "-"}</td>
+                  <td className="py-3 pr-4 text-emerald-800">{location.city ?? "-"}</td>
                   <td className="py-3 pr-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
+                      <Link
                         className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                        onClick={() => openEdit(location)}
+                        href={`/panel/lokalizacje/${location.id}`}
                       >
                         Edytuj
-                      </button>
+                      </Link>
                       <button
                         className="text-sm font-medium text-red-600 hover:text-red-700"
                         onClick={() => handleDelete(location.id)}
@@ -171,10 +163,10 @@ export default function LocationsPage() {
                   </td>
                 </tr>
               ))}
-              {locations.length === 0 ? (
+              {locations.length === 0 && !locationsQuery.isLoading ? (
                 <tr>
-                  <td colSpan={3} className="py-6 text-center text-emerald-700">
-                    Brak lokalizacji. Dodaj pierwszą lokalizację.
+                  <td colSpan={4} className="py-6 text-center text-emerald-700">
+                    Brak lokalizacji – dodaj pierwszą.
                   </td>
                 </tr>
               ) : null}
@@ -187,9 +179,7 @@ export default function LocationsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-emerald-950">
-                {editing ? "Edytuj lokalizację" : "Dodaj lokalizację"}
-              </h2>
+              <h2 className="text-lg font-semibold text-emerald-950">Dodaj lokalizację</h2>
               <button className="text-sm text-emerald-600" onClick={closeModal}>
                 Zamknij
               </button>
@@ -206,6 +196,15 @@ export default function LocationsPage() {
                 />
               </label>
               <label className="text-sm font-medium text-emerald-900">
+                Kod
+                <input
+                  type="text"
+                  value={form.code}
+                  onChange={handleChange("code")}
+                  className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                />
+              </label>
+              <label className="text-sm font-medium text-emerald-900">
                 Adres
                 <input
                   type="text"
@@ -214,13 +213,31 @@ export default function LocationsPage() {
                   className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
                 />
               </label>
+              <label className="text-sm font-medium text-emerald-900">
+                Miasto
+                <input
+                  type="text"
+                  value={form.city}
+                  onChange={handleChange("city")}
+                  className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                />
+              </label>
+              <label className="text-sm font-medium text-emerald-900">
+                Strefa czasowa
+                <input
+                  type="text"
+                  value={form.timezone}
+                  onChange={handleChange("timezone")}
+                  className="mt-2 w-full rounded-lg border border-emerald-200 px-3 py-2"
+                />
+              </label>
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
               <div className="flex justify-end gap-3">
                 <KadryButton type="button" variant="ghost" onClick={closeModal}>
                   Anuluj
                 </KadryButton>
-                <KadryButton type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editing ? "Zapisz" : "Dodaj"}
+                <KadryButton type="submit" disabled={createMutation.isPending}>
+                  Dodaj
                 </KadryButton>
               </div>
             </form>

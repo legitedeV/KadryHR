@@ -1,8 +1,9 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
 
 export class CreateLocationDto {
   @IsString()
   @IsNotEmpty()
+  @MinLength(2)
   name!: string;
 
   @IsOptional()

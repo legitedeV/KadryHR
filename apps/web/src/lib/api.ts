@@ -36,7 +36,10 @@ export type OrganizationSummary = {
 export type Location = {
   id: string;
   name: string;
+  code?: string | null;
   address?: string | null;
+  city?: string | null;
+  timezone?: string | null;
 };
 
 export type Employee = {
@@ -193,13 +196,19 @@ export const api = {
   getLocations() {
     return request<Location[]>("/locations");
   },
-  createLocation(data: { name: string; address?: string }) {
+  getLocation(id: string) {
+    return request<Location>(`/locations/${id}` as const);
+  },
+  createLocation(data: { name: string; address?: string; city?: string; code?: string; timezone?: string }) {
     return request<Location>("/locations", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
-  updateLocation(id: string, data: { name?: string; address?: string }) {
+  updateLocation(
+    id: string,
+    data: { name?: string; address?: string; city?: string; code?: string; timezone?: string }
+  ) {
     return request<Location>(`/locations/${id}` as const, {
       method: "PATCH",
       body: JSON.stringify(data),
