@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeroPanel } from "@/components/landing/HeroPanel";
+import { TrustedBySection } from "@/components/landing/TrustedBySection";
 import { TimelineSection } from "@/components/landing/TimelineSection";
 import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { ModuleMapSection } from "@/components/landing/ModuleMapSection";
@@ -53,6 +54,7 @@ export function LandingLayout() {
 
       <main>
         <HeroPanel />
+        <TrustedBySection />
         <TimelineSection />
         <ComparisonSection />
         <ModuleMapSection />
