@@ -35,7 +35,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/serve-static": "^5.0.4",
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^7.3.0",
     "@swc/helpers": "^0.5.17",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.66.4",
