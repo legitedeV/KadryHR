@@ -55,15 +55,15 @@ const personas = [
 
 export function PersonasSection() {
   return (
-    <section id="dla-kogo" className="relative py-24">
+    <section id="dla-kogo" className="relative py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#F7F9FB] via-[#F7F9FB] to-[#F7F9FB]" />
-      <div className="relative mx-auto max-w-6xl px-6">
-        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="relative mx-auto max-w-5xl px-5">
+        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
+            <p className="text-sm uppercase tracking-[0.3em] text-emerald-600">
               Dla kogo jest KadryHR
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
+            <h2 className="mt-4 text-2xl font-semibold text-surface-900 sm:text-3xl">
               Różne role, ten sam porządek w grafiku i RCP.
             </h2>
             <p className="mt-4 text-surface-600">
@@ -71,21 +71,21 @@ export function PersonasSection() {
               Zobacz, jak wygląda to w praktyce.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {personas.map((persona) => (
               <div
                 key={persona.role}
-                className="rounded-[2.2rem] border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600"
+                className="rounded-2xl border border-surface-300 bg-surface-100 p-5 text-sm text-surface-600"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/40 bg-emerald-300/10 text-emerald-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400 bg-emerald-50 text-emerald-700">
                     <svg
                       width="22"
                       height="22"
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      className="text-emerald-200"
+                      className="text-emerald-600"
                     >
                       <path
                         d="M12 3L20 7V17L12 21L4 17V7L12 3Z"
@@ -118,7 +118,7 @@ export function PersonasSection() {
                   </ul>
                 </div>
                 <div className="mt-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/70">
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">
                     Po wdrożeniu
                   </p>
                   <ul className="mt-3 space-y-2">

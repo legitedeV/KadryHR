@@ -14,7 +14,7 @@ export function LandingLayout() {
   return (
     <div className="min-h-screen bg-[#F7F9FB] text-surface-900">
       <header className="sticky top-0 z-40 border-b border-surface-300 bg-[#F7F9FB]/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <nav className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
           <Link href="/" className="text-lg font-semibold tracking-tight">
             KadryHR
           </Link>
@@ -66,7 +66,7 @@ export function LandingLayout() {
       </main>
 
       <footer className="border-t border-surface-300 bg-[#F7F9FB]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 text-sm text-surface-600 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-8 text-sm text-surface-600 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <span className="text-surface-900">KadryHR</span>
             <span>Premium platforma grafiku i RCP</span>

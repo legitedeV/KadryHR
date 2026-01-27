@@ -121,22 +121,22 @@ export function LeadFormSection() {
   };
 
   return (
-    <section id="lead-form" className="relative bg-[#F7F9FB] py-24">
+    <section id="lead-form" className="relative bg-[#F7F9FB] py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#F7F9FB] to-[#FFFFFF]" />
-      <div className="relative mx-auto max-w-5xl px-6">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="relative mx-auto max-w-4xl px-5">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
+            <p className="text-sm uppercase tracking-[0.3em] text-emerald-600">
               Umów prezentację
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
+            <h2 className="mt-4 text-2xl font-semibold text-surface-900 sm:text-3xl">
               Zostaw kontakt — pokażemy Ci KadryHR na Twoich danych.
             </h2>
             <p className="mt-4 text-surface-600">
               Odezwiemy się w ciągu 24h, przygotujemy demo dopasowane do Twojej
               organizacji i policzymy realne oszczędności.
             </p>
-            <div className="mt-6 rounded-3xl border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600">
+            <div className="mt-5 rounded-2xl border border-surface-300 bg-surface-100 p-5 text-sm text-surface-600">
               <p className="text-surface-700">Dlaczego warto?</p>
               <ul className="mt-4 space-y-3">
                 <li className="flex items-start gap-3">
@@ -155,10 +155,10 @@ export function LeadFormSection() {
             </div>
           </div>
           <form
-            className="rounded-[2.5rem] border border-emerald-300/30 bg-gradient-to-br from-emerald-400/10 via-white/[0.03] to-transparent p-8"
+            className="rounded-2xl border border-emerald-400 bg-gradient-to-br from-emerald-50 via-white/[0.03] to-transparent p-6"
             onSubmit={handleSubmit}
           >
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               <div>
                 <label className="text-sm text-surface-600" htmlFor="name">
                   Imię i nazwisko
@@ -170,7 +170,7 @@ export function LeadFormSection() {
                   required
                   value={formState.name}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
+                  className="mt-1.5 w-full rounded-xl border border-surface-300 bg-white px-3 py-2.5 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
@@ -184,7 +184,7 @@ export function LeadFormSection() {
                   required
                   value={formState.email}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
+                  className="mt-1.5 w-full rounded-xl border border-surface-300 bg-white px-3 py-2.5 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
@@ -198,7 +198,7 @@ export function LeadFormSection() {
                   required
                   value={formState.company}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
+                  className="mt-1.5 w-full rounded-xl border border-surface-300 bg-white px-3 py-2.5 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
@@ -212,7 +212,7 @@ export function LeadFormSection() {
                   min={1}
                   value={formState.headcount}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
+                  className="mt-1.5 w-full rounded-xl border border-surface-300 bg-white px-3 py-2.5 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
@@ -222,14 +222,14 @@ export function LeadFormSection() {
                 <textarea
                   id="message"
                   name="message"
-                  rows={4}
+                  rows={3}
                   value={formState.message}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
+                  className="mt-1.5 w-full rounded-xl border border-surface-300 bg-white px-3 py-2.5 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
             </div>
-            <div className="mt-6 space-y-3 text-xs text-surface-600">
+            <div className="mt-5 space-y-2 text-xs text-surface-600">
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -258,7 +258,7 @@ export function LeadFormSection() {
             <button
               type="submit"
               disabled={!canSubmit || isSubmitting}
-              className="mt-6 w-full rounded-full bg-emerald-300 px-6 py-3 text-sm font-semibold text-surface-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200/60"
+              className="mt-5 w-full rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-semibold text-surface-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200/60"
             >
               {isSubmitting ? "Wysyłamy..." : "Wyślij zgłoszenie"}
             </button>
@@ -268,12 +268,12 @@ export function LeadFormSection() {
               aria-live="polite"
             >
               {status === "success" && (
-                <p className="text-emerald-200">
+                <p className="text-emerald-600 font-medium">
                   Dziękujemy! Wkrótce wrócimy z propozycją terminu demo.
                 </p>
               )}
               {status === "error" && (
-                <p className="text-rose-200">
+                <p className="text-rose-600">
                   {errorMessage ?? "Nie udało się wysłać formularza."}
                 </p>
               )}
