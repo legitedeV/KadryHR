@@ -56,17 +56,17 @@ const personas = [
 export function PersonasSection() {
   return (
     <section id="dla-kogo" className="relative py-24">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0b1110] via-[#0f1916] to-[#0b1110]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#F7F9FB] via-[#F7F9FB] to-[#F7F9FB]" />
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
               Dla kogo jest KadryHR
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
               Różne role, ten sam porządek w grafiku i RCP.
             </h2>
-            <p className="mt-4 text-white/70">
+            <p className="mt-4 text-surface-600">
               KadryHR buduje wspólny język między operacją, HR i managerami.
               Zobacz, jak wygląda to w praktyce.
             </p>
@@ -75,7 +75,7 @@ export function PersonasSection() {
             {personas.map((persona) => (
               <div
                 key={persona.role}
-                className="rounded-[2.2rem] border border-white/10 bg-white/5 p-6 text-sm text-white/70"
+                className="rounded-[2.2rem] border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/40 bg-emerald-300/10 text-emerald-200">
@@ -100,12 +100,12 @@ export function PersonasSection() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-base font-semibold text-white">
+                  <h3 className="text-base font-semibold text-surface-900">
                     {persona.role}
                   </h3>
                 </div>
                 <div className="mt-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                  <p className="text-xs uppercase tracking-[0.3em] text-surface-500">
                     Bóle
                   </p>
                   <ul className="mt-3 space-y-2">

@@ -23,18 +23,18 @@ const faqs = [
 
 export function FaqSection() {
   return (
-    <section id="faq" className="relative bg-[#0b1110] py-24">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0f1916] via-[#0b1110] to-[#0f1916]" />
+    <section id="faq" className="relative bg-[#F7F9FB] py-24">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#F7F9FB] to-[#FFFFFF]" />
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
               FAQ
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
               Najczęstsze pytania i decyzje przed wdrożeniem.
             </h2>
-            <p className="mt-4 text-white/70">
+            <p className="mt-4 text-surface-600">
               Jeśli czegoś nie znajdziesz, daj znać — pokażemy Ci platformę na żywo.
             </p>
           </div>
@@ -42,15 +42,15 @@ export function FaqSection() {
             {faqs.map((faq) => (
               <details
                 key={faq.question}
-                className="group rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-white/70"
+                className="group rounded-3xl border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600"
               >
-                <summary className="flex cursor-pointer list-none items-center justify-between text-base font-semibold text-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-base font-semibold text-surface-900">
                   {faq.question}
                   <span className="ml-4 text-emerald-200 transition group-open:rotate-45">
                     +
                   </span>
                 </summary>
-                <p className="mt-4 text-white/70">{faq.answer}</p>
+                <p className="mt-4 text-surface-600">{faq.answer}</p>
               </details>
             ))}
           </div>
@@ -61,15 +61,15 @@ export function FaqSection() {
               <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
                 Co dalej?
               </p>
-              <h3 className="mt-3 text-2xl font-semibold text-white">
+              <h3 className="mt-3 text-2xl font-semibold text-surface-900">
                 Co się dzieje po zostawieniu kontaktu?
               </h3>
-              <p className="mt-3 text-sm text-white/70">
+              <p className="mt-3 text-sm text-surface-600">
                 Działamy konkretnie i bez przeciągania procesu. Oto standardowy
                 scenariusz wdrożenia.
               </p>
             </div>
-            <div className="grid gap-4 text-sm text-white/70">
+            <div className="grid gap-4 text-sm text-surface-600">
               {[
                 "Oddzwaniamy w ciągu 24h i umawiamy demo.",
                 "Mapujemy Twoje procesy i proponujemy konfigurację.",
@@ -77,7 +77,7 @@ export function FaqSection() {
               ].map((step, index) => (
                 <div
                   key={step}
-                  className="flex items-start gap-4 rounded-2xl border border-white/10 bg-[#111b18] p-4"
+                  className="flex items-start gap-4 rounded-2xl border border-surface-300 bg-white p-4"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/40 text-sm font-semibold text-emerald-200">
                     {index + 1}

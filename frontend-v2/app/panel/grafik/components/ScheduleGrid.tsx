@@ -33,11 +33,11 @@ interface ScheduleGridProps {
 function availabilityDotColor(status: AvailabilityIndicator["status"]) {
   switch (status) {
     case "available":
-      return "bg-emerald-400 dark:bg-emerald-500";
+      return "bg-emerald-400";
     case "partial":
-      return "bg-amber-400 dark:bg-amber-500";
+      return "bg-amber-400";
     default:
-      return "bg-rose-400 dark:bg-rose-500";
+      return "bg-rose-400";
   }
 }
 

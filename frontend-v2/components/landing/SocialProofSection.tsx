@@ -33,15 +33,15 @@ const quotes = [
 
 export function SocialProofSection() {
   return (
-    <section className="relative bg-[#0b1110] py-24">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0f1916] via-[#0b1110] to-[#0f1916]" />
+    <section className="relative bg-[#F7F9FB] py-24">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#F7F9FB] to-[#FFFFFF]" />
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
               Zaufanie klientów
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
               Ściana opinii zamiast logotypów.
             </h2>
           </div>
@@ -62,9 +62,9 @@ export function SocialProofSection() {
           {quotes.map((item) => (
             <div
               key={item.quote}
-              className="break-inside-avoid rounded-[2.2rem] border border-white/10 bg-white/5 p-6 text-sm text-white/70"
+              className="break-inside-avoid rounded-[2.2rem] border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600"
             >
-              <p className="text-base text-white/90">“{item.quote}”</p>
+              <p className="text-base text-surface-800">“{item.quote}”</p>
               <p className="mt-4 text-xs uppercase tracking-[0.3em] text-emerald-200/70">
                 {item.role}
               </p>

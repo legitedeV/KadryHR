@@ -70,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang={DEFAULT_LANG} className="dark">
+    <html lang={DEFAULT_LANG}>
       <body className="antialiased">
         <QueryProvider>
           <ToastProvider>

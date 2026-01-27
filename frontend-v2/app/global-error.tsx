@@ -15,15 +15,15 @@ export default function GlobalError({
   }, [reset]);
 
   return (
-    <html lang={DEFAULT_LANG} className="dark">
-      <body className="antialiased bg-surface-950 text-surface-50">
+    <html lang={DEFAULT_LANG}>
+      <body className="antialiased bg-surface-100 text-surface-900">
         <main className="min-h-screen px-6 flex items-center justify-center">
           <div className="max-w-md space-y-4 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-surface-400">
               KadryHR
             </p>
             <h1 className="text-3xl font-semibold">Coś poszło nie tak</h1>
-            <p className="text-sm text-surface-300">
+            <p className="text-sm text-surface-600">
               Spróbuj ponownie lub wróć za chwilę. Jeśli problem będzie się powtarzał,
               skontaktuj się z zespołem wsparcia.
             </p>

@@ -55,7 +55,7 @@ export function TemplatesDialog({
       }
     >
       <div className="space-y-4">
-        <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+        <label className="space-y-1 text-sm font-medium text-surface-700">
           Nazwa szablonu
           <input
             className="input"
@@ -66,12 +66,12 @@ export function TemplatesDialog({
         </label>
 
         {loading && <p className="text-sm text-surface-500">Ładowanie szablonów...</p>}
-        {error && <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p>}
+        {error && <p className="text-sm text-rose-600">{error}</p>}
 
         {!loading && !error && (
           <div className="space-y-3">
             {templates.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-surface-200/70 px-4 py-6 text-center text-sm text-surface-500 dark:border-surface-800 dark:text-surface-400">
+              <div className="rounded-lg border border-dashed border-surface-200/70 px-4 py-6 text-center text-sm text-surface-500">
                 Brak zapisanych szablonów. Zapisz bieżący tydzień, aby szybko go odtworzyć.
               </div>
             ) : (
@@ -79,11 +79,11 @@ export function TemplatesDialog({
                 {templates.map((template) => (
                   <li
                     key={template.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-surface-200/80 px-3 py-2 text-sm dark:border-surface-800"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-surface-200/80 px-3 py-2 text-sm"
                   >
                     <div>
-                      <p className="font-semibold text-surface-900 dark:text-surface-50">{template.name}</p>
-                      <p className="text-xs text-surface-500 dark:text-surface-400">
+                      <p className="font-semibold text-surface-900">{template.name}</p>
+                      <p className="text-xs text-surface-500">
                         {template._count?.shifts ?? 0} zmian • {new Date(template.createdAt).toLocaleDateString("pl-PL")}
                       </p>
                     </div>
