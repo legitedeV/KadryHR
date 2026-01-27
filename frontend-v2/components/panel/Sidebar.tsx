@@ -11,7 +11,6 @@ const navItemToOnboardingTarget: Partial<Record<PanelNavItemId, OnboardingTarget
   schedule: "nav-schedule",
   availability: "nav-availability",
   employees: "nav-employees",
-  profile: "nav-employees",
 };
 
 type SidebarProps = {

@@ -8,6 +8,8 @@ import {
 } from "@/lib/api";
 import { apiClient } from "@/lib/api-client";
 import { EmptyState } from "@/components/EmptyState";
+import { Modal } from "@/components/Modal";
+import { pushToast } from "@/lib/toast";
 
 // Employee form data type
 interface EmployeeFormData {
@@ -58,6 +60,7 @@ export default function PracownicyPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteConfirmEmployee, setDeleteConfirmEmployee] = useState<EmployeeRecord | null>(null);
 
   // Fetch employees list
   const fetchEmployees = useCallback(async () => {
@@ -189,29 +192,50 @@ export default function PracownicyPage() {
         : `/employees/${employee.id}/activate`;
       
       await apiClient.request(endpoint, { method: "PATCH" });
+      pushToast({
+        title: employee.isActive ? "Pracownik zawieszony" : "Pracownik aktywowany",
+        variant: "success",
+      });
       fetchEmployees();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Wystąpił błąd");
+      pushToast({
+        title: "Wystąpił błąd",
+        description: err instanceof Error ? err.message : "Nie udało się zmienić statusu pracownika",
+        variant: "error",
+      });
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Handle delete employee
-  const handleDelete = async (employee: EmployeeRecord) => {
-    if (!confirm(`Czy na pewno chcesz usunąć pracownika ${employee.firstName} ${employee.lastName}?`)) {
-      return;
-    }
+  // Handle delete employee - open confirmation modal
+  const handleDeleteClick = (employee: EmployeeRecord) => {
+    setDeleteConfirmEmployee(employee);
+  };
 
-    setActionLoading(employee.id);
+  // Confirm delete employee
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmEmployee) return;
+
+    setActionLoading(deleteConfirmEmployee.id);
     try {
       apiClient.hydrateFromStorage();
-      await apiClient.request(`/employees/${employee.id}`, { method: "DELETE" });
+      await apiClient.request(`/employees/${deleteConfirmEmployee.id}`, { method: "DELETE" });
+      pushToast({
+        title: "Pracownik usunięty",
+        description: `${deleteConfirmEmployee.firstName} ${deleteConfirmEmployee.lastName} został usunięty`,
+        variant: "success",
+      });
       fetchEmployees();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Wystąpił błąd podczas usuwania");
+      pushToast({
+        title: "Wystąpił błąd",
+        description: err instanceof Error ? err.message : "Nie udało się usunąć pracownika",
+        variant: "error",
+      });
     } finally {
       setActionLoading(null);
+      setDeleteConfirmEmployee(null);
     }
   };
 
@@ -440,7 +464,7 @@ export default function PracownicyPage() {
                           )}
                         </button>
                         <button
-                          onClick={() => handleDelete(employee)}
+                          onClick={() => handleDeleteClick(employee)}
                           disabled={actionLoading === employee.id}
                           className="rounded-md p-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50"
                           title="Usuń"
@@ -742,9 +766,6 @@ export default function PracownicyPage() {
               <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600">
                 Teczka pracownicza / Dokumenty
               </h3>
-              <p className="text-xs text-surface-600">
-                {process.env.NODE_ENV === "development" && "(DEV: brak storage)"}
-              </p>
             </div>
             
             {selectedEmployee.documents && selectedEmployee.documents.length > 0 ? (
@@ -797,6 +818,37 @@ export default function PracownicyPage() {
       {viewMode === "list" && renderList()}
       {(viewMode === "add" || viewMode === "edit") && renderForm()}
       {viewMode === "view" && renderDetail()}
+
+      {/* Delete confirmation modal */}
+      <Modal
+        open={!!deleteConfirmEmployee}
+        title="Potwierdź usunięcie"
+        description={deleteConfirmEmployee ? `Czy na pewno chcesz usunąć pracownika ${deleteConfirmEmployee.firstName} ${deleteConfirmEmployee.lastName}?` : ""}
+        onClose={() => setDeleteConfirmEmployee(null)}
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setDeleteConfirmEmployee(null)}
+              className="btn-secondary"
+              disabled={actionLoading === deleteConfirmEmployee?.id}
+            >
+              Anuluj
+            </button>
+            <button
+              onClick={handleDeleteConfirm}
+              className="btn-danger"
+              disabled={actionLoading === deleteConfirmEmployee?.id}
+            >
+              {actionLoading === deleteConfirmEmployee?.id ? "Usuwanie..." : "Usuń pracownika"}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-surface-400">
+          Ta operacja jest nieodwracalna. Pracownik zostanie trwale usunięty z systemu, chyba że ma powiązane dane (grafiki, dokumenty itp.), wtedy zostanie oznaczony jako nieaktywny.
+        </p>
+      </Modal>
     </div>
   );
 }
