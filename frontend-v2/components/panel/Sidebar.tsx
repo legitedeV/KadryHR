@@ -10,7 +10,7 @@ import type { OnboardingTargetId } from "@/features/onboarding/onboarding.types"
 const navItemToOnboardingTarget: Partial<Record<PanelNavItemId, OnboardingTargetId>> = {
   schedule: "nav-schedule",
   availability: "nav-availability",
-  profile: "nav-employees",
+  employees: "nav-employees",
 };
 
 type SidebarProps = {

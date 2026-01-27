@@ -72,7 +72,9 @@ export class ScheduleService {
     const shift = await this.scheduleRepository.createShift({
       organisation: { connect: { id: organisationId } },
       employee: { connect: { id: dto.employeeId } },
-      location: dto.locationId ? { connect: { id: dto.locationId } } : undefined,
+      location: dto.locationId
+        ? { connect: { id: dto.locationId } }
+        : undefined,
       period: dto.periodId ? { connect: { id: dto.periodId } } : undefined,
       positionRef: dto.positionId
         ? { connect: { id: dto.positionId } }
@@ -108,7 +110,9 @@ export class ScheduleService {
       .filter((id): id is string => Boolean(id));
     await this.ensureEditablePeriods(organisationId, ...periodIds);
 
-    dto.shifts.forEach((shift) => this.validateRange(shift.startAt, shift.endAt));
+    dto.shifts.forEach((shift) =>
+      this.validateRange(shift.startAt, shift.endAt),
+    );
     await this.ensureEntitiesExist(
       organisationId,
       dto.shifts.map((shift) => shift.employeeId),
@@ -124,7 +128,9 @@ export class ScheduleService {
           location: shift.locationId
             ? { connect: { id: shift.locationId } }
             : undefined,
-          period: shift.periodId ? { connect: { id: shift.periodId } } : undefined,
+          period: shift.periodId
+            ? { connect: { id: shift.periodId } }
+            : undefined,
           positionRef: shift.positionId
             ? { connect: { id: shift.positionId } }
             : undefined,
@@ -384,10 +390,7 @@ export class ScheduleService {
             ruleCode: 'WEEKLY_REST',
             severity: ScheduleValidationSeverity.WARNING,
             message: 'Odpoczynek tygodniowy krótszy niż 35 godzin.',
-            dates: [
-              window.startsAt.toISOString(),
-              window.endsAt.toISOString(),
-            ],
+            dates: [window.startsAt.toISOString(), window.endsAt.toISOString()],
             meta: {
               restHours: Number(maxRest.toFixed(2)),
               windowFrom: window.startsAt.toISOString(),
@@ -528,7 +531,8 @@ export class ScheduleService {
       >();
       shifts.forEach((shift) => {
         if (shift.employee?.userId) {
-          const name = `${shift.employee.firstName ?? ''} ${shift.employee.lastName ?? ''}`.trim();
+          const name =
+            `${shift.employee.firstName ?? ''} ${shift.employee.lastName ?? ''}`.trim();
           employeeUsers.set(shift.employee.userId, {
             userId: shift.employee.userId,
             name: name || undefined,
@@ -624,7 +628,10 @@ export class ScheduleService {
 
     if (!sourcePeriod) {
       throw new NotFoundException(
-        this.buildError('PREVIOUS_PERIOD_NOT_FOUND', 'Previous period not found'),
+        this.buildError(
+          'PREVIOUS_PERIOD_NOT_FOUND',
+          'Previous period not found',
+        ),
       );
     }
 
@@ -755,9 +762,9 @@ export class ScheduleService {
       return (windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60);
     }
 
-    const sorted = shifts.slice().sort(
-      (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
-    );
+    const sorted = shifts
+      .slice()
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
     let maxRest = 0;
     let cursor = windowStart.getTime();

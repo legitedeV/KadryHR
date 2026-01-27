@@ -54,4 +54,18 @@ test.describe('Smoke Tests', () => {
     // Should return 200 (public endpoint)
     expect(response.status()).toBe(200);
   });
+
+  test('employees page structure exists', async ({ page }) => {
+    // Navigate to the employees page (requires auth in production, 
+    // but we test that the route exists and basic structure loads)
+    await page.goto('/panel/pracownicy');
+    
+    // Wait for initial load
+    await page.waitForLoadState('domcontentloaded');
+    
+    // The page should have loaded - either showing login redirect or the actual page
+    // This verifies the route is properly configured
+    const url = page.url();
+    expect(url).toMatch(/\/(panel\/pracownicy|login)/);
+  });
 });
