@@ -56,7 +56,7 @@ export function ComparisonSection() {
                   <p className="mt-2 text-sm text-surface-600">{scenario.before}</p>
                 </div>
                 <div className="flex items-center justify-center">
-                  <div className="h-10 w-10 rounded-full border border-emerald-400 bg-emerald-50 text-center text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full border border-emerald-400 bg-emerald-50 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700 flex items-center justify-center">
                     vs
                   </div>
                 </div>
