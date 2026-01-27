@@ -14,6 +14,7 @@
     "screenshot:schedule-v2": "node scripts/screenshot-schedule-v2.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.85.5",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^20",
     "@types/react": "^19",
