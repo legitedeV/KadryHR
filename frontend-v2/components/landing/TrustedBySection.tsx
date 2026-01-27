@@ -26,7 +26,7 @@ export function TrustedBySection() {
               target="_blank"
               rel="noreferrer"
               aria-label={`Odwiedź stronę ${client.name}`}
-              className="group flex w-full max-w-xs flex-col items-center justify-center rounded-[2rem] border border-surface-300 bg-surface-100 px-5 py-6 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1110]"
+              className="group flex w-full max-w-xs flex-col items-center justify-center rounded-[2rem] border border-surface-300 bg-surface-100 px-5 py-6 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F7F9FB]"
             >
               <div className="flex h-10 items-center justify-center">
                 {client.logoSrc ? (

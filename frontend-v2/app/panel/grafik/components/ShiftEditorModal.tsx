@@ -97,7 +97,7 @@ export function ShiftEditorModal({
             <button
               key={template.name}
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:border-brand-400:border-brand-700"
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:border-brand-400"
               style={{
                 borderColor: template.color + "50",
                 backgroundColor: template.color + "15",
@@ -118,7 +118,7 @@ export function ShiftEditorModal({
           ))}
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-3 py-1 text-xs font-semibold text-surface-600 transition hover:border-brand-400:border-brand-700"
+            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-3 py-1 text-xs font-semibold text-surface-600 transition hover:border-brand-400"
             onClick={() =>
               onFormChange({
                 ...form,
@@ -223,7 +223,7 @@ export function ShiftEditorModal({
                     className={`w-7 h-7 rounded-md border-2 transition ${
                       form.color === color
                         ? "border-surface-900 ring-2 ring-brand-400"
-                        : "border-transparent hover:border-surface-300:border-surface-600"
+                        : "border-transparent hover:border-surface-300"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => onFormChange({ ...form, color })}
@@ -235,7 +235,7 @@ export function ShiftEditorModal({
                   className={`w-7 h-7 rounded-md border-2 transition flex items-center justify-center ${
                     !form.color
                       ? "border-surface-900 ring-2 ring-brand-400 bg-surface-100"
-                      : "border-surface-200 hover:border-surface-300:border-surface-600 bg-surface-50"
+                      : "border-surface-200 hover:border-surface-300 bg-surface-50"
                   }`}
                   onClick={() => onFormChange({ ...form, color: "" })}
                   title="Brak koloru"

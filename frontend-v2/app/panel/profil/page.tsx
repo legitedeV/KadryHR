@@ -280,7 +280,7 @@ export default function ProfilPage() {
                 <p className="font-semibold text-surface-900">{profile.email}</p>
               </div>
               <button
-                className="text-sm text-brand-600 hover:text-brand-700:text-brand-300 font-medium"
+                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
                 onClick={() => {
                   setNewEmail("");
                   setEmailPassword("");

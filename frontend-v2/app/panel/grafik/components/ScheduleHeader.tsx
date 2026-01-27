@@ -110,7 +110,7 @@ export function ScheduleHeader({
               {copying ? "Kopiowanie..." : "Kopiuj z poprzedniego tygodnia"}
             </button>
             <button
-              className="btn-secondary rounded-full px-3 py-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50:text-rose-300:bg-rose-950/50"
+              className="btn-secondary rounded-full px-3 py-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
               onClick={onClearWeek}
               disabled={shiftsCount === 0}
             >

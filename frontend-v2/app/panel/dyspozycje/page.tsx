@@ -251,7 +251,7 @@ function WindowStatusCard({
           {adminView && onOpenWindow && (
             <button
               onClick={onOpenWindow}
-              className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700:text-brand-300"
+              className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               + Otwórz okno składania dyspozycji
             </button>
@@ -930,7 +930,7 @@ function TeamAvailabilityTab({
                 {employees.map((emp) => (
                   <tr
                     key={emp.id}
-                    className="hover:bg-surface-50/50:bg-surface-800/30 transition-colors cursor-pointer"
+                    className="hover:bg-surface-50/50 transition-colors cursor-pointer"
                     onClick={() => onEmployeeClick(emp.id)}
                   >
                     <td className="px-3 py-2">
@@ -1000,7 +1000,7 @@ function TeamAvailabilityTab({
                           e.stopPropagation();
                           onEmployeeClick(emp.id);
                         }}
-                        className="text-sm font-medium text-brand-600 hover:text-brand-700:text-brand-300"
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700"
                       >
                         Edytuj
                       </button>
