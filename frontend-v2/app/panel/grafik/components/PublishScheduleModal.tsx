@@ -33,7 +33,7 @@ export function PublishScheduleModal({
         </>
       }
     >
-      <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
+      <div className="space-y-3 text-sm text-surface-700">
         <p>
           Zakres: <span className="font-semibold">{range.label}</span>
         </p>

@@ -107,14 +107,14 @@ export function AvatarUpload({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-surface-700 dark:text-surface-200">
+      <p className="text-sm font-medium text-surface-700">
         {label}
       </p>
 
       <div className="flex items-center gap-4">
         {/* Avatar Preview */}
         <div
-          className={`relative ${sizeClasses[size]} rounded-full overflow-hidden bg-surface-100 dark:bg-surface-800 border-2 border-surface-200 dark:border-surface-700 flex items-center justify-center`}
+          className={`relative ${sizeClasses[size]} rounded-full overflow-hidden bg-surface-100 border-2 border-surface-200 flex items-center justify-center`}
         >
           {displayUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -178,7 +178,7 @@ export function AvatarUpload({
               type="button"
               onClick={handleDelete}
               disabled={disabled || loading}
-              className="btn-ghost px-3 py-1.5 text-sm text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+              className="btn-ghost px-3 py-1.5 text-sm text-rose-600 hover:text-rose-700"
             >
               Usuń
             </button>
@@ -187,13 +187,13 @@ export function AvatarUpload({
       </div>
 
       {/* Help Text */}
-      <p className="text-xs text-surface-500 dark:text-surface-400">
+      <p className="text-xs text-surface-500">
         Dozwolone formaty: PNG, JPEG, WebP, GIF. Maks. {MAX_SIZE_MB}MB.
       </p>
 
       {/* Error Display */}
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80">
           <svg
             className="w-4 h-4 flex-shrink-0"
             fill="currentColor"

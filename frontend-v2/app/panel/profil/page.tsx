@@ -213,7 +213,7 @@ export default function ProfilPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+      <div className="flex items-center gap-3 text-surface-600">
         <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -225,7 +225,7 @@ export default function ProfilPage() {
 
   if (error || !user || !profile) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80">
         <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
         </svg>
@@ -237,8 +237,8 @@ export default function ProfilPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Profil</p>
-        <p className="text-sm text-surface-500 dark:text-surface-400">Dane zalogowanego użytkownika</p>
+        <p className="text-2xl font-semibold text-surface-900">Profil</p>
+        <p className="text-sm text-surface-500">Dane zalogowanego użytkownika</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -253,7 +253,7 @@ export default function ProfilPage() {
             />
             <div className="flex-1">
               <p className="section-label">Podstawowe dane</p>
-              <p className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-1">
+              <p className="text-xl font-bold text-surface-900 mt-1">
                 {formatName(profile)}
               </p>
             </div>
@@ -271,16 +271,16 @@ export default function ProfilPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50">
               <svg className="w-5 h-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <div className="flex-1">
-                <p className="text-xs font-medium text-surface-500 dark:text-surface-400">E-mail</p>
-                <p className="font-semibold text-surface-900 dark:text-surface-50">{profile.email}</p>
+                <p className="text-xs font-medium text-surface-500">E-mail</p>
+                <p className="font-semibold text-surface-900">{profile.email}</p>
               </div>
               <button
-                className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium"
+                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
                 onClick={() => {
                   setNewEmail("");
                   setEmailPassword("");
@@ -291,23 +291,23 @@ export default function ProfilPage() {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50">
               <svg className="w-5 h-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
               </svg>
               <div>
-                <p className="text-xs font-medium text-surface-500 dark:text-surface-400">Rola</p>
-                <p className="font-semibold text-surface-900 dark:text-surface-50">{getRoleLabel(profile.role)}</p>
+                <p className="text-xs font-medium text-surface-500">Rola</p>
+                <p className="font-semibold text-surface-900">{getRoleLabel(profile.role)}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50">
               <svg className="w-5 h-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
               </svg>
               <div>
-                <p className="text-xs font-medium text-surface-500 dark:text-surface-400">Organizacja</p>
-                <p className="font-semibold text-surface-900 dark:text-surface-50">{profile.organisation.name}</p>
+                <p className="text-xs font-medium text-surface-500">Organizacja</p>
+                <p className="font-semibold text-surface-900">{profile.organisation.name}</p>
               </div>
             </div>
           </div>
@@ -316,24 +316,24 @@ export default function ProfilPage() {
         {/* Security */}
         <div className="card p-4">
           <div className="flex items-center gap-4 mb-4">
-            <div className="h-10 w-10 rounded-2xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <div className="h-10 w-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
             <div>
               <p className="section-label">Bezpieczeństwo</p>
-              <p className="text-base font-bold text-surface-900 dark:text-surface-50 mt-1">
+              <p className="text-base font-bold text-surface-900 mt-1">
                 Ustawienia konta
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50">
               <div>
-                <p className="font-medium text-surface-900 dark:text-surface-50">Hasło</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
+                <p className="font-medium text-surface-900">Hasło</p>
+                <p className="text-sm text-surface-500">
                   Ostatnio zmienione: nie dotyczy
                 </p>
               </div>
@@ -350,10 +350,10 @@ export default function ProfilPage() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50">
               <div>
-                <p className="font-medium text-surface-900 dark:text-surface-50">Sesja</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
+                <p className="font-medium text-surface-900">Sesja</p>
+                <p className="text-sm text-surface-500">
                   Wyloguj się na wspólnych urządzeniach
                 </p>
               </div>
@@ -389,7 +389,7 @@ export default function ProfilPage() {
         }
       >
         <div className="space-y-4">
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Imię
             <input
               type="text"
@@ -400,7 +400,7 @@ export default function ProfilPage() {
             />
           </label>
 
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Nazwisko
             <input
               type="text"
@@ -411,7 +411,7 @@ export default function ProfilPage() {
             />
           </label>
 
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             URL avatara
             <input
               type="url"
@@ -423,8 +423,8 @@ export default function ProfilPage() {
           </label>
 
           {avatarUrl && (
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50">
-              <p className="text-sm text-surface-600 dark:text-surface-300">Podgląd:</p>
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-50">
+              <p className="text-sm text-surface-600">Podgląd:</p>
               <Avatar name={`${firstName} ${lastName}`} src={avatarUrl} size="md" />
             </div>
           )}
@@ -449,7 +449,7 @@ export default function ProfilPage() {
         }
       >
         <div className="space-y-4">
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Aktualne hasło
             <input
               type="password"
@@ -460,7 +460,7 @@ export default function ProfilPage() {
             />
           </label>
 
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Nowe hasło
             <input
               type="password"
@@ -471,7 +471,7 @@ export default function ProfilPage() {
             />
           </label>
 
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Potwierdź nowe hasło
             <input
               type="password"
@@ -502,7 +502,7 @@ export default function ProfilPage() {
         }
       >
         <div className="space-y-4">
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Aktualne hasło
             <input
               type="password"
@@ -513,7 +513,7 @@ export default function ProfilPage() {
             />
           </label>
 
-          <label className="block space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="block space-y-1 text-sm font-medium text-surface-700">
             Nowy adres e-mail
             <input
               type="email"

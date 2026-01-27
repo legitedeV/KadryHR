@@ -48,12 +48,12 @@ export function ScheduleHeader({
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
           {title ?? "Grafik pracy"}
         </p>
-        <p className="text-2xl font-semibold text-surface-900 dark:text-surface-50">
+        <p className="text-2xl font-semibold text-surface-900">
           {range.label}
         </p>
         <div className="flex flex-wrap items-center gap-2 text-sm text-surface-300">
           <span className="panel-pill">
-            Łącznie zmian: <strong className="text-surface-900 dark:text-surface-100">{shiftsCount}</strong>
+            Łącznie zmian: <strong className="text-surface-900">{shiftsCount}</strong>
           </span>
           {scopeLabel && <span className="panel-pill">{scopeLabel}</span>}
         </div>
@@ -110,7 +110,7 @@ export function ScheduleHeader({
               {copying ? "Kopiowanie..." : "Kopiuj z poprzedniego tygodnia"}
             </button>
             <button
-              className="btn-secondary rounded-full px-3 py-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/50"
+              className="btn-secondary rounded-full px-3 py-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
               onClick={onClearWeek}
               disabled={shiftsCount === 0}
             >

@@ -161,12 +161,12 @@ function AvailabilitySkeleton() {
   return (
     <div className="animate-pulse space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="rounded-xl border border-surface-200/80 dark:border-surface-700/80 p-4">
+        <div key={i} className="rounded-xl border border-surface-200/80 p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="h-5 w-24 bg-surface-200 dark:bg-surface-700 rounded" />
-            <div className="h-4 w-20 bg-surface-200 dark:bg-surface-700 rounded" />
+            <div className="h-5 w-24 bg-surface-200 rounded" />
+            <div className="h-4 w-20 bg-surface-200 rounded" />
           </div>
-          <div className="h-10 w-full bg-surface-100 dark:bg-surface-800 rounded-lg" />
+          <div className="h-10 w-full bg-surface-100 rounded-lg" />
         </div>
       ))}
     </div>
@@ -177,15 +177,15 @@ function AvailabilitySkeleton() {
 function TeamTableSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-12 bg-surface-100 dark:bg-surface-800 rounded-t-xl" />
+      <div className="h-12 bg-surface-100 rounded-t-xl" />
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="h-16 border-b border-surface-200/80 dark:border-surface-700/80 flex items-center px-4 gap-4">
-          <div className="h-10 w-10 bg-surface-200 dark:bg-surface-700 rounded-full" />
+        <div key={i} className="h-16 border-b border-surface-200/80 flex items-center px-4 gap-4">
+          <div className="h-10 w-10 bg-surface-200 rounded-full" />
           <div className="flex-1">
-            <div className="h-4 w-32 bg-surface-200 dark:bg-surface-700 rounded mb-2" />
-            <div className="h-3 w-24 bg-surface-100 dark:bg-surface-800 rounded" />
+            <div className="h-4 w-32 bg-surface-200 rounded mb-2" />
+            <div className="h-3 w-24 bg-surface-100 rounded" />
           </div>
-          <div className="h-6 w-16 bg-surface-200 dark:bg-surface-700 rounded" />
+          <div className="h-6 w-16 bg-surface-200 rounded" />
         </div>
       ))}
     </div>
@@ -206,7 +206,7 @@ function WindowStatusCard({
     return (
       <div className="card p-5 border-l-4 border-l-emerald-500">
         <div className="flex items-start gap-4">
-          <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -214,14 +214,14 @@ function WindowStatusCard({
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="badge badge-success">Otwarte</span>
-              <h3 className="font-semibold text-surface-900 dark:text-surface-50">
+              <h3 className="font-semibold text-surface-900">
                 {window.title}
               </h3>
             </div>
-            <p className="text-sm text-surface-600 dark:text-surface-300">
+            <p className="text-sm text-surface-600">
               Okres: {formatDateShort(window.startDate)} – {formatDateShort(window.endDate)}
             </p>
-            <p className="text-sm text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+            <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -234,24 +234,24 @@ function WindowStatusCard({
   }
 
   return (
-    <div className="card p-5 border-l-4 border-l-surface-300 dark:border-l-surface-600">
+    <div className="card p-5 border-l-4 border-l-surface-300">
       <div className="flex items-start gap-4">
-        <div className="h-10 w-10 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-400 dark:text-surface-500 flex-shrink-0">
+        <div className="h-10 w-10 rounded-xl bg-surface-100 flex items-center justify-center text-surface-400 flex-shrink-0">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-surface-700 dark:text-surface-300">
+          <h3 className="font-semibold text-surface-700">
             Składanie dyspozycji zamknięte
           </h3>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          <p className="text-sm text-surface-500 mt-1">
             Aktualnie nie ma otwartego okna na składanie dyspozycji. Poczekaj na informację od pracodawcy.
           </p>
           {adminView && onOpenWindow && (
             <button
               onClick={onOpenWindow}
-              className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+              className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               + Otwórz okno składania dyspozycji
             </button>
@@ -273,7 +273,7 @@ function AvailabilityWindowsList({
 }) {
   if (loading) {
     return (
-      <div className="card p-5 text-sm text-surface-500 dark:text-surface-400">
+      <div className="card p-5 text-sm text-surface-500">
         Ładowanie okien dyspozycji...
       </div>
     );
@@ -290,17 +290,17 @@ function AvailabilityWindowsList({
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-200/80 dark:border-surface-700/80">
-        <h3 className="font-semibold text-surface-900 dark:text-surface-100">
+      <div className="px-5 py-4 border-b border-surface-200/80">
+        <h3 className="font-semibold text-surface-900">
           Okna dyspozycji
         </h3>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+        <p className="text-sm text-surface-500 mt-1">
           Zarządzaj terminami składania dyspozycji w organizacji.
         </p>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-surface-50 dark:bg-surface-800/60 text-surface-500 dark:text-surface-400">
+          <thead className="bg-surface-50 text-surface-500">
             <tr>
               <th className="text-left font-semibold px-5 py-3">Nazwa okna / opis</th>
               <th className="text-left font-semibold px-5 py-3">Okres od–do</th>
@@ -314,17 +314,17 @@ function AvailabilityWindowsList({
               return (
                 <tr
                   key={window.id}
-                  className="border-t border-surface-200/80 dark:border-surface-700/80"
+                  className="border-t border-surface-200/80"
                 >
                   <td className="px-5 py-4">
-                    <div className="font-medium text-surface-900 dark:text-surface-100">
+                    <div className="font-medium text-surface-900">
                       {window.title}
                     </div>
-                    <div className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                    <div className="text-xs text-surface-500 mt-1">
                       Termin składania: {formatDate(window.deadline)}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-surface-700 dark:text-surface-300">
+                  <td className="px-5 py-4 text-surface-700">
                     {formatDate(window.startDate)} – {formatDate(window.endDate)}
                   </td>
                   <td className="px-5 py-4">
@@ -339,7 +339,7 @@ function AvailabilityWindowsList({
                         Zamknij okno dyspozycji
                       </button>
                     ) : (
-                      <span className="text-xs text-surface-400 dark:text-surface-500">
+                      <span className="text-xs text-surface-400">
                         —
                       </span>
                     )}
@@ -549,10 +549,10 @@ function MonthlyAvailabilityTab({
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="section-label">Miesięczna dyspozycja</p>
-            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+            <h3 className="text-lg font-semibold text-surface-900">
               {window.title} · {formatMonthLabel(startDate)}
             </h3>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+            <p className="text-sm text-surface-500 mt-1">
               Zakres: {formatDateShort(window.startDate)} – {formatDateShort(window.endDate)} · Termin do{" "}
               {formatDate(window.deadline)}
             </p>
@@ -561,7 +561,7 @@ function MonthlyAvailabilityTab({
         </div>
 
         <div className="grid gap-2">
-          <div className="grid grid-cols-7 text-xs text-surface-500 dark:text-surface-400">
+          <div className="grid grid-cols-7 text-xs text-surface-500">
             {WEEKDAYS.map((day) => (
               <span key={day.key} className="text-center py-1">
                 {day.shortLabel}
@@ -573,7 +573,7 @@ function MonthlyAvailabilityTab({
               <div key={weekIndex} className="grid grid-cols-7 gap-2">
                 {week.map((day, dayIndex) => {
                   if (!day) {
-                    return <div key={dayIndex} className="h-20 rounded-xl bg-surface-50 dark:bg-surface-900/30" />;
+                    return <div key={dayIndex} className="h-20 rounded-xl bg-surface-50" />;
                   }
                   const key = toDateKey(day);
                   const slots = calendarData[key] ?? [];
@@ -586,26 +586,26 @@ function MonthlyAvailabilityTab({
                       onClick={() => setSelectedDate(key)}
                       className={`h-20 rounded-xl border text-left px-2 py-2 transition-colors ${
                         isSelected
-                          ? "border-brand-500 bg-brand-50/60 dark:bg-brand-900/20"
-                          : "border-surface-200/80 dark:border-surface-700/80 hover:border-brand-300"
+                          ? "border-brand-500 bg-brand-50/60"
+                          : "border-surface-200/80 hover:border-brand-300"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                        <span className="text-sm font-semibold text-surface-900">
                           {day.getDate()}
                         </span>
                         {isDayOff && (
-                          <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                          <span className="text-[10px] text-rose-600">
                             Dzień wolny
                           </span>
                         )}
                         {!isDayOff && slots.length > 0 && (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                          <span className="text-[10px] text-emerald-600">
                             {slots.length} slot
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
+                      <p className="text-[11px] text-surface-500 mt-1 line-clamp-2">
                         {isDayOff
                           ? "Dzień wolny"
                           : slots.length === 0
@@ -624,10 +624,10 @@ function MonthlyAvailabilityTab({
       <div className="card p-4 space-y-4">
         <div>
           <p className="section-label">Wybrany dzień</p>
-          <h4 className="text-base font-semibold text-surface-900 dark:text-surface-50">
+          <h4 className="text-base font-semibold text-surface-900">
             {selectedDate ? formatDate(selectedDate) : "Wybierz dzień z kalendarza"}
           </h4>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          <p className="text-sm text-surface-500 mt-1">
             {isSelectedDayOff
               ? "Ten dzień jest oznaczony jako wolny."
               : "Dodaj dostępne godziny lub zostaw domyślną dostępność."}
@@ -766,7 +766,7 @@ function MonthlyAvailabilityTab({
             {saving ? "Zapisywanie..." : "Zapisz wersję roboczą"}
           </button>
           {isLocked && (
-            <p className="text-xs text-surface-500 dark:text-surface-400">
+            <p className="text-xs text-surface-500">
               Dyspozycja wysłana. Możesz ją edytować do zamknięcia okna.
             </p>
           )}
@@ -805,46 +805,46 @@ function TeamAvailabilityTab({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="card p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-400">
+              <div className="h-10 w-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">
+                <p className="text-2xl font-bold text-surface-900">
                   {stats.totalEmployees}
                 </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Pracowników</p>
+                <p className="text-xs text-surface-500">Pracowników</p>
               </div>
             </div>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                <p className="text-2xl font-bold text-emerald-600">
                   {stats.employeesWithAvailability}
                 </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Z dyspozycją</p>
+                <p className="text-xs text-surface-500">Z dyspozycją</p>
               </div>
             </div>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                <p className="text-2xl font-bold text-amber-600">
                   {stats.employeesWithoutAvailability}
                 </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Bez dyspozycji</p>
+                <p className="text-xs text-surface-500">Bez dyspozycji</p>
               </div>
             </div>
           </div>
@@ -907,50 +907,50 @@ function TeamAvailabilityTab({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200/80 dark:border-surface-700/80">
+              <thead className="bg-surface-50 border-b border-surface-200/80">
                 <tr>
-                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
                     Pracownik
                   </th>
-                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
                     Stanowisko
                   </th>
-                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
                     Lokalizacje
                   </th>
-                  <th className="text-center px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-center px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
                     Status
                   </th>
-                  <th className="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                  <th className="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
                     Akcje
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-200/80 dark:divide-surface-700/80">
+              <tbody className="divide-y divide-surface-200/80">
                 {employees.map((emp) => (
                   <tr
                     key={emp.id}
-                    className="hover:bg-surface-50/50 dark:hover:bg-surface-800/30 transition-colors cursor-pointer"
+                    className="hover:bg-surface-50/50 transition-colors cursor-pointer"
                     onClick={() => onEmployeeClick(emp.id)}
                   >
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/50 dark:to-brand-800/50 flex items-center justify-center text-brand-700 dark:text-brand-300 font-semibold text-sm">
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-700 font-semibold text-sm">
                           {emp.firstName.charAt(0)}{emp.lastName.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-medium text-surface-900 dark:text-surface-50">
+                          <p className="font-medium text-surface-900">
                             {emp.firstName} {emp.lastName}
                           </p>
                           {emp.email && (
-                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                            <p className="text-xs text-surface-500">
                               {emp.email}
                             </p>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-sm text-surface-600 dark:text-surface-300">
+                    <td className="px-3 py-2 text-sm text-surface-600">
                       {emp.position || "—"}
                     </td>
                     <td className="px-3 py-2">
@@ -1000,7 +1000,7 @@ function TeamAvailabilityTab({
                           e.stopPropagation();
                           onEmployeeClick(emp.id);
                         }}
-                        className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700"
                       >
                         Edytuj
                       </button>
@@ -1041,26 +1041,26 @@ function WindowTeamAvailabilityTab({
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="section-label">Status dyspozycji</p>
-            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+            <h3 className="text-lg font-semibold text-surface-900">
               {window.title}
             </h3>
           </div>
           <div className="flex items-center gap-4 text-sm">
             <div>
               <p className="text-surface-400">Wysłane</p>
-              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              <p className="text-lg font-semibold text-surface-900">
                 {stats?.submittedCount ?? "-"}
               </p>
             </div>
             <div>
               <p className="text-surface-400">Zweryfikowane</p>
-              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              <p className="text-lg font-semibold text-surface-900">
                 {stats?.reviewedCount ?? "-"}
               </p>
             </div>
             <div>
               <p className="text-surface-400">Brak</p>
-              <p className="text-lg font-semibold text-surface-900 dark:text-surface-50">
+              <p className="text-lg font-semibold text-surface-900">
                 {stats?.pendingCount ?? "-"}
               </p>
             </div>
@@ -1078,7 +1078,7 @@ function WindowTeamAvailabilityTab({
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-xs text-surface-400 uppercase border-b border-surface-200/80 dark:border-surface-700/80">
+                <tr className="text-xs text-surface-400 uppercase border-b border-surface-200/80">
                   <th className="text-left py-2">Pracownik</th>
                   <th className="text-left py-2">Status</th>
                   <th className="text-left py-2">Wysłano</th>
@@ -1090,12 +1090,12 @@ function WindowTeamAvailabilityTab({
                   const status = employee.submissionStatus ?? "DRAFT";
                   const meta = getSubmissionStatusLabel(status);
                   return (
-                    <tr key={employee.id} className="border-b border-surface-100/60 dark:border-surface-800/60">
+                    <tr key={employee.id} className="border-b border-surface-100/60">
                       <td className="py-3">
-                        <p className="font-medium text-surface-900 dark:text-surface-50">
+                        <p className="font-medium text-surface-900">
                           {employee.firstName} {employee.lastName}
                         </p>
-                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                        <p className="text-xs text-surface-500">
                           {employee.position || employee.email || "-"}
                         </p>
                       </td>
@@ -1311,16 +1311,16 @@ function EmployeeDetailPanel({
             const isDayOff = dayData?.status === "DAY_OFF";
 
             return (
-              <div key={key} className="rounded-lg border border-surface-200/80 dark:border-surface-700/80 p-3">
+              <div key={key} className="rounded-lg border border-surface-200/80 p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-sm text-surface-900 dark:text-surface-50">{label}</span>
+                  <span className="font-medium text-sm text-surface-900">{label}</span>
                   <div className="flex items-center gap-2">
                     <span className={`badge ${isDayOff ? "badge-error" : "badge-success"}`}>
                       {isDayOff ? "Dzień wolny" : "Dostępny"}
                     </span>
                     <button
                       type="button"
-                      className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium"
+                      className="text-xs text-brand-600 hover:text-brand-700 font-medium"
                       onClick={() => toggleDayOff(key)}
                     >
                       {isDayOff ? "Usuń wolne" : "Dzień wolny"}
@@ -1328,7 +1328,7 @@ function EmployeeDetailPanel({
                     {!isDayOff && (
                       <button
                         type="button"
-                        className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium"
+                        className="text-xs text-brand-600 hover:text-brand-700 font-medium"
                         onClick={() => addSlot(key)}
                       >
                         + Dodaj
@@ -1574,7 +1574,7 @@ function WindowEmployeeDetailPanel({
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           {statusMeta && <span className={`badge ${statusMeta.tone}`}>{statusMeta.label}</span>}
           <div className="grid gap-2">
-            <div className="grid grid-cols-7 text-xs text-surface-500 dark:text-surface-400">
+            <div className="grid grid-cols-7 text-xs text-surface-500">
               {WEEKDAYS.map((day) => (
                 <span key={day.key} className="text-center py-1">
                   {day.shortLabel}
@@ -1586,7 +1586,7 @@ function WindowEmployeeDetailPanel({
                 <div key={weekIndex} className="grid grid-cols-7 gap-2">
                   {week.map((day, dayIndex) => {
                     if (!day) {
-                      return <div key={dayIndex} className="h-16 rounded-lg bg-surface-50 dark:bg-surface-900/30" />;
+                      return <div key={dayIndex} className="h-16 rounded-lg bg-surface-50" />;
                     }
                     const key = toDateKey(day);
                     const slots = calendarData[key] ?? [];
@@ -1599,21 +1599,21 @@ function WindowEmployeeDetailPanel({
                         onClick={() => setSelectedDate(key)}
                         className={`h-16 rounded-lg border text-left px-2 py-2 transition-colors ${
                           isSelected
-                            ? "border-brand-500 bg-brand-50/60 dark:bg-brand-900/20"
-                            : "border-surface-200/80 dark:border-surface-700/80 hover:border-brand-300"
+                            ? "border-brand-500 bg-brand-50/60"
+                            : "border-surface-200/80 hover:border-brand-300"
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-surface-900 dark:text-surface-50">
+                          <span className="text-xs font-semibold text-surface-900">
                             {day.getDate()}
                           </span>
                           {isDayOff && (
-                            <span className="text-[9px] text-rose-600 dark:text-rose-400">
+                            <span className="text-[9px] text-rose-600">
                               Wolne
                             </span>
                           )}
                           {!isDayOff && slots.length > 0 && (
-                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <span className="text-[10px] text-emerald-600">
                               {slots.length}
                             </span>
                           )}
@@ -1627,7 +1627,7 @@ function WindowEmployeeDetailPanel({
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+            <h4 className="text-sm font-semibold text-surface-900">
               {selectedDate ? formatDate(selectedDate) : "Wybierz dzień"}
             </h4>
             <div className="flex flex-wrap items-center gap-2">
@@ -1744,7 +1744,7 @@ function CreateWindowModal({
     >
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+          <label className="block text-sm font-medium text-surface-700 mb-1">
             Tytuł
           </label>
           <input
@@ -1756,7 +1756,7 @@ function CreateWindowModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+            <label className="block text-sm font-medium text-surface-700 mb-1">
               Data początkowa
             </label>
             <input
@@ -1767,7 +1767,7 @@ function CreateWindowModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+            <label className="block text-sm font-medium text-surface-700 mb-1">
               Data końcowa
             </label>
             <input
@@ -1779,7 +1779,7 @@ function CreateWindowModal({
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+          <label className="block text-sm font-medium text-surface-700 mb-1">
             Termin składania
           </label>
           <input
@@ -2193,7 +2193,7 @@ export default function DyspozycjePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+      <div className="flex items-center gap-3 text-surface-600">
         <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -2205,7 +2205,7 @@ export default function DyspozycjePage() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
+      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200/80">
         <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
         </svg>
@@ -2219,8 +2219,8 @@ export default function DyspozycjePage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-surface-900 dark:text-surface-50">Dyspozycje</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          <h1 className="text-2xl font-semibold text-surface-900">Dyspozycje</h1>
+          <p className="text-sm text-surface-500 mt-1">
             Zarządzaj dostępnością {userIsAdmin ? "swojego zespołu" : "swoją"} do układania grafiku pracy
           </p>
         </div>
@@ -2249,7 +2249,7 @@ export default function DyspozycjePage() {
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "my"
                   ? "bg-brand-500 text-white shadow-sm"
-                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -2264,7 +2264,7 @@ export default function DyspozycjePage() {
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "team"
                   ? "bg-brand-500 text-white shadow-sm"
-                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -2304,10 +2304,10 @@ export default function DyspozycjePage() {
           />
         ) : (
           <div className="card p-5">
-            <h3 className="font-semibold text-surface-900 dark:text-surface-50">
+            <h3 className="font-semibold text-surface-900">
               Brak aktywnego okna dyspozycji
             </h3>
-            <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
+            <p className="text-sm text-surface-600 mt-2">
               Aktualnie nie ma otwartego okna na składanie dyspozycji. Poczekaj na informację od pracodawcy.
             </p>
           </div>
@@ -2377,7 +2377,7 @@ export default function DyspozycjePage() {
           </>
         }
       >
-        <p className="text-sm text-surface-600 dark:text-surface-300">
+        <p className="text-sm text-surface-600">
           Czy na pewno chcesz zamknąć to okno? Pracownicy nie będą mogli już składać nowych dyspozycji w tym okresie.
         </p>
       </Modal>

@@ -38,7 +38,7 @@ export function ShiftPresetSelector({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-surface-600 dark:text-surface-400">Typ zmiany:</p>
+      <p className="text-xs font-medium text-surface-600">Typ zmiany:</p>
       <div className="flex flex-wrap gap-2">
         {presets.map((preset) => {
           const isSelected = selectedPresetId === preset.id;
@@ -48,9 +48,9 @@ export function ShiftPresetSelector({
               key={preset.id}
               type="button"
               disabled={disabled}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:border-brand-400 dark:hover:border-brand-700 ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:border-brand-400 ${
                 isSelected
-                  ? "ring-2 ring-brand-400 dark:ring-brand-600"
+                  ? "ring-2 ring-brand-400"
                   : ""
               }`}
               style={{
@@ -76,8 +76,8 @@ export function ShiftPresetSelector({
         <button
           type="button"
           disabled={disabled}
-          className={`inline-flex items-center gap-1.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-1 text-xs font-semibold text-surface-600 dark:text-surface-300 transition hover:border-brand-400 dark:hover:border-brand-700 disabled:opacity-50 disabled:cursor-not-allowed ${
-            !selectedPresetId ? "ring-2 ring-brand-400 dark:ring-brand-600" : ""
+          className={`inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-3 py-1 text-xs font-semibold text-surface-600 transition hover:border-brand-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+            !selectedPresetId ? "ring-2 ring-brand-400" : ""
           }`}
           onClick={() => onSelect(null)}
         >

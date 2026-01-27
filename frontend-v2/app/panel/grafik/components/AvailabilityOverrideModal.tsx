@@ -40,8 +40,8 @@ export function AvailabilityOverrideModal({
         </>
       }
     >
-      <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
-        <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+      <div className="space-y-3 text-sm text-surface-700">
+        <label className="space-y-1 text-sm font-medium text-surface-700">
           Powód nadpisania dostępności
           <textarea
             className="input min-h-[80px]"

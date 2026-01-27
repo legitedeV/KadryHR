@@ -91,13 +91,13 @@ export function ShiftEditorModal({
       }
     >
       <div className="mb-4">
-        <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-2">Typ zmiany:</p>
+        <p className="text-xs font-medium text-surface-600 mb-2">Typ zmiany:</p>
         <div className="flex flex-wrap gap-2">
           {templates.map((template) => (
             <button
               key={template.name}
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:border-brand-400 dark:hover:border-brand-700"
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:border-brand-400"
               style={{
                 borderColor: template.color + "50",
                 backgroundColor: template.color + "15",
@@ -118,7 +118,7 @@ export function ShiftEditorModal({
           ))}
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-1 text-xs font-semibold text-surface-600 dark:text-surface-300 transition hover:border-brand-400 dark:hover:border-brand-700"
+            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-3 py-1 text-xs font-semibold text-surface-600 transition hover:border-brand-400"
             onClick={() =>
               onFormChange({
                 ...form,
@@ -140,7 +140,7 @@ export function ShiftEditorModal({
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="space-y-1 text-sm font-medium text-surface-700">
               Pracownik
               <select
                 className="input"
@@ -155,7 +155,7 @@ export function ShiftEditorModal({
                 ))}
               </select>
             </label>
-            <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="space-y-1 text-sm font-medium text-surface-700">
               Lokalizacja
               <select
                 className="input"
@@ -173,7 +173,7 @@ export function ShiftEditorModal({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="space-y-1 text-sm font-medium text-surface-700">
               Data
               <input
                 type="date"
@@ -182,7 +182,7 @@ export function ShiftEditorModal({
                 onChange={(e) => onFormChange({ ...form, date: e.target.value })}
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="space-y-1 text-sm font-medium text-surface-700">
               Godzina startu
               <input
                 type="time"
@@ -191,7 +191,7 @@ export function ShiftEditorModal({
                 onChange={(e) => onFormChange({ ...form, startTime: e.target.value })}
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="space-y-1 text-sm font-medium text-surface-700">
               Godzina końca
               <input
                 type="time"
@@ -203,7 +203,7 @@ export function ShiftEditorModal({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+            <label className="space-y-1 text-sm font-medium text-surface-700">
               Stanowisko / rola
               <input
                 type="text"
@@ -214,7 +214,7 @@ export function ShiftEditorModal({
               />
             </label>
             <div className="space-y-1">
-              <span className="text-sm font-medium text-surface-700 dark:text-surface-200">Kolor zmiany</span>
+              <span className="text-sm font-medium text-surface-700">Kolor zmiany</span>
               <div className="flex flex-wrap gap-2">
                 {SHIFT_COLORS.map((color) => (
                   <button
@@ -222,8 +222,8 @@ export function ShiftEditorModal({
                     type="button"
                     className={`w-7 h-7 rounded-md border-2 transition ${
                       form.color === color
-                        ? "border-surface-900 dark:border-white ring-2 ring-brand-400"
-                        : "border-transparent hover:border-surface-300 dark:hover:border-surface-600"
+                        ? "border-surface-900 ring-2 ring-brand-400"
+                        : "border-transparent hover:border-surface-300"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => onFormChange({ ...form, color })}
@@ -234,8 +234,8 @@ export function ShiftEditorModal({
                   type="button"
                   className={`w-7 h-7 rounded-md border-2 transition flex items-center justify-center ${
                     !form.color
-                      ? "border-surface-900 dark:border-white ring-2 ring-brand-400 bg-surface-100 dark:bg-surface-800"
-                      : "border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600 bg-surface-50 dark:bg-surface-900"
+                      ? "border-surface-900 ring-2 ring-brand-400 bg-surface-100"
+                      : "border-surface-200 hover:border-surface-300 bg-surface-50"
                   }`}
                   onClick={() => onFormChange({ ...form, color: "" })}
                   title="Brak koloru"
@@ -248,7 +248,7 @@ export function ShiftEditorModal({
             </div>
           </div>
 
-          <label className="space-y-1 text-sm font-medium text-surface-700 dark:text-surface-200">
+          <label className="space-y-1 text-sm font-medium text-surface-700">
             Notatki
             <textarea
               className="input min-h-[70px]"
@@ -261,16 +261,16 @@ export function ShiftEditorModal({
 
         {!isEditing && (
           <aside className="space-y-4 lg:pt-1">
-            <div className="rounded-2xl border border-surface-200/70 bg-surface-50 px-4 py-4 text-sm text-surface-600 shadow-sm dark:border-surface-800/70 dark:bg-surface-900/60 dark:text-surface-300">
+            <div className="rounded-2xl border border-surface-200/70 bg-surface-50 px-4 py-4 text-sm text-surface-600 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">Dostępność</p>
-              <p className="mt-2 text-sm font-medium text-surface-700 dark:text-surface-200">{availabilityLabel || "Brak danych"}</p>
-              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{availabilityText}</p>
+              <p className="mt-2 text-sm font-medium text-surface-700">{availabilityLabel || "Brak danych"}</p>
+              <p className="mt-1 text-xs text-surface-500">{availabilityText}</p>
             </div>
           </aside>
         )}
       </div>
 
-      {formError && <p className="text-sm text-rose-600 dark:text-rose-300">{formError}</p>}
+      {formError && <p className="text-sm text-rose-600">{formError}</p>}
     </Modal>
   );
 }

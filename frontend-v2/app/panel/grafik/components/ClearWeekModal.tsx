@@ -35,14 +35,14 @@ export function ClearWeekModal({
         </>
       }
     >
-      <div className="space-y-3 text-sm text-surface-700 dark:text-surface-200">
+      <div className="space-y-3 text-sm text-surface-700">
         <p>
           Zakres: <span className="font-semibold">{range.label}</span>
         </p>
         <p>
           Liczba zmian do usunięcia: <span className="font-semibold">{shiftCount}</span>
         </p>
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">
           ⚠️ Ostrzeżenie: Wszystkie zmiany z tego tygodnia zostaną trwale usunięte.
         </div>
       </div>

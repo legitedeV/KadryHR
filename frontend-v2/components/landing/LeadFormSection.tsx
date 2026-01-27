@@ -121,23 +121,23 @@ export function LeadFormSection() {
   };
 
   return (
-    <section id="lead-form" className="relative bg-[#0b1110] py-24">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0f1916] via-[#0b1110] to-[#0f1916]" />
+    <section id="lead-form" className="relative bg-[#F7F9FB] py-24">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#F7F9FB] to-[#FFFFFF]" />
       <div className="relative mx-auto max-w-5xl px-6">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
               Umów prezentację
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
               Zostaw kontakt — pokażemy Ci KadryHR na Twoich danych.
             </h2>
-            <p className="mt-4 text-white/70">
+            <p className="mt-4 text-surface-600">
               Odezwiemy się w ciągu 24h, przygotujemy demo dopasowane do Twojej
               organizacji i policzymy realne oszczędności.
             </p>
-            <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-white/70">
-              <p className="text-white/80">Dlaczego warto?</p>
+            <div className="mt-6 rounded-3xl border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600">
+              <p className="text-surface-700">Dlaczego warto?</p>
               <ul className="mt-4 space-y-3">
                 <li className="flex items-start gap-3">
                   <span className="mt-2 h-2 w-2 rounded-full bg-emerald-300" />
@@ -160,7 +160,7 @@ export function LeadFormSection() {
           >
             <div className="grid gap-4">
               <div>
-                <label className="text-sm text-white/70" htmlFor="name">
+                <label className="text-sm text-surface-600" htmlFor="name">
                   Imię i nazwisko
                 </label>
                 <input
@@ -170,11 +170,11 @@ export function LeadFormSection() {
                   required
                   value={formState.name}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-[#111b18] px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-300/60"
+                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
-                <label className="text-sm text-white/70" htmlFor="email">
+                <label className="text-sm text-surface-600" htmlFor="email">
                   Email służbowy
                 </label>
                 <input
@@ -184,11 +184,11 @@ export function LeadFormSection() {
                   required
                   value={formState.email}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-[#111b18] px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-300/60"
+                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
-                <label className="text-sm text-white/70" htmlFor="company">
+                <label className="text-sm text-surface-600" htmlFor="company">
                   Firma / sieć
                 </label>
                 <input
@@ -198,11 +198,11 @@ export function LeadFormSection() {
                   required
                   value={formState.company}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-[#111b18] px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-300/60"
+                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
-                <label className="text-sm text-white/70" htmlFor="headcount">
+                <label className="text-sm text-surface-600" htmlFor="headcount">
                   Liczba pracowników
                 </label>
                 <input
@@ -212,11 +212,11 @@ export function LeadFormSection() {
                   min={1}
                   value={formState.headcount}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-[#111b18] px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-300/60"
+                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
               <div>
-                <label className="text-sm text-white/70" htmlFor="message">
+                <label className="text-sm text-surface-600" htmlFor="message">
                   Opisz krótko wyzwania
                 </label>
                 <textarea
@@ -225,11 +225,11 @@ export function LeadFormSection() {
                   rows={4}
                   value={formState.message}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-[#111b18] px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-300/60"
+                  className="mt-2 w-full rounded-2xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-900 outline-none transition focus:border-emerald-300/60"
                 />
               </div>
             </div>
-            <div className="mt-6 space-y-3 text-xs text-white/60">
+            <div className="mt-6 space-y-3 text-xs text-surface-600">
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -237,7 +237,7 @@ export function LeadFormSection() {
                   checked={formState.consentPrivacy}
                   onChange={handleChange}
                   required
-                  className="mt-1 h-4 w-4 rounded border-white/30 bg-[#111b18] text-emerald-300"
+                  className="mt-1 h-4 w-4 rounded border-surface-400 bg-white text-emerald-300"
                 />
                 <span>
                   Akceptuję politykę prywatności i wyrażam zgodę na kontakt w sprawie
@@ -250,7 +250,7 @@ export function LeadFormSection() {
                   name="consentMarketing"
                   checked={formState.consentMarketing}
                   onChange={handleChange}
-                  className="mt-1 h-4 w-4 rounded border-white/30 bg-[#111b18] text-emerald-300"
+                  className="mt-1 h-4 w-4 rounded border-surface-400 bg-white text-emerald-300"
                 />
                 <span>Chcę otrzymywać informacje o nowościach i produktach.</span>
               </label>
@@ -258,7 +258,7 @@ export function LeadFormSection() {
             <button
               type="submit"
               disabled={!canSubmit || isSubmitting}
-              className="mt-6 w-full rounded-full bg-emerald-300 px-6 py-3 text-sm font-semibold text-[#0b1110] transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200/60"
+              className="mt-6 w-full rounded-full bg-emerald-300 px-6 py-3 text-sm font-semibold text-surface-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200/60"
             >
               {isSubmitting ? "Wysyłamy..." : "Wyślij zgłoszenie"}
             </button>
