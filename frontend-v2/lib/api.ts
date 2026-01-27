@@ -26,6 +26,7 @@ export interface ShiftRecord {
   id: string;
   employeeId: string;
   locationId?: string | null;
+  status?: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "CANCELLED" | string | null;
   position?: string | null;
   notes?: string | null;
   availabilityOverrideReason?: string | null;
@@ -41,6 +42,35 @@ export interface ShiftRecord {
   location?: { id?: string; name?: string | null };
   availabilityWarning?: string | null;
   leaveWarning?: string | null;
+}
+
+export interface ScheduleShiftRecord {
+  id: string;
+  organisationId?: string;
+  periodId?: string | null;
+  employeeId: string;
+  locationId?: string | null;
+  positionId?: string | null;
+  position?: string | null;
+  notes?: string | null;
+  note?: string | null;
+  color?: string | null;
+  startsAt: string;
+  endsAt: string;
+  status?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ScheduleShiftPayload {
+  periodId?: string;
+  employeeId: string;
+  locationId?: string;
+  positionId?: string;
+  position?: string;
+  note?: string;
+  startAt: string;
+  endAt: string;
 }
 
 export interface ShiftPayload {
@@ -254,6 +284,7 @@ const AVAILABILITY_PREFIX = "/availability";
 const ORGANISATIONS_PREFIX = "/organisations";
 const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
 const SHIFT_PRESETS_PREFIX = "/shift-presets";
+const SCHEDULE_PREFIX = "/schedule";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -349,6 +380,23 @@ export async function apiGetShifts(params: {
   return apiClient.request<ShiftResponse[]>(`${SHIFTS_PREFIX}?${search.toString()}`);
 }
 
+export async function apiGetSchedule(params: {
+  from: string;
+  to: string;
+  locationIds?: string[];
+  positionIds?: string[];
+}): Promise<ScheduleShiftRecord[]> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+  params.locationIds?.forEach((id) => search.append("locationIds[]", id));
+  params.positionIds?.forEach((id) => search.append("positionIds[]", id));
+
+  return apiClient.request<ScheduleShiftRecord[]>(`${SCHEDULE_PREFIX}?${search.toString()}`);
+}
+
 export async function apiGetShiftSummary(params: {
   from: string;
   to: string;
@@ -369,6 +417,14 @@ export async function apiGetShiftSummary(params: {
 export async function apiCreateShift(payload: ShiftPayload): Promise<ShiftRecord> {
   apiClient.hydrateFromStorage();
   return apiClient.request<ShiftResponse>(`${SHIFTS_PREFIX}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiCreateScheduleShift(payload: ScheduleShiftPayload): Promise<ScheduleShiftRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ScheduleShiftRecord>(`${SCHEDULE_PREFIX}/shifts`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

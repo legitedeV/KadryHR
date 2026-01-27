@@ -44,6 +44,11 @@ export function formatDayLabel(date: Date) {
   return new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short" }).format(date);
 }
 
+export function formatShortRangeLabel(from: Date, to: Date) {
+  const formatter = new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "2-digit" });
+  return `${formatter.format(from)} - ${formatter.format(to)}`;
+}
+
 export function parseTimeToMinutes(value: string) {
   const [h, m] = value.split(":").map((part) => Number(part));
   if (Number.isNaN(h) || Number.isNaN(m)) return 0;
