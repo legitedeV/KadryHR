@@ -8,7 +8,7 @@ export function HeroPanel() {
         <div className="absolute right-10 top-10 h-96 w-96 rounded-full bg-teal-300/10 blur-3xl" />
         <div className="absolute bottom-0 left-1/2 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 pb-24 pt-24 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mx-auto grid max-w-5xl gap-10 px-5 pb-16 pt-16 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative">
           <div className="absolute -left-6 top-10 hidden h-64 w-12 rounded-full bg-gradient-to-b from-emerald-400/40 via-emerald-500/10 to-transparent lg:block" />
           <div className="rounded-[2.5rem] border border-surface-300 bg-gradient-to-br from-white/5 via-white/[0.02] to-transparent p-8 shadow-[0_40px_90px_rgba(0,0,0,0.55)]">
@@ -20,7 +20,7 @@ export function HeroPanel() {
               <div className="rounded-2xl border border-surface-300 bg-white p-4">
                 <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-surface-500">
                   <span>Grafik tygodniowy</span>
-                  <span className="text-emerald-200/80">84% obsadzenia</span>
+                  <span className="text-emerald-600">84% obsadzenia</span>
                 </div>
                 <div className="mt-4 grid grid-cols-7 gap-2 text-[11px] text-surface-600">
                   {[
@@ -52,7 +52,7 @@ export function HeroPanel() {
                   ))}
                 </div>
                 <div className="mt-4 flex items-center gap-3 text-xs text-surface-600">
-                  <span className="rounded-full bg-emerald-400/20 px-3 py-1 text-emerald-200">
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
                     12 zmian obsadzonych automatycznie
                   </span>
                   <span className="rounded-full border border-surface-300 px-3 py-1">
@@ -68,7 +68,7 @@ export function HeroPanel() {
                   <div className="mt-3 space-y-3 text-sm">
                     <div className="flex items-center justify-between rounded-xl border border-surface-300 bg-surface-100 px-3 py-2">
                       <span>Sklep Centrum</span>
-                      <span className="text-emerald-200">2 alerty</span>
+                      <span className="text-emerald-600 font-medium">2 alerty</span>
                     </div>
                     <div className="flex items-center justify-between rounded-xl border border-surface-300 bg-surface-100 px-3 py-2">
                       <span>Restauracja Rondo</span>
@@ -81,7 +81,7 @@ export function HeroPanel() {
                     Skróty akcji
                   </div>
                   <div className="mt-4 space-y-2 text-sm">
-                    <button className="w-full rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-4 py-2 text-left text-emerald-100 transition hover:border-emerald-200 hover:bg-emerald-300/20">
+                    <button className="w-full rounded-xl border border-emerald-400 bg-emerald-50 px-4 py-2 text-left text-emerald-700 font-medium transition hover:border-emerald-500 hover:bg-emerald-100">
                       Zaplanuj tydzień
                     </button>
                     <button className="w-full rounded-xl border border-surface-300 bg-surface-100 px-4 py-2 text-left text-surface-600 transition hover:border-surface-400 hover:bg-surface-100">
@@ -95,13 +95,13 @@ export function HeroPanel() {
         </div>
 
         <div className="flex flex-col justify-center gap-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">
             Premium HR dla retail i gastro
           </div>
-          <h1 className="text-4xl font-semibold leading-tight tracking-tight text-surface-900 sm:text-5xl">
+          <h1 className="text-3xl font-semibold leading-tight tracking-tight text-surface-900 sm:text-4xl">
             Grafiki, RCP i urlopy w jednym miejscu. Bez Excela, bez chaosu.
           </h1>
-          <p className="text-lg text-surface-600">
+          <p className="text-base text-surface-600">
             KadryHR to jeden pulpit do zarządzania zespołem w wielu lokalizacjach. Widzisz
             obsadę, dyspozycyjność i koszty pracy bez przekopywania się przez pliki.
           </p>

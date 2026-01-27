@@ -33,15 +33,15 @@ const quotes = [
 
 export function SocialProofSection() {
   return (
-    <section className="relative bg-[#F7F9FB] py-24">
+    <section className="relative bg-[#F7F9FB] py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#FFFFFF] via-[#F7F9FB] to-[#FFFFFF]" />
-      <div className="relative mx-auto max-w-6xl px-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="relative mx-auto max-w-5xl px-5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
+            <p className="text-sm uppercase tracking-[0.3em] text-emerald-600">
               Zaufanie klientów
             </p>
-            <h2 className="mt-4 text-3xl font-semibold text-surface-900 sm:text-4xl">
+            <h2 className="mt-4 text-2xl font-semibold text-surface-900 sm:text-3xl">
               Ściana opinii zamiast logotypów.
             </h2>
           </div>
@@ -50,7 +50,7 @@ export function SocialProofSection() {
               (badge) => (
                 <span
                   key={badge}
-                  className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100"
+                  className="rounded-full border border-emerald-400 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700"
                 >
                   {badge}
                 </span>
@@ -58,14 +58,14 @@ export function SocialProofSection() {
             )}
           </div>
         </div>
-        <div className="mt-10 columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3">
+        <div className="mt-8 columns-1 gap-5 space-y-5 sm:columns-2 lg:columns-3">
           {quotes.map((item) => (
             <div
               key={item.quote}
-              className="break-inside-avoid rounded-[2.2rem] border border-surface-300 bg-surface-100 p-6 text-sm text-surface-600"
+              className="break-inside-avoid rounded-2xl border border-surface-300 bg-surface-100 p-5 text-sm text-surface-600"
             >
               <p className="text-base text-surface-800">“{item.quote}”</p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-emerald-200/70">
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-emerald-600">
                 {item.role}
               </p>
             </div>

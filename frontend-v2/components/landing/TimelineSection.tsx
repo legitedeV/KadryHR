@@ -35,50 +35,50 @@ export function TimelineSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#F7F9FB] via-[#F7F9FB] to-[#F7F9FB]" />
       <div className="absolute -left-40 top-24 h-72 w-72 rotate-12 rounded-[3rem] border border-emerald-400/20 bg-emerald-400/5" />
       <div className="absolute bottom-12 right-20 h-56 w-56 -rotate-6 rounded-[3rem] border border-surface-300 bg-surface-100" />
-      <div className="relative mx-auto max-w-6xl px-6 py-24">
-        <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+      <div className="relative mx-auto max-w-5xl px-5 py-16">
+        <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-200/70">
+            <p className="text-sm uppercase tracking-[0.3em] text-emerald-600">
               Jak wygląda tydzień pracy
             </p>
-            <h2 className="mt-4 text-3xl font-semibold leading-tight text-surface-900 sm:text-4xl">
+            <h2 className="mt-4 text-2xl font-semibold leading-tight text-surface-900 sm:text-3xl">
               Tydzień z KadryHR układa się jak dobrze zaplanowany grafik.
             </h2>
             <p className="mt-4 text-surface-600">
               Storytelling zamiast listy funkcji. Zobacz, kiedy system robi za Ciebie
               najwięcej i gdzie realnie odzyskujesz czas.
             </p>
-            <div className="mt-8 rounded-3xl border border-surface-300 bg-surface-100 p-6">
+            <div className="mt-6 rounded-2xl border border-surface-300 bg-surface-100 p-5">
               <p className="text-sm text-surface-600">Średni tydzień klienta KadryHR</p>
               <div className="mt-4 grid gap-4 text-sm text-surface-600">
                 <div className="flex items-center justify-between">
                   <span>Ułożenie grafiku</span>
-                  <span className="text-emerald-200">-70% czasu</span>
+                  <span className="text-emerald-600 font-medium">-70% czasu</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Akceptacja zmian</span>
-                  <span className="text-emerald-200">-58% maili</span>
+                  <span className="text-emerald-600 font-medium">-58% maili</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>RCP i raporty</span>
-                  <span className="text-emerald-200">+1 dzień oszczędzony</span>
+                  <span className="text-emerald-600 font-medium">+1 dzień oszczędzony</span>
                 </div>
               </div>
             </div>
           </div>
-          <ol className="space-y-6">
+          <ol className="space-y-4">
             {timeline.map((item, index) => (
               <li
                 key={item.day}
-                className="group relative overflow-hidden rounded-[2.2rem] border border-surface-300 bg-gradient-to-br from-white/5 via-white/[0.03] to-transparent p-6 transition hover:-translate-y-1 hover:border-emerald-300/40"
+                className="group relative overflow-hidden rounded-2xl border border-surface-300 bg-gradient-to-br from-white/5 via-white/[0.03] to-transparent p-5 transition hover:-translate-y-1 hover:border-emerald-300/40"
               >
-                <div className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-300/40 text-sm font-semibold text-emerald-200/90">
+                <div className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-emerald-400 text-sm font-semibold text-emerald-700">
                   {index + 1}
                 </div>
-                <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/70">
+                <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">
                   {item.day}
                 </p>
-                <h3 className="mt-3 text-xl font-semibold text-surface-900">
+                <h3 className="mt-2 text-lg font-semibold text-surface-900">
                   {item.title}
                 </h3>
                 <p className="mt-3 text-sm text-surface-600">{item.description}</p>
