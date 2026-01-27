@@ -135,6 +135,7 @@ const shifts = [
     startsAt: new Date(`${formatDateKey(weekStart)}T08:00:00`).toISOString(),
     endsAt: new Date(`${formatDateKey(weekStart)}T16:00:00`).toISOString(),
     location: { id: "loc-1", name: "Centrum" },
+    status: "DRAFT",
   },
   {
     id: "shift-2",
@@ -146,6 +147,7 @@ const shifts = [
     startsAt: new Date(`${formatDateKey(addDays(weekStart, 1))}T10:00:00`).toISOString(),
     endsAt: new Date(`${formatDateKey(addDays(weekStart, 1))}T18:00:00`).toISOString(),
     location: { id: "loc-1", name: "Centrum" },
+    status: "DRAFT",
   },
   {
     id: "shift-3",
@@ -157,6 +159,7 @@ const shifts = [
     startsAt: new Date(`${formatDateKey(addDays(weekStart, 3))}T12:00:00`).toISOString(),
     endsAt: new Date(`${formatDateKey(addDays(weekStart, 3))}T20:00:00`).toISOString(),
     location: { id: "loc-2", name: "Galeria" },
+    status: "DRAFT",
   },
 ];
 
@@ -278,15 +281,7 @@ async function run() {
         });
       }
 
-      if (pathname.startsWith("/shifts/summary")) {
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(summary),
-        });
-      }
-
-      if (pathname.startsWith("/shifts")) {
+      if (pathname.startsWith("/schedule")) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",

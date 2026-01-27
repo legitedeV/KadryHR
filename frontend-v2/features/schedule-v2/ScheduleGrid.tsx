@@ -11,6 +11,11 @@ import {
   getAvailabilityStatus,
 } from "./schedule-utils";
 
+const WEEKEND_DAYS = new Set([0, 6]);
+
+const buildStripedBackground = (color: string) =>
+  `repeating-linear-gradient(135deg, ${color}1a, ${color}1a 8px, ${color}33 8px, ${color}33 16px)`;
+
 type DayColumn = {
   date: Date;
   iso: string;
@@ -25,6 +30,7 @@ type ScheduleGridProps = {
   onAddShift: (employeeId: string, date: Date) => void;
   onEditShift: (shift: ShiftRecord) => void;
   canManage: boolean;
+  isPublished: boolean;
 };
 
 export function ScheduleGrid({
@@ -36,6 +42,7 @@ export function ScheduleGrid({
   onAddShift,
   onEditShift,
   canManage,
+  isPublished,
 }: ScheduleGridProps) {
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
@@ -53,44 +60,86 @@ export function ScheduleGrid({
     availabilityByEmployee.set(slot.employeeId, current);
   });
 
+  const dayStats = days.map((day) => {
+    const dayKey = formatDateKey(day.date);
+    const dayShifts = shifts.filter((shift) => formatDateKey(new Date(shift.startsAt)) === dayKey);
+    const uniqueEmployees = new Set(dayShifts.map((shift) => shift.employeeId));
+    const planned = uniqueEmployees.size;
+    const recommended = Math.max(1, Math.round(employees.length * 0.7));
+    const totalMinutes = dayShifts.reduce((sum, shift) => {
+      const start = new Date(shift.startsAt).getTime();
+      const end = new Date(shift.endsAt).getTime();
+      return sum + Math.max(0, (end - start) / 60000);
+    }, 0);
+    return { dayKey, planned, recommended, totalMinutes };
+  });
+
   if (!employees.length) {
     return (
-      <div className="panel-card p-6 text-center text-surface-400">
+      <div className="rounded-lg border border-surface-200 bg-surface-50 p-6 text-center text-surface-500">
         Brak aktywnych pracowników w tej lokalizacji.
       </div>
     );
   }
 
   return (
-    <div className="panel-card p-0 overflow-hidden" data-onboarding-target="schedule-grid">
+    <div className="rounded-lg border border-surface-200 bg-white shadow-sm" data-onboarding-target="schedule-grid">
       <div className="overflow-x-auto">
-        <div className="min-w-[960px]">
-          <div className="grid grid-cols-[260px_repeat(7,minmax(160px,1fr))] border-b border-surface-800/60 bg-surface-950/40">
-            <div className="sticky left-0 z-10 border-r border-surface-800/60 bg-surface-950/60 px-4 py-3 text-xs uppercase tracking-[0.2em] text-surface-500">
-              Pracownicy
+        <div className="min-w-[980px]">
+          <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-surface-50">
+            <div className="sticky left-0 z-20 border-r border-surface-200 bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+              Obciążenie
             </div>
-            {days.map((day, index) => (
-              <div key={day.iso} className="px-3 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-surface-500">
-                  {WEEKDAY_LABELS[index]}
-                </p>
-                <p className="text-sm font-semibold text-surface-100">{formatDayLabel(day.date)}</p>
-              </div>
-            ))}
+            {days.map((day, index) => {
+              const stats = dayStats[index];
+              const ratio = Math.min(1, stats.recommended ? stats.planned / stats.recommended : 0);
+              const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+              return (
+                <div
+                  key={day.iso}
+                  className={`px-3 py-3 ${isWeekend ? "bg-surface-100/80" : "bg-surface-50"}`}
+                >
+                  <div
+                    className="h-2 rounded-sm bg-surface-200"
+                    title={`Zaplanowany personel: ${stats.planned}\nZalecany personel: ${stats.recommended}`}
+                  >
+                    <div
+                      className="h-full rounded-sm bg-brand-500"
+                      style={{ width: `${ratio * 100}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-white">
+            <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-surface-400">Pracownicy</p>
+            </div>
+            {days.map((day, index) => {
+              const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+              return (
+                <div key={day.iso} className={`px-3 py-3 ${isWeekend ? "bg-surface-100/80" : ""}`}>
+                  <p className="text-xs uppercase tracking-[0.18em] text-surface-400">{WEEKDAY_LABELS[index]}</p>
+                  <p className="text-sm font-semibold text-surface-800">{formatDayLabel(day.date)}</p>
+                </div>
+              );
+            })}
           </div>
 
           {employees.map((employee) => (
             <div
               key={employee.id}
-              className="grid grid-cols-[260px_repeat(7,minmax(160px,1fr))] border-b border-surface-900/70"
+              className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200"
             >
-              <div className="sticky left-0 z-10 flex items-center gap-3 border-r border-surface-900/70 bg-surface-950/60 px-4 py-4">
-                <div className="h-9 w-9 rounded-full bg-surface-800/80" />
+              <div className="sticky left-0 z-10 flex items-center gap-3 border-r border-surface-200 bg-white px-4 py-4">
+                <div className="h-9 w-9 rounded-md bg-surface-100" />
                 <div>
-                  <p className="text-sm font-semibold text-surface-50">
+                  <p className="text-sm font-semibold text-surface-800">
                     {employee.firstName} {employee.lastName}
                   </p>
-                  <p className="text-xs text-surface-400">{employee.position ?? "Stanowisko"}</p>
+                  <p className="text-xs text-surface-500">{employee.position ?? "Stanowisko"}</p>
                 </div>
               </div>
               {days.map((day) => {
@@ -99,18 +148,21 @@ export function ScheduleGrid({
                 const cellShifts = shiftsByCell.get(key) ?? [];
                 const leave = findLeaveForDay(leaves, employee.id, day.date);
                 const availabilitySlots = availabilityByEmployee.get(employee.id) ?? [];
+                const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
 
                 return (
                   <div
                     key={key}
-                    className="group relative min-h-[120px] border-r border-surface-900/70 px-3 py-3"
+                    className={`group relative min-h-[120px] border-r border-surface-200 px-3 py-3 ${
+                      isWeekend ? "bg-surface-100/70" : "bg-white"
+                    }`}
                   >
                     {canManage && (
                       <div className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
                         <button
                           type="button"
                           onClick={() => onAddShift(employee.id, day.date)}
-                          className="rounded-lg border border-surface-700/60 bg-surface-900/60 px-2 py-1 text-xs text-surface-200 transition hover:border-brand-400/60 hover:text-surface-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                          className="rounded-md border border-surface-200 bg-white px-2 py-1 text-xs text-surface-600 transition hover:border-brand-400/60 hover:text-surface-900"
                           aria-label={`Dodaj zmianę dla ${employee.firstName} ${employee.lastName} w dniu ${dateKey}`}
                         >
                           +
@@ -119,19 +171,15 @@ export function ScheduleGrid({
                     )}
 
                     {leave && (
-                      <div className="mb-2 rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
-                        <p className="font-semibold">
-                          {leave.leaveType?.name ?? "Urlop"}
-                        </p>
-                        <p className="text-[11px] text-rose-200/80">
-                          Nieobecność zatwierdzona
-                        </p>
+                      <div className="mb-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                        <p className="font-semibold">{leave.leaveType?.name ?? "Urlop"}</p>
+                        <p className="text-[11px] text-rose-400">Nieobecność zatwierdzona</p>
                       </div>
                     )}
 
                     <div className="flex flex-col gap-2">
                       {cellShifts.length === 0 && !leave && (
-                        <p className="text-xs text-surface-600">Brak zmian</p>
+                        <p className="text-xs text-surface-400">Brak zmian</p>
                       )}
                       {cellShifts.map((shift) => {
                         const timeLabel = formatShiftTimeRange(shift);
@@ -143,42 +191,37 @@ export function ScheduleGrid({
                           startTime,
                           endTime,
                         );
+                        const isDraft = shift.status ? shift.status === "DRAFT" : !isPublished;
+                        const accentColor = shift.color ?? "#10b981";
 
                         return (
                           <button
                             key={shift.id}
                             type="button"
                             onClick={() => onEditShift(shift)}
-                            className="flex flex-col gap-1 rounded-xl border border-surface-700/60 bg-surface-900/70 px-3 py-2 text-left text-xs text-surface-100 transition hover:border-brand-400/60 hover:bg-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-70"
+                            className="flex flex-col gap-1 rounded-md border border-surface-200 px-3 py-2 text-left text-xs text-surface-800 transition hover:border-brand-400/60 hover:bg-surface-50"
                             role="button"
                             disabled={!canManage}
-                            style={
-                              shift.color
-                                ? {
-                                    borderColor: shift.color,
-                                    boxShadow: `inset 3px 0 0 ${shift.color}`,
-                                  }
-                                : undefined
-                            }
+                            style={{
+                              borderColor: accentColor,
+                              background: isDraft ? buildStripedBackground(accentColor) : "#ffffff",
+                            }}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-semibold">{timeLabel}</span>
                               {availabilityStatus.status === "outside" && (
-                                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] text-amber-200">
+                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-600">
                                   Poza dysp.
                                 </span>
                               )}
                               {availabilityStatus.status === "day-off" && (
-                                <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] text-rose-200">
+                                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] text-rose-600">
                                   Dzień wolny
                                 </span>
                               )}
                             </div>
                             {shift.position && (
-                              <span className="text-[11px] text-surface-300">{shift.position}</span>
-                            )}
-                            {shift.location?.name && (
-                              <span className="text-[11px] text-surface-500">{shift.location.name}</span>
+                              <span className="text-[11px] text-surface-600">{shift.position}</span>
                             )}
                           </button>
                         );
@@ -189,6 +232,33 @@ export function ScheduleGrid({
               })}
             </div>
           ))}
+
+          <div
+            className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-t border-surface-200 bg-white sticky bottom-0"
+            data-onboarding-target="schedule-summary"
+          >
+            <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+              Podsumowanie
+            </div>
+            {days.map((day, index) => {
+              const stats = dayStats[index];
+              const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+              const hours = (stats.totalMinutes / 60).toFixed(1);
+              return (
+                <div
+                  key={day.iso}
+                  className={`px-3 py-4 text-xs text-surface-600 ${isWeekend ? "bg-surface-100/80" : "bg-white"}`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-surface-800">
+                    <span>👥</span>
+                    <span>{stats.planned}</span>
+                  </div>
+                  <div className="mt-1 text-[11px] text-surface-500">{hours} godz.</div>
+                  <div className="text-[11px] text-surface-400">Koszt: —</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
