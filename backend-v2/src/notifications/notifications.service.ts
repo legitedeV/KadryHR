@@ -439,12 +439,15 @@ export class NotificationsService {
       `Queue not available, sending email synchronously for notification ${notification.id}`,
     );
 
-    const result = await this.emailAdapter.sendEmail({
-      to: user.email,
-      subject: input.emailSubject ?? notification.title,
-      text: notification.body ?? notification.title,
-      html: emailHtml,
-    });
+    const result = await this.sendEmailWithRetries(
+      {
+        to: user.email,
+        subject: input.emailSubject ?? notification.title,
+        text: notification.body ?? notification.title,
+        html: emailHtml,
+      },
+      notification.id,
+    );
 
     let status: NotificationDeliveryStatus;
     let errorMessage: string | null = null;
@@ -466,6 +469,39 @@ export class NotificationsService {
         errorMessage,
       },
     });
+  }
+
+  private async sendEmailWithRetries(
+    payload: {
+      to: string;
+      subject: string;
+      text: string;
+      html?: string;
+    },
+    notificationId: string,
+  ) {
+    const maxAttempts = 3;
+    let lastResult = await this.emailAdapter.sendEmail(payload);
+
+    for (let attempt = 2; attempt <= maxAttempts; attempt += 1) {
+      if (lastResult.success || lastResult.skipped) {
+        break;
+      }
+      const delayMs = 1000 * Math.pow(2, attempt - 1);
+      this.logger.warn(
+        `Retrying email delivery for notification ${notificationId} (attempt ${attempt}/${maxAttempts}) after ${delayMs}ms.`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      lastResult = await this.emailAdapter.sendEmail(payload);
+    }
+
+    if (!lastResult.success && !lastResult.skipped) {
+      this.logger.error(
+        `Email delivery failed after ${maxAttempts} attempts for notification ${notificationId}.`,
+      );
+    }
+
+    return lastResult;
   }
 
   private async attemptSmsDelivery(

@@ -20,6 +20,67 @@ export class ScheduleRepository {
     });
   }
 
+  findPeriodById(organisationId: string, periodId: string) {
+    return this.prisma.schedulePeriod.findFirst({
+      where: { organisationId, id: periodId },
+      select: {
+        id: true,
+        from: true,
+        to: true,
+        status: true,
+        version: true,
+        locationId: true,
+        publishedAt: true,
+        publishedById: true,
+      },
+    });
+  }
+
+  findPreviousPeriods(
+    organisationId: string,
+    locationId: string,
+    beforeDate: Date,
+  ) {
+    return this.prisma.schedulePeriod.findMany({
+      where: {
+        organisationId,
+        locationId,
+        from: { lt: beforeDate },
+      },
+      orderBy: { from: 'desc' },
+      take: 10,
+    });
+  }
+
+  updatePeriodPublish(
+    periodId: string,
+    data: Prisma.SchedulePeriodUpdateInput,
+  ) {
+    return this.prisma.schedulePeriod.update({
+      where: { id: periodId },
+      data,
+    });
+  }
+
+  updateShiftsStatusForPeriod(
+    organisationId: string,
+    periodId: string,
+    status: ScheduleStatus,
+    actorId?: string,
+  ) {
+    return this.prisma.shift.updateMany({
+      where: {
+        organisationId,
+        periodId,
+        deletedAt: null,
+      },
+      data: {
+        status,
+        updatedById: actorId ?? null,
+      },
+    });
+  }
+
   createShift(data: Prisma.ShiftCreateInput) {
     return this.prisma.shift.create({ data });
   }
@@ -33,6 +94,42 @@ export class ScheduleRepository {
       where: {
         organisationId,
         id: { in: shiftIds },
+      },
+    });
+  }
+
+  findShiftsByPeriod(organisationId: string, periodId: string) {
+    return this.prisma.shift.findMany({
+      where: {
+        organisationId,
+        periodId,
+        deletedAt: null,
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+  }
+
+  findShiftsWithEmployeesByPeriod(organisationId: string, periodId: string) {
+    return this.prisma.shift.findMany({
+      where: {
+        organisationId,
+        periodId,
+        deletedAt: null,
+      },
+      orderBy: { startsAt: 'asc' },
+      include: {
+        employee: {
+          select: { id: true, firstName: true, lastName: true, userId: true },
+        },
+      },
+    });
+  }
+
+  deleteShiftsByPeriod(organisationId: string, periodId: string) {
+    return this.prisma.shift.deleteMany({
+      where: {
+        organisationId,
+        periodId,
       },
     });
   }
@@ -52,6 +149,26 @@ export class ScheduleRepository {
 
   createAuditMany(data: Prisma.ScheduleAuditCreateManyInput[]) {
     return this.prisma.scheduleAudit.createMany({ data });
+  }
+
+  deleteValidationsForPeriod(organisationId: string, periodId: string) {
+    return this.prisma.scheduleValidation.deleteMany({
+      where: { organisationId, periodId },
+    });
+  }
+
+  createValidations(data: Prisma.ScheduleValidationCreateManyInput[]) {
+    return this.prisma.scheduleValidation.createMany({ data });
+  }
+
+  countValidationErrors(organisationId: string, periodId: string) {
+    return this.prisma.scheduleValidation.count({
+      where: {
+        organisationId,
+        periodId,
+        severity: 'ERROR',
+      },
+    });
   }
 
   findEmployeesByIds(organisationId: string, employeeIds: string[]) {
