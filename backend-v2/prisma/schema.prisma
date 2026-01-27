@@ -123,6 +123,17 @@ enum NewsletterSubscriptionStatus {
   UNSUBSCRIBED
 }
 
+enum RcpRotateMode {
+  STATIC
+  DAILY
+  HOURLY
+}
+
+enum RcpEventType {
+  CLOCK_IN
+  CLOCK_OUT
+}
+
 model Organisation {
   id                          String   @id @default(uuid())
   name                        String
@@ -175,6 +186,8 @@ model Organisation {
   scheduleAudits          ScheduleAudit[]
   autoPlanTemplates       AutoPlanTemplate[]
   autoPlanTemplateBlocks  AutoPlanTemplateBlock[]
+  rcpQrConfigs            RcpQrConfig[]
+  rcpEvents               RcpEvent[]
 }
 
 model User {
@@ -211,6 +224,7 @@ model User {
   scheduleShiftsUpdated    Shift[]                  @relation("ShiftUpdatedBy")
   scheduleAudits           ScheduleAudit[]          @relation("ScheduleAuditActor")
   autoPlanTemplates        AutoPlanTemplate[]
+  rcpEvents                RcpEvent[]
 
   @@index([organisationId])
 }
@@ -347,12 +361,17 @@ model EmployeeDocument {
 }
 
 model Location {
-  id             String   @id @default(uuid())
-  organisationId String
-  name           String
-  address        String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                    String   @id @default(uuid())
+  organisationId        String
+  name                  String
+  address               String?
+  geoLat                Decimal? @db.Decimal(10, 7)
+  geoLng                Decimal? @db.Decimal(10, 7)
+  geoRadiusMeters       Int?
+  rcpEnabled            Boolean  @default(false)
+  rcpAccuracyMaxMeters  Int      @default(100)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   organisation           Organisation            @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   shifts                 Shift[]
@@ -360,6 +379,8 @@ model Location {
   scheduleTemplateShifts ScheduleTemplateShift[]
   schedulePeriods        SchedulePeriod[]
   autoPlanTemplateBlocks AutoPlanTemplateBlock[]
+  rcpQrConfigs           RcpQrConfig[]
+  rcpEvents              RcpEvent[]
 
   @@index([organisationId])
 }
@@ -1092,4 +1113,47 @@ model Subscription {
   updatedAt      DateTime  @updatedAt
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+}
+
+model RcpQrConfig {
+  id               String        @id @default(uuid())
+  organisationId   String
+  locationId       String
+  tokenTtlSeconds  Int           @default(3600)
+  rotateMode       RcpRotateMode @default(STATIC)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId])
+  @@index([organisationId])
+}
+
+model RcpEvent {
+  id             String       @id @default(uuid())
+  organisationId String
+  userId         String
+  locationId     String
+  type           RcpEventType
+  happenedAt     DateTime
+  clientTime     DateTime?
+  clientLat      Decimal      @db.Decimal(10, 7)
+  clientLng      Decimal      @db.Decimal(10, 7)
+  accuracyMeters Int?
+  distanceMeters Int
+  qrTokenHash    String
+  userAgent      String?
+  ip             String?
+  createdAt      DateTime     @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([userId])
+  @@index([locationId])
+  @@index([happenedAt])
 }
