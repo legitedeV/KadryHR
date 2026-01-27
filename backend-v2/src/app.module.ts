@@ -31,6 +31,7 @@ import { WebsiteModule } from './website/website.module';
 import { PlatformConfigModule } from './platform-config/platform-config.module';
 import { HealthController } from './health/health.controller';
 import { ScheduleModule } from './schedule/schedule.module';
+import { RcpModule } from './rcp/rcp.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     WebsiteModule,
     PlatformConfigModule,
     ScheduleModule,
+    RcpModule,
   ],
   controllers: [HealthController],
 })

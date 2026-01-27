@@ -4,6 +4,10 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
 } from 'class-validator';
 
 export class CreateLocationDto {
@@ -15,6 +19,34 @@ export class CreateLocationDto {
   @IsString()
   @MaxLength(512)
   address?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  geoLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  geoLng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(5000)
+  geoRadiusMeters?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  rcpEnabled?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(500)
+  rcpAccuracyMaxMeters?: number;
 
   @IsOptional()
   @IsArray()
