@@ -13,8 +13,6 @@ type ScheduleToolbarProps = {
   employmentOptions: string[];
   sortMode: string;
   searchValue: string;
-  keyboardMode: boolean;
-  keyboardDisabled: boolean;
   timeBuffer: string;
   onPrevWeek: () => void;
   onNextWeek: () => void;
@@ -26,7 +24,6 @@ type ScheduleToolbarProps = {
   onSortModeChange: (value: string) => void;
   onSearchChange: (value: string) => void;
   onSortAction: () => void;
-  onToggleKeyboard: () => void;
   onOpenOptions: () => void;
 };
 
@@ -41,8 +38,6 @@ export function ScheduleToolbar({
   employmentOptions,
   sortMode,
   searchValue,
-  keyboardMode,
-  keyboardDisabled,
   timeBuffer,
   onPrevWeek,
   onNextWeek,
@@ -54,45 +49,26 @@ export function ScheduleToolbar({
   onSortModeChange,
   onSearchChange,
   onSortAction,
-  onToggleKeyboard,
   onOpenOptions,
 }: ScheduleToolbarProps) {
   return (
-    <div className="rounded-lg border border-surface-200 bg-surface-50 p-4 shadow-sm space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-surface-500">
-          <span className="rounded-md border border-surface-200 bg-white px-2 py-1">📌</span>
-          <span className="rounded-md border border-surface-200 bg-white px-2 py-1">🗂️</span>
-          <span className="rounded-md border border-surface-200 bg-white px-2 py-1">🧩</span>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="rounded-lg border border-surface-200 bg-surface-50 p-3 shadow-sm space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           {timeBuffer && (
             <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-600">
               Wpisano: {timeBuffer}
             </span>
           )}
-          <button
-            type="button"
-            onClick={onToggleKeyboard}
-            disabled={keyboardDisabled}
-            title={keyboardDisabled ? "Wybierz jedną lokalizację, aby włączyć tryb klawiatury." : ""}
-            className={`flex items-center gap-2 rounded-full border px-2 py-1 text-xs font-semibold transition ${
-              keyboardMode ? "border-brand-500 bg-white text-brand-700" : "border-surface-200 bg-white text-surface-500"
-            } ${keyboardDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            <span className="text-base">{keyboardMode ? "●" : "◯"}</span>
-            <span className="text-base">🖱️</span>
-            Tryb klawiatury
-          </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onPrevWeek}
-            className="rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-surface-600 hover:bg-surface-100"
+            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
             aria-label="Poprzedni tydzień"
           >
             ←
@@ -100,14 +76,14 @@ export function ScheduleToolbar({
           <button
             type="button"
             onClick={onOpenRangeModal}
-            className="rounded-md border border-surface-200 bg-white px-4 py-2 text-sm font-semibold text-surface-800 hover:bg-surface-100"
+            className="rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-semibold text-surface-800 hover:bg-surface-100 transition-colors"
           >
             {rangeLabel}
           </button>
           <button
             type="button"
             onClick={onNextWeek}
-            className="rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-surface-600 hover:bg-surface-100"
+            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
             aria-label="Następny tydzień"
           >
             →
@@ -116,7 +92,7 @@ export function ScheduleToolbar({
 
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <select
-            className="h-10 rounded-md border border-surface-200 bg-white px-3 text-sm text-surface-700"
+            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
             value={viewMode}
             onChange={(event) => onViewModeChange(event.target.value)}
           >
@@ -126,7 +102,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-10 rounded-md border border-surface-200 bg-white px-3 text-sm text-surface-700"
+            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
             value={locationId}
             onChange={(event) => onLocationChange(event.target.value)}
           >
@@ -139,7 +115,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-10 rounded-md border border-surface-200 bg-white px-3 text-sm text-surface-700"
+            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
             value={positionFilter}
             onChange={(event) => onPositionFilterChange(event.target.value)}
           >
@@ -152,7 +128,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-10 rounded-md border border-surface-200 bg-white px-3 text-sm text-surface-700"
+            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
             value={employmentFilter}
             onChange={(event) => onEmploymentFilterChange(event.target.value)}
           >
@@ -165,7 +141,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-10 rounded-md border border-surface-200 bg-white px-3 text-sm text-surface-700"
+            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
             value={sortMode}
             onChange={(event) => onSortModeChange(event.target.value)}
           >
@@ -179,7 +155,7 @@ export function ScheduleToolbar({
           <button
             type="button"
             onClick={onSortAction}
-            className="rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-surface-700 hover:bg-surface-100"
+            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
           >
             Sortuj
           </button>
@@ -189,34 +165,13 @@ export function ScheduleToolbar({
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Szukaj..."
-              className="h-10 w-44 rounded-md border border-surface-200 bg-white px-3 text-sm text-surface-700"
+              className="h-9 w-40 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
             />
           </div>
           <button
             type="button"
-            className="rounded-md border border-surface-200 bg-white p-2 text-surface-600 hover:bg-surface-100"
-            aria-label="Akcja: notatki"
-          >
-            🗒️
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-surface-200 bg-white p-2 text-surface-600 hover:bg-surface-100"
-            aria-label="Akcja: eksport"
-          >
-            ⬇️
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-surface-200 bg-white p-2 text-surface-600 hover:bg-surface-100"
-            aria-label="Akcja: powiadomienia"
-          >
-            🔔
-          </button>
-          <button
-            type="button"
             onClick={onOpenOptions}
-            className="rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-surface-700 hover:bg-surface-100"
+            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
           >
             Opcje
           </button>
