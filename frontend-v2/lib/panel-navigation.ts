@@ -1,7 +1,6 @@
 export type PanelNavItemId =
   | "dashboard"
   | "schedule"
-  | "schedule-v2"
   | "availability"
   | "profile";
 
@@ -24,12 +23,6 @@ export const panelNavItems: PanelNavItem[] = [
     href: "/panel/grafik",
     label: "Grafik",
     icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-  },
-  {
-    id: "schedule-v2",
-    href: "/panel/grafik-v2",
-    label: "Grafik v2",
-    icon: "M4 6h16M4 12h16M4 18h16",
   },
   {
     id: "availability",
@@ -55,7 +48,6 @@ export function getNavItemByHref(href: string): PanelNavItem | undefined {
 
 export const titleByPath: Record<string, string> = {
   "/panel/grafik": "Grafik zmian",
-  "/panel/grafik-v2": "Grafik zmian v2",
   "/panel/dyspozycje": "Dyspozycje",
   "/panel/profil": "Profil użytkownika",
   "/panel/dashboard": "Dashboard",

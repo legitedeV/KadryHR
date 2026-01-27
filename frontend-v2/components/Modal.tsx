@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
 interface ModalProps {
   open: boolean;
@@ -13,6 +13,8 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, description, onClose, children, footer, size = "md" }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -25,6 +27,39 @@ export function Modal({ open, title, description, onClose, children, footer, siz
       document.body.style.overflow = "";
     };
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || !modalRef.current) return;
+    const currentModal = modalRef.current;
+
+    const focusable = Array.from(
+      currentModal.querySelectorAll<HTMLElement>(
+        'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    first?.focus();
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      if (focusable.length === 0) return;
+      const active = document.activeElement;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    currentModal.addEventListener("keydown", handleTab);
+    return () => {
+      currentModal.removeEventListener("keydown", handleTab);
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -46,6 +81,7 @@ export function Modal({ open, title, description, onClose, children, footer, siz
       
       {/* Modal container */}
       <div 
+        ref={modalRef}
         className={`relative z-10 w-full ${sizeClasses[size]} rounded-2xl border border-surface-700/50 bg-gradient-to-b from-surface-900 to-surface-950 p-6 shadow-2xl max-h-[calc(100vh-80px)] overflow-y-auto`}
         role="dialog"
         aria-modal="true"

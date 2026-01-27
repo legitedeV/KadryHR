@@ -3,16 +3,26 @@ export type OnboardingStepId =
   | "availability"
   | "time-tracking"
   | "team-and-roles"
-  | "help-and-consulting";
+  | "help-and-consulting"
+  | "schedule-overview"
+  | "schedule-add-shift"
+  | "schedule-publish"
+  | "schedule-summary";
 
 export type OnboardingTargetId =
   | "nav-schedule"
   | "nav-availability"
   | "nav-time-tracking"
   | "nav-employees"
-  | "nav-help";
+  | "nav-help"
+  | "schedule-grid"
+  | "schedule-add-shift"
+  | "schedule-publish"
+  | "schedule-summary";
 
 export type OnboardingActionType = "go-to-module" | "finish";
+
+export type OnboardingTourId = "main-panel-tour" | "schedule-v2-tour";
 
 export interface OnboardingStep {
   id: OnboardingStepId;
@@ -24,7 +34,7 @@ export interface OnboardingStep {
 }
 
 export interface OnboardingTourConfig {
-  id: "main-panel-tour";
+  id: OnboardingTourId;
   title: string;
   steps: OnboardingStep[];
 }

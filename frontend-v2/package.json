@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "ci:check": "npm run lint && npm run typecheck",
     "test": "node --loader ./ts-node-loader.mjs --test app/panel/grafik/page.test.tsx components/avatar.test.tsx components/brand/brandLogo.test.tsx",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "screenshot:schedule-v2": "node scripts/screenshot-schedule-v2.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",

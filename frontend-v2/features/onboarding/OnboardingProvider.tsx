@@ -10,10 +10,16 @@ import {
   useState,
 } from "react";
 import { mainPanelTour } from "./mainPanelTour";
-import { OnboardingTourConfig, OnboardingState } from "./onboarding.types";
+import { mainScheduleTour } from "./scheduleTour";
+import { OnboardingTourConfig, OnboardingState, OnboardingTourId } from "./onboarding.types";
 import { OnboardingOverlay } from "./OnboardingOverlay";
 
 const STORAGE_PREFIX = "kadryhr:onboarding";
+
+const TOURS: Record<OnboardingTourId, OnboardingTourConfig> = {
+  [mainPanelTour.id]: mainPanelTour,
+  [mainScheduleTour.id]: mainScheduleTour,
+};
 
 type OnboardingContextValue = {
   tour: OnboardingTourConfig;
@@ -21,8 +27,11 @@ type OnboardingContextValue = {
   isOpen: boolean;
   hasBeenCompleted: boolean;
   hasBeenSkipped: boolean;
+  hasScheduleTourCompleted: boolean;
+  hasScheduleTourSkipped: boolean;
   isReady: boolean;
   startMainPanelTour: (options?: { reset?: boolean }) => void;
+  startScheduleTour: (options?: { reset?: boolean }) => void;
   nextStep: () => void;
   prevStep: () => void;
   skipTour: () => void;
@@ -52,38 +61,63 @@ type OnboardingProviderProps = {
 };
 
 export function OnboardingProvider({ userId, children }: OnboardingProviderProps) {
-  const tour = mainPanelTour;
+  const [activeTourId, setActiveTourId] = useState<OnboardingTourId>(mainPanelTour.id);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [hasBeenCompleted, setHasBeenCompleted] = useState(() => {
-    const stored = getStoredState(userId, tour.id);
-    return Boolean(stored?.completed);
-  });
-  const [hasBeenSkipped, setHasBeenSkipped] = useState(() => {
-    const stored = getStoredState(userId, tour.id);
-    return Boolean(stored?.skipped);
+  const [tourStates, setTourStates] = useState<Record<OnboardingTourId, OnboardingState>>(() => {
+    return {
+      [mainPanelTour.id]: getStoredState(userId, mainPanelTour.id) ?? {
+        completed: false,
+        skipped: false,
+      },
+      [mainScheduleTour.id]: getStoredState(userId, mainScheduleTour.id) ?? {
+        completed: false,
+        skipped: false,
+      },
+    };
   });
   const isReady = typeof window !== "undefined" && Boolean(userId);
 
   useEffect(() => {
     if (!userId) return;
-    const storageKey = getStorageKey(userId, tour.id);
-    const existingState = getStoredState(userId, tour.id);
+    const activeTour = TOURS[activeTourId];
+    const existingState = getStoredState(userId, activeTour.id);
+    const state = tourStates[activeTourId];
     const payload: OnboardingState = {
-      completed: hasBeenCompleted,
-      skipped: hasBeenSkipped,
-      lastStepIndex: existingState?.lastStepIndex ?? currentStepIndex,
-      completedAt: hasBeenCompleted ? (existingState?.completedAt ?? new Date().toISOString()) : undefined,
+      completed: state?.completed ?? false,
+      skipped: state?.skipped ?? false,
+      lastStepIndex: currentStepIndex,
+      completedAt:
+        state?.completed ? existingState?.completedAt ?? new Date().toISOString() : undefined,
     };
-    window.localStorage.setItem(storageKey, JSON.stringify(payload));
-  }, [hasBeenCompleted, hasBeenSkipped, tour.id, userId, currentStepIndex]);
+    window.localStorage.setItem(getStorageKey(userId, activeTour.id), JSON.stringify(payload));
+  }, [activeTourId, currentStepIndex, tourStates, userId]);
 
   const startMainPanelTour = useCallback(
     (options?: { reset?: boolean }) => {
       if (!userId) return;
+      setActiveTourId(mainPanelTour.id);
       if (options?.reset) {
-        setHasBeenCompleted(false);
-        setHasBeenSkipped(false);
+        setTourStates((prev) => ({
+          ...prev,
+          [mainPanelTour.id]: { completed: false, skipped: false },
+        }));
+      }
+      setCurrentStepIndex(0);
+      setIsOpen(true);
+    },
+    [userId],
+  );
+
+  const startScheduleTour = useCallback(
+    (options?: { reset?: boolean }) => {
+      if (!userId) return;
+      setActiveTourId(mainScheduleTour.id);
+      if (options?.reset) {
+        setTourStates((prev) => ({
+          ...prev,
+          [mainScheduleTour.id]: { completed: false, skipped: false },
+        }));
       }
       setCurrentStepIndex(0);
       setIsOpen(true);
@@ -92,8 +126,9 @@ export function OnboardingProvider({ userId, children }: OnboardingProviderProps
   );
 
   const nextStep = useCallback(() => {
-    setCurrentStepIndex((prev) => Math.min(prev + 1, tour.steps.length - 1));
-  }, [tour.steps.length]);
+    const activeTour = TOURS[activeTourId];
+    setCurrentStepIndex((prev) => Math.min(prev + 1, activeTour.steps.length - 1));
+  }, [activeTourId]);
 
   const prevStep = useCallback(() => {
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
@@ -101,36 +136,53 @@ export function OnboardingProvider({ userId, children }: OnboardingProviderProps
 
   const skipTour = useCallback(() => {
     setIsOpen(false);
-    setHasBeenSkipped(true);
-  }, []);
+    setTourStates((prev) => ({
+      ...prev,
+      [activeTourId]: {
+        ...prev[activeTourId],
+        skipped: true,
+      },
+    }));
+  }, [activeTourId]);
 
   const finishTour = useCallback(() => {
     setIsOpen(false);
-    setHasBeenCompleted(true);
-  }, []);
+    setTourStates((prev) => ({
+      ...prev,
+      [activeTourId]: {
+        ...prev[activeTourId],
+        completed: true,
+        skipped: false,
+        completedAt: new Date().toISOString(),
+      },
+    }));
+  }, [activeTourId]);
 
   const value = useMemo(
     () => ({
-      tour,
+      tour: TOURS[activeTourId],
       currentStepIndex,
       isOpen,
-      hasBeenCompleted,
-      hasBeenSkipped,
+      hasBeenCompleted: Boolean(tourStates[mainPanelTour.id]?.completed),
+      hasBeenSkipped: Boolean(tourStates[mainPanelTour.id]?.skipped),
+      hasScheduleTourCompleted: Boolean(tourStates[mainScheduleTour.id]?.completed),
+      hasScheduleTourSkipped: Boolean(tourStates[mainScheduleTour.id]?.skipped),
       isReady,
       startMainPanelTour,
+      startScheduleTour,
       nextStep,
       prevStep,
       skipTour,
       finishTour,
     }),
     [
-      tour,
+      activeTourId,
       currentStepIndex,
       isOpen,
-      hasBeenCompleted,
-      hasBeenSkipped,
+      tourStates,
       isReady,
       startMainPanelTour,
+      startScheduleTour,
       nextStep,
       prevStep,
       skipTour,
