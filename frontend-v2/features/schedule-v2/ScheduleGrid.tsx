@@ -36,6 +36,9 @@ type ScheduleGridProps = {
   focusedCell: { employeeIndex: number; dayIndex: number } | null;
   canManage: boolean;
   isPublished: boolean;
+  showLoadBars?: boolean;
+  showSummaryRow?: boolean;
+  showWeekendHighlight?: boolean;
 };
 
 export function ScheduleGrid({
@@ -52,6 +55,9 @@ export function ScheduleGrid({
   focusedCell,
   canManage,
   isPublished,
+  showLoadBars = true,
+  showSummaryRow = true,
+  showWeekendHighlight = true,
 }: ScheduleGridProps) {
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
@@ -95,32 +101,34 @@ export function ScheduleGrid({
     <div className="rounded-lg border border-surface-200 bg-white shadow-sm" data-onboarding-target="schedule-grid">
       <div className="overflow-x-auto">
         <div className="min-w-[980px]">
-          <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-surface-50">
-            <div className="sticky left-0 z-20 border-r border-surface-200 bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
-              Obciążenie
-            </div>
-            {days.map((day, index) => {
-              const stats = dayStats[index];
-              const ratio = Math.min(1, stats.recommended ? stats.planned / stats.recommended : 0);
-              const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
-              return (
-                <div
-                  key={day.iso}
-                  className={`px-3 py-3 ${isWeekend ? "bg-surface-100/80" : "bg-surface-50"}`}
-                >
+          {showLoadBars && (
+            <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-surface-50">
+              <div className="sticky left-0 z-20 border-r border-surface-200 bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+                Obciążenie
+              </div>
+              {days.map((day, index) => {
+                const stats = dayStats[index];
+                const ratio = Math.min(1, stats.recommended ? stats.planned / stats.recommended : 0);
+                const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+                return (
                   <div
-                    className="h-2 rounded-sm bg-surface-200"
-                    title={`Zaplanowany personel: ${stats.planned}\nZalecany personel: ${stats.recommended}`}
+                    key={day.iso}
+                    className={`px-3 py-3 ${showWeekendHighlight && isWeekend ? "bg-surface-100/80" : "bg-surface-50"}`}
                   >
                     <div
-                      className="h-full rounded-sm bg-brand-500"
-                      style={{ width: `${ratio * 100}%` }}
-                    />
+                      className="h-2 rounded-sm bg-surface-200"
+                      title={`Zaplanowany personel: ${stats.planned}\nZalecany personel: ${stats.recommended}`}
+                    >
+                      <div
+                        className="h-full rounded-sm bg-brand-500"
+                        style={{ width: `${ratio * 100}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-white">
             <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4">
@@ -129,7 +137,7 @@ export function ScheduleGrid({
             {days.map((day, index) => {
               const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
               return (
-                <div key={day.iso} className={`px-3 py-3 ${isWeekend ? "bg-surface-100/80" : ""}`}>
+                <div key={day.iso} className={`px-3 py-3 ${showWeekendHighlight && isWeekend ? "bg-surface-100/80" : ""}`}>
                   <p className="text-xs uppercase tracking-[0.18em] text-surface-400">{WEEKDAY_LABELS[index]}</p>
                   <p className="text-sm font-semibold text-surface-800">{formatDayLabel(day.date)}</p>
                 </div>
@@ -166,7 +174,7 @@ export function ScheduleGrid({
                   <div
                     key={key}
                     className={`group relative min-h-[120px] border-r border-surface-200 px-3 py-3 ${
-                      isWeekend ? "bg-surface-100/70" : "bg-white"
+                      showWeekendHighlight && isWeekend ? "bg-surface-100/70" : "bg-white"
                     } ${isSelected ? "ring-2 ring-brand-400/60" : ""} ${isFocused ? "z-10 ring-2 ring-brand-500" : ""}`}
                     onMouseDown={(event) => onCellFocus(employeeIndex, dayIndex, event.shiftKey)}
                     onDragOver={(event) => {
@@ -262,32 +270,34 @@ export function ScheduleGrid({
             </div>
           ))}
 
-          <div
-            className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-t border-surface-200 bg-white sticky bottom-0"
-            data-onboarding-target="schedule-summary"
-          >
-            <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
-              Podsumowanie
-            </div>
-            {days.map((day, index) => {
-              const stats = dayStats[index];
-              const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
-              const hours = (stats.totalMinutes / 60).toFixed(1);
-              return (
-                <div
-                  key={day.iso}
-                  className={`px-3 py-4 text-xs text-surface-600 ${isWeekend ? "bg-surface-100/80" : "bg-white"}`}
-                >
-                  <div className="flex items-center gap-2 text-sm font-semibold text-surface-800">
-                    <span>👥</span>
-                    <span>{stats.planned}</span>
+          {showSummaryRow && (
+            <div
+              className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-t border-surface-200 bg-white sticky bottom-0"
+              data-onboarding-target="schedule-summary"
+            >
+              <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+                Podsumowanie
+              </div>
+              {days.map((day, index) => {
+                const stats = dayStats[index];
+                const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+                const hours = (stats.totalMinutes / 60).toFixed(1);
+                return (
+                  <div
+                    key={day.iso}
+                    className={`px-3 py-4 text-xs text-surface-600 ${showWeekendHighlight && isWeekend ? "bg-surface-100/80" : "bg-white"}`}
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold text-surface-800">
+                      <span>👥</span>
+                      <span>{stats.planned}</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-surface-500">{hours} godz.</div>
+                    <div className="text-[11px] text-surface-400">Koszt: —</div>
                   </div>
-                  <div className="mt-1 text-[11px] text-surface-500">{hours} godz.</div>
-                  <div className="text-[11px] text-surface-400">Koszt: —</div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -26,10 +26,12 @@ import {
 import { getAccessToken } from "@/lib/auth";
 import { pushToast } from "@/lib/toast";
 import { usePermissions } from "@/lib/use-permissions";
+import { useTopbarActions } from "@/lib/topbar-actions-context";
 import { Modal } from "@/components/Modal";
 import { ScheduleGrid } from "./ScheduleGrid";
 import { ScheduleToolbar } from "./ScheduleToolbar";
 import { ShiftModal } from "./ShiftModal";
+import { OptionsDrawer } from "./OptionsDrawer";
 import {
   addDays,
   buildCellKey,
@@ -45,6 +47,7 @@ const PUBLISHED_STORAGE_KEY = "kadryhr:schedule-v2:published";
 export function SchedulePage() {
   const { hasAnyPermission } = usePermissions();
   const { startScheduleTour, hasScheduleTourCompleted, hasScheduleTourSkipped, isReady } = useOnboarding();
+  const { setActionsSlot } = useTopbarActions();
   const [hasToken] = useState(() => Boolean(getAccessToken()));
   const canManage = hasAnyPermission(["SCHEDULE_MANAGE", "RCP_EDIT"]);
   const queryClient = useQueryClient();
@@ -78,6 +81,12 @@ export function SchedulePage() {
   const [initialShiftDate, setInitialShiftDate] = useState<Date | null>(null);
   const [dateRangeModalOpen, setDateRangeModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [optionsDrawerOpen, setOptionsDrawerOpen] = useState(false);
+
+  const [showLoadBars, setShowLoadBars] = useState(true);
+  const [showSummaryRow, setShowSummaryRow] = useState(true);
+  const [showWeekendHighlight, setShowWeekendHighlight] = useState(true);
+  const [showEmployeesWithoutShifts, setShowEmployeesWithoutShifts] = useState(true);
 
   const [publishedWeeks, setPublishedWeeks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -546,6 +555,38 @@ export function SchedulePage() {
     return () => window.clearTimeout(timer);
   }, [timeBuffer]);
 
+  // Set topbar actions
+  useEffect(() => {
+    setActionsSlot(
+      <>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setPublishModalOpen(true)}
+            className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
+            data-onboarding-target="schedule-publish"
+          >
+            Publikuj
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setKeyboardMode((prev) => !prev)}
+          disabled={keyboardDisabled}
+          title={keyboardDisabled ? "Wybierz jedną lokalizację, aby włączyć tryb klawiatury." : ""}
+          className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm font-semibold transition-colors ${
+            keyboardMode ? "border-brand-500 bg-white text-brand-700" : "border-surface-200 bg-white text-surface-600"
+          } ${keyboardDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-surface-50"}`}
+        >
+          <span className="text-xs">{keyboardMode ? "◉" : "○"}</span>
+          Tryb klawiatury
+        </button>
+      </>
+    );
+
+    return () => setActionsSlot(null);
+  }, [canManage, keyboardMode, keyboardDisabled, setActionsSlot]);
+
   const openShiftModal = (employeeId?: string, date?: Date) => {
     if (!canManage) return;
     if (employeeId) {
@@ -723,8 +764,8 @@ export function SchedulePage() {
   return (
     <div className="space-y-6 relative">
       <div>
-        <h1 className="text-2xl font-semibold text-surface-100">Grafik pracy</h1>
-        <p className="text-sm text-surface-400">
+        <h1 className="text-2xl font-semibold text-surface-900">Grafik pracy</h1>
+        <p className="text-sm text-surface-600">
           Układaj zmiany, sprawdzaj dyspozycje i publikuj grafik dla zespołu.
         </p>
       </div>
@@ -740,8 +781,6 @@ export function SchedulePage() {
         employmentOptions={employmentOptions}
         sortMode={sortMode}
         searchValue={searchValue}
-        keyboardMode={keyboardMode}
-        keyboardDisabled={keyboardDisabled}
         timeBuffer={timeBuffer}
         onPrevWeek={() => setWeekStart((prev) => addDays(prev, -7))}
         onNextWeek={() => setWeekStart((prev) => addDays(prev, 7))}
@@ -753,8 +792,7 @@ export function SchedulePage() {
         onSortModeChange={setSortMode}
         onSearchChange={setSearchValue}
         onSortAction={handleSortAction}
-        onToggleKeyboard={() => setKeyboardMode((prev) => !prev)}
-        onOpenOptions={() => pushToast({ title: "Opcje", description: "Panel opcji w przygotowaniu.", variant: "info" })}
+        onOpenOptions={() => setOptionsDrawerOpen(true)}
       />
 
       <ScheduleGrid
@@ -771,6 +809,9 @@ export function SchedulePage() {
         focusedCell={focusedCell}
         canManage={canManage}
         isPublished={isPublished}
+        showLoadBars={showLoadBars}
+        showSummaryRow={showSummaryRow}
+        showWeekendHighlight={showWeekendHighlight}
       />
 
       {keyboardMode && showShortcuts && (
@@ -846,15 +887,18 @@ export function SchedulePage() {
         </p>
       </Modal>
 
-      <button
-        type="button"
-        onClick={() => setPublishModalOpen(true)}
-        className="fixed right-6 top-24 z-30 flex h-32 w-10 items-center justify-center rounded-md bg-brand-500 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-lg"
-        style={{ writingMode: "vertical-rl" }}
-        data-onboarding-target="schedule-publish"
-      >
-        Publikuj
-      </button>
+      <OptionsDrawer
+        open={optionsDrawerOpen}
+        showLoadBars={showLoadBars}
+        showSummaryRow={showSummaryRow}
+        showWeekendHighlight={showWeekendHighlight}
+        showEmployeesWithoutShifts={showEmployeesWithoutShifts}
+        onClose={() => setOptionsDrawerOpen(false)}
+        onShowLoadBarsChange={setShowLoadBars}
+        onShowSummaryRowChange={setShowSummaryRow}
+        onShowWeekendHighlightChange={setShowWeekendHighlight}
+        onShowEmployeesWithoutShiftsChange={setShowEmployeesWithoutShifts}
+      />
     </div>
   );
 }
