@@ -155,7 +155,7 @@ export function ScheduleGrid({
       </div>
 
       {showPromotionPopup && promotionWarnings.length > 0 && (
-        <div className="fixed right-6 top-24 z-40 w-[320px] rounded-2xl border border-amber-400/40 bg-surface-950/95 p-4 text-sm text-amber-100 shadow-2xl shadow-black/40 backdrop-blur">
+        <div className="fixed right-6 top-24 z-40 w-[320px] rounded-lg border border-amber-400/40 bg-surface-950/95 p-4 text-sm text-amber-100 shadow-soft">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2">
               <div className="mt-0.5 rounded-full bg-amber-500/20 p-1 text-amber-200">
