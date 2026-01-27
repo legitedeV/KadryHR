@@ -4,6 +4,7 @@ export type PanelNavItemId =
   | "dashboard"
   | "schedule"
   | "availability"
+  | "rcp"
   | "employees"
   | "profile";
 
@@ -37,6 +38,13 @@ export const panelNavItems: PanelNavItem[] = [
     requiredPermissions: ["AVAILABILITY_MANAGE"],
   },
   {
+    id: "rcp",
+    href: "/panel/rcp",
+    label: "RCP",
+    icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z",
+    requiredPermissions: ["RCP_EDIT"],
+  },
+  {
     id: "employees",
     href: "/panel/pracownicy",
     label: "Pracownicy",
@@ -64,6 +72,7 @@ export const titleByPath: Record<string, string> = {
   "/panel/grafik": "Grafik",
   "/panel/grafik-v2": "Grafik",
   "/panel/dyspozycje": "Dyspozycje",
+  "/panel/rcp": "RCP",
   "/panel/pracownicy": "Pracownicy",
   "/panel/profil": "Profil",
   "/panel/dashboard": "Dashboard",

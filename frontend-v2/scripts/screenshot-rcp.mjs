@@ -32,7 +32,7 @@ async function takeScreenshots() {
 
   const page = await context.newPage();
 
-  // Mock authentication
+  // Mock authentication - must have RCP_EDIT permission
   await page.route('**/api/auth/me', async (route) => {
     await route.fulfill({
       status: 200,
@@ -40,32 +40,53 @@ async function takeScreenshots() {
       body: JSON.stringify({
         id: 'test-user',
         email: 'manager@test.com',
+        name: 'Jan Kowalski',
         role: 'MANAGER',
         organisationId: 'test-org',
-        firstName: 'Jan',
-        lastName: 'Kowalski',
+        organisation: {
+          id: 'test-org',
+          name: 'Firma Testowa'
+        },
+        permissions: ['RCP_EDIT', 'SCHEDULE_VIEW', 'SCHEDULE_MANAGE'],
       }),
     });
   });
 
   // Mock locations
   await page.route('**/api/locations', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: 'loc-1',
-          name: 'Sklep Główny - Warszawa Centrum',
-          address: 'ul. Marszałkowska 10, 00-000 Warszawa',
-          geoLat: 52.2297,
-          geoLng: 21.0122,
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 'loc-1',
+            name: 'Sklep Główny - Warszawa Centrum',
+            address: 'ul. Marszałkowska 10, 00-000 Warszawa',
+            geoLat: 52.2297,
+            geoLng: 21.0122,
+            geoRadiusMeters: 100,
+            rcpEnabled: true,
+            rcpAccuracyMaxMeters: 100,
+          },
+        ]),
+      });
+    } else if (route.request().method() === 'POST') {
+      // Mock creating location
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'loc-2',
+          name: 'Nowa Lokalizacja',
           geoRadiusMeters: 100,
           rcpEnabled: true,
           rcpAccuracyMaxMeters: 100,
-        },
-      ]),
-    });
+        }),
+      });
+    } else {
+      await route.continue();
+    }
   });
 
   // Mock QR generation
@@ -93,16 +114,21 @@ async function takeScreenshots() {
   });
   console.log(`✅ Saved: ${panelScreenshotPath}`);
 
-  // Generate QR code for better screenshot
-  await page.getByRole('button', { name: /Wygeneruj kod QR/i }).click();
-  await page.waitForTimeout(2000); // Wait for QR generation
+  // Try to generate QR code for better screenshot
+  try {
+    const qrButton = page.locator('button:has-text("Wygeneruj kod QR")');
+    await qrButton.click({ timeout: 5000 });
+    await page.waitForTimeout(2000); // Wait for QR generation
 
-  const panelWithQrPath = path.join(OUTPUT_DIR, 'panel-rcp-with-qr.png');
-  await page.screenshot({
-    path: panelWithQrPath,
-    fullPage: true,
-  });
-  console.log(`✅ Saved: ${panelWithQrPath}`);
+    const panelWithQrPath = path.join(OUTPUT_DIR, 'panel-rcp-with-qr.png');
+    await page.screenshot({
+      path: panelWithQrPath,
+      fullPage: true,
+    });
+    console.log(`✅ Saved: ${panelWithQrPath}`);
+  } catch (e) {
+    console.log('⚠️  Could not generate QR (button might be disabled)');
+  }
 
   // Screenshot 2: Mobile RCP page
   console.log('📸 Capturing /m/rcp screenshot...');
