@@ -105,7 +105,7 @@ export function PersonasSection() {
                   </h3>
                 </div>
                 <div className="mt-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-surface-500">
+                  <p className="text-xs uppercase tracking-[0.3em] text-surface-600">
                     Bóle
                   </p>
                   <ul className="mt-3 space-y-2">

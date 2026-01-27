@@ -187,7 +187,7 @@ export function AvatarUpload({
       </div>
 
       {/* Help Text */}
-      <p className="text-xs text-surface-500">
+      <p className="text-xs text-surface-600">
         Dozwolone formaty: PNG, JPEG, WebP, GIF. Maks. {MAX_SIZE_MB}MB.
       </p>
 

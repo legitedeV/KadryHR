@@ -147,7 +147,7 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="text-[11px] text-slate-400 text-center">
+        <p className="text-[11px] text-surface-600 text-center">
           Masz już konto? {" "}
           <Link href="/login" className="underline underline-offset-2">
             Zaloguj się

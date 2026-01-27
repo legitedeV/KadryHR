@@ -18,7 +18,7 @@ export function HeroPanel() {
             </div>
             <div className="mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
               <div className="rounded-2xl border border-surface-300 bg-white p-4">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-surface-500">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-surface-600">
                   <span>Grafik tygodniowy</span>
                   <span className="text-emerald-600">84% obsadzenia</span>
                 </div>
@@ -33,7 +33,7 @@ export function HeroPanel() {
                     "Nd",
                   ].map((day, index) => (
                     <div key={day} className="space-y-2">
-                      <div className="text-surface-500">{day}</div>
+                      <div className="text-surface-600">{day}</div>
                       <div
                         className={`h-10 rounded-lg border border-surface-300 bg-gradient-to-b ${
                           index === 2 || index === 5
@@ -62,7 +62,7 @@ export function HeroPanel() {
               </div>
               <div className="space-y-4">
                 <div className="rounded-2xl border border-surface-300 bg-white p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-surface-500">
+                  <div className="text-xs uppercase tracking-[0.2em] text-surface-600">
                     Spóźnienia
                   </div>
                   <div className="mt-3 space-y-3 text-sm">
@@ -72,12 +72,12 @@ export function HeroPanel() {
                     </div>
                     <div className="flex items-center justify-between rounded-xl border border-surface-300 bg-surface-100 px-3 py-2">
                       <span>Restauracja Rondo</span>
-                      <span className="text-surface-500">Brak</span>
+                      <span className="text-surface-600">Brak</span>
                     </div>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-surface-300 bg-white p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-surface-500">
+                  <div className="text-xs uppercase tracking-[0.2em] text-surface-600">
                     Skróty akcji
                   </div>
                   <div className="mt-4 space-y-2 text-sm">
@@ -133,7 +133,7 @@ export function HeroPanel() {
               Przetestuj KadryHR
             </Link>
           </div>
-          <div className="grid gap-4 pt-4 text-xs text-surface-500 sm:grid-cols-3">
+          <div className="grid gap-4 pt-4 text-xs text-surface-600 sm:grid-cols-3">
             <div className="rounded-2xl border border-surface-300 bg-surface-100 p-4">
               <div className="text-lg font-semibold text-surface-900">+32%</div>
               <div>mniej telefonów o zmiany</div>

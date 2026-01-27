@@ -215,6 +215,32 @@ This document tracks future improvements and enhancements for the CI/CD pipeline
 **Completed Date**: January 2026  
 **Description**: Automated dependency updates for backend, frontend, and GitHub Actions.
 
+### ✅ Add Employee Management Panel
+**Status**: ✅ Completed  
+**Completed Date**: January 2026  
+**Description**: Added "Pracownicy" (Employees) tab to the panel sidebar with full CRUD operations (list, add, edit, suspend/activate, delete), employee detail view with documents section, and improved contrast in landing page/panel UI.
+
+---
+
+## Out of Scope (for future consideration)
+
+### Document File Storage
+**Description**: The current employees page displays document metadata but doesn't include actual file upload/download functionality for production. This requires:
+- Cloud storage integration (e.g., AWS S3, Azure Blob)
+- File upload/download endpoints secured with RBAC
+- File size limits and virus scanning
+- Document versioning
+
+### Employee Contracts Module
+**Description**: Full contract management (UOP, UZ, UOD, B2B) with:
+- Contract creation/editing wizard
+- Contract status tracking (active, suspended, ended)
+- Integration with payroll module
+- Automated notifications for expiring contracts
+
+### EMPLOYEE_DOCUMENTS_MANAGE Permission
+**Description**: Currently documents use EMPLOYEE_MANAGE permission. A dedicated EMPLOYEE_DOCUMENTS_MANAGE permission could provide finer-grained access control for document operations.
+
 ---
 
 ## How to Propose New Items

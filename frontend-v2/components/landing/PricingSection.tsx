@@ -74,7 +74,7 @@ export function PricingSection() {
               >
                 <div>
                   <p className="text-surface-900">{tier.label}</p>
-                  <p className="text-xs text-surface-500">{tier.detail}</p>
+                  <p className="text-xs text-surface-600">{tier.detail}</p>
                 </div>
                 <span className="text-xs uppercase tracking-[0.3em] text-emerald-600">
                   Elastycznie

@@ -9,8 +9,7 @@ const toArray = (key: string) => {
     value?: string | string[];
     obj?: Record<string, string | string[]>;
   }) => {
-    const raw =
-      value ?? (obj ? (obj[`${key}[]`] as string | string[]) : undefined);
+    const raw = value ?? (obj ? obj[`${key}[]`] : undefined);
     if (!raw) return undefined;
     return Array.isArray(raw) ? raw : [raw];
   };
