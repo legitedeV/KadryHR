@@ -1,3 +1,5 @@
+import type { Permission } from "./api";
+
 export type PanelNavItemId =
   | "dashboard"
   | "schedule"
@@ -9,6 +11,7 @@ export type PanelNavItem = {
   href: string;
   label: string;
   icon: string;
+  requiredPermissions?: Permission[];
 };
 
 export const panelNavItems: PanelNavItem[] = [
@@ -23,12 +26,14 @@ export const panelNavItems: PanelNavItem[] = [
     href: "/panel/grafik",
     label: "Grafik",
     icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+    requiredPermissions: ["SCHEDULE_VIEW", "SCHEDULE_MANAGE"],
   },
   {
     id: "availability",
     href: "/panel/dyspozycje",
     label: "Dyspozycje",
     icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+    requiredPermissions: ["AVAILABILITY_MANAGE"],
   },
   {
     id: "profile",
@@ -47,8 +52,10 @@ export function getNavItemByHref(href: string): PanelNavItem | undefined {
 }
 
 export const titleByPath: Record<string, string> = {
-  "/panel/grafik": "Grafik zmian",
+  "/panel": "Dashboard",
+  "/panel/grafik": "Grafik",
+  "/panel/grafik-v2": "Grafik",
   "/panel/dyspozycje": "Dyspozycje",
-  "/panel/profil": "Profil użytkownika",
+  "/panel/profil": "Profil",
   "/panel/dashboard": "Dashboard",
 };

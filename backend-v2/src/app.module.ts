@@ -30,6 +30,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { WebsiteModule } from './website/website.module';
 import { PlatformConfigModule } from './platform-config/platform-config.module';
 import { HealthController } from './health/health.controller';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { HealthController } from './health/health.controller';
     SubscriptionsModule,
     WebsiteModule,
     PlatformConfigModule,
+    ScheduleModule,
   ],
   controllers: [HealthController],
 })

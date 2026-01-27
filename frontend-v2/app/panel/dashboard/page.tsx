@@ -2,6 +2,10 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { EmptyState } from "@/components/EmptyState";
+import { CardSquare } from "@/components/panel/CardSquare";
+import { KpiTile } from "@/components/panel/KpiTile";
+import { LoadingSkeleton } from "@/components/panel/LoadingSkeleton";
 import {
   EmployeeRecord,
   ShiftRecord,
@@ -82,7 +86,7 @@ function getWeekRange() {
 function getShiftTone(shift: ShiftView): { className: string; style?: CSSProperties } {
   if (shift.color) {
     return {
-      className: "border text-surface-100",
+      className: "border text-surface-900",
       style: {
         backgroundColor: `${shift.color}22`,
         borderColor: `${shift.color}55`,
@@ -91,9 +95,9 @@ function getShiftTone(shift: ShiftView): { className: string; style?: CSSPropert
   }
   const timeParts = parseTimeLabel(shift.start);
   const hour = timeParts ? timeParts[0] : 8;
-  if (hour < 12) return { className: "bg-amber-500/10 border-amber-400/30 text-amber-100" };
-  if (hour < 17) return { className: "bg-brand-500/10 border-brand-400/30 text-brand-100" };
-  return { className: "bg-accent-500/10 border-accent-400/30 text-accent-100" };
+  if (hour < 12) return { className: "bg-amber-500/10 border-amber-400/30 text-amber-900" };
+  if (hour < 17) return { className: "bg-brand-500/10 border-brand-400/30 text-brand-900" };
+  return { className: "bg-accent-500/10 border-accent-400/30 text-accent-900" };
 }
 
 function getWeekDays(range: { from: string }) {
@@ -133,16 +137,16 @@ function buildChartSeries(shifts: ShiftView[], range: { from: string }) {
 
 function getShiftStatusLabel(shift: ShiftView, now: Date) {
   if (shift.status === "UNASSIGNED") {
-    return { label: "Nieobsadzona", tone: "bg-rose-500/15 text-rose-200" };
+    return { label: "Nieobsadzona", tone: "bg-rose-500/10 text-rose-700" };
   }
   const today = now.toISOString().slice(0, 10);
   if (shift.date !== today) {
-    return { label: "Zaplanowana", tone: "bg-surface-800/70 text-surface-300" };
+    return { label: "Zaplanowana", tone: "bg-surface-100 text-surface-700" };
   }
   const timeParts = parseTimeLabel(shift.start);
   const endParts = parseTimeLabel(shift.end);
   if (!timeParts || !endParts) {
-    return { label: "Zaplanowana", tone: "bg-surface-800/70 text-surface-300" };
+    return { label: "Zaplanowana", tone: "bg-surface-100 text-surface-700" };
   }
   const [startHour, startMinute] = timeParts;
   const [endHour, endMinute] = endParts;
@@ -150,9 +154,9 @@ function getShiftStatusLabel(shift: ShiftView, now: Date) {
   start.setHours(startHour, startMinute, 0, 0);
   const end = new Date(now);
   end.setHours(endHour, endMinute, 0, 0);
-  if (now >= end) return { label: "Zakończona", tone: "bg-emerald-500/15 text-emerald-200" };
-  if (now >= start) return { label: "W trakcie", tone: "bg-amber-500/15 text-amber-200" };
-  return { label: "Zaplanowana", tone: "bg-surface-800/70 text-surface-300" };
+  if (now >= end) return { label: "Zakończona", tone: "bg-emerald-500/10 text-emerald-700" };
+  if (now >= start) return { label: "W trakcie", tone: "bg-amber-500/10 text-amber-700" };
+  return { label: "Zaplanowana", tone: "bg-surface-100 text-surface-700" };
 }
 
 export default function DashboardPage() {
@@ -205,32 +209,19 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
-        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        Ładowanie danych...
-      </div>
+      <CardSquare title="Dashboard" description="Ładowanie danych do panelu.">
+        <LoadingSkeleton lines={5} />
+      </CardSquare>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800/50">
-        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-            clipRule="evenodd"
-          />
-        </svg>
-        {error || "Brak danych"}
-      </div>
+      <CardSquare title="Brak danych" description={error || "Nie udało się pobrać danych do dashboardu."}>
+        <div className="text-sm text-surface-600">
+          Sprawdź połączenie lub spróbuj ponownie za chwilę.
+        </div>
+      </CardSquare>
     );
   }
 
@@ -322,72 +313,65 @@ export default function DashboardPage() {
     { key: "pending", label: "Oczekujący", data: pendingEmployees },
   ];
   const activeEmployees = employeeTabs.find((tab) => tab.key === activeTab)?.data ?? employees;
+  const chartPoints = chartTotals.map((point, idx) => {
+    const x = (idx / Math.max(1, chartTotals.length - 1)) * 260 + 20;
+    const y = 100 - (point.value / maxValue) * 60;
+    return { ...point, x, y };
+  });
+  const chartPath = chartPoints
+    .map((point, idx) => `${idx === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+  const areaPath = `${chartPath} L 280 100 L 20 100 Z`;
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-2xl font-semibold text-surface-50">Dashboard</p>
-          <p className="text-sm text-surface-400">Tydzień pracy: {range.label}</p>
-        </div>
-        <div className="flex items-center gap-3 text-sm text-surface-300">
-          <span className="panel-pill">
-            Łącznie pracowników: <strong className="text-surface-100">{employees.length}</strong>
-          </span>
-          <span className="panel-pill">
-            Lokalizacje: <strong className="text-surface-100">{locations.length}</strong>
-          </span>
-          <span className="panel-pill">
-            Plan godzin: <strong className="text-surface-100">{Math.round(totalHoursWeek)} h</strong>
-          </span>
+          <p className="text-2xl font-semibold text-surface-900">Dashboard</p>
+          <p className="text-sm text-surface-600">Tydzień pracy: {range.label}</p>
         </div>
       </div>
 
-      <div className="panel-card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Wdrożenie</p>
-            <p className="text-base font-semibold text-surface-50 mt-1">Zaczynajmy! {completedSteps}/6 kroków</p>
-            <p className="text-sm text-surface-400 mt-1">
-              Prowadzimy Cię przez konfigurację – każdy krok aktualizuje się automatycznie po wykonaniu.
-            </p>
-          </div>
-          <div className="w-full max-w-xs">
-            <div className="flex items-center justify-between text-xs font-semibold text-surface-300">
-              <span>Postęp</span>
-              <span>{completedSteps}/6</span>
-            </div>
-            <div className="mt-2 h-2 w-full rounded-full bg-surface-800/80">
-              <div
-                className="h-2 rounded-full bg-brand-500"
-                style={{ width: `${Math.min(100, (completedSteps / 6) * 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KpiTile label="Pracownicy" value={`${employees.length}`} helper="Łącznie w organizacji" />
+        <KpiTile label="Lokalizacje" value={`${locations.length}`} helper="Aktywne lokalizacje" />
+        <KpiTile label="Plan godzin" value={`${Math.round(totalHoursWeek)} h`} helper="Tydzień pracy" />
+      </div>
+
+      <CardSquare
+        title="Wdrożenie"
+        description="Lista kroków do pełnego uruchomienia panelu."
+        actionSlot={<span className="text-xs font-semibold text-surface-600">Postęp: {completedSteps}/6</span>}
+      >
+        <div className="border border-surface-300 rounded-md divide-y divide-surface-200">
           {onboardingSteps.map((step) => {
             const statusLabel =
               step.status === "done" ? "Ukończony" : step.status === "in-progress" ? "W trakcie" : "Do zrobienia";
             const statusTone =
               step.status === "done"
-                ? "bg-emerald-500/15 text-emerald-200"
+                ? "bg-emerald-500/10 text-emerald-700"
                 : step.status === "in-progress"
-                ? "bg-amber-500/15 text-amber-200"
-                : "bg-surface-800/70 text-surface-300";
+                ? "bg-amber-500/10 text-amber-700"
+                : "bg-surface-100 text-surface-700";
             return (
-              <div key={step.id} className="flex items-start justify-between gap-4 rounded-2xl border border-surface-800/70 bg-surface-900/60 px-4 py-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusTone}`}>
-                      {statusLabel}
-                    </span>
-                    <p className="text-sm font-semibold text-surface-100">{step.title}</p>
-                  </div>
-                  <p className="text-xs text-surface-400">{step.description}</p>
+              <div key={step.id} className="grid gap-3 px-4 py-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={step.status === "done"}
+                    readOnly
+                    className="h-4 w-4 rounded-sm border border-surface-300 text-brand-600"
+                  />
+                  <span className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wide rounded-md ${statusTone}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-surface-900">{step.title}</p>
+                  <p className="text-xs text-surface-600">{step.description}</p>
                 </div>
                 <a
                   href={step.href}
-                  className="whitespace-nowrap rounded-full border border-surface-700/80 px-3 py-1 text-xs font-semibold text-surface-200 transition hover:border-brand-400/60 hover:text-brand-200"
+                  className="justify-self-start sm:justify-self-end rounded-md border border-surface-300 bg-surface-50 px-3 py-1 text-xs font-semibold text-surface-700 transition hover:border-brand-400/50 hover:text-brand-800"
                 >
                   {step.actionLabel}
                 </a>
@@ -395,72 +379,59 @@ export default function DashboardPage() {
             );
           })}
         </div>
-      </div>
+      </CardSquare>
 
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
         <div className="space-y-6">
-          <div className="panel-card p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Dzisiejsze zmiany</p>
-                <p className="text-base font-semibold text-surface-50">
-                  {new Date(todaysDate).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
-              </div>
-              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200">
-                {todaysShifts.length} zm.
-              </span>
-            </div>
-            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-              {todaysShifts.length === 0 ? (
-                <div className="w-full rounded-2xl border border-dashed border-surface-800/70 bg-surface-900/40 px-6 py-8 text-center text-sm text-surface-400">
-                  Brak zmian zaplanowanych na dzisiaj.
-                </div>
-              ) : (
-                todaysShifts.map((shift) => {
+          <CardSquare
+            title="Dzisiejsze zmiany"
+            description={new Date(todaysDate).toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
+            actionSlot={<span className="text-xs font-semibold text-surface-600">{todaysShifts.length} zm.</span>}
+          >
+            {todaysShifts.length === 0 ? (
+              <EmptyState title="Brak zmian zaplanowanych na dzisiaj." />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {todaysShifts.map((shift) => {
                   const tone = getShiftTone(shift);
                   const status = getShiftStatusLabel(shift, now);
                   return (
                     <div
                       key={shift.id}
-                      className={`min-w-[220px] rounded-2xl border px-4 py-3 shadow-sm ${tone.className}`}
+                      className={`border rounded-md px-4 py-3 ${tone.className}`}
                       style={tone.style}
                     >
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-[0.02em] text-surface-300">
+                        <p className="text-xs font-semibold uppercase tracking-[0.02em] text-surface-600">
                           {shift.start}–{shift.end}
                         </p>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status.tone}`}>
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-md ${status.tone}`}>
                           {status.label}
                         </span>
                       </div>
-                      <p className="text-sm font-semibold text-surface-100 mt-1">
+                      <p className="text-sm font-semibold text-surface-900 mt-1">
                         {shift.employeeName}
                       </p>
-                      <p className="text-xs text-surface-300">{shift.locationName}</p>
+                      <p className="text-xs text-surface-600">{shift.locationName}</p>
                     </div>
                   );
-                })
-              )}
-            </div>
-          </div>
-
-          <div className="panel-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Zespół i role</p>
-                <p className="text-base font-semibold text-surface-50">
-                  Zespół w organizacji
-                </p>
+                })}
               </div>
-              <div className="flex gap-2 overflow-x-auto">
+            )}
+          </CardSquare>
+
+          <CardSquare
+            title="Zespół i role"
+            description="Zespół w organizacji"
+            actionSlot={
+              <div className="flex flex-wrap gap-2">
                 {employeeTabs.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    className={`rounded-md border px-3 py-1 text-xs font-semibold transition ${
                       activeTab === tab.key
-                        ? "bg-brand-500 text-white shadow-sm"
-                        : "bg-surface-900/70 text-surface-300 hover:bg-surface-900/90"
+                        ? "border-brand-300 bg-brand-100 text-brand-900"
+                        : "border-surface-300 bg-surface-50 text-surface-700 hover:border-brand-200"
                     }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
@@ -468,88 +439,82 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-              {activeEmployees.length === 0 ? (
-                <div className="w-full rounded-2xl border border-dashed border-surface-800/70 bg-surface-900/40 px-6 py-8 text-center text-sm text-surface-400">
-                  Brak pracowników w tym widoku.
-                </div>
-              ) : (
-                activeEmployees.map((employee) => (
-                  <div key={employee.id} className="min-w-[240px] rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 shadow-sm">
-                    <div className="flex items-center gap-3">
+            }
+          >
+            {activeEmployees.length === 0 ? (
+              <EmptyState title="Brak pracowników w tym widoku." />
+            ) : (
+              <div className="border border-surface-300 rounded-md divide-y divide-surface-200">
+                {activeEmployees.map((employee) => (
+                  <div key={employee.id} className="flex flex-wrap items-center gap-4 px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <Avatar name={`${employee.firstName} ${employee.lastName}`} src={employee.avatarUrl} size="sm" />
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-surface-50 truncate">
+                        <p className="text-sm font-semibold text-surface-900 truncate">
                           {employee.firstName} {employee.lastName}
                         </p>
-                        <p className="text-xs text-surface-400 truncate">{employee.email ?? "Brak emaila"}</p>
+                        <p className="text-xs text-surface-600 truncate">{employee.email ?? "Brak emaila"}</p>
                       </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="rounded-full bg-surface-800/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-surface-300">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide">
+                      <span className="px-2 py-1 rounded-md bg-surface-100 text-surface-700">
                         {employee.position ?? "Pracownik"}
                       </span>
                       <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                        className={`px-2 py-1 rounded-md ${
                           employee.locations.length > 0
-                            ? "bg-emerald-500/15 text-emerald-200"
-                            : "bg-amber-500/15 text-amber-200"
+                            ? "bg-emerald-500/10 text-emerald-700"
+                            : "bg-amber-500/10 text-amber-700"
                         }`}
                       >
                         {employee.locations.length > 0 ? "Aktywny" : "Oczekujący"}
                       </span>
                     </div>
-                    <div className="mt-3 flex items-center gap-2 text-surface-400">
-                        {employee.phone && (
-                          <a
-                            href={`tel:${employee.phone}`}
-                            className="rounded-full border border-surface-800/70 p-1.5 text-xs hover:text-brand-300"
-                            aria-label="Zadzwoń"
-                          >
-                            📞
-                          </a>
-                        )}
-                        {employee.email && (
-                          <a
-                            href={`mailto:${employee.email}`}
-                            className="rounded-full border border-surface-800/70 p-1.5 text-xs hover:text-brand-300"
-                            aria-label="Wyślij email"
-                          >
-                            ✉️
-                          </a>
-                        )}
+                    <div className="flex items-center gap-2 text-surface-500">
+                      {employee.phone && (
+                        <a
+                          href={`tel:${employee.phone}`}
+                          className="rounded-md border border-surface-300 px-2 py-1 text-xs hover:text-brand-700"
+                          aria-label="Zadzwoń"
+                        >
+                          📞
+                        </a>
+                      )}
+                      {employee.email && (
+                        <a
+                          href={`mailto:${employee.email}`}
+                          className="rounded-md border border-surface-300 px-2 py-1 text-xs hover:text-brand-700"
+                          aria-label="Wyślij email"
+                        >
+                          ✉️
+                        </a>
+                      )}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                ))}
+              </div>
+            )}
+          </CardSquare>
         </div>
 
         <div className="space-y-6">
-          <div className="panel-card p-6" data-onboarding-target="nav-time-tracking">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Statystyki czasu pracy</p>
-                <p className="text-base font-semibold text-surface-50">Plan godzin</p>
-              </div>
-              <span className="rounded-full bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-200">
-                Dziś: {todaysHours} h
-              </span>
-            </div>
-            <div className="mt-4 grid gap-3 text-sm text-surface-300">
+          <CardSquare
+            title="Statystyki czasu pracy"
+            description="Plan godzin"
+            actionSlot={<span className="text-xs font-semibold text-surface-600">Dziś: {todaysHours} h</span>}
+          >
+            <div className="grid gap-3 text-sm text-surface-700">
               <div className="flex items-center justify-between">
                 <span>Zaplanowane godziny</span>
-                <strong className="text-surface-100">{todaysHours} h</strong>
+                <strong className="text-surface-900">{todaysHours} h</strong>
               </div>
               <div className="flex items-center justify-between">
                 <span>Przepracowane (RCP)</span>
-                <strong className="text-surface-100">{workedHoursToday} h</strong>
+                <strong className="text-surface-900">{workedHoursToday} h</strong>
               </div>
               <div className="flex items-center justify-between">
                 <span>Różnica</span>
-                <strong className={differenceToday >= 0 ? "text-emerald-200" : "text-rose-200"}>
+                <strong className={differenceToday >= 0 ? "text-emerald-700" : "text-rose-700"}>
                   {differenceToday} h
                 </strong>
               </div>
@@ -557,130 +522,116 @@ export default function DashboardPage() {
                 Dane RCP będą widoczne po uruchomieniu modułu rejestracji czasu pracy.
               </p>
             </div>
-            <div className="mt-6">
-              <svg viewBox="0 0 300 120" className="w-full h-28">
+            <div className="mt-4 h-44 border border-surface-300 rounded-md bg-surface-50 p-3">
+              <svg viewBox="0 0 300 120" className="w-full h-full">
                 <defs>
-                  <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1ea574" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#1ea574" stopOpacity="0.05" />
+                  <linearGradient id="hoursArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6b9c7b" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#6b9c7b" stopOpacity="0.02" />
                   </linearGradient>
                 </defs>
-                <polyline
-                  fill="none"
-                  stroke="#1ea574"
-                  strokeWidth="3"
-                  points={chartTotals
-                    .map((point, idx) => {
-                      const x = (idx / (chartTotals.length - 1)) * 280 + 10;
-                      const y = 100 - (point.value / maxValue) * 70;
-                      return `${x},${y}`;
-                    })
-                    .join(" ")}
-                />
-                <polygon
-                  fill="url(#hoursGradient)"
-                  points={`10,100 ${chartTotals
-                    .map((point, idx) => {
-                      const x = (idx / (chartTotals.length - 1)) * 280 + 10;
-                      const y = 100 - (point.value / maxValue) * 70;
-                      return `${x},${y}`;
-                    })
-                    .join(" ")} 290,100`}
-                />
-              </svg>
-              <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-wide text-surface-400">
-                {chartTotals.map((day) => (
-                  <span key={day.date}>{day.label}</span>
+                <line x1="20" y1="20" x2="20" y2="100" stroke="#e6ded2" strokeWidth="1" />
+                <line x1="20" y1="100" x2="280" y2="100" stroke="#e6ded2" strokeWidth="1" />
+                <path d={areaPath} fill="url(#hoursArea)" />
+                <path d={chartPath} className="chart-line" stroke="#6b9c7b" strokeWidth="2" fill="none" />
+                {chartPoints.map((point) => (
+                  <circle key={point.date} cx={point.x} cy={point.y} r="2" fill="#6b9c7b" />
                 ))}
-              </div>
+                {chartPoints.map((point) => (
+                  <text
+                    key={`${point.date}-label`}
+                    x={point.x}
+                    y={112}
+                    fontSize="8"
+                    textAnchor="middle"
+                    fill="#6e655d"
+                  >
+                    {point.label}
+                  </text>
+                ))}
+              </svg>
             </div>
-          </div>
+          </CardSquare>
 
-          <div className="panel-card p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Analityka</p>
-            <p className="text-base font-semibold text-surface-50 mt-1">Szybkie statystyki</p>
-            <div className="mt-4 space-y-4">
+          <CardSquare title="Analityka" description="Szybkie statystyki">
+            <div className="space-y-4">
               {[
                 { label: "Zaplanowani dzisiaj", value: todaysShifts.length, max: employees.length || 1 },
                 { label: "Aktywni w grafiku", value: assignedEmployees.length, max: employees.length || 1 },
                 { label: "Nieobecności w tym tygodniu", value: 0, max: employees.length || 1 },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className="flex items-center justify-between text-sm text-surface-300">
+                  <div className="flex items-center justify-between text-sm text-surface-700">
                     <span>{item.label}</span>
-                    <strong className="text-surface-100">{item.value}</strong>
+                    <strong className="text-surface-900">{item.value}</strong>
                   </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-surface-800/80">
+                  <div className="mt-2 h-2 w-full rounded-md bg-surface-100">
                     <div
-                      className="h-2 rounded-full bg-brand-500"
+                      className="h-2 rounded-md bg-brand-500"
                       style={{ width: `${Math.min(100, (item.value / item.max) * 100)}%` }}
                     />
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </CardSquare>
 
-          <div className="panel-card p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Alerty</p>
-            <p className="text-base font-semibold text-surface-50 mt-1">Stan systemu</p>
-            <div className="mt-4 space-y-3 text-sm text-surface-300">
-              <div className="flex items-center justify-between rounded-2xl border border-surface-800/70 bg-surface-900/60 px-4 py-3">
+          <CardSquare title="Alerty" description="Stan systemu">
+            <div className="border border-surface-300 rounded-md divide-y divide-surface-200 text-sm text-surface-700">
+              <div className="flex items-center justify-between px-4 py-3">
                 <div>
-                  <p className="font-semibold text-surface-100">Wnioski urlopowe</p>
+                  <p className="font-semibold text-surface-900">Wnioski urlopowe</p>
                   <p className="text-xs text-surface-500">Brak danych do wyświetlenia.</p>
                 </div>
-                <span className="rounded-full bg-surface-800/70 px-3 py-1 text-xs font-semibold text-surface-300">0</span>
+                <span className="px-3 py-1 rounded-md bg-surface-100 text-xs font-semibold text-surface-700">0</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-surface-800/70 bg-surface-900/60 px-4 py-3">
+              <div className="flex items-center justify-between px-4 py-3">
                 <div>
-                  <p className="font-semibold text-surface-100">Konflikty w grafiku</p>
+                  <p className="font-semibold text-surface-900">Konflikty w grafiku</p>
                   <p className="text-xs text-surface-500">Moduł w przygotowaniu.</p>
                 </div>
-                <span className="rounded-full bg-surface-800/70 px-3 py-1 text-xs font-semibold text-surface-300">—</span>
+                <span className="px-3 py-1 rounded-md bg-surface-100 text-xs font-semibold text-surface-700">—</span>
               </div>
             </div>
-          </div>
+          </CardSquare>
 
-          <div className="panel-card p-6" data-onboarding-target="nav-help">
-            <p className="text-sm font-semibold uppercase tracking-[0.02em] text-surface-400">Potrzebujesz pomocy?</p>
-            <p className="text-base font-semibold text-surface-50 mt-1">Jesteśmy dostępni w 3 kanałach</p>
-            <p className="text-sm text-surface-400 mt-2">
+          <CardSquare title="Potrzebujesz pomocy?" description="Jesteśmy dostępni w 3 kanałach">
+            <p className="text-sm text-surface-600">
               Wybierz najszybszą formę kontaktu – odpowiadamy w ciągu 24h.
             </p>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-3 grid gap-2">
               <a
                 href="mailto:kontakt@kadryhr.pl?subject=Komunikator%20KadryHR"
-                className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 text-sm font-semibold text-surface-100 transition hover:border-brand-400/60 hover:text-brand-200"
+                className="rounded-md border border-surface-300 bg-surface-50 px-4 py-3 text-sm font-semibold text-surface-900 transition hover:bg-surface-100"
               >
                 Komunikator
-                <span className="block text-xs font-normal text-surface-400">Napisz do zespołu wdrożeń</span>
+                <span className="block text-xs font-normal text-surface-600">Napisz do zespołu wdrożeń</span>
               </a>
               <a
                 href="https://kadryhr.pl/konsultacja"
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 text-sm font-semibold text-surface-100 transition hover:border-brand-400/60 hover:text-brand-200"
+                className="rounded-md border border-surface-300 bg-surface-50 px-4 py-3 text-sm font-semibold text-surface-900 transition hover:bg-surface-100"
               >
                 Konsultacja online
-                <span className="block text-xs font-normal text-surface-400">Umów demo z doradcą</span>
+                <span className="block text-xs font-normal text-surface-600">Umów demo z doradcą</span>
               </a>
               <a
                 href="tel:+48221234567"
-                className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-4 py-3 text-sm font-semibold text-surface-100 transition hover:border-brand-400/60 hover:text-brand-200"
+                className="rounded-md border border-surface-300 bg-surface-50 px-4 py-3 text-sm font-semibold text-surface-900 transition hover:bg-surface-100"
               >
                 Telefon
-                <span className="block text-xs font-normal text-surface-400">+48 22 123 45 67</span>
+                <span className="block text-xs font-normal text-surface-600">+48 22 123 45 67</span>
               </a>
             </div>
             <button
               type="button"
               onClick={() => startMainPanelTour()}
-              className="mt-4 w-full rounded-2xl border border-brand-500/40 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-100 transition hover:border-brand-400/70 hover:bg-brand-500/20"
+              className="mt-3 w-full rounded-md border border-brand-500/40 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-800 transition hover:bg-brand-500/20"
             >
               Uruchom przewodnik po panelu
             </button>
-          </div>
+          </CardSquare>
         </div>
       </div>
     </div>
