@@ -5,7 +5,8 @@ export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
 export type Permission =
   | "SCHEDULE_MANAGE"
   | "SCHEDULE_VIEW"
-  | "AVAILABILITY_MANAGE";
+  | "AVAILABILITY_MANAGE"
+  | "RCP_EDIT";
 
 export interface OrganisationSummary {
   id: string;
@@ -39,6 +40,7 @@ export interface ShiftRecord {
   };
   location?: { id?: string; name?: string | null };
   availabilityWarning?: string | null;
+  leaveWarning?: string | null;
 }
 
 export interface ShiftPayload {
@@ -124,6 +126,24 @@ export interface AvailabilityWindowTeamStats {
 export interface ScheduleMetadata {
   deliveryDays: string[];
   promotionDays: Array<{ date: string; type: "ZMIANA_PROMOCJI" | "MALA_PROMOCJA" }>;
+}
+
+export interface ApprovedLeaveRecord {
+  id: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  type: string;
+  leaveType?: {
+    id: string;
+    name: string;
+    color?: string | null;
+  } | null;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null;
 }
 
 export interface ScheduleTemplateRecord {
@@ -329,6 +349,23 @@ export async function apiGetShifts(params: {
   return apiClient.request<ShiftResponse[]>(`${SHIFTS_PREFIX}?${search.toString()}`);
 }
 
+export async function apiGetShiftSummary(params: {
+  from: string;
+  to: string;
+  locationId?: string;
+  employeeId?: string;
+}): Promise<Array<{ employeeId: string; employeeName: string; hours: number }>> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+  if (params.locationId) search.set("locationId", params.locationId);
+  if (params.employeeId) search.set("employeeId", params.employeeId);
+
+  return apiClient.request(`${SHIFTS_PREFIX}/summary?${search.toString()}`);
+}
+
 export async function apiCreateShift(payload: ShiftPayload): Promise<ShiftRecord> {
   apiClient.hydrateFromStorage();
   return apiClient.request<ShiftResponse>(`${SHIFTS_PREFIX}`, {
@@ -388,6 +425,19 @@ export async function apiCopyPreviousWeek(payload: {
   });
 }
 
+export async function apiCopyRange(payload: {
+  sourceFrom: string;
+  sourceTo: string;
+  targetFrom: string;
+  locationId?: string;
+}): Promise<ShiftPayload[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ShiftPayload[]>(`${SHIFTS_PREFIX}/copy-range`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiGetAvailability(params: {
   from?: string;
   to?: string;
@@ -406,6 +456,20 @@ export async function apiGetAvailability(params: {
 export async function apiGetAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
   apiClient.hydrateFromStorage();
   return apiClient.request<AvailabilityWindowRecord[]>(`${AVAILABILITY_PREFIX}/windows`);
+}
+
+export async function apiGetApprovedLeaves(params: {
+  from?: string;
+  to?: string;
+}): Promise<ApprovedLeaveRecord[]> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  const query = search.toString();
+  return apiClient.request<ApprovedLeaveRecord[]>(
+    `/leave-requests/approved${query ? `?${query}` : ""}`,
+  );
 }
 
 export async function apiGetActiveAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
@@ -714,6 +778,7 @@ interface ShiftResponse {
   startsAt: string;
   endsAt: string;
   availabilityWarning?: string | null;
+  leaveWarning?: string | null;
 }
 
 interface EmployeeResponse {

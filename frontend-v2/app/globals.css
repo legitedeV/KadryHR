@@ -248,6 +248,47 @@ body::before {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card-bg) 70%, transparent);
 }
 
+.panel-button {
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--color-brand-400) 20%, transparent);
+  background: color-mix(in srgb, var(--color-surface-950) 70%, transparent);
+  color: var(--color-surface-100);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.panel-button:hover {
+  border-color: color-mix(in srgb, var(--color-brand-400) 60%, transparent);
+  color: var(--color-surface-50);
+}
+
+.panel-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+}
+
+.panel-button-primary {
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--color-brand-400) 70%, transparent);
+  background: var(--color-brand-500);
+  color: var(--color-surface-950);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.panel-button-primary:hover {
+  background: var(--color-brand-400);
+}
+
+.panel-button-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 45%, transparent);
+}
+
 .panel-input {
   width: 100%;
   border-radius: 9999px;

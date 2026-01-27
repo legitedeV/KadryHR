@@ -696,4 +696,46 @@ export class ShiftsService {
       };
     });
   }
+
+  /**
+   * Build shift payloads from a source range and offset them to a target range.
+   */
+  async buildCopyFromRange(
+    organisationId: string,
+    dateRange: { sourceFrom: Date; sourceTo: Date; targetFrom: Date },
+    locationId?: string,
+  ) {
+    const where: Prisma.ShiftWhereInput = {
+      organisationId,
+      startsAt: { gte: dateRange.sourceFrom },
+      endsAt: { lte: dateRange.sourceTo },
+    };
+
+    if (locationId) {
+      where.locationId = locationId;
+    }
+
+    const shifts = await this.prisma.shift.findMany({
+      where,
+      orderBy: { startsAt: 'asc' },
+    });
+
+    const offsetMs =
+      dateRange.targetFrom.getTime() - dateRange.sourceFrom.getTime();
+
+    return shifts.map((shift) => {
+      const newStart = new Date(shift.startsAt.getTime() + offsetMs);
+      const newEnd = new Date(shift.endsAt.getTime() + offsetMs);
+
+      return {
+        employeeId: shift.employeeId,
+        locationId: shift.locationId ?? undefined,
+        position: shift.position ?? undefined,
+        notes: shift.notes ?? undefined,
+        color: shift.color ?? undefined,
+        startsAt: newStart.toISOString(),
+        endsAt: newEnd.toISOString(),
+      };
+    });
+  }
 }

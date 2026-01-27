@@ -281,7 +281,7 @@ export default function DashboardPage() {
       description: "Udostępnij plan pracy zespołowi.",
       status: shifts.length > 0 ? ("done" as const) : ("todo" as const),
       actionLabel: "Publikuj grafik",
-      href: "/panel/grafik-v2",
+      href: "/panel/grafik",
     },
     {
       id: "invite",

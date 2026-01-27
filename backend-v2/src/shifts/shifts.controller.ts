@@ -23,6 +23,7 @@ import { EmployeesService } from '../employees/employees.service';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { ClearWeekDto } from './dto/clear-week.dto';
 import { CopyWeekDto } from './dto/copy-week.dto';
+import { CopyRangeDto } from './dto/copy-range.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 import { Permission } from '../auth/permissions';
@@ -210,6 +211,31 @@ export class ShiftsController {
     return this.shiftsService.buildCopyFromPreviousWeek(
       user.organisationId,
       dateRange,
+      dto.locationId,
+    );
+  }
+
+  /**
+   * Copy shifts from a source range into a target range (same duration).
+   */
+  @RequirePermissions(Permission.RCP_EDIT)
+  @Post('copy-range')
+  @AuditLog({
+    action: 'SCHEDULE_COPY_RANGE',
+    entityType: 'schedule',
+    captureBody: true,
+  })
+  async copyRange(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CopyRangeDto,
+  ) {
+    return this.shiftsService.buildCopyFromRange(
+      user.organisationId,
+      {
+        sourceFrom: new Date(dto.sourceFrom),
+        sourceTo: new Date(dto.sourceTo),
+        targetFrom: new Date(dto.targetFrom),
+      },
       dto.locationId,
     );
   }
