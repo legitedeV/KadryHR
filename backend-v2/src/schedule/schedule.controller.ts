@@ -10,6 +10,9 @@ import { QueryScheduleDto } from './dto/query-schedule.dto';
 import { CreateScheduleShiftDto } from './dto/create-schedule-shift.dto';
 import { BulkCreateShiftsDto } from './dto/bulk-create-shifts.dto';
 import { BulkDeleteShiftsDto } from './dto/bulk-delete-shifts.dto';
+import { ValidateScheduleDto } from './dto/validate-schedule.dto';
+import { PublishScheduleDto } from './dto/publish-schedule.dto';
+import { DuplicatePreviousPeriodDto } from './dto/duplicate-prev.dto';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('schedule')
@@ -54,6 +57,45 @@ export class ScheduleController {
     @Body() dto: BulkDeleteShiftsDto,
   ) {
     return this.scheduleService.deleteShiftsBulk(
+      user.organisationId,
+      user.id,
+      dto,
+    );
+  }
+
+  @RequirePermissions(Permission.SCHEDULE_MANAGE)
+  @Post('validate')
+  async validateSchedule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ValidateScheduleDto,
+  ) {
+    return this.scheduleService.validateSchedule(
+      user.organisationId,
+      user.id,
+      dto,
+    );
+  }
+
+  @RequirePermissions(Permission.SCHEDULE_MANAGE)
+  @Post('publish')
+  async publishSchedule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: PublishScheduleDto,
+  ) {
+    return this.scheduleService.publishSchedule(
+      user.organisationId,
+      user.id,
+      dto,
+    );
+  }
+
+  @RequirePermissions(Permission.SCHEDULE_MANAGE)
+  @Post('duplicate-prev')
+  async duplicatePreviousPeriod(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DuplicatePreviousPeriodDto,
+  ) {
+    return this.scheduleService.duplicatePreviousPeriod(
       user.organisationId,
       user.id,
       dto,
