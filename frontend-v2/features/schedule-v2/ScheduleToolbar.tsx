@@ -13,6 +13,9 @@ type ScheduleToolbarProps = {
   employmentOptions: string[];
   sortMode: string;
   searchValue: string;
+  keyboardMode: boolean;
+  keyboardDisabled: boolean;
+  timeBuffer: string;
   onPrevWeek: () => void;
   onNextWeek: () => void;
   onOpenRangeModal: () => void;
@@ -23,6 +26,7 @@ type ScheduleToolbarProps = {
   onSortModeChange: (value: string) => void;
   onSearchChange: (value: string) => void;
   onSortAction: () => void;
+  onToggleKeyboard: () => void;
   onOpenOptions: () => void;
 };
 
@@ -37,6 +41,9 @@ export function ScheduleToolbar({
   employmentOptions,
   sortMode,
   searchValue,
+  keyboardMode,
+  keyboardDisabled,
+  timeBuffer,
   onPrevWeek,
   onNextWeek,
   onOpenRangeModal,
@@ -47,10 +54,39 @@ export function ScheduleToolbar({
   onSortModeChange,
   onSearchChange,
   onSortAction,
+  onToggleKeyboard,
   onOpenOptions,
 }: ScheduleToolbarProps) {
   return (
-    <div className="rounded-lg border border-surface-200 bg-surface-50 p-4 shadow-sm">
+    <div className="rounded-lg border border-surface-200 bg-surface-50 p-4 shadow-sm space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm text-surface-500">
+          <span className="rounded-md border border-surface-200 bg-white px-2 py-1">📌</span>
+          <span className="rounded-md border border-surface-200 bg-white px-2 py-1">🗂️</span>
+          <span className="rounded-md border border-surface-200 bg-white px-2 py-1">🧩</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {timeBuffer && (
+            <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-600">
+              Wpisano: {timeBuffer}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onToggleKeyboard}
+            disabled={keyboardDisabled}
+            title={keyboardDisabled ? "Wybierz jedną lokalizację, aby włączyć tryb klawiatury." : ""}
+            className={`flex items-center gap-2 rounded-full border px-2 py-1 text-xs font-semibold transition ${
+              keyboardMode ? "border-brand-500 bg-white text-brand-700" : "border-surface-200 bg-white text-surface-500"
+            } ${keyboardDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <span className="text-base">{keyboardMode ? "●" : "◯"}</span>
+            <span className="text-base">🖱️</span>
+            Tryb klawiatury
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <button

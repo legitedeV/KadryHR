@@ -73,6 +73,10 @@ export interface ScheduleShiftPayload {
   endAt: string;
 }
 
+export interface ScheduleShiftBulkPayload {
+  shifts: ScheduleShiftPayload[];
+}
+
 export interface ShiftPayload {
   employeeId: string;
   locationId?: string;
@@ -426,6 +430,24 @@ export async function apiCreateScheduleShift(payload: ScheduleShiftPayload): Pro
   apiClient.hydrateFromStorage();
   return apiClient.request<ScheduleShiftRecord>(`${SCHEDULE_PREFIX}/shifts`, {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiCreateScheduleShiftsBulk(
+  payload: ScheduleShiftBulkPayload,
+): Promise<ScheduleShiftRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<ScheduleShiftRecord[]>(`${SCHEDULE_PREFIX}/shifts/bulk`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteScheduleShiftsBulk(payload: { shiftIds: string[] }) {
+  apiClient.hydrateFromStorage();
+  await apiClient.request(`${SCHEDULE_PREFIX}/shifts/bulk`, {
+    method: "DELETE",
     body: JSON.stringify(payload),
   });
 }

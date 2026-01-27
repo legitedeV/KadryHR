@@ -3,6 +3,7 @@
 import { AvailabilityRecord, ApprovedLeaveRecord, EmployeeRecord, ShiftRecord } from "@/lib/api";
 import {
   WEEKDAY_LABELS,
+  buildCellKey,
   findLeaveForDay,
   formatDayLabel,
   formatDateKey,
@@ -29,6 +30,10 @@ type ScheduleGridProps = {
   availability: AvailabilityRecord[];
   onAddShift: (employeeId: string, date: Date) => void;
   onEditShift: (shift: ShiftRecord) => void;
+  onDropShift: (shiftId: string, targetEmployeeId: string, targetDate: Date, copy: boolean) => void;
+  onCellFocus: (employeeIndex: number, dayIndex: number, extend: boolean) => void;
+  selectedCells: Set<string>;
+  focusedCell: { employeeIndex: number; dayIndex: number } | null;
   canManage: boolean;
   isPublished: boolean;
 };
@@ -41,13 +46,17 @@ export function ScheduleGrid({
   availability,
   onAddShift,
   onEditShift,
+  onDropShift,
+  onCellFocus,
+  selectedCells,
+  focusedCell,
   canManage,
   isPublished,
 }: ScheduleGridProps) {
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
     const dateKey = formatDateKey(new Date(shift.startsAt));
-    const key = `${shift.employeeId}-${dateKey}`;
+    const key = buildCellKey(shift.employeeId, dateKey);
     const current = shiftsByCell.get(key) ?? [];
     current.push(shift);
     shiftsByCell.set(key, current);
@@ -128,7 +137,7 @@ export function ScheduleGrid({
             })}
           </div>
 
-          {employees.map((employee) => (
+          {employees.map((employee, employeeIndex) => (
             <div
               key={employee.id}
               className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200"
@@ -142,20 +151,34 @@ export function ScheduleGrid({
                   <p className="text-xs text-surface-500">{employee.position ?? "Stanowisko"}</p>
                 </div>
               </div>
-              {days.map((day) => {
+              {days.map((day, dayIndex) => {
                 const dateKey = formatDateKey(day.date);
-                const key = `${employee.id}-${dateKey}`;
+                const key = buildCellKey(employee.id, dateKey);
                 const cellShifts = shiftsByCell.get(key) ?? [];
                 const leave = findLeaveForDay(leaves, employee.id, day.date);
                 const availabilitySlots = availabilityByEmployee.get(employee.id) ?? [];
                 const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+                const isSelected = selectedCells.has(key);
+                const isFocused =
+                  focusedCell?.employeeIndex === employeeIndex && focusedCell?.dayIndex === dayIndex;
 
                 return (
                   <div
                     key={key}
                     className={`group relative min-h-[120px] border-r border-surface-200 px-3 py-3 ${
                       isWeekend ? "bg-surface-100/70" : "bg-white"
-                    }`}
+                    } ${isSelected ? "ring-2 ring-brand-400/60" : ""} ${isFocused ? "z-10 ring-2 ring-brand-500" : ""}`}
+                    onMouseDown={(event) => onCellFocus(employeeIndex, dayIndex, event.shiftKey)}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const shiftId = event.dataTransfer.getData("text/plain");
+                      if (shiftId) {
+                        onDropShift(shiftId, employee.id, day.date, event.altKey);
+                      }
+                    }}
                   >
                     {canManage && (
                       <div className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
@@ -199,6 +222,11 @@ export function ScheduleGrid({
                             key={shift.id}
                             type="button"
                             onClick={() => onEditShift(shift)}
+                            draggable={canManage}
+                            onDragStart={(event) => {
+                              event.dataTransfer.setData("text/plain", shift.id);
+                              event.dataTransfer.effectAllowed = "move";
+                            }}
                             className="flex flex-col gap-1 rounded-md border border-surface-200 px-3 py-2 text-left text-xs text-surface-800 transition hover:border-brand-400/60 hover:bg-surface-50"
                             role="button"
                             disabled={!canManage}
@@ -220,9 +248,10 @@ export function ScheduleGrid({
                                 </span>
                               )}
                             </div>
-                            {shift.position && (
-                              <span className="text-[11px] text-surface-600">{shift.position}</span>
-                            )}
+                            <span className="text-[11px] text-surface-600">
+                              {shift.position ?? "Zmiana"}
+                              {shift.location?.name ? ` / ${shift.location.name}` : ""}
+                            </span>
                           </button>
                         );
                       })}

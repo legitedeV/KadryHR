@@ -49,6 +49,10 @@ export function formatShortRangeLabel(from: Date, to: Date) {
   return `${formatter.format(from)} - ${formatter.format(to)}`;
 }
 
+export function buildCellKey(employeeId: string, dateKey: string) {
+  return `${employeeId}::${dateKey}`;
+}
+
 export function parseTimeToMinutes(value: string) {
   const [h, m] = value.split(":").map((part) => Number(part));
   if (Number.isNaN(h) || Number.isNaN(m)) return 0;
