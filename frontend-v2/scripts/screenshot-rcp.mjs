@@ -114,16 +114,21 @@ async function takeScreenshots() {
   });
   console.log(`✅ Saved: ${panelScreenshotPath}`);
 
-  // Generate QR code for better screenshot
-  await page.getByRole('button', { name: /Wygeneruj kod QR/i }).click();
-  await page.waitForTimeout(2000); // Wait for QR generation
+  // Try to generate QR code for better screenshot
+  try {
+    const qrButton = page.locator('button:has-text("Wygeneruj kod QR")');
+    await qrButton.click({ timeout: 5000 });
+    await page.waitForTimeout(2000); // Wait for QR generation
 
-  const panelWithQrPath = path.join(OUTPUT_DIR, 'panel-rcp-with-qr.png');
-  await page.screenshot({
-    path: panelWithQrPath,
-    fullPage: true,
-  });
-  console.log(`✅ Saved: ${panelWithQrPath}`);
+    const panelWithQrPath = path.join(OUTPUT_DIR, 'panel-rcp-with-qr.png');
+    await page.screenshot({
+      path: panelWithQrPath,
+      fullPage: true,
+    });
+    console.log(`✅ Saved: ${panelWithQrPath}`);
+  } catch (e) {
+    console.log('⚠️  Could not generate QR (button might be disabled)');
+  }
 
   // Screenshot 2: Mobile RCP page
   console.log('📸 Capturing /m/rcp screenshot...');
