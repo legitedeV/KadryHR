@@ -1,87 +1,29 @@
-import Link from "next/link";
-import { HeroPanel } from "@/components/landing/HeroPanel";
-import { TrustedBySection } from "@/components/landing/TrustedBySection";
-import { TimelineSection } from "@/components/landing/TimelineSection";
-import { ComparisonSection } from "@/components/landing/ComparisonSection";
-import { ModuleMapSection } from "@/components/landing/ModuleMapSection";
-import { SocialProofSection } from "@/components/landing/SocialProofSection";
-import { PersonasSection } from "@/components/landing/PersonasSection";
-import { PricingSection } from "@/components/landing/PricingSection";
-import { FaqSection } from "@/components/landing/FaqSection";
-import { LeadFormSection } from "@/components/landing/LeadFormSection";
+import { AboutSection } from "@/components/landing/AboutSection";
+import { ContactSection } from "@/components/landing/ContactSection";
+import { FooterSection } from "@/components/landing/FooterSection";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { Navbar } from "@/components/landing/Navbar";
+import { ServicesSection } from "@/components/landing/ServicesSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { Topbar } from "@/components/landing/Topbar";
+import { TrustSection } from "@/components/landing/TrustSection";
 
 export function LandingLayout() {
   return (
-    <div className="min-h-screen bg-[#F7F9FB] text-surface-900">
-      <header className="sticky top-0 z-40 border-b border-surface-300 bg-[#F7F9FB]/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            KadryHR
-          </Link>
-          <div className="hidden items-center gap-6 text-sm text-surface-600 md:flex">
-            <a href="#jak-dziala" className="transition hover:text-surface-900">
-              Jak działa
-            </a>
-            <a href="#moduly" className="transition hover:text-surface-900">
-              Moduły
-            </a>
-            <a href="#dla-kogo" className="transition hover:text-surface-900">
-              Dla kogo
-            </a>
-            <a href="#cennik" className="transition hover:text-surface-900">
-              Oferta
-            </a>
-            <a href="#faq" className="transition hover:text-surface-900">
-              FAQ
-            </a>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="hidden rounded-full border border-surface-300 px-4 py-2 text-sm font-medium text-surface-700 transition hover:border-surface-500 hover:text-surface-900 md:inline-flex"
-            >
-              Zaloguj się
-            </Link>
-            <a
-              href="#lead-form"
-              className="rounded-full bg-emerald-300/90 px-4 py-2 text-sm font-semibold text-surface-900 transition hover:bg-emerald-200"
-            >
-              Umów prezentację
-            </a>
-          </div>
-        </nav>
-      </header>
-
-      <main>
-        <HeroPanel />
-        <TrustedBySection />
-        <TimelineSection />
-        <ComparisonSection />
-        <ModuleMapSection />
-        <SocialProofSection />
-        <PersonasSection />
-        <PricingSection />
-        <FaqSection />
-        <LeadFormSection />
+    <div className="min-h-screen bg-white text-slate-900">
+      <Topbar />
+      <Navbar />
+      <main className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -left-40 top-32 h-72 w-72 rounded-full bg-sky-100/70 blur-3xl" />
+        <div className="pointer-events-none absolute right-0 top-0 h-96 w-96 rounded-full bg-orange-100/70 blur-[140px]" />
+        <HeroSection />
+        <ServicesSection />
+        <AboutSection />
+        <TrustSection />
+        <TestimonialsSection />
+        <ContactSection />
       </main>
-
-      <footer className="border-t border-surface-300 bg-[#F7F9FB]">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-8 text-sm text-surface-600 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-surface-900">KadryHR</span>
-            <span>Premium platforma grafiku i RCP</span>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <a href="mailto:sales@kadryhr.pl" className="transition hover:text-surface-900">
-              sales@kadryhr.pl
-            </a>
-            <span>+48 22 307 11 20</span>
-            <Link href="/register" className="transition hover:text-surface-900">
-              Załóż konto
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <FooterSection />
     </div>
   );
 }
