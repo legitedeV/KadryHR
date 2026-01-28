@@ -1,0 +1,8 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wynagrodzenia">
+  <rect x="12" y="14" width="40" height="30" rx="10" fill="#DBEAFE"/>
+  <circle cx="24" cy="29" r="8" fill="#1D4ED8"/>
+  <path d="M24 25V33" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <path d="M21 29H27" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <rect x="28" y="46" width="24" height="10" rx="5" fill="#FDBA74"/>
+  <rect x="34" y="18" width="12" height="6" rx="3" fill="#93C5FD"/>
+</svg>
