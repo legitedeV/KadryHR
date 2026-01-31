@@ -3,13 +3,13 @@
 import { AvailabilityRecord, ApprovedLeaveRecord, EmployeeRecord, ShiftRecord } from "@/lib/api";
 import { EmployeeInline } from "./EmployeeInline";
 import {
-  WEEKDAY_LABELS,
   buildCellKey,
   findLeaveForDay,
   formatDayLabel,
   formatDateKey,
   formatShiftTimeRange,
   formatTime,
+  formatWeekdayLabel,
   getAvailabilityStatus,
 } from "./schedule-utils";
 
@@ -40,6 +40,7 @@ type ScheduleGridProps = {
   showLoadBars?: boolean;
   showSummaryRow?: boolean;
   showWeekendHighlight?: boolean;
+  exportMode?: boolean;
 };
 
 export function ScheduleGrid({
@@ -59,6 +60,7 @@ export function ScheduleGrid({
   showLoadBars = true,
   showSummaryRow = true,
   showWeekendHighlight = true,
+  exportMode = false,
 }: ScheduleGridProps) {
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
@@ -98,13 +100,33 @@ export function ScheduleGrid({
     );
   }
 
+  const gridTemplateColumns = `240px repeat(${days.length}, minmax(150px, 1fr))`;
+  const headerCellClass = exportMode
+    ? "border-r border-surface-200 bg-white px-4 py-4"
+    : "sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4";
+  const rowHeaderClass = exportMode
+    ? "flex items-center border-r border-surface-200 bg-white px-4 py-4"
+    : "sticky left-0 z-10 flex items-center border-r border-surface-200 bg-white px-4 py-4";
+  const summaryHeaderClass = exportMode
+    ? "border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400"
+    : "sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400";
+
   return (
     <div className="rounded-lg border border-surface-200 bg-white shadow-sm" data-onboarding-target="schedule-grid">
-      <div className="overflow-x-auto">
-        <div className="min-w-[980px]">
+      <div className={exportMode ? "overflow-visible" : "overflow-x-auto"}>
+        <div className={exportMode ? "w-max" : "min-w-[980px]"}>
           {showLoadBars && (
-            <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-surface-50">
-              <div className="sticky left-0 z-20 border-r border-surface-200 bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+            <div
+              className="grid border-b border-surface-200 bg-surface-50"
+              style={{ gridTemplateColumns }}
+            >
+              <div
+                className={
+                  exportMode
+                    ? "border-r border-surface-200 bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400"
+                    : "sticky left-0 z-20 border-r border-surface-200 bg-surface-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400"
+                }
+              >
                 Obciążenie
               </div>
               {days.map((day, index) => {
@@ -131,15 +153,17 @@ export function ScheduleGrid({
             </div>
           )}
 
-          <div className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200 bg-white">
-            <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4">
+          <div className="grid border-b border-surface-200 bg-white" style={{ gridTemplateColumns }}>
+            <div className={headerCellClass}>
               <p className="text-xs uppercase tracking-[0.18em] text-surface-400">Pracownicy</p>
             </div>
-            {days.map((day, index) => {
+            {days.map((day) => {
               const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
               return (
                 <div key={day.iso} className={`px-3 py-3 ${showWeekendHighlight && isWeekend ? "bg-surface-100/80" : ""}`}>
-                  <p className="text-xs uppercase tracking-[0.18em] text-surface-400">{WEEKDAY_LABELS[index]}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-surface-400">
+                    {formatWeekdayLabel(day.date)}
+                  </p>
                   <p className="text-sm font-semibold text-surface-800">{formatDayLabel(day.date)}</p>
                 </div>
               );
@@ -149,9 +173,10 @@ export function ScheduleGrid({
           {employees.map((employee, employeeIndex) => (
             <div
               key={employee.id}
-              className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200"
+              className="grid border-b border-surface-200"
+              style={{ gridTemplateColumns }}
             >
-              <div className="sticky left-0 z-10 flex items-center border-r border-surface-200 bg-white px-4 py-4">
+              <div className={rowHeaderClass}>
                 <EmployeeInline
                   employee={employee}
                   subtitle={employee.position ?? employee.email ?? null}
@@ -270,10 +295,15 @@ export function ScheduleGrid({
 
           {showSummaryRow && (
             <div
-              className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-t border-surface-200 bg-white sticky bottom-0"
+              className={
+                exportMode
+                  ? "grid border-t border-surface-200 bg-white"
+                  : "grid border-t border-surface-200 bg-white sticky bottom-0"
+              }
               data-onboarding-target="schedule-summary"
+              style={{ gridTemplateColumns }}
             >
-              <div className="sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400">
+              <div className={summaryHeaderClass}>
                 Podsumowanie
               </div>
               {days.map((day, index) => {
