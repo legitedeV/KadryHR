@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { ExecutionContext } from '@nestjs/common';
 import { InvitationsService } from './invitations.service';
+import { OAuthService } from './oauth.service';
 
 class MockAuthService {
   login = jest.fn().mockResolvedValue({ ok: true });
@@ -27,6 +28,10 @@ describe('AuthController', () => {
         {
           provide: InvitationsService,
           useValue: { acceptInvitation: jest.fn() },
+        },
+        {
+          provide: OAuthService,
+          useValue: { start: jest.fn(), callback: jest.fn() },
         },
       ],
     })

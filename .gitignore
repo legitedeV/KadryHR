@@ -13,6 +13,8 @@ frontend/.env
 *.md
 *.txt
 # allow checked-in audit/reporting notes
+!agent-logs/
+!agent-logs/*.md
 !docs/repo-audit.md
 !docs/feature-parity-matrix.md
 !docs/leave-testing.md

@@ -13,6 +13,7 @@ import { InvitationsService } from './invitations.service';
 import { PermissionsService } from './permissions.service';
 import { AuditModule } from '../audit/audit.module';
 import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
+import { OAuthService } from './oauth.service';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
     JwtRefreshStrategy,
     InvitationsService,
     PermissionsService,
+    OAuthService,
   ],
   exports: [AuthService, InvitationsService, PermissionsService],
 })

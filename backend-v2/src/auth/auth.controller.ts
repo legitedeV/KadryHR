@@ -1,23 +1,35 @@
-import { Body, Controller, Post, UseGuards, Get, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  Get,
+  Res,
+  Param,
+  Req,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from './types/authenticated-user.type';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
 import { RegisterDto } from './dto/register.dto';
 import { InvitationsService } from './invitations.service';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { ValidateInvitationDto } from './dto/validate-invitation.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { OAuthService } from './oauth.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly invitationsService: InvitationsService,
+    private readonly oauthService: OAuthService,
   ) {}
 
   @Post('login')
@@ -86,5 +98,33 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.logout(user.id, res);
+  }
+
+  @Get('oauth/:provider/start')
+  async oauthStart(
+    @Param('provider') provider: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    if (provider !== 'google' && provider !== 'microsoft') {
+      throw new BadRequestException('Unsupported OAuth provider');
+    }
+    return this.oauthService.start(provider as 'google' | 'microsoft', req, res);
+  }
+
+  @Get('oauth/:provider/callback')
+  async oauthCallback(
+    @Param('provider') provider: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    if (provider !== 'google' && provider !== 'microsoft') {
+      throw new BadRequestException('Unsupported OAuth provider');
+    }
+    return this.oauthService.callback(
+      provider as 'google' | 'microsoft',
+      req,
+      res,
+    );
   }
 }
