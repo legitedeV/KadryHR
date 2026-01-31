@@ -1,26 +1,26 @@
-import Image from "next/image";
+import { BadgeDollarSign, Briefcase, FileText, UserSearch } from "lucide-react";
 
 const services = [
   {
     title: "Obsługa Kadrowo-Płacowa",
     description:
       "Prowadzimy dokumentację, umowy oraz ewidencję czasu pracy w zgodzie z aktualnymi przepisami.",
-    icon: "/illustrations/service-docs.svg",
+    icon: FileText,
   },
   {
     title: "Rozliczanie Wynagrodzeń",
     description: "Listy płac, składki ZUS, PIT oraz raporty rozliczeniowe przygotowane terminowo.",
-    icon: "/illustrations/service-payroll.svg",
+    icon: BadgeDollarSign,
   },
   {
     title: "Rekrutacja i Selekcja",
     description: "Sourcing, preselekcja oraz weryfikacja kandydatów z dopasowaniem do kultury firmy.",
-    icon: "/illustrations/service-recruitment.svg",
+    icon: UserSearch,
   },
   {
     title: "Doradztwo HR",
     description: "Optymalizacja procesów, compliance i wsparcie menedżerów w decyzjach kadrowych.",
-    icon: "/illustrations/service-advisory.svg",
+    icon: Briefcase,
   },
 ];
 
@@ -42,8 +42,8 @@ export function ServicesSection() {
               key={service.title}
               className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50">
-                <Image src={service.icon} alt="" width={32} height={32} aria-hidden="true" />
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
+                <service.icon className="h-6 w-6" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900">{service.title}</h3>
               <p className="mt-3 text-sm text-slate-600">{service.description}</p>

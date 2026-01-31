@@ -1,3 +1,5 @@
+import { Mail, MapPin, Phone } from "lucide-react";
+
 export function ContactSection() {
   return (
     <section id="kontakt" className="bg-slate-50/70 py-20">
@@ -12,16 +14,21 @@ export function ContactSection() {
           <div className="grid gap-4 text-sm text-slate-600">
             <div>
               <p className="font-semibold text-slate-900">Kontakt bezpośredni</p>
-              <a className="block transition hover:text-slate-900" href="mailto:kontakt@kadryhr.pl">
+              <a className="flex items-center gap-2 transition hover:text-slate-900" href="mailto:kontakt@kadryhr.pl">
+                <Mail className="h-4 w-4" aria-hidden="true" />
                 kontakt@kadryhr.pl
               </a>
-              <a className="block transition hover:text-slate-900" href="tel:+48223071120">
+              <a className="flex items-center gap-2 transition hover:text-slate-900" href="tel:+48223071120">
+                <Phone className="h-4 w-4" aria-hidden="true" />
                 +48 22 307 11 20
               </a>
             </div>
             <div>
               <p className="font-semibold text-slate-900">Biuro</p>
-              <p>ul. Nowoczesna 12, 00-123 Warszawa</p>
+              <p className="flex items-start gap-2">
+                <MapPin className="mt-0.5 h-4 w-4" aria-hidden="true" />
+                <span>ul. Nowoczesna 12, 00-123 Warszawa</span>
+              </p>
             </div>
           </div>
         </div>
