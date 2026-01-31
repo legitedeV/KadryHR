@@ -7,7 +7,6 @@ import {
   Res,
   Param,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -106,10 +105,7 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    if (provider !== 'google' && provider !== 'microsoft') {
-      throw new BadRequestException('Unsupported OAuth provider');
-    }
-    return this.oauthService.start(provider as 'google' | 'microsoft', req, res);
+    return this.oauthService.start(provider, req, res);
   }
 
   @Get('oauth/:provider/callback')
@@ -118,13 +114,6 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    if (provider !== 'google' && provider !== 'microsoft') {
-      throw new BadRequestException('Unsupported OAuth provider');
-    }
-    return this.oauthService.callback(
-      provider as 'google' | 'microsoft',
-      req,
-      res,
-    );
+    return this.oauthService.callback(provider, req, res);
   }
 }
