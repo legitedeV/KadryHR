@@ -48,12 +48,12 @@ export function HeroSection() {
           <div className="absolute -left-6 top-10 h-40 w-40 rounded-full bg-sky-100 blur-3xl" aria-hidden="true" />
           <div className="relative rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl">
             <Image
-              src="/illustrations/hero-hr.svg"
-              alt="Ilustracja przedstawiająca specjalistów HR przy pracy"
-              width={520}
-              height={460}
+              src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1000&q=80"
+              alt="Zespół specjalistów HR pracujących przy nowoczesnym stanowisku"
+              width={1000}
+              height={760}
               priority
-              className="h-auto w-full"
+              className="h-auto w-full rounded-2xl object-cover"
             />
           </div>
         </div>
