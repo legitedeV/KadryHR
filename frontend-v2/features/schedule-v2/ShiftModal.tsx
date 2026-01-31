@@ -18,6 +18,7 @@ import {
   mergeNotesWithBreak,
   parseTimeToMinutes,
 } from "./schedule-utils";
+import { EmployeeInline } from "./EmployeeInline";
 
 const TIME_PRESETS = [
   "06:00-14:00",
@@ -359,6 +360,17 @@ export function ShiftModal({
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2 text-sm text-surface-600">
               Pracownik
+              {selectedEmployee && (
+                <div className="rounded-md border border-surface-200 bg-surface-50 px-3 py-2">
+                  <EmployeeInline
+                    employee={selectedEmployee}
+                    subtitle={selectedEmployee.position ?? selectedEmployee.email ?? null}
+                    size="sm"
+                    nameClassName="text-sm text-surface-800"
+                    subtitleClassName="text-xs text-surface-500"
+                  />
+                </div>
+              )}
               <select
                 className="h-11 w-full rounded-md border border-surface-200 bg-white px-3"
                 value={form.employeeId}

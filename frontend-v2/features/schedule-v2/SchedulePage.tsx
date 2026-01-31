@@ -306,6 +306,7 @@ export function SchedulePage() {
             firstName: employeeMap.get(shift.employeeId)?.firstName,
             lastName: employeeMap.get(shift.employeeId)?.lastName,
             avatarUrl: employeeMap.get(shift.employeeId)?.avatarUrl ?? undefined,
+            avatarUpdatedAt: employeeMap.get(shift.employeeId)?.avatarUpdatedAt ?? undefined,
           }
         : undefined,
       location: shift.locationId

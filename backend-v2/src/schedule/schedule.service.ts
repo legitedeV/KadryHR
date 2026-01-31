@@ -35,11 +35,24 @@ export class ScheduleService {
     private readonly emailTemplatesService: EmailTemplatesService,
   ) {}
 
+  private buildAvatarUrl(
+    avatarPath?: string | null,
+    legacyUrl?: string | null,
+  ): string | null {
+    const pathValue = avatarPath || legacyUrl;
+    if (!pathValue) return null;
+    if (pathValue.startsWith('http')) return pathValue;
+    if (pathValue.startsWith('/static/')) return pathValue;
+    if (pathValue.startsWith('static/')) return `/${pathValue}`;
+    if (pathValue.startsWith('avatars/')) return `/static/${pathValue}`;
+    return pathValue;
+  }
+
   async getSchedule(organisationId: string, query: QueryScheduleDto) {
     const from = new Date(query.from);
     const to = new Date(query.to);
 
-    return this.scheduleRepository.findShifts({
+    const shifts = await this.scheduleRepository.findShifts({
       where: {
         organisationId,
         startsAt: { gte: from },
@@ -53,6 +66,33 @@ export class ScheduleService {
         deletedAt: null,
       },
       orderBy: { startsAt: 'asc' },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatarUrl: true,
+            avatarPath: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    return shifts.map((shift) => {
+      if (!shift.employee) return shift;
+      const { avatarPath, avatarUrl, updatedAt, ...restEmployee } =
+        shift.employee;
+      return {
+        ...shift,
+        employee: {
+          ...restEmployee,
+          avatarUrl: this.buildAvatarUrl(avatarPath ?? null, avatarUrl ?? null),
+          avatarUpdatedAt: updatedAt ?? null,
+        },
+      };
     });
   }
 
