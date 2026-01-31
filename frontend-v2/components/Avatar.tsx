@@ -46,7 +46,7 @@ export function Avatar({
   size?: AvatarSize;
   className?: string;
 }) {
-  const [imageError, setImageError] = useState(false);
+  const [errorSrc, setErrorSrc] = useState<string | null>(null);
   const initials = useMemo(() => initialsFromName(name) || "?", [name]);
   const paletteClass = useMemo(() => {
     const hash = hashString(name || initials);
@@ -54,7 +54,7 @@ export function Avatar({
   }, [initials, name]);
 
   const dimensionClass = size === "sm" ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm";
-  const shouldShowImage = Boolean(src) && !imageError;
+  const shouldShowImage = Boolean(src) && src !== errorSrc;
 
   return (
     <span
@@ -69,7 +69,7 @@ export function Avatar({
           src={src ?? undefined}
           alt={name}
           className="h-full w-full object-cover object-center"
-          onError={() => setImageError(true)}
+          onError={() => setErrorSrc(src ?? null)}
         />
       ) : (
         <span className="font-semibold">{initials}</span>
