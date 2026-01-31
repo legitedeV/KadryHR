@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -68,6 +69,12 @@ export class ScheduleService {
       dto.positionId ? [dto.positionId] : [],
     );
     this.validateRange(dto.startAt, dto.endAt);
+    await this.ensureNoOverlap(
+      organisationId,
+      dto.employeeId,
+      dto.startAt,
+      dto.endAt,
+    );
 
     const shift = await this.scheduleRepository.createShift({
       organisation: { connect: { id: organisationId } },
@@ -119,6 +126,7 @@ export class ScheduleService {
       dto.shifts.map((shift) => shift.locationId).filter(Boolean) as string[],
       dto.shifts.map((shift) => shift.positionId).filter(Boolean) as string[],
     );
+    await this.ensureNoOverlapBulk(organisationId, dto.shifts);
 
     const created = await Promise.all(
       dto.shifts.map((shift) =>
@@ -156,7 +164,7 @@ export class ScheduleService {
       })),
     );
 
-    return { createdCount: created.length };
+    return created;
   }
 
   async deleteShiftsBulk(
@@ -703,6 +711,43 @@ export class ScheduleService {
     if (start >= end) {
       throw new BadRequestException(
         this.buildError('INVALID_RANGE', 'Shift start must be before end'),
+      );
+    }
+  }
+
+  private async ensureNoOverlap(
+    organisationId: string,
+    employeeId: string,
+    startAt: string,
+    endAt: string,
+  ) {
+    const overlap = await this.scheduleRepository.findOverlappingShift(
+      organisationId,
+      employeeId,
+      new Date(startAt),
+      new Date(endAt),
+    );
+    if (overlap) {
+      throw new ConflictException(
+        this.buildError('SHIFT_OVERLAP', 'Shift overlaps existing shift', {
+          overlapId: overlap.id,
+          overlapStartsAt: overlap.startsAt,
+          overlapEndsAt: overlap.endsAt,
+        }),
+      );
+    }
+  }
+
+  private async ensureNoOverlapBulk(
+    organisationId: string,
+    shifts: CreateScheduleShiftDto[],
+  ) {
+    for (const shift of shifts) {
+      await this.ensureNoOverlap(
+        organisationId,
+        shift.employeeId,
+        shift.startAt,
+        shift.endAt,
       );
     }
   }
