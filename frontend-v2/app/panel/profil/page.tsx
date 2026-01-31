@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
   apiGetMe,
   apiGetProfile,
   apiUpdateProfile,
   apiChangePassword,
   apiChangeEmail,
+  apiUploadAvatar,
   User,
   UserProfile,
 } from "@/lib/api";
@@ -28,8 +29,11 @@ export default function ProfilPage() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   // Change password state
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -61,7 +65,6 @@ export default function ProfilPage() {
         // Initialize edit form
         setFirstName(profileData.firstName ?? "");
         setLastName(profileData.lastName ?? "");
-        setAvatarUrl(profileData.avatarUrl ?? "");
       })
       .catch((err) => {
         console.error(err);
@@ -85,7 +88,6 @@ export default function ProfilPage() {
       const updated = await apiUpdateProfile({
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
-        avatarUrl: avatarUrl.trim() || undefined,
       });
       setProfile(updated);
       setEditProfileOpen(false);
@@ -104,7 +106,79 @@ export default function ProfilPage() {
     } finally {
       setSavingProfile(false);
     }
-  }, [firstName, lastName, avatarUrl]);
+  }, [firstName, lastName]);
+
+  useEffect(() => {
+    if (!avatarPreview) return;
+    return () => {
+      URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
+  const handleAvatarSelect = useCallback((file?: File) => {
+    if (!file) return;
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      pushToast({
+        title: "Błąd",
+        description: "Dozwolone formaty: PNG, JPG, WEBP.",
+        variant: "error",
+      });
+      return;
+    }
+
+    if (file.size > maxSize) {
+      pushToast({
+        title: "Błąd",
+        description: "Plik jest za duży. Maksymalnie 5 MB.",
+        variant: "error",
+      });
+      return;
+    }
+
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }, []);
+
+  const handleAvatarUpload = useCallback(async () => {
+    if (!avatarFile) return;
+    setUploadingAvatar(true);
+    try {
+      const response = await apiUploadAvatar(avatarFile);
+      setProfile((prev) => {
+        if (!prev) return prev;
+        if (response.profile) {
+          return response.profile;
+        }
+        return {
+          ...prev,
+          avatarUrl: response.avatarUrl,
+          avatarUpdatedAt: response.avatarUpdatedAt ?? prev.avatarUpdatedAt,
+        };
+      });
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+      pushToast({
+        title: "Sukces",
+        description: "Zdjęcie profilowe zostało zaktualizowane",
+        variant: "success",
+      });
+    } catch (err) {
+      console.error(err);
+      pushToast({
+        title: "Błąd",
+        description: "Nie udało się przesłać avatara",
+        variant: "error",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }, [avatarFile]);
 
   const handleChangePassword = useCallback(async () => {
     if (newPassword !== confirmPassword) {
@@ -262,7 +336,8 @@ export default function ProfilPage() {
               onClick={() => {
                 setFirstName(profile.firstName ?? "");
                 setLastName(profile.lastName ?? "");
-                setAvatarUrl(profile.avatarUrl ?? "");
+                setAvatarFile(null);
+                setAvatarPreview(null);
                 setEditProfileOpen(true);
               }}
             >
@@ -412,22 +487,45 @@ export default function ProfilPage() {
           </label>
 
           <label className="block space-y-1 text-sm font-medium text-surface-700">
-            URL avatara
-            <input
-              type="url"
-              className="input mt-1"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://example.com/avatar.png"
-            />
-          </label>
-
-          {avatarUrl && (
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-50">
-              <p className="text-sm text-surface-600">Podgląd:</p>
-              <Avatar name={`${firstName} ${lastName}`} src={avatarUrl} size="md" />
+            Zdjęcie profilowe
+            <div className="mt-2 flex flex-wrap items-center gap-4 rounded-xl bg-surface-50 p-4">
+              <Avatar
+                name={`${firstName} ${lastName}`.trim() || profile.email}
+                src={avatarPreview ?? profile.avatarUrl}
+                size="md"
+                className="h-16 w-16 text-xl"
+              />
+              <div className="space-y-2">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(event) => handleAvatarSelect(event.target.files?.[0])}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary text-sm"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    Zmień zdjęcie
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary text-sm"
+                    onClick={handleAvatarUpload}
+                    disabled={!avatarFile || uploadingAvatar}
+                  >
+                    {uploadingAvatar ? "Wysyłanie..." : "Wyślij"}
+                  </button>
+                </div>
+                <p className="text-xs text-surface-500">
+                  Dozwolone formaty: PNG, JPG, WEBP. Maksymalnie 5 MB.
+                </p>
+              </div>
             </div>
-          )}
+          </label>
         </div>
       </Modal>
 

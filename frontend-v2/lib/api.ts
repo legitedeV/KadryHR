@@ -952,6 +952,7 @@ export interface UserProfile {
   firstName?: string | null;
   lastName?: string | null;
   avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
   organisationId: string;
   createdAt: string;
   organisation: {
@@ -963,7 +964,6 @@ export interface UserProfile {
 export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
-  avatarUrl?: string;
 }
 
 export interface ChangePasswordPayload {
@@ -990,6 +990,22 @@ export async function apiUpdateProfile(
   return apiClient.request<UserProfile>(`${USERS_PREFIX}/profile`, {
     method: "PATCH",
     body: JSON.stringify(payload),
+  });
+}
+
+export interface AvatarUploadResponse {
+  avatarUrl: string;
+  avatarUpdatedAt?: string;
+  profile?: UserProfile;
+}
+
+export async function apiUploadAvatar(file: File): Promise<AvatarUploadResponse> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("avatar", file);
+  return apiClient.request<AvatarUploadResponse>(`${USERS_PREFIX}/me/avatar`, {
+    method: "POST",
+    body: formData,
   });
 }
 

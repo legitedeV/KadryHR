@@ -22,10 +22,22 @@ export function Navbar() {
             </a>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <Link
+            href="/login"
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 btn-hero-outline"
+          >
+            Zaloguj
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 btn-hero"
+          >
+            Zarejestruj
+          </Link>
           <a
             href="#kontakt"
-            className="hidden rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 sm:inline-flex"
+            className="hidden rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 md:inline-flex"
           >
             Dodaj sprawę
           </a>

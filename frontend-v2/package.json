@@ -11,6 +11,7 @@
     "ci:check": "npm run lint && npm run typecheck",
     "test": "node --loader ./ts-node-loader.mjs --test app/panel/grafik/page.test.tsx components/avatar.test.tsx components/brand/brandLogo.test.tsx",
     "test:e2e": "playwright test",
+    "screenshot:landing": "node scripts/screenshot-landing.mjs",
     "screenshot:schedule-v2": "node scripts/screenshot-schedule-v2.mjs"
   },
   "dependencies": {

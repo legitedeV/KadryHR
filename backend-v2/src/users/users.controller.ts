@@ -7,8 +7,12 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
+  UnsupportedMediaTypeException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -23,6 +27,7 @@ import { ChangeEmailDto } from './dto/change-email.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { PermissionsService } from '../auth/permissions.service';
+import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from '../avatars/avatars.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -60,6 +65,30 @@ export class UsersController {
     @Body() dto: ChangeEmailDto,
   ) {
     return this.usersService.changeEmail(user.id, dto);
+  }
+
+  @Post('me/avatar')
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: { fileSize: MAX_FILE_SIZE },
+      fileFilter: (_req, file, callback) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return callback(
+            new UnsupportedMediaTypeException(
+              `Niedozwolony typ pliku. Dozwolone: ${ALLOWED_MIME_TYPES.join(', ')}`,
+            ),
+            false,
+          );
+        }
+        return callback(null, true);
+      },
+    }),
+  )
+  async uploadProfileAvatar(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadProfileAvatar(user, file);
   }
 
   /**

@@ -16,6 +16,8 @@ import { Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConfigService } from '@nestjs/config';
+import { AvatarsService } from '../avatars/avatars.service';
+import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +28,21 @@ export class UsersService {
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
+    private readonly avatarsService: AvatarsService,
   ) {}
+
+  private mapUserAvatar<T extends { avatarPath?: string | null; avatarUrl?: string | null }>(
+    user: T,
+  ): Omit<T, 'avatarPath'> {
+    const { avatarPath, ...rest } = user;
+    return {
+      ...(rest as Omit<T, 'avatarPath'>),
+      avatarUrl: this.avatarsService.buildPublicUrl(
+        avatarPath ?? null,
+        user.avatarUrl ?? null,
+      ),
+    };
+  }
 
   private buildLoginUrl() {
     const baseUrl =
@@ -109,6 +125,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        avatarPath: true,
         createdAt: true,
         employee: {
           select: {
@@ -120,7 +137,7 @@ export class UsersService {
         },
       },
       orderBy: { createdAt: 'desc' },
-    });
+    }).then((users) => users.map((user) => this.mapUserAvatar(user)));
   }
 
   async update(
@@ -191,6 +208,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        avatarPath: true,
         organisationId: true,
         createdAt: true,
         organisation: {
@@ -206,7 +224,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return this.mapUserAvatar(user);
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -223,7 +241,6 @@ export class UsersService {
       data: {
         firstName: dto.firstName,
         lastName: dto.lastName,
-        avatarUrl: dto.avatarUrl,
       },
       select: {
         id: true,
@@ -232,6 +249,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        avatarPath: true,
         organisationId: true,
         createdAt: true,
       },
@@ -247,7 +265,7 @@ export class UsersService {
       after: { firstName: updated.firstName, lastName: updated.lastName },
     });
 
-    return updated;
+    return this.mapUserAvatar(updated);
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -329,6 +347,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        avatarPath: true,
         organisationId: true,
         createdAt: true,
       },
@@ -344,7 +363,7 @@ export class UsersService {
       after: { email: dto.newEmail },
     });
 
-    return updated;
+    return this.mapUserAvatar(updated);
   }
 
   async updateMemberRole(
@@ -382,6 +401,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        avatarPath: true,
         createdAt: true,
       },
     });
@@ -396,7 +416,102 @@ export class UsersService {
       after: { role: dto.role },
     });
 
-    return updated;
+    return this.mapUserAvatar(updated);
+  }
+
+  async uploadProfileAvatar(user: AuthenticatedUser, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Nie przesłano pliku');
+    }
+
+    this.avatarsService.validateFile(file.mimetype, file.size);
+
+    const existing = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        organisationId: true,
+        avatarPath: true,
+        avatarUrl: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    const pathsToDelete = new Set<string>();
+    if (existing.avatarPath || existing.avatarUrl) {
+      pathsToDelete.add(existing.avatarPath ?? existing.avatarUrl ?? '');
+    }
+
+    const linkedEmployee = await this.prisma.employee.findFirst({
+      where: { userId: user.id },
+      select: { id: true, avatarPath: true, avatarUrl: true },
+    });
+
+    if (linkedEmployee?.avatarPath || linkedEmployee?.avatarUrl) {
+      pathsToDelete.add(
+        linkedEmployee.avatarPath ?? linkedEmployee.avatarUrl ?? '',
+      );
+    }
+
+    for (const pathValue of pathsToDelete) {
+      if (pathValue) {
+        await this.avatarsService.deleteAvatar(pathValue);
+      }
+    }
+
+    const { avatarPath, avatarUrl } = await this.avatarsService.saveAvatar(
+      file.buffer,
+      existing.organisationId,
+      'users',
+      user.id,
+      file.originalname,
+    );
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        avatarPath,
+        avatarUrl: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        avatarPath: true,
+        organisationId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (linkedEmployee) {
+      await this.prisma.employee.update({
+        where: { id: linkedEmployee.id },
+        data: { avatarPath, avatarUrl: null },
+      });
+    }
+
+    await this.auditService.record({
+      organisationId: updated.organisationId,
+      actorUserId: user.id,
+      action: 'UPDATE',
+      entityType: 'user-profile-avatar',
+      entityId: user.id,
+      before: { avatarPath: existing.avatarPath ?? existing.avatarUrl },
+      after: { avatarPath },
+    });
+
+    return {
+      avatarUrl,
+      avatarUpdatedAt: updated.updatedAt,
+      profile: this.mapUserAvatar(updated),
+    };
   }
 
   async delete(actorUserId: string, userId: string, organisationId: string) {

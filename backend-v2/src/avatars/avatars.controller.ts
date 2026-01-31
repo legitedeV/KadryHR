@@ -61,13 +61,16 @@ export class AvatarsController {
     }
 
     // Delete old avatar if exists
-    if (employee.avatarUrl) {
-      await this.avatarsService.deleteAvatar(employee.avatarUrl);
+    if (employee.avatarPath || employee.avatarUrl) {
+      await this.avatarsService.deleteAvatar(
+        employee.avatarPath ?? employee.avatarUrl ?? '',
+      );
     }
 
     // Save new avatar
-    const avatarUrl = await this.avatarsService.saveAvatar(
+    const { avatarPath, avatarUrl } = await this.avatarsService.saveAvatar(
       file.buffer,
+      user.organisationId,
       'employees',
       employeeId,
       file.originalname,
@@ -76,7 +79,7 @@ export class AvatarsController {
     // Update employee record
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { avatarUrl },
+      data: { avatarPath, avatarUrl: null },
     });
 
     return { avatarUrl };
@@ -103,14 +106,16 @@ export class AvatarsController {
     }
 
     // Delete avatar file if exists
-    if (employee.avatarUrl) {
-      await this.avatarsService.deleteAvatar(employee.avatarUrl);
+    if (employee.avatarPath || employee.avatarUrl) {
+      await this.avatarsService.deleteAvatar(
+        employee.avatarPath ?? employee.avatarUrl ?? '',
+      );
     }
 
     // Update employee record
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { avatarUrl: null },
+      data: { avatarPath: null, avatarUrl: null },
     });
 
     return { success: true };
@@ -155,8 +160,9 @@ export class AvatarsController {
     }
 
     // Save new logo
-    const logoUrl = await this.avatarsService.saveAvatar(
+    const { avatarUrl: logoUrl } = await this.avatarsService.saveAvatar(
       file.buffer,
+      user.organisationId,
       'organisations',
       user.organisationId,
       file.originalname,
