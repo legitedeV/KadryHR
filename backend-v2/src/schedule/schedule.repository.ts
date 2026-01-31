@@ -8,7 +8,15 @@ export class ScheduleRepository {
 
   private sanitizeIds(ids: Array<string | null | undefined>) {
     return ids.filter(
-      (id): id is string => typeof id === 'string' && id.trim() !== '',
+      (id): id is string => {
+        if (typeof id !== 'string') {
+          return false;
+        }
+        const trimmed = id.trim();
+        return (
+          trimmed !== '' && trimmed !== 'undefined' && trimmed !== 'null'
+        );
+      },
     );
   }
 

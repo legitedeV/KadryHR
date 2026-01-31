@@ -186,6 +186,103 @@ export class OAuthService {
     });
   }
 
+  private sanitizeErrorMessage(message?: string) {
+    if (!message) {
+      return message;
+    }
+    return message
+      .replace(
+        /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+        '[redacted-email]',
+      )
+      .replace(
+        /\b(code|state|token|client_secret)=([^\s&]+)/gi,
+        '$1=[redacted]',
+      );
+  }
+
+  private sanitizePrismaMeta(meta: Prisma.PrismaClientKnownRequestError['meta']) {
+    if (!meta || typeof meta !== 'object') {
+      return meta;
+    }
+
+    const sanitizeValue = (value: unknown): unknown => {
+      if (typeof value === 'string') {
+        return this.sanitizeErrorMessage(value);
+      }
+      if (Array.isArray(value)) {
+        return value.map((item) => sanitizeValue(item));
+      }
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(
+          Object.entries(value).map(([key, nested]) => [
+            key,
+            sanitizeValue(nested),
+          ]),
+        );
+      }
+      return value;
+    };
+
+    return sanitizeValue(meta);
+  }
+
+  private mapOAuthDbError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return { status: HttpStatus.CONFLICT, code: 'oauth_user_conflict' };
+      }
+      if (error.code === 'P2003') {
+        return { status: HttpStatus.CONFLICT, code: 'oauth_fk_missing' };
+      }
+      if (error.code === 'P2025') {
+        return { status: HttpStatus.NOT_FOUND, code: 'oauth_record_missing' };
+      }
+    }
+
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'oauth_db_failed' };
+  }
+
+  private logOAuthDbError(
+    error: unknown,
+    context: { requestId: string; provider: OAuthProvider },
+  ) {
+    const errorClass =
+      error instanceof Error ? error.constructor.name : typeof error;
+    const basePayload = { ...context, errorClass };
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      this.logger.error(
+        'OAuth user persistence failed',
+        JSON.stringify({
+          ...basePayload,
+          prismaCode: error.code,
+          meta: this.sanitizePrismaMeta(error.meta),
+        }),
+      );
+    } else if (error instanceof Prisma.PrismaClientValidationError) {
+      this.logger.error(
+        'OAuth user persistence failed',
+        JSON.stringify({
+          ...basePayload,
+          prismaValidationMessage: this.sanitizeErrorMessage(error.message),
+        }),
+      );
+    } else {
+      this.logger.error(
+        'OAuth user persistence failed',
+        JSON.stringify(basePayload),
+      );
+    }
+
+    if (error instanceof Error && error.stack) {
+      this.logger.error(
+        'OAuth user persistence stack',
+        this.sanitizeErrorMessage(error.stack),
+      );
+    }
+  }
+
   private parseProviderError(body: string) {
     try {
       const parsed = JSON.parse(body) as Record<string, unknown>;
@@ -450,36 +547,12 @@ export class OAuthService {
       userId = user.id;
       await this.authService.createSessionForUser(user.id, res);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        const payload = {
-          requestId,
-          provider,
-          code: error.code,
-          meta: error.meta,
-        };
-        this.logger.error(
-          `OAuth user persistence failed`,
-          JSON.stringify(payload),
-        );
-        if (error.code === 'P2002') {
-          return this.sendOAuthError(
-            res,
-            HttpStatus.CONFLICT,
-            'oauth_user_conflict',
-            requestId,
-            { provider },
-          );
-        }
-      } else {
-        this.logger.error(
-          `OAuth user persistence failed`,
-          JSON.stringify({ requestId, provider }),
-        );
-      }
+      this.logOAuthDbError(error, { requestId, provider });
+      const mapped = this.mapOAuthDbError(error);
       return this.sendOAuthError(
         res,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        'oauth_db_failed',
+        mapped.status,
+        mapped.code,
         requestId,
         { provider },
       );
@@ -643,39 +716,35 @@ export class OAuthService {
           return { user: updatedUser, createdOrganisationId: null };
         }
 
+        let createdOrganisationId: string | null = null;
         const existingUser = await tx.user.findUnique({
           where: { email: profile.email },
+          select: { id: true, organisationId: true },
         });
-
-        let createdOrganisationId: string | null = null;
-        let user = existingUser;
-
-        if (!user) {
-          const { organisationId, created } =
-            await this.resolveDefaultOrganisationId(tx);
-          createdOrganisationId = created ? organisationId : null;
-
-          user = await tx.user.create({
-            data: {
-              email: profile.email,
-              passwordHash,
-              role: Role.OWNER,
-              organisationId,
-              firstName: resolvedNames.firstName ?? undefined,
-              lastName: resolvedNames.lastName ?? undefined,
-              avatarUrl: profile.avatarUrl ?? undefined,
-            },
-          });
-        } else {
-          user = await tx.user.update({
-            where: { id: user.id },
-            data: {
-              firstName: resolvedNames.firstName ?? undefined,
-              lastName: resolvedNames.lastName ?? undefined,
-              avatarUrl: profile.avatarUrl ?? undefined,
-            },
-          });
+        let organisationId = existingUser?.organisationId;
+        if (!organisationId) {
+          const resolved = await this.resolveDefaultOrganisationId(tx);
+          organisationId = resolved.organisationId;
+          createdOrganisationId = resolved.created ? resolved.organisationId : null;
         }
+
+        const user = await tx.user.upsert({
+          where: { email: profile.email },
+          create: {
+            email: profile.email,
+            passwordHash,
+            role: Role.OWNER,
+            organisationId,
+            firstName: resolvedNames.firstName ?? undefined,
+            lastName: resolvedNames.lastName ?? undefined,
+            avatarUrl: profile.avatarUrl ?? undefined,
+          },
+          update: {
+            firstName: resolvedNames.firstName ?? undefined,
+            lastName: resolvedNames.lastName ?? undefined,
+            avatarUrl: profile.avatarUrl ?? undefined,
+          },
+        });
 
         await tx.oauthAccount.upsert({
           where: {
