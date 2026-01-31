@@ -17,6 +17,10 @@ class EnvironmentVariables {
   @IsString()
   APP_PORT?: string;
 
+  @IsOptional()
+  @IsString()
+  PUBLIC_BASE_URL?: string;
+
   @IsString()
   @IsNotEmpty()
   JWT_ACCESS_SECRET!: string;
@@ -32,6 +36,26 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   JWT_REFRESH_TTL?: string;
+
+  @IsOptional()
+  @IsString()
+  GOOGLE_CLIENT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  GOOGLE_CLIENT_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  MICROSOFT_CLIENT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  MICROSOFT_CLIENT_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  MICROSOFT_TENANT_ID?: string;
 
   @IsOptional()
   @IsNumber()

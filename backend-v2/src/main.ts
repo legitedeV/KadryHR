@@ -7,6 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.enableShutdownHooks();
+  app.set('trust proxy', 1);
   app.use(helmet());
 
   const baseOrigins = ['https://kadryhr.pl', 'http://localhost:3000'];

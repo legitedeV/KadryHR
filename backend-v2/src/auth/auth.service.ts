@@ -200,11 +200,36 @@ export class AuthService {
     res.cookie('refreshToken', token, {
       httpOnly: true,
       secure,
-      sameSite: secure ? 'none' : 'lax',
+      sameSite: 'lax',
       domain: secure ? '.kadryhr.pl' : undefined,
       maxAge: maxAgeMs || undefined,
-      path: '/api/auth',
+      path: '/',
     });
+  }
+
+  async createSessionForUser(userId: string, res: Response) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    await this.ensureEmployeeAccess(user.id, user.organisationId);
+    const payload = this.buildUserPayload(user);
+    const { accessToken, refreshToken, refreshTokenTtl } =
+      await this.signTokens(payload);
+
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshTokenHash },
+    });
+
+    this.attachRefreshTokenCookie(res, refreshToken, refreshTokenTtl);
+
+    return {
+      accessToken,
+      user: await this.buildSafeUser(user.id),
+    };
   }
 
   async login(email: string, password: string, res: Response) {
