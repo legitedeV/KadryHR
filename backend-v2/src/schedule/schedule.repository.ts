@@ -85,6 +85,24 @@ export class ScheduleRepository {
     return this.prisma.shift.create({ data });
   }
 
+  findOverlappingShift(
+    organisationId: string,
+    employeeId: string,
+    startAt: Date,
+    endAt: Date,
+  ) {
+    return this.prisma.shift.findFirst({
+      where: {
+        organisationId,
+        employeeId,
+        deletedAt: null,
+        startsAt: { lt: endAt },
+        endsAt: { gt: startAt },
+      },
+      select: { id: true, startsAt: true, endsAt: true },
+    });
+  }
+
   createShifts(data: Prisma.ShiftCreateManyInput[]) {
     return this.prisma.shift.createMany({ data });
   }
