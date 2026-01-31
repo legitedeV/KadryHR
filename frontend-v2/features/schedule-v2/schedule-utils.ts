@@ -44,6 +44,11 @@ export function formatDayLabel(date: Date) {
   return new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short" }).format(date);
 }
 
+export function formatWeekdayLabel(date: Date) {
+  const index = (date.getDay() + 6) % 7;
+  return WEEKDAY_LABELS[index];
+}
+
 export function formatShortRangeLabel(from: Date, to: Date) {
   const formatter = new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "2-digit" });
   return `${formatter.format(from)} - ${formatter.format(to)}`;
