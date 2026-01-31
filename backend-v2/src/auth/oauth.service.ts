@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
 import { Response, Request } from 'express';
 import { randomBytes, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
 
 const DEFAULT_PUBLIC_BASE_URL = 'https://kadryhr.pl';
@@ -450,10 +450,32 @@ export class OAuthService {
       userId = user.id;
       await this.authService.createSessionForUser(user.id, res);
     } catch (error) {
-      this.logger.error(
-        `OAuth user persistence failed`,
-        JSON.stringify({ requestId, provider }),
-      );
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        const payload = {
+          requestId,
+          provider,
+          code: error.code,
+          meta: error.meta,
+        };
+        this.logger.error(
+          `OAuth user persistence failed`,
+          JSON.stringify(payload),
+        );
+        if (error.code === 'P2002') {
+          return this.sendOAuthError(
+            res,
+            HttpStatus.CONFLICT,
+            'oauth_user_conflict',
+            requestId,
+            { provider },
+          );
+        }
+      } else {
+        this.logger.error(
+          `OAuth user persistence failed`,
+          JSON.stringify({ requestId, provider }),
+        );
+      }
       return this.sendOAuthError(
         res,
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -521,24 +543,6 @@ export class OAuthService {
     } satisfies OAuthProfile;
   }
 
-  private deriveOrganisationName(profile: OAuthProfile) {
-    const emailDomain = profile.email.split('@')[1];
-    const nameParts = [profile.firstName, profile.lastName]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-
-    if (nameParts) {
-      return `${nameParts} - KadryHR`;
-    }
-
-    if (emailDomain) {
-      return `${emailDomain} - KadryHR`;
-    }
-
-    return 'KadryHR';
-  }
-
   private resolveProfileNames(profile: OAuthProfile) {
     const fallbackSeed = profile.email.split('@')[0] || 'KadryHR';
     const [firstCandidate, ...rest] = fallbackSeed
@@ -553,6 +557,39 @@ export class OAuthService {
     };
   }
 
+  private async resolveDefaultOrganisationId(
+    tx: Prisma.TransactionClient,
+  ) {
+    const configuredId =
+      this.configService.get<string>('DEFAULT_ORGANISATION_ID');
+    if (configuredId) {
+      const configured = await tx.organisation.findUnique({
+        where: { id: configuredId },
+      });
+      if (configured) {
+        return { organisationId: configured.id, created: false };
+      }
+      this.logger.warn(
+        `Default organisation id not found`,
+        JSON.stringify({ organisationId: configuredId }),
+      );
+    }
+
+    const defaultOrgName = 'Default';
+    const existingDefault = await tx.organisation.findFirst({
+      where: { name: defaultOrgName },
+    });
+    if (existingDefault) {
+      return { organisationId: existingDefault.id, created: false };
+    }
+
+    const organisation = await tx.organisation.create({
+      data: { name: defaultOrgName },
+    });
+
+    return { organisationId: organisation.id, created: true };
+  }
+
   private async findOrCreateUser(
     provider: OAuthProvider,
     profile: OAuthProfile,
@@ -561,78 +598,125 @@ export class OAuthService {
       throw new BadRequestException('OAuth profile is missing identifier');
     }
 
-    const existingAccount = await this.prisma.oauthAccount.findUnique({
-      where: {
-        provider_providerAccountId: {
-          provider,
-          providerAccountId: profile.providerAccountId,
-        },
-      },
-      include: { user: true },
-    });
-
-    if (existingAccount?.user) {
-      return existingAccount.user;
-    }
-
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: profile.email },
-    });
-
-    if (existingUser) {
-      await this.prisma.oauthAccount.create({
-        data: {
-          provider,
-          providerAccountId: profile.providerAccountId,
-          userId: existingUser.id,
-        },
-      });
-      return existingUser;
-    }
-
-    const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
-    const organisationName = this.deriveOrganisationName(profile);
     const resolvedNames = this.resolveProfileNames(profile);
+    const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
 
-    const user = await this.prisma.$transaction(async (tx) => {
-      const organisation = await tx.organisation.create({
-        data: { name: organisationName },
-      });
+    const { user, createdOrganisationId } = await this.prisma.$transaction(
+      async (tx) => {
+        const existingAccount = await tx.oauthAccount.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider,
+              providerAccountId: profile.providerAccountId,
+            },
+          },
+          include: { user: true },
+        });
 
-      const user = await tx.user.create({
-        data: {
-          email: profile.email,
-          passwordHash,
-          role: Role.OWNER,
-          organisationId: organisation.id,
-          firstName: resolvedNames.firstName ?? undefined,
-          lastName: resolvedNames.lastName ?? undefined,
-          avatarUrl: profile.avatarUrl ?? undefined,
-        },
-      });
+        if (existingAccount?.user) {
+          const updatedUser = await tx.user.update({
+            where: { id: existingAccount.user.id },
+            data: {
+              email: profile.email,
+              firstName: resolvedNames.firstName ?? undefined,
+              lastName: resolvedNames.lastName ?? undefined,
+              avatarUrl: profile.avatarUrl ?? undefined,
+            },
+          });
 
-      await tx.employee.create({
-        data: {
-          organisationId: organisation.id,
-          userId: user.id,
-          firstName: resolvedNames.firstName,
-          lastName: resolvedNames.lastName,
-          email: profile.email,
-        },
-      });
+          await tx.employee.upsert({
+            where: { userId: updatedUser.id },
+            create: {
+              organisationId: updatedUser.organisationId,
+              userId: updatedUser.id,
+              firstName: resolvedNames.firstName,
+              lastName: resolvedNames.lastName,
+              email: profile.email,
+            },
+            update: {
+              firstName: resolvedNames.firstName,
+              lastName: resolvedNames.lastName,
+              email: profile.email,
+            },
+          });
 
-      await tx.oauthAccount.create({
-        data: {
-          provider,
-          providerAccountId: profile.providerAccountId,
-          userId: user.id,
-        },
-      });
+          return { user: updatedUser, createdOrganisationId: null };
+        }
 
-      return user;
-    });
+        const existingUser = await tx.user.findUnique({
+          where: { email: profile.email },
+        });
 
-    await this.shiftPresetsService.createDefaultPresets(user.organisationId);
+        let createdOrganisationId: string | null = null;
+        let user = existingUser;
+
+        if (!user) {
+          const { organisationId, created } =
+            await this.resolveDefaultOrganisationId(tx);
+          createdOrganisationId = created ? organisationId : null;
+
+          user = await tx.user.create({
+            data: {
+              email: profile.email,
+              passwordHash,
+              role: Role.OWNER,
+              organisationId,
+              firstName: resolvedNames.firstName ?? undefined,
+              lastName: resolvedNames.lastName ?? undefined,
+              avatarUrl: profile.avatarUrl ?? undefined,
+            },
+          });
+        } else {
+          user = await tx.user.update({
+            where: { id: user.id },
+            data: {
+              firstName: resolvedNames.firstName ?? undefined,
+              lastName: resolvedNames.lastName ?? undefined,
+              avatarUrl: profile.avatarUrl ?? undefined,
+            },
+          });
+        }
+
+        await tx.oauthAccount.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider,
+              providerAccountId: profile.providerAccountId,
+            },
+          },
+          create: {
+            provider,
+            providerAccountId: profile.providerAccountId,
+            userId: user.id,
+          },
+          update: {
+            userId: user.id,
+          },
+        });
+
+        await tx.employee.upsert({
+          where: { userId: user.id },
+          create: {
+            organisationId: user.organisationId,
+            userId: user.id,
+            firstName: resolvedNames.firstName,
+            lastName: resolvedNames.lastName,
+            email: profile.email,
+          },
+          update: {
+            firstName: resolvedNames.firstName,
+            lastName: resolvedNames.lastName,
+            email: profile.email,
+          },
+        });
+
+        return { user, createdOrganisationId };
+      },
+    );
+
+    if (createdOrganisationId) {
+      await this.shiftPresetsService.createDefaultPresets(createdOrganisationId);
+    }
 
     return user;
   }

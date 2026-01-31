@@ -16,7 +16,10 @@ export class ScheduleRepository {
     return this.prisma.shift.findMany(params);
   }
 
-  findPeriodsByIds(organisationId: string, periodIds: string[]) {
+  findPeriodsByIds(
+    organisationId: string,
+    periodIds: Array<string | null | undefined>,
+  ) {
     const sanitizedIds = this.sanitizeIds(periodIds);
     if (sanitizedIds.length === 0) {
       return Promise.resolve([]);
