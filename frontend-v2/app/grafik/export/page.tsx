@@ -1,10 +1,14 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
 import { ScheduleExportView } from "@/features/schedule-v2/ScheduleExportView";
 
-export default function GrafikExportPage() {
-  const searchParams = useSearchParams();
-  const month = searchParams.get("month");
-  return <ScheduleExportView month={month} />;
+export const dynamic = "force-dynamic";
+
+type GrafikExportPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function GrafikExportPage({ searchParams }: GrafikExportPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const monthParam = resolvedSearchParams?.month;
+  const month = Array.isArray(monthParam) ? monthParam[0] : monthParam;
+  return <ScheduleExportView month={month ?? null} />;
 }

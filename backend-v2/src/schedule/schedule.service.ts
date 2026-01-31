@@ -796,8 +796,11 @@ export class ScheduleService {
     organisationId: string,
     ...periodIds: string[]
   ) {
-    if (periodIds.length === 0) return;
-    const uniqueIds = Array.from(new Set(periodIds));
+    const filteredIds = periodIds.filter(
+      (periodId): periodId is string => Boolean(periodId),
+    );
+    if (filteredIds.length === 0) return;
+    const uniqueIds = Array.from(new Set(filteredIds));
     const periods = await this.scheduleRepository.findPeriodsByIds(
       organisationId,
       uniqueIds,
