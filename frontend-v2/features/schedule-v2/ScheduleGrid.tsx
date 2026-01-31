@@ -1,6 +1,7 @@
 "use client";
 
 import { AvailabilityRecord, ApprovedLeaveRecord, EmployeeRecord, ShiftRecord } from "@/lib/api";
+import { EmployeeInline } from "./EmployeeInline";
 import {
   WEEKDAY_LABELS,
   buildCellKey,
@@ -150,14 +151,11 @@ export function ScheduleGrid({
               key={employee.id}
               className="grid grid-cols-[240px_repeat(7,minmax(150px,1fr))] border-b border-surface-200"
             >
-              <div className="sticky left-0 z-10 flex items-center gap-3 border-r border-surface-200 bg-white px-4 py-4">
-                <div className="h-9 w-9 rounded-md bg-surface-100" />
-                <div>
-                  <p className="text-sm font-semibold text-surface-800">
-                    {employee.firstName} {employee.lastName}
-                  </p>
-                  <p className="text-xs text-surface-500">{employee.position ?? "Stanowisko"}</p>
-                </div>
+              <div className="sticky left-0 z-10 flex items-center border-r border-surface-200 bg-white px-4 py-4">
+                <EmployeeInline
+                  employee={employee}
+                  subtitle={employee.position ?? employee.email ?? null}
+                />
               </div>
               {days.map((day, dayIndex) => {
                 const dateKey = formatDateKey(day.date);

@@ -18,8 +18,12 @@ export class EmployeesService {
   ) {}
 
   private mapEmployeeAvatar<
-    T extends { avatarPath?: string | null; avatarUrl?: string | null },
-  >(employee: T): Omit<T, 'avatarPath'> {
+    T extends {
+      avatarPath?: string | null;
+      avatarUrl?: string | null;
+      updatedAt?: Date | string | null;
+    },
+  >(employee: T): Omit<T, 'avatarPath'> & { avatarUpdatedAt?: Date | string | null } {
     const { avatarPath, ...rest } = employee;
     return {
       ...(rest as Omit<T, 'avatarPath'>),
@@ -27,6 +31,7 @@ export class EmployeesService {
         avatarPath ?? null,
         employee.avatarUrl ?? null,
       ),
+      avatarUpdatedAt: employee.updatedAt ?? null,
     };
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { EmployeeRecord, ShiftRecord } from "@/lib/api";
+import { EmployeeInline } from "./EmployeeInline";
 import { formatDateKey, formatDayLabel } from "./schedule-utils";
 
 type SummaryEntry = { employeeId: string; employeeName: string; hours: number };
@@ -29,6 +30,7 @@ export function ScheduleSummaryPanel({
   const employeesWithoutShifts = employees.filter(
     (employee) => !(employeeShiftCounts.get(employee.id) ?? 0),
   );
+  const employeesById = new Map(employees.map((employee) => [employee.id, employee]));
 
   const dayCoverage = weekDays.map((day) => {
     const dayKey = formatDateKey(day);
@@ -62,12 +64,21 @@ export function ScheduleSummaryPanel({
             {summary.length === 0 && (
               <p className="text-xs text-surface-400">Brak danych do podsumowania.</p>
             )}
-            {summary.map((entry) => (
-              <div key={entry.employeeId} className="flex items-center justify-between text-xs text-surface-200">
-                <span>{entry.employeeName}</span>
-                <span className="font-semibold text-surface-50">{entry.hours.toFixed(1)} h</span>
-              </div>
-            ))}
+            {summary.map((entry) => {
+              const employee = employeesById.get(entry.employeeId);
+              return (
+                <div key={entry.employeeId} className="flex items-center justify-between gap-3 text-xs text-surface-200">
+                  <EmployeeInline
+                    employee={employee ?? undefined}
+                    name={employee ? undefined : entry.employeeName}
+                    size="sm"
+                    nameClassName="text-xs text-surface-200"
+                    subtitleClassName="text-[11px] text-surface-400"
+                  />
+                  <span className="font-semibold text-surface-50">{entry.hours.toFixed(1)} h</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 

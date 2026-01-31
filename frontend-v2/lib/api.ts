@@ -38,6 +38,7 @@ export interface ShiftRecord {
     firstName?: string | null;
     lastName?: string | null;
     avatarUrl?: string | null;
+    avatarUpdatedAt?: string | null;
   };
   location?: { id?: string; name?: string | null };
   availabilityWarning?: string | null;
@@ -60,6 +61,14 @@ export interface ScheduleShiftRecord {
   status?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  employee?: {
+    id?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    avatarUrl?: string | null;
+    avatarUpdatedAt?: string | null;
+  };
 }
 
 export interface ScheduleShiftPayload {
@@ -250,6 +259,7 @@ export interface EmployeeRecord {
   firstName: string;
   lastName: string;
   avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
   email?: string | null;
   phone?: string | null;
   position?: string | null;
@@ -864,6 +874,7 @@ interface EmployeeResponse {
   firstName?: string | null;
   lastName?: string | null;
   avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
   email?: string | null;
   phone?: string | null;
   position?: string | null;
@@ -922,6 +933,7 @@ function mapEmployee(employee: EmployeeResponse): EmployeeRecord {
     firstName: employee.firstName ?? "",
     lastName: employee.lastName ?? "",
     avatarUrl: employee.avatarUrl ?? undefined,
+    avatarUpdatedAt: employee.avatarUpdatedAt ?? undefined,
     email: employee.email ?? undefined,
     phone: employee.phone ?? undefined,
     position: employee.position ?? undefined,
