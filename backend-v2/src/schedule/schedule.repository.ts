@@ -6,15 +6,25 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ScheduleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private sanitizeIds(ids: Array<string | null | undefined>) {
+    return ids.filter(
+      (id): id is string => typeof id === 'string' && id.trim() !== '',
+    );
+  }
+
   findShifts(params: Prisma.ShiftFindManyArgs) {
     return this.prisma.shift.findMany(params);
   }
 
   findPeriodsByIds(organisationId: string, periodIds: string[]) {
+    const sanitizedIds = this.sanitizeIds(periodIds);
+    if (sanitizedIds.length === 0) {
+      return Promise.resolve([]);
+    }
     return this.prisma.schedulePeriod.findMany({
       where: {
         organisationId,
-        id: { in: periodIds },
+        id: { in: sanitizedIds },
       },
       select: { id: true, status: true },
     });
