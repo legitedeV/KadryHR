@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, type PointerEvent, type SyntheticEvent } from "react";
 import {
   apiGetMe,
   apiGetProfile,
@@ -12,6 +12,9 @@ import {
   UserProfile,
 } from "@/lib/api";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api-client";
+import { type CropArea, getCroppedImageBlob } from "@/lib/image-crop";
 import { useRouter } from "next/navigation";
 import { pushToast } from "@/lib/toast";
 import { Avatar } from "@/components/Avatar";
@@ -19,6 +22,7 @@ import { Modal } from "@/components/Modal";
 
 export default function ProfilPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const hasSession = useMemo(() => !!getAccessToken(), []);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -32,8 +36,21 @@ export default function ProfilPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropArea | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const cropContainerRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  const [containerSize, setContainerSize] = useState(0);
+  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
 
   // Change password state
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -115,6 +132,27 @@ export default function ProfilPage() {
     };
   }, [avatarPreview]);
 
+  const resetAvatarSelection = useCallback(() => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setCroppedAreaPixels(null);
+    setZoom(1);
+    setCropOffset({ x: 0, y: 0 });
+    setImageSize(null);
+    setContainerSize(0);
+    setAvatarEditorOpen(false);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+    }
+  }, []);
+
+  const buildAvatarUrl = useCallback((url?: string | null, updatedAt?: string | null) => {
+    if (!url) return url ?? null;
+    const version = updatedAt ? new Date(updatedAt).getTime() : Date.now();
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}v=${version}`;
+  }, []);
+
   const handleAvatarSelect = useCallback((file?: File) => {
     if (!file) return;
     const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
@@ -140,29 +178,41 @@ export default function ProfilPage() {
 
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+    setImageSize(null);
+    setCropOffset({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setAvatarEditorOpen(true);
   }, []);
 
   const handleAvatarUpload = useCallback(async () => {
-    if (!avatarFile) return;
+    if (!avatarFile || !avatarPreview || !croppedAreaPixels) return;
     setUploadingAvatar(true);
     try {
-      const response = await apiUploadAvatar(avatarFile);
+      const croppedBlob = await getCroppedImageBlob(avatarPreview, croppedAreaPixels, {
+        outputSize: 512,
+        mimeType: "image/jpeg",
+        quality: 0.85,
+      });
+      const croppedFile = new File([croppedBlob], "avatar.jpg", { type: croppedBlob.type });
+      const response = await apiUploadAvatar(croppedFile);
       setProfile((prev) => {
         if (!prev) return prev;
         if (response.profile) {
-          return response.profile;
+          return {
+            ...response.profile,
+            avatarUrl: buildAvatarUrl(response.profile.avatarUrl, response.avatarUpdatedAt ?? response.profile.avatarUpdatedAt),
+            avatarUpdatedAt: response.avatarUpdatedAt ?? response.profile.avatarUpdatedAt,
+          };
         }
         return {
           ...prev,
-          avatarUrl: response.avatarUrl,
+          avatarUrl: buildAvatarUrl(response.avatarUrl, response.avatarUpdatedAt ?? prev.avatarUpdatedAt),
           avatarUpdatedAt: response.avatarUpdatedAt ?? prev.avatarUpdatedAt,
         };
       });
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      if (avatarInputRef.current) {
-        avatarInputRef.current.value = "";
-      }
+      await refresh();
+      resetAvatarSelection();
       pushToast({
         title: "Sukces",
         description: "Zdjęcie profilowe zostało zaktualizowane",
@@ -170,15 +220,130 @@ export default function ProfilPage() {
       });
     } catch (err) {
       console.error(err);
+      let description = "Nie udało się przesłać avatara";
+      if (err instanceof ApiError) {
+        if (err.status === 401 || err.status === 403) {
+          description = "Sesja wygasła, zaloguj się ponownie.";
+        } else if (err.status === 413) {
+          description = "Plik jest za duży.";
+        } else if (err.status === 415) {
+          description = "Nieobsługiwany format pliku.";
+        } else if (err.status === 500) {
+          description = err.message ? `Błąd serwera: ${err.message}` : "Wystąpił błąd serwera.";
+        } else if (err.message) {
+          description = err.message;
+        }
+      }
       pushToast({
         title: "Błąd",
-        description: "Nie udało się przesłać avatara",
+        description,
         variant: "error",
       });
     } finally {
       setUploadingAvatar(false);
     }
-  }, [avatarFile]);
+  }, [avatarFile, avatarPreview, buildAvatarUrl, croppedAreaPixels, refresh, resetAvatarSelection]);
+
+  const handleAvatarCancel = useCallback(() => {
+    if (uploadingAvatar) return;
+    resetAvatarSelection();
+  }, [resetAvatarSelection, uploadingAvatar]);
+
+  useEffect(() => {
+    if (!avatarEditorOpen) return;
+    const updateSize = () => {
+      if (cropContainerRef.current) {
+        setContainerSize(cropContainerRef.current.clientWidth);
+      }
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, [avatarEditorOpen]);
+
+  const baseScale = useMemo(() => {
+    if (!imageSize || !containerSize) return 1;
+    return Math.max(containerSize / imageSize.width, containerSize / imageSize.height);
+  }, [containerSize, imageSize]);
+
+  const clampOffset = useCallback(
+    (value: { x: number; y: number }, nextZoom = zoom) => {
+      if (!imageSize || !containerSize) return value;
+      const scaledWidth = imageSize.width * baseScale * nextZoom;
+      const scaledHeight = imageSize.height * baseScale * nextZoom;
+      const maxX = Math.max(0, (scaledWidth - containerSize) / 2);
+      const maxY = Math.max(0, (scaledHeight - containerSize) / 2);
+      return {
+        x: Math.min(maxX, Math.max(-maxX, value.x)),
+        y: Math.min(maxY, Math.max(-maxY, value.y)),
+      };
+    },
+    [baseScale, containerSize, imageSize, zoom],
+  );
+
+  useEffect(() => {
+    setCropOffset((value) => clampOffset(value, zoom));
+  }, [clampOffset, zoom]);
+
+  useEffect(() => {
+    if (!imageSize || !containerSize) return;
+    const scaledWidth = imageSize.width * baseScale * zoom;
+    const scaledHeight = imageSize.height * baseScale * zoom;
+    const centerX = containerSize / 2 + cropOffset.x;
+    const centerY = containerSize / 2 + cropOffset.y;
+    const imageX = centerX - scaledWidth / 2;
+    const imageY = centerY - scaledHeight / 2;
+
+    const cropX = Math.max(0, ((0 - imageX) / scaledWidth) * imageSize.width);
+    const cropY = Math.max(0, ((0 - imageY) / scaledHeight) * imageSize.height);
+    const cropWidth = Math.min(imageSize.width - cropX, (containerSize / scaledWidth) * imageSize.width);
+    const cropHeight = Math.min(imageSize.height - cropY, (containerSize / scaledHeight) * imageSize.height);
+
+    setCroppedAreaPixels({
+      x: cropX,
+      y: cropY,
+      width: cropWidth,
+      height: cropHeight,
+    });
+  }, [baseScale, containerSize, cropOffset, imageSize, zoom]);
+
+  const handlePointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!imageSize) return;
+      event.preventDefault();
+      dragStateRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: cropOffset.x,
+        originY: cropOffset.y,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [cropOffset.x, cropOffset.y, imageSize],
+  );
+
+  const handlePointerMove = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!dragStateRef.current) return;
+      const next = {
+        x: dragStateRef.current.originX + (event.clientX - dragStateRef.current.startX),
+        y: dragStateRef.current.originY + (event.clientY - dragStateRef.current.startY),
+      };
+      setCropOffset(clampOffset(next));
+    },
+    [clampOffset],
+  );
+
+  const handlePointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    if (!dragStateRef.current) return;
+    dragStateRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }, []);
+
+  const handleImageLoad = useCallback((event: SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+  }, []);
 
   const handleChangePassword = useCallback(async () => {
     if (newPassword !== confirmPassword) {
@@ -336,8 +501,7 @@ export default function ProfilPage() {
               onClick={() => {
                 setFirstName(profile.firstName ?? "");
                 setLastName(profile.lastName ?? "");
-                setAvatarFile(null);
-                setAvatarPreview(null);
+                resetAvatarSelection();
                 setEditProfileOpen(true);
               }}
             >
@@ -514,10 +678,10 @@ export default function ProfilPage() {
                   <button
                     type="button"
                     className="btn-primary text-sm"
-                    onClick={handleAvatarUpload}
-                    disabled={!avatarFile || uploadingAvatar}
+                    onClick={() => setAvatarEditorOpen(true)}
+                    disabled={!avatarPreview || uploadingAvatar}
                   >
-                    {uploadingAvatar ? "Wysyłanie..." : "Wyślij"}
+                    {uploadingAvatar ? "Wysyłanie..." : "Edytuj"}
                   </button>
                 </div>
                 <p className="text-xs text-surface-500">
@@ -526,6 +690,94 @@ export default function ProfilPage() {
               </div>
             </div>
           </label>
+        </div>
+      </Modal>
+
+      <Modal
+        open={avatarEditorOpen}
+        title="Edytuj zdjęcie"
+        description="Dopasuj kadr i powiększenie"
+        onClose={handleAvatarCancel}
+        size="lg"
+        footer={
+          <>
+            <button className="btn-secondary" onClick={handleAvatarCancel} disabled={uploadingAvatar}>
+              Anuluj
+            </button>
+            <button
+              className="btn-primary"
+              onClick={handleAvatarUpload}
+              disabled={uploadingAvatar || !croppedAreaPixels}
+            >
+              {uploadingAvatar ? "Zapisywanie..." : "Zapisz"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-5">
+          <div
+            ref={cropContainerRef}
+            className="relative h-72 w-full overflow-hidden rounded-2xl border border-surface-800/60 bg-surface-950/70"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt="Podgląd avatara"
+                onLoad={handleImageLoad}
+                className="absolute left-1/2 top-1/2 max-w-none select-none"
+                style={{
+                  transform: `translate(-50%, -50%) translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${baseScale * zoom})`,
+                  transformOrigin: "center",
+                }}
+                draggable={false}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-surface-400">
+                Brak podglądu
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm text-surface-400">
+              <span>Powiększenie</span>
+              <span>{zoom.toFixed(1)}x</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="btn-secondary h-10 w-10 px-0 text-lg"
+                onClick={() => setZoom((value) => Math.max(1, Number((value - 0.2).toFixed(1))))}
+                disabled={uploadingAvatar}
+                aria-label="Zmniejsz"
+              >
+                −
+              </button>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(event) => setZoom(Number(event.target.value))}
+                className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-surface-800 accent-brand-500"
+                disabled={uploadingAvatar}
+              />
+              <button
+                type="button"
+                className="btn-secondary h-10 w-10 px-0 text-lg"
+                onClick={() => setZoom((value) => Math.min(3, Number((value + 0.2).toFixed(1))))}
+                disabled={uploadingAvatar}
+                aria-label="Powiększ"
+              >
+                +
+              </button>
+            </div>
+          </div>
         </div>
       </Modal>
 
