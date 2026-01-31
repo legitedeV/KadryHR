@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ArrowRight, Phone } from "lucide-react";
 
 export function HeroSection() {
   return (
@@ -18,15 +19,17 @@ export function HeroSection() {
           <div className="flex flex-wrap items-center gap-4">
             <a
               href="#kontakt"
-              className="rounded-full bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+              className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
             >
+              <Phone className="h-4 w-4" aria-hidden="true" />
               Skontaktuj się
             </a>
             <a
               href="#uslugi"
-              className="rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
             >
               Nasza oferta
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
           </div>
           <div className="grid gap-4 text-sm text-slate-600 sm:grid-cols-3">
