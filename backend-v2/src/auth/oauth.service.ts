@@ -3,12 +3,13 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { Response, Request } from 'express';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
@@ -31,6 +32,8 @@ interface OAuthProfile {
 
 @Injectable()
 export class OAuthService {
+  private readonly logger = new Logger(OAuthService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
@@ -141,13 +144,22 @@ export class OAuthService {
     return `oauth_redirect_${provider}`;
   }
 
+  private createRequestId() {
+    return randomUUID();
+  }
+
+  private isValidRedirectPath(redirect: string) {
+    const trimmed = redirect.trim();
+    return /^\/(?!\/)/.test(trimmed);
+  }
+
   private resolveRedirectPath(redirect?: string) {
     if (!redirect) {
       return DEFAULT_REDIRECT_PATH;
     }
 
     const trimmed = redirect.trim();
-    if (/^\/(?!\/)/.test(trimmed)) {
+    if (this.isValidRedirectPath(trimmed)) {
       return trimmed;
     }
 
@@ -158,16 +170,64 @@ export class OAuthService {
     return `${this.getFrontendBaseUrl()}${DEFAULT_OAUTH_ERROR_PATH}`;
   }
 
+  private sendOAuthError(
+    res: Response,
+    status: number,
+    code: string,
+    requestId: string,
+    extra?: Record<string, unknown>,
+  ) {
+    return res.status(status).json({
+      statusCode: status,
+      error: code,
+      message: code,
+      requestId,
+      ...extra,
+    });
+  }
+
+  private parseProviderError(body: string) {
+    try {
+      const parsed = JSON.parse(body) as Record<string, unknown>;
+      const error = typeof parsed.error === 'string' ? parsed.error : undefined;
+      const description =
+        typeof parsed.error_description === 'string'
+          ? parsed.error_description
+          : undefined;
+      if (error || description) {
+        return [error, description].filter(Boolean).join(': ');
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  }
+
   async start(provider: OAuthProvider, req: Request, res: Response) {
+    const requestId = this.createRequestId();
     const config = this.getProviderConfig(provider);
     if (!config.clientId || !config.clientSecret) {
       throw new BadRequestException('OAuth provider is not configured');
     }
 
+    const redirectParam =
+      typeof req.query.redirect === 'string' ? req.query.redirect : undefined;
+    if (redirectParam && !this.isValidRedirectPath(redirectParam)) {
+      this.logger.warn(
+        `Invalid OAuth redirect provided`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_invalid_redirect',
+        requestId,
+        { provider },
+      );
+    }
+
     const state = randomBytes(24).toString('hex');
-    const redirectPath = this.resolveRedirectPath(
-      typeof req.query.redirect === 'string' ? req.query.redirect : undefined,
-    );
+    const redirectPath = this.resolveRedirectPath(redirectParam);
 
     res.cookie(this.getStateCookieName(provider), state, {
       ...this.getCookieBaseOptions(),
@@ -191,13 +251,28 @@ export class OAuthService {
     }
 
     const url = `${config.authorizeUrl}?${params.toString()}`;
+    this.logger.log(
+      `OAuth start redirect issued`,
+      JSON.stringify({ requestId, provider }),
+    );
     return res.redirect(url);
   }
 
   async callback(provider: OAuthProvider, req: Request, res: Response) {
+    const requestId = this.createRequestId();
     const config = this.getProviderConfig(provider);
     if (!config.clientId || !config.clientSecret) {
-      throw new BadRequestException('OAuth provider is not configured');
+      this.logger.error(
+        `OAuth provider not configured`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_provider_not_configured',
+        requestId,
+        { provider },
+      );
     }
 
     const code =
@@ -220,8 +295,60 @@ export class OAuthService {
       this.getCookieBaseOptions(),
     );
 
-    if (!code || !state || !stateCookie || state !== stateCookie) {
-      throw new BadRequestException('Invalid OAuth state');
+    if (!code) {
+      this.logger.warn(
+        `OAuth callback missing code`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_missing_code',
+        requestId,
+        { provider },
+      );
+    }
+
+    if (!state) {
+      this.logger.warn(
+        `OAuth callback missing state param`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_missing_state_param',
+        requestId,
+        { provider },
+      );
+    }
+
+    if (!stateCookie) {
+      this.logger.warn(
+        `OAuth callback missing state cookie`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_missing_state_cookie',
+        requestId,
+        { provider },
+      );
+    }
+
+    if (state !== stateCookie) {
+      this.logger.warn(
+        `OAuth state mismatch`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_state_mismatch',
+        requestId,
+        { provider },
+      );
     }
 
     let tokens: { access_token?: string };
@@ -242,31 +369,117 @@ export class OAuthService {
         body: tokenParams.toString(),
       });
 
+      const tokenBody = await tokenResponse.text();
       if (!tokenResponse.ok) {
-        throw new Error('Token exchange failed');
+        const providerError = this.parseProviderError(tokenBody);
+        this.logger.warn(
+          `OAuth token exchange failed`,
+          JSON.stringify({ requestId, provider, providerError }),
+        );
+        return this.sendOAuthError(
+          res,
+          HttpStatus.BAD_GATEWAY,
+          'oauth_token_exchange_failed',
+          requestId,
+          { provider, providerError },
+        );
       }
 
-      tokens = (await tokenResponse.json()) as { access_token?: string };
-    } catch {
-      throw new HttpException(
-        'OAuth token exchange failed',
+      tokens = JSON.parse(tokenBody) as { access_token?: string };
+    } catch (error) {
+      this.logger.error(
+        `OAuth token exchange error`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
         HttpStatus.BAD_GATEWAY,
+        'oauth_token_exchange_failed',
+        requestId,
+        { provider },
       );
     }
 
     if (!tokens.access_token) {
-      throw new HttpException('OAuth token missing', HttpStatus.BAD_GATEWAY);
+      this.logger.warn(
+        `OAuth token missing access token`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_GATEWAY,
+        'oauth_token_exchange_failed',
+        requestId,
+        { provider },
+      );
     }
 
-    const profile = await this.fetchProfile(provider, tokens.access_token);
+    let profile: OAuthProfile;
+    try {
+      profile = await this.fetchProfile(provider, tokens.access_token);
+    } catch {
+      this.logger.error(
+        `OAuth userinfo fetch failed`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_GATEWAY,
+        'oauth_userinfo_failed',
+        requestId,
+        { provider },
+      );
+    }
     if (!profile.email || (provider === 'google' && !profile.emailVerified)) {
-      throw new BadRequestException('OAuth email is not verified');
+      this.logger.warn(
+        `OAuth email not verified`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_email_not_verified',
+        requestId,
+        { provider },
+      );
     }
 
-    const user = await this.findOrCreateUser(provider, profile);
-    await this.authService.createSessionForUser(user.id, res);
+    let userId: string;
+    try {
+      const user = await this.findOrCreateUser(provider, profile);
+      userId = user.id;
+      await this.authService.createSessionForUser(user.id, res);
+    } catch (error) {
+      this.logger.error(
+        `OAuth user persistence failed`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        'oauth_db_failed',
+        requestId,
+        { provider },
+      );
+    }
+
+    if (!redirectCookie) {
+      this.logger.warn(
+        `OAuth redirect cookie missing`,
+        JSON.stringify({ requestId, provider, userId }),
+      );
+    } else if (!this.isValidRedirectPath(redirectCookie)) {
+      this.logger.warn(
+        `OAuth redirect cookie invalid`,
+        JSON.stringify({ requestId, provider, userId }),
+      );
+    }
 
     const redirectPath = this.resolveRedirectPath(redirectCookie);
+    this.logger.log(
+      `OAuth callback success`,
+      JSON.stringify({ requestId, provider, userId }),
+    );
     return res.redirect(redirectPath);
   }
 
