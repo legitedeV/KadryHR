@@ -26,9 +26,9 @@ export class ScheduleRepository {
 
   findPeriodsByIds(
     organisationId: string,
-    periodIds: Array<string | null | undefined>,
+    periodIds?: Array<string | null | undefined>,
   ) {
-    const sanitizedIds = this.sanitizeIds(periodIds);
+    const sanitizedIds = this.sanitizeIds(periodIds ?? []);
     if (sanitizedIds.length === 0) {
       return Promise.resolve([]);
     }

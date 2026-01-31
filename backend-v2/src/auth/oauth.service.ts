@@ -125,6 +125,13 @@ export class OAuthService {
     };
   }
 
+  private resolveProvider(provider: string): OAuthProvider | null {
+    if (provider === 'google' || provider === 'microsoft') {
+      return provider;
+    }
+    return null;
+  }
+
   private getCookieBaseOptions() {
     const secure = this.configService.get<string>('NODE_ENV') === 'production';
     return {
@@ -201,6 +208,17 @@ export class OAuthService {
       );
   }
 
+  private decodeCookieValue(value: unknown) {
+    if (typeof value !== 'string' || value.length === 0) {
+      return undefined;
+    }
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return undefined;
+    }
+  }
+
   private sanitizePrismaMeta(meta: Prisma.PrismaClientKnownRequestError['meta']) {
     if (!meta || typeof meta !== 'object') {
       return meta;
@@ -228,6 +246,9 @@ export class OAuthService {
   }
 
   private mapOAuthDbError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientValidationError) {
+      return { status: HttpStatus.BAD_REQUEST, code: 'oauth_db_validation' };
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         return { status: HttpStatus.CONFLICT, code: 'oauth_user_conflict' };
@@ -249,7 +270,11 @@ export class OAuthService {
   ) {
     const errorClass =
       error instanceof Error ? error.constructor.name : typeof error;
-    const basePayload = { ...context, errorClass };
+    const message =
+      error instanceof Error
+        ? this.sanitizeErrorMessage(error.message)
+        : undefined;
+    const basePayload = { ...context, errorClass, message };
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       this.logger.error(
@@ -257,6 +282,7 @@ export class OAuthService {
         JSON.stringify({
           ...basePayload,
           prismaCode: error.code,
+          prismaMessage: message,
           meta: this.sanitizePrismaMeta(error.meta),
         }),
       );
@@ -300,9 +326,23 @@ export class OAuthService {
     return undefined;
   }
 
-  async start(provider: OAuthProvider, req: Request, res: Response) {
+  async start(provider: string, req: Request, res: Response) {
     const requestId = this.createRequestId();
-    const config = this.getProviderConfig(provider);
+    const resolvedProvider = this.resolveProvider(provider);
+    if (!resolvedProvider) {
+      this.logger.warn(
+        `OAuth unknown provider`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_unknown_provider',
+        requestId,
+        { provider },
+      );
+    }
+    const config = this.getProviderConfig(resolvedProvider);
     if (!config.clientId || !config.clientSecret) {
       throw new BadRequestException('OAuth provider is not configured');
     }
@@ -326,49 +366,63 @@ export class OAuthService {
     const state = randomBytes(24).toString('hex');
     const redirectPath = this.resolveRedirectPath(redirectParam);
 
-    res.cookie(this.getStateCookieName(provider), state, {
+    res.cookie(this.getStateCookieName(resolvedProvider), state, {
       ...this.getCookieBaseOptions(),
       maxAge: OAUTH_STATE_TTL_MS,
     });
-    res.cookie(this.getRedirectCookieName(provider), redirectPath, {
+    res.cookie(this.getRedirectCookieName(resolvedProvider), redirectPath, {
       ...this.getCookieBaseOptions(),
       maxAge: OAUTH_STATE_TTL_MS,
     });
 
     const params = new URLSearchParams({
       client_id: config.clientId,
-      redirect_uri: this.getRedirectUri(provider),
+      redirect_uri: this.getRedirectUri(resolvedProvider),
       response_type: 'code',
       scope: config.scopes.join(' '),
       state,
     });
 
-    if (provider === 'microsoft') {
+    if (resolvedProvider === 'microsoft') {
       params.set('response_mode', 'query');
     }
 
     const url = `${config.authorizeUrl}?${params.toString()}`;
     this.logger.log(
       `OAuth start redirect issued`,
-      JSON.stringify({ requestId, provider }),
+      JSON.stringify({ requestId, provider: resolvedProvider }),
     );
     return res.redirect(url);
   }
 
-  async callback(provider: OAuthProvider, req: Request, res: Response) {
+  async callback(provider: string, req: Request, res: Response) {
     const requestId = this.createRequestId();
-    const config = this.getProviderConfig(provider);
+    const resolvedProvider = this.resolveProvider(provider);
+    if (!resolvedProvider) {
+      this.logger.warn(
+        `OAuth unknown provider`,
+        JSON.stringify({ requestId, provider }),
+      );
+      return this.sendOAuthError(
+        res,
+        HttpStatus.BAD_REQUEST,
+        'oauth_unknown_provider',
+        requestId,
+        { provider },
+      );
+    }
+    const config = this.getProviderConfig(resolvedProvider);
     if (!config.clientId || !config.clientSecret) {
       this.logger.error(
         `OAuth provider not configured`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_REQUEST,
         'oauth_provider_not_configured',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
@@ -376,75 +430,75 @@ export class OAuthService {
       typeof req.query.code === 'string' ? req.query.code : undefined;
     const state =
       typeof req.query.state === 'string' ? req.query.state : undefined;
-    const stateCookie = req.cookies?.[this.getStateCookieName(provider)] as
-      | string
-      | undefined;
-    const redirectCookie = req.cookies?.[
-      this.getRedirectCookieName(provider)
-    ] as string | undefined;
+    const stateCookie = this.decodeCookieValue(
+      req.cookies?.[this.getStateCookieName(resolvedProvider)],
+    );
+    const redirectCookie = this.decodeCookieValue(
+      req.cookies?.[this.getRedirectCookieName(resolvedProvider)],
+    );
 
     res.clearCookie(
-      this.getStateCookieName(provider),
+      this.getStateCookieName(resolvedProvider),
       this.getCookieBaseOptions(),
     );
     res.clearCookie(
-      this.getRedirectCookieName(provider),
+      this.getRedirectCookieName(resolvedProvider),
       this.getCookieBaseOptions(),
     );
 
     if (!code) {
       this.logger.warn(
         `OAuth callback missing code`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_REQUEST,
         'oauth_missing_code',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     if (!state) {
       this.logger.warn(
         `OAuth callback missing state param`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_REQUEST,
         'oauth_missing_state_param',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     if (!stateCookie) {
       this.logger.warn(
         `OAuth callback missing state cookie`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_REQUEST,
         'oauth_missing_state_cookie',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     if (state !== stateCookie) {
       this.logger.warn(
         `OAuth state mismatch`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_REQUEST,
         'oauth_state_mismatch',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
@@ -455,7 +509,7 @@ export class OAuthService {
         client_secret: config.clientSecret,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: this.getRedirectUri(provider),
+        redirect_uri: this.getRedirectUri(resolvedProvider),
       });
 
       const tokenResponse = await fetch(config.tokenUrl, {
@@ -471,14 +525,14 @@ export class OAuthService {
         const providerError = this.parseProviderError(tokenBody);
         this.logger.warn(
           `OAuth token exchange failed`,
-          JSON.stringify({ requestId, provider, providerError }),
+          JSON.stringify({ requestId, provider: resolvedProvider, providerError }),
         );
         return this.sendOAuthError(
           res,
           HttpStatus.BAD_GATEWAY,
           'oauth_token_exchange_failed',
           requestId,
-          { provider, providerError },
+          { provider: resolvedProvider, providerError },
         );
       }
 
@@ -486,94 +540,97 @@ export class OAuthService {
     } catch (error) {
       this.logger.error(
         `OAuth token exchange error`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_GATEWAY,
         'oauth_token_exchange_failed',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     if (!tokens.access_token) {
       this.logger.warn(
         `OAuth token missing access token`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_GATEWAY,
         'oauth_token_exchange_failed',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     let profile: OAuthProfile;
     try {
-      profile = await this.fetchProfile(provider, tokens.access_token);
+      profile = await this.fetchProfile(resolvedProvider, tokens.access_token);
     } catch {
       this.logger.error(
         `OAuth userinfo fetch failed`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_GATEWAY,
         'oauth_userinfo_failed',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
-    if (!profile.email || (provider === 'google' && !profile.emailVerified)) {
+    if (
+      !profile.email ||
+      (resolvedProvider === 'google' && !profile.emailVerified)
+    ) {
       this.logger.warn(
         `OAuth email not verified`,
-        JSON.stringify({ requestId, provider }),
+        JSON.stringify({ requestId, provider: resolvedProvider }),
       );
       return this.sendOAuthError(
         res,
         HttpStatus.BAD_REQUEST,
         'oauth_email_not_verified',
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     let userId: string;
     try {
-      const user = await this.findOrCreateUser(provider, profile);
+      const user = await this.findOrCreateUser(resolvedProvider, profile);
       userId = user.id;
       await this.authService.createSessionForUser(user.id, res);
     } catch (error) {
-      this.logOAuthDbError(error, { requestId, provider });
+      this.logOAuthDbError(error, { requestId, provider: resolvedProvider });
       const mapped = this.mapOAuthDbError(error);
       return this.sendOAuthError(
         res,
         mapped.status,
         mapped.code,
         requestId,
-        { provider },
+        { provider: resolvedProvider },
       );
     }
 
     if (!redirectCookie) {
       this.logger.warn(
         `OAuth redirect cookie missing`,
-        JSON.stringify({ requestId, provider, userId }),
+        JSON.stringify({ requestId, provider: resolvedProvider, userId }),
       );
     } else if (!this.isValidRedirectPath(redirectCookie)) {
       this.logger.warn(
         `OAuth redirect cookie invalid`,
-        JSON.stringify({ requestId, provider, userId }),
+        JSON.stringify({ requestId, provider: resolvedProvider, userId }),
       );
     }
 
     const redirectPath = this.resolveRedirectPath(redirectCookie);
     this.logger.log(
       `OAuth callback success`,
-      JSON.stringify({ requestId, provider, userId }),
+      JSON.stringify({ requestId, provider: resolvedProvider, userId }),
     );
     return res.redirect(redirectPath);
   }
@@ -617,7 +674,11 @@ export class OAuthService {
   }
 
   private resolveProfileNames(profile: OAuthProfile) {
-    const fallbackSeed = profile.email.split('@')[0] || 'KadryHR';
+    const emailSeed =
+      typeof profile.email === 'string' && profile.email.length > 0
+        ? profile.email
+        : 'KadryHR';
+    const fallbackSeed = emailSeed.split('@')[0] || 'KadryHR';
     const [firstCandidate, ...rest] = fallbackSeed
       .split(/[._-]+/)
       .filter(Boolean);

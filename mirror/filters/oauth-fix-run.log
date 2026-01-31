@@ -1,0 +1,1 @@
+2026-02-01 OAuth callback guards/logging update: added provider/cookie safeguards, Prisma error mapping, and schedule period id filtering.
