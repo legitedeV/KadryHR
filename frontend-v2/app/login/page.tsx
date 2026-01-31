@@ -39,8 +39,16 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "microsoft" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const disabled = loading || !email || !password;
+  const disabled = loading || !!oauthLoading || !email || !password;
+
+  function handleOAuthLogin(provider: "google" | "microsoft") {
+    if (oauthLoading) return;
+    setOauthLoading(provider);
+    const redirect = encodeURIComponent("/panel");
+    window.location.href = `/api/auth/oauth/${provider}/start?redirect=${redirect}`;
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -142,6 +150,54 @@ function LoginForm() {
               {error}
             </div>
           )}
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              className="btn-secondary w-full justify-center py-3"
+              onClick={() => handleOAuthLogin("google")}
+              disabled={!!oauthLoading}
+            >
+              {oauthLoading === "google" ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Przekierowanie...
+                </>
+              ) : (
+                "Zaloguj przez Google"
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary w-full justify-center py-3"
+              onClick={() => handleOAuthLogin("microsoft")}
+              disabled={!!oauthLoading}
+            >
+              {oauthLoading === "microsoft" ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Przekierowanie...
+                </>
+              ) : (
+                "Zaloguj przez Microsoft"
+              )}
+            </button>
+          </div>
+
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-surface-800" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase tracking-[0.2em] text-surface-500">
+              <span className="bg-surface-950 px-3">lub</span>
+            </div>
+          </div>
 
           <button type="submit" disabled={disabled} className="btn-primary w-full justify-center py-3">
             {loading ? (
