@@ -13,7 +13,12 @@ const nextConfig = {
   },
   images: {
     dangerouslyAllowSVG: true,
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
   },
   turbopack: {
     // Specifies the working directory to avoid multi-lockfile warnings

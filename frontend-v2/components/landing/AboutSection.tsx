@@ -54,11 +54,11 @@ export function AboutSection() {
           <div className="absolute -right-12 top-0 h-48 w-48 rounded-full bg-sky-100/70 blur-3xl" aria-hidden="true" />
           <div className="relative rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl">
             <Image
-              src="/illustrations/about-hr.svg"
-              alt="Ilustracja zespołu HR konsultującego procesy"
-              width={480}
-              height={420}
-              className="h-auto w-full"
+              src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80"
+              alt="Konsultanci HR omawiający procesy z klientem"
+              width={900}
+              height={720}
+              className="h-auto w-full rounded-2xl object-cover"
             />
           </div>
         </div>
