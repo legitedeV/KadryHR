@@ -12,6 +12,29 @@ export class OrganisationsService {
     private readonly auditService: AuditService,
   ) {}
 
+  private mapUserAvatar<T extends { avatarPath?: string | null; avatarUrl?: string | null }>(
+    user: T,
+  ): Omit<T, 'avatarPath'> {
+    const { avatarPath, ...rest } = user;
+    return {
+      ...(rest as Omit<T, 'avatarPath'>),
+      avatarUrl: this.buildAvatarUrl(avatarPath ?? null, user.avatarUrl ?? null),
+    };
+  }
+
+  private buildAvatarUrl(
+    avatarPath?: string | null,
+    legacyUrl?: string | null,
+  ): string | null {
+    const pathValue = avatarPath || legacyUrl;
+    if (!pathValue) return null;
+    if (pathValue.startsWith('http')) return pathValue;
+    if (pathValue.startsWith('/static/')) return pathValue;
+    if (pathValue.startsWith('static/')) return `/${pathValue}`;
+    if (pathValue.startsWith('avatars/')) return `/static/${pathValue}`;
+    return pathValue;
+  }
+
   create(ownerId: string, data: CreateOrganisationDto) {
     return this.prisma.organisation.create({
       data: {
@@ -87,10 +110,11 @@ export class OrganisationsService {
         lastName: true,
         role: true,
         avatarUrl: true,
+        avatarPath: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
-    });
+    }).then((users) => users.map((user) => this.mapUserAvatar(user)));
   }
 
   /**

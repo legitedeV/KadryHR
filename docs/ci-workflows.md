@@ -504,6 +504,27 @@ All environment variables are defined in workflow files:
 
 ---
 
+## Frontend screenshots (build artifacts)
+
+Aby wygenerować screenshot landing page po buildzie lokalnie:
+
+```bash
+cd frontend-v2
+npm install
+npm run build
+npm run screenshot:landing
+```
+
+Skrypt uruchamia `next start` na porcie 3011 i zapisuje obraz do:
+
+```
+frontend-v2/artifacts/build-screenshots/landing.png
+```
+
+W razie potrzeby ustaw `LANDING_SCREENSHOT_PORT`, aby użyć innego portu.
+
+---
+
 ## Maintenance
 
 ### Monthly Tasks

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -9,8 +9,4 @@ export class UpdateProfileDto {
   @IsString()
   lastName?: string;
 
-  @IsOptional()
-  @IsString()
-  @IsUrl({}, { message: 'Avatar URL must be a valid URL' })
-  avatarUrl?: string;
 }

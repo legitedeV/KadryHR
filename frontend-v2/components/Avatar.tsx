@@ -68,7 +68,7 @@ export function Avatar({
         <img
           src={src ?? undefined}
           alt={name}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover object-center"
           onError={() => setImageError(true)}
         />
       ) : (

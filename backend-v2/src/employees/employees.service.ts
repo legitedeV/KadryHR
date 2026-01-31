@@ -17,6 +17,32 @@ export class EmployeesService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
+  private mapEmployeeAvatar<
+    T extends { avatarPath?: string | null; avatarUrl?: string | null },
+  >(employee: T): Omit<T, 'avatarPath'> {
+    const { avatarPath, ...rest } = employee;
+    return {
+      ...(rest as Omit<T, 'avatarPath'>),
+      avatarUrl: this.buildAvatarUrl(
+        avatarPath ?? null,
+        employee.avatarUrl ?? null,
+      ),
+    };
+  }
+
+  private buildAvatarUrl(
+    avatarPath?: string | null,
+    legacyUrl?: string | null,
+  ): string | null {
+    const pathValue = avatarPath || legacyUrl;
+    if (!pathValue) return null;
+    if (pathValue.startsWith('http')) return pathValue;
+    if (pathValue.startsWith('/static/')) return pathValue;
+    if (pathValue.startsWith('static/')) return `/${pathValue}`;
+    if (pathValue.startsWith('avatars/')) return `/static/${pathValue}`;
+    return pathValue;
+  }
+
   /**
    * Mapuje użytkownika (User) na powiązanego Employee w danej organizacji.
    */
@@ -173,7 +199,7 @@ export class EmployeesService {
     ]);
 
     const mapped = items.map((item) => ({
-      ...item,
+      ...this.mapEmployeeAvatar(item),
       locations: (item.locations ?? []).map((entry) => entry.location),
     }));
 
@@ -189,7 +215,8 @@ export class EmployeesService {
    * Utworzenie pracownika w organizacji.
    */
   create(organisationId: string, dto: any) {
-    return this.prisma.employee.create({
+    return this.prisma.employee
+      .create({
       data: {
         organisationId,
         firstName: dto.firstName,
@@ -198,7 +225,8 @@ export class EmployeesService {
         phone: dto.phone ?? null,
         position: dto.position ?? null,
       },
-    });
+    })
+      .then((employee) => this.mapEmployeeAvatar(employee));
   }
 
   /**
@@ -222,7 +250,7 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
 
-    return employee;
+    return this.mapEmployeeAvatar(employee);
   }
 
   /**
@@ -237,7 +265,8 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
 
-    return this.prisma.employee.update({
+    return this.prisma.employee
+      .update({
       where: { id: employeeId },
       data: {
         firstName: dto.firstName ?? existing.firstName,
@@ -246,7 +275,8 @@ export class EmployeesService {
         phone: dto.phone ?? existing.phone,
         position: dto.position ?? existing.position,
       },
-    });
+    })
+      .then((employee) => this.mapEmployeeAvatar(employee));
   }
 
   /**
@@ -316,7 +346,11 @@ export class EmployeesService {
         });
       }
 
-      return { success: true, softDeleted: true, employee: updated };
+      return {
+        success: true,
+        softDeleted: true,
+        employee: this.mapEmployeeAvatar(updated),
+      };
     }
 
     await this.prisma.employee.delete({ where: { id: employeeId } });
@@ -377,7 +411,7 @@ export class EmployeesService {
       });
     }
 
-    return updated;
+    return this.mapEmployeeAvatar(updated);
   }
 
   async activate(organisationId: string, employeeId: string) {
@@ -414,7 +448,7 @@ export class EmployeesService {
       });
     }
 
-    return updated;
+    return this.mapEmployeeAvatar(updated);
   }
 }
 
