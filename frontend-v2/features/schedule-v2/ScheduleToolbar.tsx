@@ -68,7 +68,7 @@ export function ScheduleToolbar({
           <button
             type="button"
             onClick={onPrevWeek}
-            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
+            className="min-h-[36px] rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
             aria-label="Poprzedni tydzień"
           >
             ←
@@ -76,14 +76,14 @@ export function ScheduleToolbar({
           <button
             type="button"
             onClick={onOpenRangeModal}
-            className="rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-semibold text-surface-800 hover:bg-surface-100 transition-colors"
+            className="min-h-[36px] rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-semibold text-surface-800 hover:bg-surface-100 transition-colors"
           >
             {rangeLabel}
           </button>
           <button
             type="button"
             onClick={onNextWeek}
-            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
+            className="min-h-[36px] rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
             aria-label="Następny tydzień"
           >
             →
@@ -92,7 +92,7 @@ export function ScheduleToolbar({
 
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <select
-            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+            className="h-9 w-full min-w-[140px] rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors sm:w-auto"
             value={viewMode}
             onChange={(event) => onViewModeChange(event.target.value)}
           >
@@ -102,7 +102,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+            className="h-9 w-full min-w-[160px] rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors sm:w-auto"
             value={locationId}
             onChange={(event) => onLocationChange(event.target.value)}
           >
@@ -115,7 +115,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+            className="h-9 w-full min-w-[160px] rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors sm:w-auto"
             value={positionFilter}
             onChange={(event) => onPositionFilterChange(event.target.value)}
           >
@@ -128,7 +128,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+            className="h-9 w-full min-w-[160px] rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors sm:w-auto"
             value={employmentFilter}
             onChange={(event) => onEmploymentFilterChange(event.target.value)}
           >
@@ -141,7 +141,7 @@ export function ScheduleToolbar({
           </select>
 
           <select
-            className="h-9 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+            className="h-9 w-full min-w-[140px] rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors sm:w-auto"
             value={sortMode}
             onChange={(event) => onSortModeChange(event.target.value)}
           >
@@ -155,7 +155,7 @@ export function ScheduleToolbar({
           <button
             type="button"
             onClick={onSortAction}
-            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
+            className="min-h-[36px] rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
           >
             Sortuj
           </button>
@@ -165,13 +165,13 @@ export function ScheduleToolbar({
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Szukaj..."
-              className="h-9 w-40 rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+              className="h-9 w-full min-w-[140px] rounded-md border border-surface-200 bg-white px-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors sm:w-40"
             />
           </div>
           <button
             type="button"
             onClick={onOpenOptions}
-            className="rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
+            className="min-h-[36px] rounded-md border border-surface-200 bg-white px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-100 transition-colors"
           >
             Opcje
           </button>

@@ -89,8 +89,14 @@ export default function RegisterClient() {
   const disabled = submitting || loading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-lg card p-6 space-y-6">
+    <div className="panel-theme min-h-screen flex items-center justify-center px-4 py-12 panel-shell relative overflow-hidden">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="hero-aurora" />
+        <div className="floating-orb orb-slow -left-32 top-10 h-52 w-52 bg-brand-700/30" />
+        <div className="floating-orb orb-fast -right-28 bottom-20 h-44 w-44 bg-accent-700/25" />
+      </div>
+
+      <div className="w-full max-w-lg panel-card p-6 space-y-6">
         <div className="flex items-center justify-center">
           <BrandLogoMotion size={56} variant="full" withPL ariaLabel="KadryHR – Kadry i płace bez tajemnic" />
         </div>
@@ -98,7 +104,7 @@ export default function RegisterClient() {
         <div className="space-y-3">
           <button
             type="button"
-            className="w-full rounded-full border border-slate-700 bg-slate-950 py-2 text-sm font-medium text-slate-100 shadow-soft hover:border-slate-500 hover:bg-slate-900"
+            className="btn-secondary w-full justify-center py-3 min-h-[44px]"
             onClick={handleOAuthLogin}
           >
             <span className="inline-flex items-center justify-center gap-3">
@@ -113,7 +119,7 @@ export default function RegisterClient() {
               <span>Kontynuuj z Google</span>
             </span>
           </button>
-          <p className="text-xs text-slate-400 text-center">
+          <p className="text-xs text-[var(--text-muted)] text-center">
             Za pierwszym razem utworzymy konto automatycznie.
           </p>
         </div>
@@ -121,74 +127,74 @@ export default function RegisterClient() {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1 text-sm text-left">
-              <label className="block text-slate-200">
+              <label className="block text-[var(--text-muted)]">
                 Nazwa firmy
               </label>
               <input
                 required
                 value={organisationName}
                 onChange={(e) => setOrganisationName(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
+                className="input-field h-12 text-left"
               />
             </div>
             <div className="space-y-1 text-sm text-left">
-              <label className="block text-slate-200">E-mail</label>
+              <label className="block text-[var(--text-muted)]">E-mail</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
+                className="input-field h-12 text-left"
               />
             </div>
             <div className="space-y-1 text-sm text-left">
-              <label className="block text-slate-200">Imię</label>
+              <label className="block text-[var(--text-muted)]">Imię</label>
               <input
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
+                className="input-field h-12 text-left"
               />
             </div>
             <div className="space-y-1 text-sm text-left">
-              <label className="block text-slate-200">Nazwisko</label>
+              <label className="block text-[var(--text-muted)]">Nazwisko</label>
               <input
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
+                className="input-field h-12 text-left"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1 text-sm text-left">
-              <label className="block text-slate-200">Hasło</label>
+              <label className="block text-[var(--text-muted)]">Hasło</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
+                className="input-field h-12 text-left"
               />
             </div>
             <div className="space-y-1 text-sm text-left">
-              <label className="block text-slate-200">Potwierdź hasło</label>
+              <label className="block text-[var(--text-muted)]">Potwierdź hasło</label>
               <input
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-0 focus:border-brand-400 focus:ring-2 focus:ring-brand-700/40"
+                className="input-field h-12 text-left"
               />
             </div>
           </div>
 
           {(error || oauthError) && (
-            <div className="text-xs text-rose-100 bg-rose-950/40 border border-rose-800 rounded-xl px-3 py-2 space-y-1">
+            <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 space-y-1">
               <p>{error ?? oauthError}</p>
               {oauthRequestId && (
-                <p className="text-[11px] text-rose-200/80">Request ID: {oauthRequestId}</p>
+                <p className="text-[11px] text-rose-500">Request ID: {oauthRequestId}</p>
               )}
             </div>
           )}
@@ -196,15 +202,15 @@ export default function RegisterClient() {
           <button
             type="submit"
             disabled={disabled}
-            className="w-full rounded-full bg-brand-500 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-600 disabled:opacity-60"
+            className="btn-primary w-full justify-center py-3 min-h-[44px]"
           >
             {disabled ? "Tworzenie konta..." : "Utwórz konto"}
           </button>
         </form>
 
-        <p className="text-[11px] text-surface-600 text-center">
+        <p className="text-[11px] text-[var(--text-muted)] text-center">
           Masz już konto?{" "}
-          <Link href="/login" className="underline underline-offset-2">
+          <Link href="/login" className="underline underline-offset-2 text-[var(--accent)]">
             Zaloguj się
           </Link>
           .

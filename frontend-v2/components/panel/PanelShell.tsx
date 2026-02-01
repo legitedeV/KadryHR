@@ -26,7 +26,14 @@ export function PanelShell({ user, onLogout, actionsSlot, children }: PanelShell
           user={user}
           activePath={pathname}
           onLogout={onLogout}
-          className="hidden md:flex md:w-64 border-r border-[var(--border-soft)]"
+          className="hidden lg:flex lg:w-64 border-r border-[var(--border-soft)]"
+        />
+        <Sidebar
+          user={user}
+          activePath={pathname}
+          onLogout={onLogout}
+          collapsed
+          className="hidden md:flex lg:hidden md:w-20 border-r border-[var(--border-soft)]"
         />
 
         {mobileMenuOpen && (
@@ -52,7 +59,7 @@ export function PanelShell({ user, onLogout, actionsSlot, children }: PanelShell
             actionsSlot={actionsSlot}
           />
           <main className="flex-1 px-4 sm:px-5 lg:px-6 py-6">
-            <div className="max-w-[1600px] w-full mx-auto space-y-6">{children}</div>
+            <div className="max-w-[1320px] w-full mx-auto space-y-6">{children}</div>
           </main>
         </div>
       </div>
