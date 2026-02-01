@@ -79,7 +79,8 @@ deploy_backend() {
 
   APP_PORT="$BACKEND_PORT" NODE_ENV=production \
     pm2 start dist/main.js \
-      --name "$BACKEND_PM2_NAME"
+      --name "$BACKEND_PM2_NAME" \
+      --cwd "$BACKEND_DIR"
 
   log "Backend wystartowany na porcie ${BACKEND_PORT} (za Nginxem /api/)"
 }
@@ -102,6 +103,9 @@ deploy_frontend() {
     log "Frontend: SKIP_INSTALL=1 – pomijam npm install"
   fi
 
+  log "Frontend: czyszczenie .next"
+  rm -rf .next
+
   log "Frontend: build (npm run build)"
   npm run build
 
@@ -113,7 +117,7 @@ deploy_frontend() {
   fi
 
   NODE_ENV=production PORT="$FRONTEND_PORT" \
-    pm2 start npm --name "$FRONTEND_PM2_NAME" -- start
+    pm2 start npm --name "$FRONTEND_PM2_NAME" --cwd "$FRONTEND_DIR" -- start
 
   log "Frontend wystartowany na porcie ${FRONTEND_PORT} (proxy z kadryhr.pl przez Nginx)"
 }

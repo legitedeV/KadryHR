@@ -43,7 +43,8 @@ export class AvatarsService {
     try {
       await fs.access(uploadDir);
     } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.mkdir(this.baseUploadDir, { recursive: true, mode: 0o750 });
+      await fs.mkdir(uploadDir, { recursive: true, mode: 0o750 });
     }
   }
 
@@ -81,7 +82,7 @@ export class AvatarsService {
     const uploadDir = this.getUploadDir(organisationId, entityType, entityId);
     const fullPath = path.join(uploadDir, filename);
 
-    await fs.writeFile(fullPath, buffer);
+    await fs.writeFile(fullPath, buffer, { mode: 0o640 });
 
     const avatarPath = path
       .join('avatars', organisationId, entityType, entityId, filename)
