@@ -326,12 +326,12 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-2xl font-semibold text-surface-900">Dashboard</p>
+          <p className="text-[clamp(1.4rem,1.2vw+1rem,2rem)] font-semibold text-surface-900">Dashboard</p>
           <p className="text-sm text-surface-600">Tydzień pracy: {range.label}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiTile label="Pracownicy" value={`${employees.length}`} helper="Łącznie w organizacji" />
         <KpiTile label="Lokalizacje" value={`${locations.length}`} helper="Aktywne lokalizacje" />
         <KpiTile label="Plan godzin" value={`${Math.round(totalHoursWeek)} h`} helper="Tydzień pracy" />

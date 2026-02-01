@@ -651,6 +651,33 @@ body::before {
   background-clip: text;
 }
 
+/* Landing layout utilities */
+.landing-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1280px;
+  padding-inline: clamp(1rem, 2.5vw, 2rem);
+}
+
+.landing-section {
+  padding-block: clamp(3rem, 8vh, 5rem);
+}
+
+.landing-section-tight {
+  padding-block: clamp(2.5rem, 6vh, 4.5rem);
+}
+
+.landing-title {
+  font-size: clamp(1.5rem, 1.6vw + 1rem, 2.25rem);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.landing-body {
+  font-size: clamp(1rem, 0.5vw + 0.9rem, 1.125rem);
+  line-height: 1.7;
+}
+
 /* Compact Panel Utilities */
 .panel-shell {
   @apply px-4 py-4 lg:px-5 lg:py-4;

@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export function FooterSection() {
   return (
-    <footer className="border-t border-slate-200 bg-white py-16">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-4">
+    <footer className="border-t border-slate-200 bg-white py-14">
+      <div className="landing-container grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-3">
           <p className="text-lg font-semibold text-slate-900">KadryHR</p>
           <p className="text-sm text-slate-600">
@@ -56,7 +56,7 @@ export function FooterSection() {
           </div>
         </div>
       </div>
-      <div className="mx-auto mt-12 flex max-w-6xl flex-col justify-between gap-2 border-t border-slate-200 px-6 pt-6 text-xs text-slate-500 sm:flex-row">
+      <div className="landing-container mt-10 flex flex-col justify-between gap-2 border-t border-slate-200 pt-6 text-xs text-slate-500 sm:flex-row">
         <span>© 2024 KadryHR. Wszelkie prawa zastrzeżone.</span>
         <span>Polityka prywatności · Regulamin</span>
       </div>

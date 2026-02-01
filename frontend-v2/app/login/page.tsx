@@ -87,7 +87,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 panel-shell relative overflow-hidden">
+    <div className="panel-theme min-h-screen flex items-center justify-center px-4 py-12 panel-shell relative overflow-hidden">
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="hero-aurora" />
         <div className="floating-orb orb-slow -left-28 top-12 h-52 w-52 bg-brand-700/40" />
@@ -101,12 +101,12 @@ function LoginForm() {
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-surface-200">
+            <label className="block text-sm font-medium text-[var(--text-muted)]">
               E-mail
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70">
-                <svg className="h-5 w-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-5 w-5 text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -127,12 +127,12 @@ function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-surface-200">
+            <label className="block text-sm font-medium text-[var(--text-muted)]">
               Hasło
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70">
-                <svg className="h-5 w-5 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-5 w-5 text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -153,7 +153,7 @@ function LoginForm() {
             <div className="text-right">
               <Link
                 href="/forgot-password"
-                className="text-xs font-semibold text-brand-400 hover:text-brand-300"
+                className="text-xs font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
               >
                 Nie pamiętasz hasła?
               </Link>
@@ -161,7 +161,7 @@ function LoginForm() {
           </div>
 
           {(error || oauthError) && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-950/50 px-4 py-3 text-sm text-rose-200 ring-1 ring-rose-800/50">
+            <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
@@ -181,7 +181,7 @@ function LoginForm() {
           <div className="space-y-3">
             <button
               type="button"
-              className="btn-secondary w-full justify-center py-3"
+              className="btn-secondary w-full justify-center py-3 min-h-[44px]"
               onClick={handleOAuthLogin}
               disabled={!!oauthLoading}
             >
@@ -207,21 +207,21 @@ function LoginForm() {
                 </span>
               )}
             </button>
-            <p className="text-xs text-surface-500 text-center">
+            <p className="text-xs text-[var(--text-muted)] text-center">
               Za pierwszym razem utworzymy konto automatycznie.
             </p>
           </div>
 
           <div className="relative py-1">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-surface-800" />
+              <span className="w-full border-t border-surface-200" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase tracking-[0.2em] text-surface-500">
-              <span className="bg-surface-950 px-3">lub</span>
+            <div className="relative flex justify-center text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+              <span className="bg-surface-50 px-3">lub</span>
             </div>
           </div>
 
-          <button type="submit" disabled={disabled} className="btn-primary w-full justify-center py-3">
+          <button type="submit" disabled={disabled} className="btn-primary w-full justify-center py-3 min-h-[44px]">
             {loading ? (
               <>
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -241,17 +241,17 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-surface-800 space-y-2 text-center text-sm text-surface-400">
+        <div className="mt-8 pt-6 border-t border-surface-200 space-y-2 text-center text-sm text-[var(--text-muted)]">
           <p>
             Nie masz konta?{" "}
-            <Link href="/register" className="font-medium text-brand-400 hover:text-brand-300">
+            <Link href="/register" className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">
               Zarejestruj się
             </Link>
             .
           </p>
           <p>
             Wróć na{" "}
-            <Link href="/" className="font-medium text-brand-400 hover:text-brand-300">
+            <Link href="/" className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">
               stronę startową
             </Link>
             .
