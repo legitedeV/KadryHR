@@ -8,9 +8,14 @@ import {
   UseInterceptors,
   NotFoundException,
   ForbiddenException,
+  UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AvatarsService } from './avatars.service';
+import {
+  ALLOWED_MIME_TYPES,
+  AvatarsService,
+  MAX_FILE_SIZE,
+} from './avatars.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -33,7 +38,22 @@ export class AvatarsController {
 
   @RequirePermissions(Permission.EMPLOYEE_MANAGE)
   @Post('employees/:id/avatar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_FILE_SIZE },
+      fileFilter: (_req, file, callback) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return callback(
+            new UnsupportedMediaTypeException(
+              `Niedozwolony typ pliku. Dozwolone: ${ALLOWED_MIME_TYPES.join(', ')}`,
+            ),
+            false,
+          );
+        }
+        return callback(null, true);
+      },
+    }),
+  )
   @AuditLog({
     action: 'EMPLOYEE_AVATAR_UPLOAD',
     entityType: 'employee',
@@ -42,7 +62,7 @@ export class AvatarsController {
   async uploadEmployeeAvatar(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') employeeId: string,
-    @UploadedFile() file: any,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
       throw new NotFoundException('Nie przesłano pliku');
@@ -122,14 +142,29 @@ export class AvatarsController {
   }
 
   @Post('organisations/me/avatar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_FILE_SIZE },
+      fileFilter: (_req, file, callback) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return callback(
+            new UnsupportedMediaTypeException(
+              `Niedozwolony typ pliku. Dozwolone: ${ALLOWED_MIME_TYPES.join(', ')}`,
+            ),
+            false,
+          );
+        }
+        return callback(null, true);
+      },
+    }),
+  )
   @AuditLog({
     action: 'ORGANISATION_LOGO_UPLOAD',
     entityType: 'organisation',
   })
   async uploadOrganisationLogo(
     @CurrentUser() user: AuthenticatedUser,
-    @UploadedFile() file: any,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     // Check if user has permission (OWNER or MANAGER)
     if (![Role.OWNER, Role.MANAGER].includes(user.role)) {

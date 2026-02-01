@@ -30,6 +30,8 @@ frontend/.env
 !docs/backlog.md
 !docs/ui-panel-redesign.md
 !docs/responsive-checklist.md
+!docs/avatars.md
+!docs/nginx-avatars-example.conf
 !docs/audit/*.md
 !backend-v2/docs/BACKEND_V2_ARCHITECTURE.md
 !backend-v2/docs/FEATURE_GAP_ANALYSIS.md
