@@ -53,6 +53,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.LEAVE_REQUEST,
     Permission.EMPLOYEE_MANAGE,
     Permission.EMPLOYEE_VIEW,
+    Permission.ORGANISATION_SETTINGS,
     Permission.AUDIT_VIEW,
     Permission.REPORTS_EXPORT,
     Permission.AVAILABILITY_MANAGE,
