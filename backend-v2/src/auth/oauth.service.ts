@@ -815,7 +815,7 @@ export class OAuthService {
         }
 
         const requiredModels: Array<keyof Prisma.TransactionClient> = [
-          'oauthAccount',
+          'oAuthAccount',
           'user',
           'employee',
           'organisation',
@@ -838,7 +838,7 @@ export class OAuthService {
           throw new InternalServerErrorException('oauth_db_schema_missing');
         }
 
-        const existingAccount = await tx.oauthAccount.findUnique({
+        const existingAccount = await tx.oAuthAccount.findUnique({
           where: {
             provider_providerAccountId: {
               provider,
@@ -908,7 +908,7 @@ export class OAuthService {
           },
         });
 
-        await tx.oauthAccount.upsert({
+        await tx.oAuthAccount.upsert({
           where: {
             provider_providerAccountId: {
               provider,
