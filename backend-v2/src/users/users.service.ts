@@ -31,16 +31,23 @@ export class UsersService {
     private readonly avatarsService: AvatarsService,
   ) {}
 
-  private mapUserAvatar<T extends { avatarPath?: string | null; avatarUrl?: string | null }>(
-    user: T,
-  ): Omit<T, 'avatarPath'> {
+  private mapUserAvatar<
+    T extends {
+      avatarPath?: string | null;
+      avatarUrl?: string | null;
+      updatedAt?: Date | string | null;
+    },
+  >(user: T): Omit<T, 'avatarPath'> & { avatarUpdatedAt?: Date | string | null } {
     const { avatarPath, ...rest } = user;
+    const updatedAt =
+      (user as { updatedAt?: Date | string | null }).updatedAt ?? null;
     return {
       ...(rest as Omit<T, 'avatarPath'>),
       avatarUrl: this.avatarsService.buildPublicUrl(
         avatarPath ?? null,
         user.avatarUrl ?? null,
       ),
+      avatarUpdatedAt: updatedAt,
     };
   }
 
@@ -211,6 +218,7 @@ export class UsersService {
         avatarPath: true,
         organisationId: true,
         createdAt: true,
+        updatedAt: true,
         organisation: {
           select: {
             id: true,
@@ -252,6 +260,13 @@ export class UsersService {
         avatarPath: true,
         organisationId: true,
         createdAt: true,
+        updatedAt: true,
+        organisation: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -350,6 +365,13 @@ export class UsersService {
         avatarPath: true,
         organisationId: true,
         createdAt: true,
+        updatedAt: true,
+        organisation: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -487,6 +509,12 @@ export class UsersService {
         organisationId: true,
         createdAt: true,
         updatedAt: true,
+        organisation: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

@@ -13,7 +13,7 @@ interface AvatarUploadProps {
   name?: string;
 }
 
-const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE_MB = 5;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
@@ -41,7 +41,7 @@ export function AvatarUpload({
 
   const validateFile = useCallback((file: File): string | null => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      return `Niedozwolony typ pliku. Dozwolone: PNG, JPEG, WebP, GIF`;
+      return `Niedozwolony typ pliku. Dozwolone: PNG, JPEG, WebP`;
     }
     if (file.size > MAX_SIZE_BYTES) {
       return `Plik jest za duży. Maksymalny rozmiar: ${MAX_SIZE_MB}MB`;
@@ -188,7 +188,7 @@ export function AvatarUpload({
 
       {/* Help Text */}
       <p className="text-xs text-surface-600">
-        Dozwolone formaty: PNG, JPEG, WebP, GIF. Maks. {MAX_SIZE_MB}MB.
+        Dozwolone formaty: PNG, JPEG, WebP. Maks. {MAX_SIZE_MB}MB.
       </p>
 
       {/* Error Display */}

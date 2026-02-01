@@ -77,7 +77,7 @@ export default function ProfilPage() {
       .then(([userData, profileData]) => {
         if (cancelled) return;
         setUser(userData);
-        setProfile(profileData);
+        setProfile(normalizeProfile(profileData));
 
         // Initialize edit form
         setFirstName(profileData.firstName ?? "");
@@ -106,7 +106,7 @@ export default function ProfilPage() {
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
       });
-      setProfile(updated);
+      setProfile(normalizeProfile(updated));
       setEditProfileOpen(false);
       pushToast({
         title: "Sukces",
@@ -152,6 +152,14 @@ export default function ProfilPage() {
     const separator = url.includes("?") ? "&" : "?";
     return `${url}${separator}v=${version}`;
   }, []);
+
+  const normalizeProfile = useCallback(
+    (next: UserProfile): UserProfile => ({
+      ...next,
+      avatarUrl: buildAvatarUrl(next.avatarUrl, next.avatarUpdatedAt),
+    }),
+    [buildAvatarUrl],
+  );
 
   const handleAvatarSelect = useCallback((file?: File) => {
     if (!file) return;
@@ -409,7 +417,7 @@ export default function ProfilPage() {
         currentPassword: emailPassword,
         newEmail,
       });
-      setProfile(updated);
+      setProfile(normalizeProfile(updated));
       setChangeEmailOpen(false);
       setEmailPassword("");
       setNewEmail("");

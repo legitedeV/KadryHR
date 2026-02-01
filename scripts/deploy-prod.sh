@@ -54,11 +54,11 @@ npm run build
 
 echo "==> Restarting backend with PM2 ($PM2_BACKEND_NAME)"
 if pm2 describe "$PM2_BACKEND_NAME" > /dev/null 2>&1; then
-  pm2 restart "$PM2_BACKEND_NAME"
-else
-  # dopasuj ścieżkę startową do swojej aplikacji Nest
-  pm2 start dist/main.js --name "$PM2_BACKEND_NAME"
+  pm2 stop "$PM2_BACKEND_NAME"
+  pm2 delete "$PM2_BACKEND_NAME"
 fi
+# dopasuj ścieżkę startową do swojej aplikacji Nest
+pm2 start dist/main.js --name "$PM2_BACKEND_NAME" --cwd "$BACKEND_DIR"
 
 # ---------------- FRONTEND ----------------
 
@@ -72,14 +72,15 @@ else
 fi
 
 echo "==> Building frontend"
+rm -rf .next
 npm run build
 
 echo "==> Restarting frontend with PM2 ($PM2_FRONTEND_NAME)"
 if pm2 describe "$PM2_FRONTEND_NAME" > /dev/null 2>&1; then
-  pm2 restart "$PM2_FRONTEND_NAME"
-else
-  # jeśli masz Next.js w trybie `next start`:
-  pm2 start "npm -- start -p 3000" --name "$PM2_FRONTEND_NAME"
+  pm2 stop "$PM2_FRONTEND_NAME"
+  pm2 delete "$PM2_FRONTEND_NAME"
 fi
+# jeśli masz Next.js w trybie `next start`:
+pm2 start "npm -- start -p 3000" --name "$PM2_FRONTEND_NAME" --cwd "$FRONTEND_DIR"
 
 echo "==> Deploy finished successfully"
