@@ -6,6 +6,7 @@ export type PanelNavItemId =
   | "availability"
   | "rcp"
   | "employees"
+  | "organisation"
   | "profile";
 
 export type PanelNavItem = {
@@ -52,6 +53,13 @@ export const panelNavItems: PanelNavItem[] = [
     requiredPermissions: ["SCHEDULE_VIEW"],
   },
   {
+    id: "organisation",
+    href: "/panel/organizacja",
+    label: "Organizacja",
+    icon: "M3 10h18M5 6h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z",
+    requiredPermissions: ["ORGANISATION_SETTINGS"],
+  },
+  {
     id: "profile",
     href: "/panel/profil",
     label: "Profil",
@@ -74,6 +82,7 @@ export const titleByPath: Record<string, string> = {
   "/panel/dyspozycje": "Dyspozycje",
   "/panel/rcp": "RCP",
   "/panel/pracownicy": "Pracownicy",
+  "/panel/organizacja": "Ustawienia organizacji",
   "/panel/profil": "Profil",
   "/panel/dashboard": "Dashboard",
 };

@@ -134,12 +134,35 @@ enum RcpEventType {
   CLOCK_OUT
 }
 
+enum SchedulePeriodType {
+  WEEKLY
+  MONTHLY
+  FOUR_WEEKS
+}
+
 model Organisation {
   id                          String   @id @default(uuid())
   name                        String
+  legalName                   String?
+  displayName                 String?
   description                 String?
   category                    String?
+  addressStreet               String?
+  addressPostalCode           String?
+  addressCity                 String?
+  addressCountry              String?
+  contactEmail                String?
+  contactPhone                String?
+  websiteUrl                  String?
+  taxId                       String?
+  invoiceAddress              String?
   logoUrl                     String?
+  timezone                    String?
+  defaultWorkdayStart         String?  @default("08:00")
+  defaultWorkdayEnd           String?  @default("16:00")
+  defaultBreakMinutes         Int?     @default(30)
+  workDays                    Weekday[] @default([])
+  schedulePeriod              SchedulePeriodType @default(WEEKLY)
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
   preventShiftOnApprovedLeave Boolean  @default(false)
@@ -399,7 +422,15 @@ model Location {
   id                    String   @id @default(uuid())
   organisationId        String
   name                  String
+  code                  String?
   address               String?
+  addressStreet         String?
+  addressPostalCode     String?
+  addressCity           String?
+  addressCountry        String?
+  defaultOpeningTimeFrom String?
+  defaultOpeningTimeTo   String?
+  isActive              Boolean  @default(true)
   geoLat                Decimal? @db.Decimal(10, 7)
   geoLng                Decimal? @db.Decimal(10, 7)
   geoRadiusMeters       Int?

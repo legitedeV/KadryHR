@@ -6,11 +6,69 @@ export type Permission =
   | "SCHEDULE_MANAGE"
   | "SCHEDULE_VIEW"
   | "AVAILABILITY_MANAGE"
-  | "RCP_EDIT";
+  | "RCP_EDIT"
+  | "ORGANISATION_SETTINGS";
 
 export interface OrganisationSummary {
   id: string;
   name: string;
+}
+
+export type OrganisationMemberStatus = "ACTIVE" | "INVITED";
+
+export type SchedulePeriodType = "WEEKLY" | "MONTHLY" | "FOUR_WEEKS";
+
+export interface OrganisationDetails {
+  id: string;
+  name: string;
+  legalName?: string | null;
+  displayName?: string | null;
+  description?: string | null;
+  category?: string | null;
+  addressStreet?: string | null;
+  addressPostalCode?: string | null;
+  addressCity?: string | null;
+  addressCountry?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  websiteUrl?: string | null;
+  taxId?: string | null;
+  invoiceAddress?: string | null;
+  logoUrl?: string | null;
+  timezone?: string | null;
+}
+
+export interface OrganisationScheduleSettings {
+  defaultWorkdayStart: string;
+  defaultWorkdayEnd: string;
+  defaultBreakMinutes: number;
+  workDays: Weekday[];
+  schedulePeriod: SchedulePeriodType;
+}
+
+export interface OrganisationLocation {
+  id: string;
+  name: string;
+  code?: string | null;
+  addressStreet?: string | null;
+  addressPostalCode?: string | null;
+  addressCity?: string | null;
+  addressCountry?: string | null;
+  defaultOpeningTimeFrom?: string | null;
+  defaultOpeningTimeTo?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrganisationMember {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+  avatarUrl?: string | null;
+  role: UserRole;
+  status: OrganisationMemberStatus;
 }
 
 export interface User {
@@ -349,6 +407,7 @@ const EMPLOYEES_PREFIX = "/employees";
 const LOCATIONS_PREFIX = "/locations";
 const AVAILABILITY_PREFIX = "/availability";
 const ORGANISATIONS_PREFIX = "/organisations";
+const ORGANISATION_PREFIX = "/organisation";
 const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
 const SHIFT_PRESETS_PREFIX = "/shift-presets";
 const SCHEDULE_PREFIX = "/schedule";
@@ -1253,4 +1312,120 @@ export async function apiChangeEmail(
 export async function apiListShiftPresets(): Promise<ShiftPresetRecord[]> {
   apiClient.hydrateFromStorage();
   return apiClient.request<ShiftPresetRecord[]>(`${SHIFT_PRESETS_PREFIX}`);
+}
+
+// Organisation settings API
+export async function apiGetOrganisationDetails(): Promise<OrganisationDetails> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationDetails>(`${ORGANISATION_PREFIX}/me`);
+}
+
+export async function apiUpdateOrganisationDetails(
+  payload: Partial<OrganisationDetails>,
+): Promise<OrganisationDetails> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationDetails>(`${ORGANISATION_PREFIX}/me`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUploadOrganisationLogo(file: File): Promise<{ logoUrl: string }> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiClient.request<{ logoUrl: string }>(`${ORGANISATIONS_PREFIX}/me/avatar`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export async function apiDeleteOrganisationLogo(): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`${ORGANISATIONS_PREFIX}/me/avatar`, {
+    method: "DELETE",
+  });
+}
+
+export async function apiGetOrganisationScheduleSettings(): Promise<OrganisationScheduleSettings> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationScheduleSettings>(`${ORGANISATION_PREFIX}/schedule-settings`);
+}
+
+export async function apiUpdateOrganisationScheduleSettings(
+  payload: Partial<OrganisationScheduleSettings>,
+): Promise<OrganisationScheduleSettings> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationScheduleSettings>(`${ORGANISATION_PREFIX}/schedule-settings`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiGetOrganisationLocations(): Promise<OrganisationLocation[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationLocation[]>(`${ORGANISATION_PREFIX}/locations`);
+}
+
+export async function apiCreateOrganisationLocation(
+  payload: Partial<OrganisationLocation> & { name: string },
+): Promise<OrganisationLocation> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationLocation>(`${ORGANISATION_PREFIX}/locations`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateOrganisationLocation(
+  id: string,
+  payload: Partial<OrganisationLocation>,
+): Promise<OrganisationLocation> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationLocation>(`${ORGANISATION_PREFIX}/locations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiToggleOrganisationLocation(id: string): Promise<OrganisationLocation> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationLocation>(`${ORGANISATION_PREFIX}/locations/${id}/toggle`, {
+    method: "PATCH",
+  });
+}
+
+export async function apiGetOrganisationMembers(): Promise<OrganisationMember[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationMember[]>(`${ORGANISATION_PREFIX}/members`);
+}
+
+export async function apiUpdateOrganisationMemberRole(
+  memberId: string,
+  role: UserRole,
+): Promise<OrganisationMember> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationMember>(`${ORGANISATION_PREFIX}/members/${memberId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function apiDeactivateOrganisationMember(memberId: string): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`${ORGANISATION_PREFIX}/members/${memberId}/deactivate`, {
+    method: "PATCH",
+  });
+}
+
+export async function apiInviteOrganisationMember(payload: {
+  email: string;
+  role: UserRole;
+  locationId?: string;
+}): Promise<{ success: boolean }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean }>(`${ORGANISATION_PREFIX}/invitations`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
