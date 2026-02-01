@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { buildAvatarSrc } from "@/lib/avatar";
 import { EmptyState } from "@/components/EmptyState";
 import { CardSquare } from "@/components/panel/CardSquare";
 import { KpiTile } from "@/components/panel/KpiTile";
@@ -448,7 +449,11 @@ export default function DashboardPage() {
                 {activeEmployees.map((employee) => (
                   <div key={employee.id} className="flex flex-wrap items-center gap-4 px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <Avatar name={`${employee.firstName} ${employee.lastName}`} src={employee.avatarUrl} size="sm" />
+                      <Avatar
+                        name={`${employee.firstName} ${employee.lastName}`}
+                        src={buildAvatarSrc(employee.avatarUrl, employee.avatarUpdatedAt)}
+                        size="sm"
+                      />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-surface-900 truncate">
                           {employee.firstName} {employee.lastName}

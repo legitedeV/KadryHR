@@ -2,6 +2,7 @@
 
 import { Avatar, type AvatarSize } from "@/components/Avatar";
 import type { EmployeeRecord } from "@/lib/api";
+import { buildAvatarSrc } from "@/lib/avatar";
 
 const formatEmployeeName = (
   employee?: Pick<EmployeeRecord, "firstName" | "lastName" | "email"> | null,
@@ -12,12 +13,6 @@ const formatEmployeeName = (
   const last = employee?.lastName?.trim() ?? "";
   const fullName = `${first} ${last}`.trim();
   return fullName || employee?.email?.trim() || "Pracownik";
-};
-
-const buildAvatarSrc = (src?: string | null, updatedAt?: string | null) => {
-  if (!src || !updatedAt) return src ?? undefined;
-  const separator = src.includes("?") ? "&" : "?";
-  return `${src}${separator}v=${encodeURIComponent(updatedAt)}`;
 };
 
 type EmployeeInlineProps = {

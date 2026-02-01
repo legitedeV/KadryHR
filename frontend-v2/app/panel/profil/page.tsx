@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { pushToast } from "@/lib/toast";
 import { Avatar } from "@/components/Avatar";
 import { Modal } from "@/components/Modal";
+import { buildAvatarSrc } from "@/lib/avatar";
 
 export default function ProfilPage() {
   const router = useRouter();
@@ -146,19 +147,12 @@ export default function ProfilPage() {
     }
   }, []);
 
-  const buildAvatarUrl = useCallback((url?: string | null, updatedAt?: string | null) => {
-    if (!url) return url ?? null;
-    const version = updatedAt ? new Date(updatedAt).getTime() : Date.now();
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}v=${version}`;
-  }, []);
-
   const normalizeProfile = useCallback(
     (next: UserProfile): UserProfile => ({
       ...next,
-      avatarUrl: buildAvatarUrl(next.avatarUrl, next.avatarUpdatedAt),
+      avatarUrl: buildAvatarSrc(next.avatarUrl, next.avatarUpdatedAt),
     }),
-    [buildAvatarUrl],
+    [],
   );
 
   const handleAvatarSelect = useCallback((file?: File) => {
@@ -209,13 +203,13 @@ export default function ProfilPage() {
         if (response.profile) {
           return {
             ...response.profile,
-            avatarUrl: buildAvatarUrl(response.profile.avatarUrl, response.avatarUpdatedAt ?? response.profile.avatarUpdatedAt),
+            avatarUrl: buildAvatarSrc(response.profile.avatarUrl, response.avatarUpdatedAt ?? response.profile.avatarUpdatedAt),
             avatarUpdatedAt: response.avatarUpdatedAt ?? response.profile.avatarUpdatedAt,
           };
         }
         return {
           ...prev,
-          avatarUrl: buildAvatarUrl(response.avatarUrl, response.avatarUpdatedAt ?? prev.avatarUpdatedAt),
+          avatarUrl: buildAvatarSrc(response.avatarUrl, response.avatarUpdatedAt ?? prev.avatarUpdatedAt),
           avatarUpdatedAt: response.avatarUpdatedAt ?? prev.avatarUpdatedAt,
         };
       });
@@ -250,7 +244,7 @@ export default function ProfilPage() {
     } finally {
       setUploadingAvatar(false);
     }
-  }, [avatarFile, avatarPreview, buildAvatarUrl, croppedAreaPixels, refresh, resetAvatarSelection]);
+  }, [avatarFile, avatarPreview, croppedAreaPixels, refresh, resetAvatarSelection]);
 
   const handleAvatarCancel = useCallback(() => {
     if (uploadingAvatar) return;
