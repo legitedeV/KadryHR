@@ -33,7 +33,7 @@ interface ScheduleGridProps {
 function availabilityDotColor(status: AvailabilityIndicator["status"]) {
   switch (status) {
     case "available":
-      return "bg-emerald-400";
+      return "bg-orange-400";
     case "partial":
       return "bg-amber-400";
     default:
@@ -44,7 +44,7 @@ function availabilityDotColor(status: AvailabilityIndicator["status"]) {
 function availabilityCellStyles(status: AvailabilityIndicator["status"]) {
   switch (status) {
     case "available":
-      return "bg-emerald-500/5";
+      return "bg-orange-500/5";
     case "partial":
       return "bg-amber-500/10 ring-1 ring-amber-400/20";
     default:
@@ -136,11 +136,11 @@ export function ScheduleGrid({
             nieobsadzona
           </span>
           <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
-            <span className="rounded-full border border-surface-800/60 bg-surface-900/60 px-2.5 py-1">
+            <span className="rounded-full border border-[var(--border-soft)] bg-white px-2.5 py-1">
               Łącznie godzin: {formatMinutes(totalWeekMinutes)}
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" /> dostępny
+              <span className="h-2 w-2 rounded-full bg-orange-400" /> dostępny
             </span>
             <span className="mx-2">•</span>
             <span className="inline-flex items-center gap-1">
@@ -155,10 +155,10 @@ export function ScheduleGrid({
       </div>
 
       {showPromotionPopup && promotionWarnings.length > 0 && (
-        <div className="fixed right-6 top-24 z-40 w-[320px] rounded-lg border border-amber-400/40 bg-surface-950/95 p-4 text-sm text-amber-100 shadow-soft">
+        <div className="fixed right-6 top-24 z-40 w-[320px] rounded-lg border border-amber-200 bg-white p-4 text-sm text-surface-900 shadow-soft">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2">
-              <div className="mt-0.5 rounded-full bg-amber-500/20 p-1 text-amber-200">
+              <div className="mt-0.5 rounded-full bg-amber-100 p-1 text-amber-600">
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
@@ -168,7 +168,7 @@ export function ScheduleGrid({
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
                   Zmiana promocji
                 </p>
                 <p className="mt-1 text-sm font-semibold">
@@ -179,7 +179,7 @@ export function ScheduleGrid({
             <button
               type="button"
               onClick={() => setShowPromotionPopup(false)}
-              className="rounded-full border border-amber-400/30 p-1 text-amber-200/70 transition hover:text-amber-100"
+              className="rounded-full border border-amber-200 p-1 text-amber-600/80 transition hover:text-amber-700"
               aria-label="Zamknij powiadomienie"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.5}>
@@ -187,7 +187,7 @@ export function ScheduleGrid({
               </svg>
             </button>
           </div>
-          <ul className="mt-3 space-y-1 text-xs text-amber-200/90">
+          <ul className="mt-3 space-y-1 text-xs text-amber-700">
             {promotionWarnings.map((warning) => (
               <li key={warning.date} className="flex items-center justify-between gap-2">
                 <span className="capitalize">
@@ -197,7 +197,7 @@ export function ScheduleGrid({
                     month: "long",
                   })}
                 </span>
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                   {warning.count}/{REQUIRED_AFTERNOON_COUNT}
                 </span>
               </li>
@@ -214,11 +214,11 @@ export function ScheduleGrid({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-surface-800/80 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.6)] -mx-1 lg:-mx-2">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] shadow-[0_12px_32px_-24px_rgba(15,23,42,0.15)] -mx-1 lg:-mx-2">
         <table className="min-w-full w-full table-fixed">
-          <thead className="bg-surface-900/70 sticky top-0 z-10">
-            <tr className="border-b border-surface-800/80">
-              <th className="w-52 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-surface-400 sticky left-0 bg-surface-900/80 z-20">
+          <thead className="bg-surface-50 sticky top-0 z-10">
+            <tr className="border-b border-[var(--border-soft)]">
+              <th className="w-52 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-surface-500 sticky left-0 bg-surface-50 z-20">
                 Pracownik
               </th>
               {dowLabels.map((dayLabel, idx) => {
@@ -233,13 +233,13 @@ export function ScheduleGrid({
                 return (
                   <th
                     key={dayLabel}
-                    className={`px-2 py-4 text-center text-xs font-semibold uppercase tracking-wider text-surface-400 ${
-                      isToday ? "bg-brand-500/10 text-brand-200" : ""
+                    className={`px-2 py-4 text-center text-xs font-semibold uppercase tracking-wider text-surface-500 ${
+                      isToday ? "bg-brand-500/10 text-brand-700" : ""
                     }`}
                   >
                     <div className="flex flex-col items-center gap-1">
                       {isDeliveryDay && (
-                        <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-white">
+                        <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-orange-500 text-white">
                           DOSTAWA
                         </span>
                       )}
@@ -254,22 +254,22 @@ export function ScheduleGrid({
                           {promotionInfo.type === "ZMIANA_PROMOCJI" ? "ZMIANA PROMOCJI" : "MAŁA PROMOCJA"}
                         </span>
                       )}
-                      <span className={`text-sm ${isToday ? "text-brand-200" : "text-surface-200"}`}>
+                      <span className={`text-sm ${isToday ? "text-brand-700" : "text-surface-700"}`}>
                         {dowShortLabels[idx]}
                       </span>
                       <span className="font-normal text-[11px] text-surface-500">
                         {dayDate.toLocaleDateString("pl-PL", { day: "numeric", month: "numeric" })}
                       </span>
-                      <span className="font-normal text-[9px] text-surface-500 tracking-widest">06 12 18</span>
+                      <span className="font-normal text-[9px] text-surface-400 tracking-widest">06 12 18</span>
                       {promotionInfo?.type === "ZMIANA_PROMOCJI" && (
                         <div className="mt-1 flex flex-col items-center gap-0.5 text-[9px]">
-                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-200 ring-1 ring-amber-400/30">
+                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-700 ring-1 ring-amber-400/30">
                             Wymagane 2 osoby
                           </span>
                           <span
                             className={`font-semibold ${
                               (promotionAfternoonCounts[dayDateStr] ?? 0) >= REQUIRED_AFTERNOON_COUNT
-                                ? "text-emerald-300"
+                                ? "text-orange-700"
                                 : "text-rose-300"
                             }`}
                           >
@@ -281,15 +281,15 @@ export function ScheduleGrid({
                   </th>
                 );
               })}
-              <th className="w-40 px-3 py-4 text-center text-xs font-semibold uppercase tracking-wider text-surface-400">
+              <th className="w-40 px-3 py-4 text-center text-xs font-semibold uppercase tracking-wider text-surface-500">
                 Suma tyg.
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-800/80 bg-surface-900/60">
+          <tbody className="divide-y divide-[var(--border-soft)] bg-white">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-surface-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-surface-500">
                   <EmptyState
                     icon={
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -312,17 +312,17 @@ export function ScheduleGrid({
                 return (
                   <tr
                     key={employee.id}
-                    className={`transition-colors ${isRowActive ? "bg-brand-500/5" : "hover:bg-surface-100"}`}
+                    className={`transition-colors ${isRowActive ? "bg-brand-500/5" : "hover:bg-surface-50"}`}
                   >
-                    <td className="w-52 px-3 py-3 sticky left-0 bg-surface-900/80 z-10 border-r border-surface-800/80">
+                    <td className="w-52 px-3 py-3 sticky left-0 bg-white z-10 border-r border-[var(--border-soft)]">
                       <div className="flex items-center gap-2">
                         <Avatar name={formatEmployeeName(employee)} src={employee.avatarUrl} size="sm" />
                         <div className="flex flex-col min-w-0">
-                          <span className="font-medium text-sm text-surface-50 truncate">
+                          <span className="font-medium text-sm text-surface-900 truncate">
                             {formatEmployeeName(employee)}
                           </span>
                           {employee.position && (
-                            <span className="text-[10px] text-surface-400 truncate">
+                            <span className="text-[10px] text-surface-500 truncate">
                               {employee.position}
                             </span>
                           )}
@@ -374,14 +374,14 @@ export function ScheduleGrid({
                           } ${isColumnActive ? "bg-brand-500/10" : ""} ${isToday ? "bg-brand-500/5" : ""}`}
                           {...dropHandlers}
                         >
-                            <div
-                              className={`flex flex-col gap-2 min-h-[72px] rounded-2xl border border-surface-800/40 px-2 py-2 ${availabilityCellStyles(
+                          <div
+                              className={`flex flex-col gap-2 min-h-[72px] rounded-2xl border border-[var(--border-soft)] px-2 py-2 ${availabilityCellStyles(
                                 dayIndicator?.status ?? "unavailable",
                               )}`}
                             >
                               <div className="flex items-center justify-between">
                                 {dayIndicator && (
-                                  <div className="flex items-center gap-1 text-[9px] text-surface-400" title={availabilityTooltip}>
+                                  <div className="flex items-center gap-1 text-[9px] text-surface-500" title={availabilityTooltip}>
                                     <span className={`h-2 w-2 rounded-full ${availabilityDotColor(dayIndicator.status)}`} />
                                     <span className="sr-only">{dayAvailabilityLabel}</span>
                                   </div>
@@ -390,11 +390,11 @@ export function ScheduleGrid({
                               {dayShifts.length === 0 ? (
                                 canManage ? (
                                   <button
-                                    className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-surface-800/70 hover:border-brand-500/60 hover:bg-brand-500/10 transition-all flex items-center justify-center group"
+                                    className="w-full h-full min-h-[50px] rounded-2xl border border-dashed border-[var(--border-soft)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center group"
                                     onClick={() => onOpenCreate(dayDateValue, employee.id)}
                                     aria-label={`Dodaj zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                   >
-                                    <svg className="w-4 h-4 text-surface-400 group-hover:text-brand-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <svg className="w-4 h-4 text-surface-400 group-hover:text-[var(--accent)] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                     </svg>
                                   </button>
@@ -419,7 +419,7 @@ export function ScheduleGrid({
                                       className={`group relative rounded-2xl border px-3 py-2 shadow-sm hover:shadow-lg transition-all text-xs ${
                                         shift.color
                                           ? ""
-                                          : "border-emerald-500/30 bg-emerald-500/10"
+                                          : "border-[var(--accent-border)] bg-[var(--accent-soft)]"
                                       } ${draggedShift === shift.id ? "opacity-60 scale-95" : "hover:-translate-y-0.5"} ${
                                         canManage ? "cursor-move" : "cursor-default"
                                       }`}
@@ -447,7 +447,7 @@ export function ScheduleGrid({
                                             }
                                           >
                                             <div className="flex items-center gap-1">
-                                              <span className={`text-[11px] ${shift.color ? "" : "text-emerald-200"}`}>
+                                              <span className={`text-[11px] ${shift.color ? "" : "text-orange-700"}`}>
                                                 {shift.start}–{shift.end}
                                               </span>
                                               {showWarning && (
@@ -465,11 +465,11 @@ export function ScheduleGrid({
                                                 </span>
                                               )}
                                             </div>
-                                            <div className="text-[9px] uppercase tracking-wide text-surface-400 truncate">
+                                            <div className="text-[9px] uppercase tracking-wide text-surface-500 truncate">
                                               {shift.position || shift.locationName || "Zmiana"}
                                             </div>
                                             {shift.locationName && shift.locationName !== "Brak lokalizacji" && shift.position && (
-                                              <div className="text-[9px] text-surface-300 truncate">
+                                              <div className="text-[9px] text-surface-400 truncate">
                                                 {shift.locationName}
                                               </div>
                                             )}
@@ -478,7 +478,7 @@ export function ScheduleGrid({
                                         {canManage && (
                                           <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
-                                              className="text-[9px] text-brand-300 hover:text-brand-200 font-medium p-0.5"
+                                              className="text-[9px] text-surface-500 hover:text-[var(--accent)] font-medium p-0.5"
                                               onClick={() => sourceShift && onOpenEdit(sourceShift)}
                                               aria-label="Edytuj zmianę"
                                             >
@@ -499,11 +499,11 @@ export function ScheduleGrid({
                                 })}
                                 {canManage && (
                                   <button
-                                    className="w-full rounded-2xl border border-dashed border-surface-800/70 hover:border-brand-500/60 hover:bg-brand-500/10 transition-colors py-1 flex items-center justify-center group"
+                                    className="w-full rounded-2xl border border-dashed border-[var(--border-soft)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] transition-colors py-1 flex items-center justify-center group"
                                     onClick={() => onOpenCreate(dayDateValue, employee.id)}
                                     aria-label={`Dodaj kolejną zmianę dla ${formatEmployeeName(employee)} na ${dowLabels[dayIdx]}`}
                                   >
-                                    <svg className="w-3 h-3 text-surface-400 group-hover:text-brand-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <svg className="w-3 h-3 text-surface-400 group-hover:text-[var(--accent)] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                     </svg>
                                   </button>
@@ -515,10 +515,10 @@ export function ScheduleGrid({
                       );
                     })}
                     <td className="px-3 py-2 align-top">
-                      <div className="rounded-2xl border border-surface-800/70 bg-surface-900/70 px-3 py-3 text-center shadow-sm">
-                        <p className="text-xs font-semibold text-surface-50">{formatMinutes(employeeTotalMinutes)}</p>
-                        <p className="text-[10px] text-surface-400">Cel {WEEK_TARGET_HOURS}h</p>
-                        <div className="mt-2 h-1.5 w-full rounded-full bg-surface-800/60">
+                      <div className="rounded-2xl border border-[var(--border-soft)] bg-surface-50 px-3 py-3 text-center shadow-sm">
+                        <p className="text-xs font-semibold text-surface-900">{formatMinutes(employeeTotalMinutes)}</p>
+                        <p className="text-[10px] text-surface-500">Cel {WEEK_TARGET_HOURS}h</p>
+                        <div className="mt-2 h-1.5 w-full rounded-full bg-surface-200">
                           <div
                             className="h-1.5 rounded-full bg-brand-400"
                             style={{ width: `${progress}%` }}
@@ -531,20 +531,20 @@ export function ScheduleGrid({
               })
             )}
           </tbody>
-          <tfoot className="bg-surface-900/70">
-            <tr className="border-t border-surface-800/80">
-              <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400 sticky left-0 bg-surface-900/80 z-20">
+          <tfoot className="bg-surface-50">
+            <tr className="border-t border-[var(--border-soft)]">
+              <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-surface-500 sticky left-0 bg-surface-50 z-20">
                 Suma dnia
               </td>
               {dayTotals.map((total, index) => (
                 <td key={`total-${dowOrder[index]}`} className="px-2 py-3 text-center">
-                  <div className="inline-flex flex-col items-center gap-1 rounded-full border border-surface-800/70 bg-surface-900/70 px-3 py-1 text-[10px] font-semibold text-surface-200">
+                  <div className="inline-flex flex-col items-center gap-1 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1 text-[10px] font-semibold text-surface-700">
                     <span>{formatMinutes(total)}</span>
                     <span className="text-[9px] text-surface-400">godziny</span>
                   </div>
                 </td>
               ))}
-              <td className="px-3 py-3 text-center text-xs font-semibold text-surface-300">
+              <td className="px-3 py-3 text-center text-xs font-semibold text-surface-600">
                 {formatMinutes(totalWeekMinutes)}
               </td>
             </tr>

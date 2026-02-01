@@ -204,9 +204,9 @@ function WindowStatusCard({
 }) {
   if (window) {
     return (
-      <div className="card p-5 border-l-4 border-l-emerald-500">
+      <div className="card p-5 border-l-4 border-l-orange-500">
         <div className="flex items-start gap-4">
-          <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 flex-shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -251,7 +251,7 @@ function WindowStatusCard({
           {adminView && onOpenWindow && (
             <button
               onClick={onOpenWindow}
-              className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700"
+              className="mt-3 text-sm font-medium panel-link"
             >
               + Otwórz okno składania dyspozycji
             </button>
@@ -600,7 +600,7 @@ function MonthlyAvailabilityTab({
                           </span>
                         )}
                         {!isDayOff && slots.length > 0 && (
-                          <span className="text-[10px] text-emerald-600">
+                          <span className="text-[10px] text-orange-600">
                             {slots.length} slot
                           </span>
                         )}
@@ -820,13 +820,13 @@ function TeamAvailabilityTab({
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-emerald-600">
+                <p className="text-2xl font-bold text-orange-600">
                   {stats.employeesWithAvailability}
                 </p>
                 <p className="text-xs text-surface-500">Z dyspozycją</p>
@@ -1000,7 +1000,7 @@ function TeamAvailabilityTab({
                           e.stopPropagation();
                           onEmployeeClick(emp.id);
                         }}
-                        className="text-sm font-medium text-brand-600 hover:text-brand-700"
+                        className="text-sm font-medium panel-link"
                       >
                         Edytuj
                       </button>
@@ -1108,7 +1108,7 @@ function WindowTeamAvailabilityTab({
                       <td className="py-3 text-right space-x-2">
                         <button
                           type="button"
-                          className="text-brand-600 hover:text-brand-700 text-xs font-medium"
+                          className="panel-link text-xs font-medium"
                           onClick={() => onSelectEmployee(employee.id)}
                         >
                           Podgląd
@@ -1116,7 +1116,7 @@ function WindowTeamAvailabilityTab({
                         {status === "SUBMITTED" && (
                           <button
                             type="button"
-                            className="text-emerald-600 hover:text-emerald-700 text-xs font-medium"
+                            className="text-orange-600 hover:text-orange-700 text-xs font-medium"
                             onClick={() => onUpdateStatus(employee.id, "REVIEWED")}
                           >
                             Zweryfikuj
@@ -1320,7 +1320,7 @@ function EmployeeDetailPanel({
                     </span>
                     <button
                       type="button"
-                      className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                      className="panel-link text-xs font-medium"
                       onClick={() => toggleDayOff(key)}
                     >
                       {isDayOff ? "Usuń wolne" : "Dzień wolny"}
@@ -1328,7 +1328,7 @@ function EmployeeDetailPanel({
                     {!isDayOff && (
                       <button
                         type="button"
-                        className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                        className="panel-link text-xs font-medium"
                         onClick={() => addSlot(key)}
                       >
                         + Dodaj
@@ -1613,7 +1613,7 @@ function WindowEmployeeDetailPanel({
                             </span>
                           )}
                           {!isDayOff && slots.length > 0 && (
-                            <span className="text-[10px] text-emerald-600">
+                            <span className="text-[10px] text-orange-600">
                               {slots.length}
                             </span>
                           )}
