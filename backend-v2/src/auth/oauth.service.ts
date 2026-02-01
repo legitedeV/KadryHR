@@ -755,37 +755,13 @@ export class OAuthService {
     };
   }
 
-  private async resolveDefaultOrganisationId(
-    tx: Prisma.TransactionClient,
-  ) {
-    const configuredId =
-      this.configService.get<string>('DEFAULT_ORGANISATION_ID');
-    if (configuredId) {
-      const configured = await tx.organisation.findUnique({
-        where: { id: configuredId },
-      });
-      if (configured) {
-        return { organisationId: configured.id, created: false };
-      }
-      this.logger.warn(
-        `Default organisation id not found`,
-        JSON.stringify({ organisationId: configuredId }),
-      );
-    }
+  private resolveOrganisationName(profile: OAuthProfile) {
+    const nameFromProfile = [profile.firstName, profile.lastName]
+      .filter((value): value is string => Boolean(value && value.trim()))
+      .join(' ')
+      .trim();
 
-    const defaultOrgName = 'Default';
-    const existingDefault = await tx.organisation.findFirst({
-      where: { name: defaultOrgName },
-    });
-    if (existingDefault) {
-      return { organisationId: existingDefault.id, created: false };
-    }
-
-    const organisation = await tx.organisation.create({
-      data: { name: defaultOrgName },
-    });
-
-    return { organisationId: organisation.id, created: true };
+    return nameFromProfile || 'Moja firma';
   }
 
   private async findOrCreateUser(
@@ -883,58 +859,81 @@ export class OAuthService {
           where: { email: profile.email },
           select: { id: true, organisationId: true },
         });
-        let organisationId = existingUser?.organisationId;
-        if (!organisationId) {
-          const resolved = await this.resolveDefaultOrganisationId(tx);
-          organisationId = resolved.organisationId;
-          createdOrganisationId = resolved.created ? resolved.organisationId : null;
+        if (existingUser) {
+          const user = await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              firstName: resolvedNames.firstName ?? undefined,
+              lastName: resolvedNames.lastName ?? undefined,
+              avatarUrl: profile.avatarUrl ?? undefined,
+            },
+          });
+
+          await tx.oAuthAccount.upsert({
+            where: {
+              provider_providerAccountId: {
+                provider,
+                providerAccountId: profile.providerAccountId,
+              },
+            },
+            create: {
+              provider,
+              providerAccountId: profile.providerAccountId,
+              userId: user.id,
+            },
+            update: {
+              userId: user.id,
+            },
+          });
+
+          await tx.employee.upsert({
+            where: { userId: user.id },
+            create: {
+              organisationId: existingUser.organisationId,
+              userId: user.id,
+              firstName: resolvedNames.firstName,
+              lastName: resolvedNames.lastName,
+              email: profile.email,
+            },
+            update: {
+              firstName: resolvedNames.firstName,
+              lastName: resolvedNames.lastName,
+              email: profile.email,
+            },
+          });
+
+          return { user, createdOrganisationId };
         }
 
-        const user = await tx.user.upsert({
-          where: { email: profile.email },
-          create: {
+        const organisation = await tx.organisation.create({
+          data: { name: this.resolveOrganisationName(profile) },
+        });
+        createdOrganisationId = organisation.id;
+
+        const user = await tx.user.create({
+          data: {
             email: profile.email,
             passwordHash,
             role: Role.OWNER,
-            organisationId,
-            firstName: resolvedNames.firstName ?? undefined,
-            lastName: resolvedNames.lastName ?? undefined,
-            avatarUrl: profile.avatarUrl ?? undefined,
-          },
-          update: {
+            organisationId: organisation.id,
             firstName: resolvedNames.firstName ?? undefined,
             lastName: resolvedNames.lastName ?? undefined,
             avatarUrl: profile.avatarUrl ?? undefined,
           },
         });
 
-        await tx.oAuthAccount.upsert({
-          where: {
-            provider_providerAccountId: {
-              provider,
-              providerAccountId: profile.providerAccountId,
-            },
-          },
-          create: {
+        await tx.oAuthAccount.create({
+          data: {
             provider,
             providerAccountId: profile.providerAccountId,
             userId: user.id,
           },
-          update: {
-            userId: user.id,
-          },
         });
 
-        await tx.employee.upsert({
-          where: { userId: user.id },
-          create: {
-            organisationId: user.organisationId,
+        await tx.employee.create({
+          data: {
+            organisationId: organisation.id,
             userId: user.id,
-            firstName: resolvedNames.firstName,
-            lastName: resolvedNames.lastName,
-            email: profile.email,
-          },
-          update: {
             firstName: resolvedNames.firstName,
             lastName: resolvedNames.lastName,
             email: profile.email,
