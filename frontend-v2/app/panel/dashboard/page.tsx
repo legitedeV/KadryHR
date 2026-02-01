@@ -154,7 +154,7 @@ function getShiftStatusLabel(shift: ShiftView, now: Date) {
   start.setHours(startHour, startMinute, 0, 0);
   const end = new Date(now);
   end.setHours(endHour, endMinute, 0, 0);
-  if (now >= end) return { label: "Zakończona", tone: "bg-emerald-500/10 text-emerald-700" };
+  if (now >= end) return { label: "Zakończona", tone: "bg-orange-100 text-orange-800" };
   if (now >= start) return { label: "W trakcie", tone: "bg-amber-500/10 text-amber-700" };
   return { label: "Zaplanowana", tone: "bg-surface-100 text-surface-700" };
 }
@@ -348,7 +348,7 @@ export default function DashboardPage() {
               step.status === "done" ? "Ukończony" : step.status === "in-progress" ? "W trakcie" : "Do zrobienia";
             const statusTone =
               step.status === "done"
-                ? "bg-emerald-500/10 text-emerald-700"
+                ? "bg-orange-100 text-orange-800"
                 : step.status === "in-progress"
                 ? "bg-amber-500/10 text-amber-700"
                 : "bg-surface-100 text-surface-700";
@@ -463,9 +463,9 @@ export default function DashboardPage() {
                       <span
                         className={`px-2 py-1 rounded-md ${
                           employee.locations.length > 0
-                            ? "bg-emerald-500/10 text-emerald-700"
-                            : "bg-amber-500/10 text-amber-700"
-                        }`}
+                        ? "bg-orange-100 text-orange-800"
+                        : "bg-amber-500/10 text-amber-700"
+                    }`}
                       >
                         {employee.locations.length > 0 ? "Aktywny" : "Oczekujący"}
                       </span>
@@ -514,7 +514,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span>Różnica</span>
-                <strong className={differenceToday >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                <strong className={differenceToday >= 0 ? "text-orange-700" : "text-rose-700"}>
                   {differenceToday} h
                 </strong>
               </div>
@@ -526,16 +526,16 @@ export default function DashboardPage() {
               <svg viewBox="0 0 300 120" className="w-full h-full">
                 <defs>
                   <linearGradient id="hoursArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6b9c7b" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="#6b9c7b" stopOpacity="0.02" />
+                    <stop offset="0%" stopColor="#F97316" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#F97316" stopOpacity="0.02" />
                   </linearGradient>
                 </defs>
                 <line x1="20" y1="20" x2="20" y2="100" stroke="#e6ded2" strokeWidth="1" />
                 <line x1="20" y1="100" x2="280" y2="100" stroke="#e6ded2" strokeWidth="1" />
                 <path d={areaPath} fill="url(#hoursArea)" />
-                <path d={chartPath} className="chart-line" stroke="#6b9c7b" strokeWidth="2" fill="none" />
+                <path d={chartPath} className="chart-line" stroke="#F97316" strokeWidth="2" fill="none" />
                 {chartPoints.map((point) => (
-                  <circle key={point.date} cx={point.x} cy={point.y} r="2" fill="#6b9c7b" />
+                  <circle key={point.date} cx={point.x} cy={point.y} r="2" fill="#F97316" />
                 ))}
                 {chartPoints.map((point) => (
                   <text

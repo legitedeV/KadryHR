@@ -4,8 +4,8 @@ import { ReactNode } from "react";
 import { ToastPayload, useToastQueue } from "@/lib/toast";
 
 const variantClasses: Record<string, string> = {
-  info: "bg-sky-900/50 text-sky-50 border-sky-800",
-  success: "bg-emerald-900/50 text-emerald-50 border-emerald-800",
+  info: "bg-slate-900/50 text-slate-50 border-slate-700",
+  success: "bg-orange-900/40 text-orange-50 border-orange-800",
   warning: "bg-amber-900/40 text-amber-50 border-amber-800",
   error: "bg-rose-900/40 text-rose-50 border-rose-800",
 };

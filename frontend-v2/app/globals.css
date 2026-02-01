@@ -86,6 +86,67 @@
   --btn-secondary-text: #1F2933;
 }
 
+.panel-theme {
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --border-soft: #E5E7EB;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --accent: #F97316;
+  --accent-hover: #EA580C;
+  --accent-soft: #FFEDD5;
+  --accent-border: #FDBA74;
+  --focus-ring: #FDBA74;
+  --panel-bg: var(--bg-page);
+  --panel-sidebar-bg: var(--bg-card);
+  --panel-header-bg: var(--bg-card);
+  --panel-card-bg: var(--bg-card);
+  --panel-card-soft-bg: var(--bg-card);
+  --panel-card-border: var(--border-soft);
+  --panel-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 42, 0.1);
+  --shadow-subtle: 0 1px 1px rgba(15, 23, 42, 0.08);
+  --body-gradient: var(--bg-page);
+  --body-text: var(--text-main);
+  --card-bg: var(--bg-card);
+  --card-border: var(--border-soft);
+  --card-border-strong: color-mix(in srgb, var(--accent-border) 45%, var(--border-soft));
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --card-shadow-hover: 0 2px 4px rgba(15, 23, 42, 0.08);
+  --input-bg: var(--bg-card);
+  --input-border: var(--border-soft);
+  --btn-primary-bg: var(--accent);
+  --btn-primary-bg-hover: var(--accent-hover);
+  --btn-primary-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+  --btn-secondary-bg: var(--bg-card);
+  --btn-secondary-border: var(--border-soft);
+  --btn-secondary-hover: #F1F5F9;
+  --btn-secondary-text: var(--text-main);
+  --color-brand-50: #FFF7ED;
+  --color-brand-100: #FFEDD5;
+  --color-brand-200: #FED7AA;
+  --color-brand-300: #FDBA74;
+  --color-brand-400: #FB923C;
+  --color-brand-500: #F97316;
+  --color-brand-600: #EA580C;
+  --color-brand-700: #C2410C;
+  --color-brand-800: #9A3412;
+  --color-brand-900: #7C2D12;
+  --color-brand-950: #431407;
+  --color-accent-50: #FFF7ED;
+  --color-accent-100: #FFEDD5;
+  --color-accent-200: #FED7AA;
+  --color-accent-300: #FDBA74;
+  --color-accent-400: #FB923C;
+  --color-accent-500: #F97316;
+  --color-accent-600: #EA580C;
+  --color-accent-700: #C2410C;
+  --color-accent-800: #9A3412;
+  --color-accent-900: #7C2D12;
+  --color-accent-950: #431407;
+}
+
 html {
   min-height: 100%;
   scroll-behavior: smooth;
@@ -182,12 +243,12 @@ body::before {
   align-items: center;
   gap: 0.35rem;
   border-radius: var(--radius-panel);
-  border: 1px solid color-mix(in srgb, var(--color-brand-400) 25%, var(--panel-card-border));
-  background: var(--card-bg);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
   padding: 0.25rem 0.6rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-brand-700);
+  color: var(--text-main);
 }
 
 .panel-button {
@@ -202,19 +263,19 @@ body::before {
 }
 
 .panel-button:hover {
-  border-color: color-mix(in srgb, var(--color-brand-400) 40%, var(--panel-card-border));
-  color: var(--color-surface-900);
+  border-color: color-mix(in srgb, var(--accent-border) 45%, var(--panel-card-border));
+  color: var(--text-main);
 }
 
 .panel-button:focus {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-400) 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 55%, transparent);
 }
 
 .panel-button-primary {
   border-radius: var(--radius-xl);
-  border: 1px solid color-mix(in srgb, var(--color-brand-500) 70%, var(--panel-card-border));
-  background: var(--color-brand-500);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, var(--panel-card-border));
+  background: var(--accent);
   color: var(--color-surface-50);
   padding: 0.55rem 0.9rem;
   font-size: 0.85rem;
@@ -223,12 +284,12 @@ body::before {
 }
 
 .panel-button-primary:hover {
-  background: var(--color-brand-600);
+  background: var(--accent-hover);
 }
 
 .panel-button-primary:focus {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 55%, transparent);
 }
 
 .panel-input {
@@ -248,8 +309,21 @@ body::before {
 }
 
 .panel-input:focus {
-  border-color: color-mix(in srgb, var(--color-accent-400) 45%, var(--panel-card-border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-400) 18%, transparent);
+  border-color: color-mix(in srgb, var(--focus-ring) 60%, var(--panel-card-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 40%, transparent);
+}
+
+.panel-theme .panel-link {
+  color: var(--text-main);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.panel-theme .panel-link:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent-border);
 }
 
 .card-hover {
@@ -278,9 +352,9 @@ body::before {
 }
 
 .badge-success {
-  background-color: rgba(13, 148, 136, 0.25);
-  color: rgb(153, 246, 228);
-  box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.4);
+  background-color: var(--accent-soft);
+  color: var(--text-main);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
 .badge-warning {
@@ -296,9 +370,9 @@ body::before {
 }
 
 .badge-brand {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: rgb(167, 243, 208);
-  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.45);
+  background-color: color-mix(in srgb, var(--accent-soft) 80%, white);
+  color: var(--text-main);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
 .badge-neutral {
@@ -324,7 +398,7 @@ body::before {
 
 .btn-primary:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-400) 35%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 45%, transparent);
 }
 
 .btn-primary:hover {

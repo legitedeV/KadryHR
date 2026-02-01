@@ -20,13 +20,13 @@ export function PanelShell({ user, onLogout, actionsSlot, children }: PanelShell
   const title = titleByPath[pathname] ?? "Dashboard";
 
   return (
-    <div className="min-h-screen bg-[var(--panel-bg)] text-[var(--body-text)]">
+    <div className="panel-theme min-h-screen bg-[var(--panel-bg)] text-[var(--body-text)]">
       <div className="flex min-h-screen">
         <Sidebar
           user={user}
           activePath={pathname}
           onLogout={onLogout}
-          className="hidden md:flex md:w-64 border-r border-surface-300"
+          className="hidden md:flex md:w-64 border-r border-[var(--border-soft)]"
         />
 
         {mobileMenuOpen && (
@@ -42,7 +42,7 @@ export function PanelShell({ user, onLogout, actionsSlot, children }: PanelShell
           onLogout={onLogout}
           className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden ${
             mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } border-r border-surface-300`}
+          } border-r border-[var(--border-soft)]`}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

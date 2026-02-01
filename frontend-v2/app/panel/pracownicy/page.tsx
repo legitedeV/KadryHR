@@ -417,7 +417,7 @@ export default function PracownicyPage() {
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           employee.isActive && !employee.isDeleted
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-orange-100 text-orange-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
@@ -673,7 +673,7 @@ export default function PracownicyPage() {
                   <span
                     className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       selectedEmployee.isActive && !selectedEmployee.isDeleted
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-orange-100 text-orange-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >

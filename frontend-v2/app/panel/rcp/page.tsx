@@ -348,7 +348,7 @@ export default function PanelRcpPage() {
                   setQrResult(null);
                   setQrDataUrl(null);
                 }}
-                className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
               >
                 {locations.map((location) => (
                   <option key={location.id} value={location.id}>
@@ -417,7 +417,7 @@ export default function PanelRcpPage() {
                           updateLocationSettings({ geoLat: selectedLocation.geoLat })
                         }
                         placeholder="52.2297"
-                        className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                       />
                     </div>
                     <div>
@@ -439,7 +439,7 @@ export default function PanelRcpPage() {
                           updateLocationSettings({ geoLng: selectedLocation.geoLng })
                         }
                         placeholder="21.0122"
-                        className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                       />
                     </div>
                   </div>
@@ -500,7 +500,7 @@ export default function PanelRcpPage() {
                         rcpAccuracyMaxMeters: selectedLocation.rcpAccuracyMaxMeters,
                       })
                     }
-                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                   />
                   <p className="text-xs text-surface-500 mt-1">
                     Rejestracja zostanie odrzucona jeśli dokładność GPS przekroczy tę wartość (w metrach)
@@ -585,7 +585,7 @@ export default function PanelRcpPage() {
                     </button>
                   </div>
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800 text-sm">
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-orange-800 text-sm">
                     ✅ Kod QR gotowy! Pracownicy mogą go zeskanować aby zarejestrować
                     wejście lub wyjście z pracy.
                   </div>
@@ -669,7 +669,7 @@ export default function PanelRcpPage() {
                   value={newLocation.name}
                   onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
                   placeholder="np. Sklep Warszawa Centrum"
-                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                 />
               </div>
 
@@ -684,7 +684,7 @@ export default function PanelRcpPage() {
                     value={newLocation.geoLat || ''}
                     onChange={(e) => setNewLocation({ ...newLocation, geoLat: parseFloat(e.target.value) || undefined })}
                     placeholder="52.2297"
-                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                   />
                 </div>
                 <div>
@@ -697,7 +697,7 @@ export default function PanelRcpPage() {
                     value={newLocation.geoLng || ''}
                     onChange={(e) => setNewLocation({ ...newLocation, geoLng: parseFloat(e.target.value) || undefined })}
                     placeholder="21.0122"
-                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                   />
                 </div>
               </div>
@@ -712,7 +712,7 @@ export default function PanelRcpPage() {
                   max="5000"
                   value={newLocation.geoRadiusMeters || 100}
                   onChange={(e) => setNewLocation({ ...newLocation, geoRadiusMeters: parseInt(e.target.value) || 100 })}
-                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                 />
               </div>
 
@@ -726,7 +726,7 @@ export default function PanelRcpPage() {
                   max="500"
                   value={newLocation.rcpAccuracyMaxMeters || 100}
                   onChange={(e) => setNewLocation({ ...newLocation, rcpAccuracyMaxMeters: parseInt(e.target.value) || 100 })}
-                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
                 />
               </div>
 
@@ -736,7 +736,7 @@ export default function PanelRcpPage() {
                   id="rcpEnabled"
                   checked={newLocation.rcpEnabled || false}
                   onChange={(e) => setNewLocation({ ...newLocation, rcpEnabled: e.target.checked })}
-                  className="rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                  className="rounded border-surface-300 text-[var(--accent)] focus:ring-[var(--focus-ring)]"
                 />
                 <label htmlFor="rcpEnabled" className="text-sm text-surface-900">
                   RCP włączone
