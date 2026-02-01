@@ -45,7 +45,7 @@ try {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto(`${baseUrl}/login`, { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Zaloguj przez Google" }).waitFor();
+  await page.getByRole("button", { name: "Kontynuuj z Google" }).waitFor();
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.screenshot({ path: screenshotPath, fullPage: true });
   await browser.close();
