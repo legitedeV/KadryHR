@@ -1,3 +1,4 @@
+import { forwardRef } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { AvatarsController } from './avatars.controller';
 import { AvatarsService } from './avatars.service';
@@ -9,11 +10,11 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    forwardRef(() => AuthModule),
+    forwardRef(() => EmployeesModule),
     PrismaModule,
-    EmployeesModule,
     OrganisationsModule,
     AuditModule,
-    AuthModule,
   ],
   controllers: [AvatarsController],
   providers: [AvatarsService],

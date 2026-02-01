@@ -1,23 +1,28 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
+
+import { PrismaModule } from '../prisma/prisma.module';
+import { QueueModule } from '../queue/queue.module';
+import { AuditModule } from '../audit/audit.module';
+import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
+import { AvatarsModule } from '../avatars/avatars.module';
+import { EmployeesModule } from '../employees/employees.module';
+
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
-import { PrismaModule } from '../prisma/prisma.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import type { StringValue } from 'ms';
-import { QueueModule } from '../queue/queue.module';
 import { InvitationsService } from './invitations.service';
 import { PermissionsService } from './permissions.service';
-import { AuditModule } from '../audit/audit.module';
-import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
 import { OAuthService } from './oauth.service';
-import { AvatarsModule } from '../avatars/avatars.module';
 
 @Module({
   imports: [
+    forwardRef(() => AvatarsModule),
+    forwardRef(() => EmployeesModule),
     PrismaModule,
     PassportModule,
     JwtModule.registerAsync({
@@ -34,6 +39,7 @@ import { AvatarsModule } from '../avatars/avatars.module';
         return {
           secret: secret ?? 'changeme-access',
           signOptions: {
+            // ms.StringValue – np. '15m', '1h', '7d'
             expiresIn: (accessTokenTtl ?? '15m') as StringValue,
           },
         };
@@ -43,7 +49,6 @@ import { AvatarsModule } from '../avatars/avatars.module';
     ConfigModule,
     AuditModule,
     ShiftPresetsModule,
-    AvatarsModule,
   ],
   controllers: [AuthController],
   providers: [
