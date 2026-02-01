@@ -18,6 +18,7 @@ import { QueueService } from '../queue/queue.service';
 import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
 import { createHash, randomBytes } from 'crypto';
+import { AvatarsService } from '../avatars/avatars.service';
 
 const PASSWORD_RESET_TTL_MS = 2 * 60 * 60 * 1000;
 const DEFAULT_FRONTEND_URL = 'https://kadryhr.pl';
@@ -31,6 +32,7 @@ export class AuthService {
     private readonly queueService: QueueService,
     private readonly shiftPresetsService: ShiftPresetsService,
     private readonly emailTemplates: EmailTemplatesService,
+    private readonly avatarsService: AvatarsService,
   ) {}
 
   private parseTtlToMs(ttl: string): number {
@@ -110,6 +112,9 @@ export class AuthService {
         organisationId: true,
         firstName: true,
         lastName: true,
+        avatarPath: true,
+        avatarUrl: true,
+        updatedAt: true,
         organisation: {
           select: {
             id: true,
@@ -123,8 +128,15 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    const { avatarPath, updatedAt, ...rest } = user;
+
     return {
-      ...user,
+      ...rest,
+      avatarUrl: this.avatarsService.buildPublicUrl(
+        avatarPath ?? null,
+        user.avatarUrl ?? null,
+      ),
+      avatarUpdatedAt: updatedAt ?? null,
       permissions: getPermissionsForRole(user.role),
     };
   }

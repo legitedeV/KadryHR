@@ -14,6 +14,7 @@ import { PermissionsService } from './permissions.service';
 import { AuditModule } from '../audit/audit.module';
 import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
 import { OAuthService } from './oauth.service';
+import { AvatarsModule } from '../avatars/avatars.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { OAuthService } from './oauth.service';
     ConfigModule,
     AuditModule,
     ShiftPresetsModule,
+    AvatarsModule,
   ],
   controllers: [AuthController],
   providers: [

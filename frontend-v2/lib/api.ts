@@ -20,6 +20,8 @@ export interface User {
   role: UserRole;
   organisation: OrganisationSummary;
   permissions: Permission[];
+  avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
 }
 
 export interface ShiftRecord {
@@ -848,6 +850,8 @@ interface UserResponse {
   lastName?: string | null;
   organisation: OrganisationSummary;
   permissions?: Permission[];
+  avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
 }
 
 interface ShiftResponse {
@@ -924,6 +928,8 @@ export function mapUser(user: UserResponse): User {
     name: formatUserName(user),
     organisation: user.organisation,
     permissions: Array.isArray(user.permissions) ? user.permissions : [],
+    avatarUrl: user.avatarUrl ?? null,
+    avatarUpdatedAt: user.avatarUpdatedAt ?? null,
   } as User;
 }
 

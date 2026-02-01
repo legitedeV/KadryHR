@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Avatar } from "@/components/Avatar";
+import { buildAvatarSrc } from "@/lib/avatar";
 import { EmptyState } from "@/components/EmptyState";
 import type { AvailabilityIndicator, ShiftDisplay, WeekRange } from "../types";
 import type { EmployeeRecord, ScheduleMetadata, ShiftRecord } from "@/lib/api";
@@ -316,7 +317,11 @@ export function ScheduleGrid({
                   >
                     <td className="w-52 px-3 py-3 sticky left-0 bg-white z-10 border-r border-[var(--border-soft)]">
                       <div className="flex items-center gap-2">
-                        <Avatar name={formatEmployeeName(employee)} src={employee.avatarUrl} size="sm" />
+                        <Avatar
+                          name={formatEmployeeName(employee)}
+                          src={buildAvatarSrc(employee.avatarUrl, employee.avatarUpdatedAt)}
+                          size="sm"
+                        />
                         <div className="flex flex-col min-w-0">
                           <span className="font-medium text-sm text-surface-900 truncate">
                             {formatEmployeeName(employee)}

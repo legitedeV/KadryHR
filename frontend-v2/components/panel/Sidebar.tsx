@@ -4,8 +4,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { panelNavItems, PanelNavItemId } from "@/lib/panel-navigation";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
+import { Avatar } from "@/components/Avatar";
 import type { User } from "@/lib/api";
 import type { OnboardingTargetId } from "@/features/onboarding/onboarding.types";
+import { buildAvatarSrc } from "@/lib/avatar";
 
 const navItemToOnboardingTarget: Partial<Record<PanelNavItemId, OnboardingTargetId>> = {
   schedule: "nav-schedule",
@@ -68,9 +70,10 @@ export function Sidebar({ user, activePath, onLogout, footerSlot, className, col
       <div className={`border-t border-[var(--border-soft)] ${collapsed ? "px-3 py-4" : "px-5 py-4"}`}>
         <div className={`flex ${collapsed ? "flex-col items-center gap-3" : "items-center justify-between gap-3"} mb-3`}>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-[var(--accent-soft)] flex items-center justify-center text-[var(--text-main)] font-semibold">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            <Avatar
+              name={user.name}
+              src={buildAvatarSrc(user.avatarUrl, user.avatarUpdatedAt)}
+            />
             {!collapsed && (
               <div>
                 <div className="text-sm font-semibold text-[var(--text-main)]">
