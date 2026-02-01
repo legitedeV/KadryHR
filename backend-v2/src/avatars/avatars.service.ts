@@ -3,6 +3,7 @@ import {
   BadRequestException,
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
+  Logger,
 } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -21,6 +22,7 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 @Injectable()
 export class AvatarsService {
   private readonly baseUploadDir: string;
+  private readonly logger = new Logger(AvatarsService.name);
 
   constructor() {
     this.baseUploadDir = path.join(process.cwd(), '..', 'uploads', 'avatars');
@@ -40,12 +42,8 @@ export class AvatarsService {
     entityId: string,
   ): Promise<void> {
     const uploadDir = this.getUploadDir(organisationId, entityType, entityId);
-    try {
-      await fs.access(uploadDir);
-    } catch {
-      await fs.mkdir(this.baseUploadDir, { recursive: true, mode: 0o750 });
-      await fs.mkdir(uploadDir, { recursive: true, mode: 0o750 });
-    }
+    await fs.mkdir(this.baseUploadDir, { recursive: true, mode: 0o750 });
+    await fs.mkdir(uploadDir, { recursive: true, mode: 0o750 });
   }
 
   validateFile(mimeType: string, size: number): void {
@@ -82,7 +80,14 @@ export class AvatarsService {
     const uploadDir = this.getUploadDir(organisationId, entityType, entityId);
     const fullPath = path.join(uploadDir, filename);
 
-    await fs.writeFile(fullPath, buffer, { mode: 0o640 });
+    try {
+      await fs.writeFile(fullPath, buffer, { mode: 0o640 });
+    } catch (error) {
+      const trace =
+        error instanceof Error ? error.stack : JSON.stringify(error);
+      this.logger.error('Failed to save avatar file.', trace);
+      throw error;
+    }
 
     const avatarPath = path
       .join('avatars', organisationId, entityType, entityId, filename)
@@ -107,8 +112,14 @@ export class AvatarsService {
     try {
       await fs.unlink(resolvedPath);
     } catch (err) {
-      // Ignore error if file doesn't exist
-      console.error('Failed to delete avatar file:', err);
+      if (err && typeof err === 'object' && 'code' in err) {
+        const code = (err as { code?: string }).code;
+        if (code === 'ENOENT') {
+          return;
+        }
+      }
+      const trace = err instanceof Error ? err.stack : JSON.stringify(err);
+      this.logger.error('Failed to delete avatar file.', trace);
     }
   }
 
