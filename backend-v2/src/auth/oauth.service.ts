@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -600,12 +601,50 @@ export class OAuthService {
 
     let userId: string;
     try {
-      const user = await this.findOrCreateUser(resolvedProvider, profile);
+      const user = await this.findOrCreateUser(
+        resolvedProvider,
+        profile,
+        requestId,
+      );
       userId = user.id;
       await this.authService.createSessionForUser(user.id, res);
     } catch (error) {
       this.logOAuthDbError(error, { requestId, provider: resolvedProvider });
       const mapped = this.mapOAuthDbError(error);
+      if (mapped.code === 'oauth_db_failed') {
+        const errorClass =
+          error instanceof Error ? error.constructor.name : typeof error;
+        const message =
+          error instanceof Error
+            ? this.sanitizeErrorMessage(error.message)
+            : undefined;
+        const stack =
+          error instanceof Error && error.stack
+            ? this.sanitizeErrorMessage(error.stack)
+            : undefined;
+        const payload: Record<string, unknown> = {
+          requestId,
+          provider: resolvedProvider,
+          errorClass,
+          message,
+          stack,
+        };
+
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          payload.prismaCode = error.code;
+          payload.meta = this.sanitizePrismaMeta(error.meta);
+        }
+        if (error instanceof Prisma.PrismaClientValidationError) {
+          payload.prismaValidationMessage = this.sanitizeErrorMessage(
+            error.message,
+          );
+        }
+
+        this.logger.error(
+          'OAuth callback failed with oauth_db_failed',
+          JSON.stringify(payload),
+        );
+      }
       return this.sendOAuthError(
         res,
         mapped.status,
@@ -727,6 +766,7 @@ export class OAuthService {
   private async findOrCreateUser(
     provider: OAuthProvider,
     profile: OAuthProfile,
+    requestId: string,
   ) {
     if (!profile.providerAccountId) {
       throw new BadRequestException('OAuth profile is missing identifier');
@@ -736,7 +776,17 @@ export class OAuthService {
     const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
 
     const { user, createdOrganisationId } = await this.prisma.$transaction(
-      async (tx) => {
+      async (tx: Prisma.TransactionClient) => {
+        if (!tx?.user?.findUnique) {
+          this.logger.error(
+            'OAuth transaction client missing user model',
+            JSON.stringify({ requestId, provider }),
+          );
+          throw new InternalServerErrorException({
+            message: 'OAuth transaction client unavailable',
+            requestId,
+          });
+        }
         const existingAccount = await tx.oauthAccount.findUnique({
           where: {
             provider_providerAccountId: {
