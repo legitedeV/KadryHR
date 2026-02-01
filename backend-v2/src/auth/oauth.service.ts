@@ -275,7 +275,11 @@ export class OAuthService {
       error instanceof Error
         ? this.sanitizeErrorMessage(error.message)
         : undefined;
-    const basePayload = { ...context, errorClass, message };
+    const stack =
+      error instanceof Error && error.stack
+        ? this.sanitizeErrorMessage(error.stack)
+        : undefined;
+    const basePayload = { ...context, errorClass, message, stack };
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       this.logger.error(
@@ -299,13 +303,6 @@ export class OAuthService {
       this.logger.error(
         'OAuth user persistence failed',
         JSON.stringify(basePayload),
-      );
-    }
-
-    if (error instanceof Error && error.stack) {
-      this.logger.error(
-        'OAuth user persistence stack',
-        this.sanitizeErrorMessage(error.stack),
       );
     }
   }
@@ -777,15 +774,16 @@ export class OAuthService {
 
     const { user, createdOrganisationId } = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        if (!tx?.user?.findUnique) {
+        if (
+          !tx ||
+          typeof (tx as Prisma.TransactionClient)?.user?.findUnique !==
+            'function'
+        ) {
           this.logger.error(
-            'OAuth transaction client missing user model',
+            'OAuth transaction client invalid',
             JSON.stringify({ requestId, provider }),
           );
-          throw new InternalServerErrorException({
-            message: 'OAuth transaction client unavailable',
-            requestId,
-          });
+          throw new InternalServerErrorException('oauth_tx_invalid');
         }
         const existingAccount = await tx.oauthAccount.findUnique({
           where: {
