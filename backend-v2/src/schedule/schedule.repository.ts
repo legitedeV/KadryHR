@@ -7,17 +7,21 @@ export class ScheduleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private sanitizeIds(ids: Array<string | null | undefined>) {
-    return ids.filter(
-      (id): id is string => {
-        if (typeof id !== 'string') {
-          return false;
-        }
-        const trimmed = id.trim();
-        return (
-          trimmed !== '' && trimmed !== 'undefined' && trimmed !== 'null'
-        );
-      },
-    );
+    return ids.reduce<string[]>((result, id) => {
+      if (typeof id !== 'string') {
+        return result;
+      }
+      const trimmed = id.trim();
+      if (
+        trimmed === '' ||
+        trimmed === 'undefined' ||
+        trimmed === 'null'
+      ) {
+        return result;
+      }
+      result.push(trimmed);
+      return result;
+    }, []);
   }
 
   findShifts(params: Prisma.ShiftFindManyArgs) {
