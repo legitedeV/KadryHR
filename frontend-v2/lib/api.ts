@@ -273,6 +273,57 @@ export interface EmployeeRecord {
   updatedAt: string;
 }
 
+export type EmployeeDocumentType =
+  | "CERTIFICATE"
+  | "SANEPID"
+  | "MEDICAL"
+  | "SICK_LEAVE"
+  | "OTHER";
+
+export type EmployeeDocumentStatus = "ACTIVE" | "EXPIRED" | "ARCHIVED";
+
+export interface EmployeeDocumentRecord {
+  id: string;
+  type: EmployeeDocumentType;
+  title: string;
+  description?: string | null;
+  issuedAt: string;
+  expiresAt?: string | null;
+  status: EmployeeDocumentStatus;
+  filename: string;
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+  downloadUrl: string;
+}
+
+export type EmployeeContractType = "UOP" | "UZ" | "B2B" | "UOD";
+export type EmployeeContractStatus = "ACTIVE" | "ENDED" | "SUSPENDED";
+
+export interface EmployeeContractRecord {
+  id: string;
+  contractType: EmployeeContractType;
+  rateType: "HOURLY";
+  hourlyRate: number | null;
+  currency: string | null;
+  validFrom: string;
+  validTo?: string | null;
+  status: EmployeeContractStatus;
+}
+
+export interface ScheduleSummaryResponse {
+  range: { from: string; to: string };
+  totals: {
+    hours: number;
+    cost: number;
+    currency: string;
+    shiftsCount: number;
+    shiftsWithoutRate: number;
+    employeesWithoutRate: number;
+  };
+  byDay: Array<{ date: string; hours: number; cost: number }>;
+}
+
 export interface LocationRecord {
   id: string;
   name: string;
@@ -829,6 +880,154 @@ export async function apiListEmployees(
     ...response,
     data: response.data.map(mapEmployee),
   };
+}
+
+export async function apiListEmployeeDocuments(
+  employeeId: string,
+): Promise<EmployeeDocumentRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeDocumentRecord[]>(
+    `${EMPLOYEES_PREFIX}/${employeeId}/documents`,
+  );
+}
+
+export async function apiUploadEmployeeDocument(payload: {
+  employeeId: string;
+  file: File;
+  type: EmployeeDocumentType;
+  title: string;
+  description?: string;
+  issuedAt: string;
+  expiresAt?: string;
+  status?: EmployeeDocumentStatus;
+}): Promise<EmployeeDocumentRecord> {
+  apiClient.hydrateFromStorage();
+  const formData = new FormData();
+  formData.append("file", payload.file);
+  formData.append("type", payload.type);
+  formData.append("title", payload.title);
+  formData.append("issuedAt", payload.issuedAt);
+  if (payload.description) formData.append("description", payload.description);
+  if (payload.expiresAt) formData.append("expiresAt", payload.expiresAt);
+  if (payload.status) formData.append("status", payload.status);
+
+  return apiClient.request<EmployeeDocumentRecord>(
+    `${EMPLOYEES_PREFIX}/${payload.employeeId}/documents`,
+    { method: "POST", body: formData },
+  );
+}
+
+export async function apiUpdateEmployeeDocument(payload: {
+  employeeId: string;
+  documentId: string;
+  data: {
+    type?: EmployeeDocumentType;
+    title?: string;
+    description?: string | null;
+    issuedAt?: string;
+    expiresAt?: string | null;
+    status?: EmployeeDocumentStatus;
+  };
+}): Promise<EmployeeDocumentRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeDocumentRecord>(
+    `${EMPLOYEES_PREFIX}/${payload.employeeId}/documents/${payload.documentId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload.data),
+    },
+  );
+}
+
+export async function apiDeleteEmployeeDocument(payload: {
+  employeeId: string;
+  documentId: string;
+}) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(
+    `${EMPLOYEES_PREFIX}/${payload.employeeId}/documents/${payload.documentId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function apiListEmployeeContracts(
+  employeeId: string,
+): Promise<EmployeeContractRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeContractRecord[]>(
+    `${EMPLOYEES_PREFIX}/${employeeId}/contracts`,
+  );
+}
+
+export async function apiCreateEmployeeContract(payload: {
+  employeeId: string;
+  contractType: EmployeeContractType;
+  hourlyRate: number;
+  currency?: string;
+  validFrom: string;
+  validTo?: string;
+}): Promise<EmployeeContractRecord> {
+  apiClient.hydrateFromStorage();
+  const { employeeId, ...body } = payload;
+  return apiClient.request<EmployeeContractRecord>(
+    `${EMPLOYEES_PREFIX}/${employeeId}/contracts`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function apiUpdateEmployeeContract(payload: {
+  employeeId: string;
+  contractId: string;
+  data: {
+    contractType?: EmployeeContractType;
+    hourlyRate?: number;
+    currency?: string;
+    validFrom?: string;
+    validTo?: string | null;
+    status?: EmployeeContractStatus;
+  };
+}): Promise<EmployeeContractRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeContractRecord>(
+    `${EMPLOYEES_PREFIX}/${payload.employeeId}/contracts/${payload.contractId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload.data),
+    },
+  );
+}
+
+export async function apiTerminateEmployeeContract(payload: {
+  employeeId: string;
+  contractId: string;
+  terminatedAt?: string;
+}): Promise<EmployeeContractRecord> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<EmployeeContractRecord>(
+    `${EMPLOYEES_PREFIX}/${payload.employeeId}/contracts/${payload.contractId}/terminate`,
+    {
+      method: "POST",
+      body: JSON.stringify({ terminatedAt: payload.terminatedAt }),
+    },
+  );
+}
+
+export async function apiGetScheduleSummary(params: {
+  from: string;
+  to: string;
+  locationIds?: string[];
+  positionIds?: string[];
+}): Promise<ScheduleSummaryResponse> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams({ from: params.from, to: params.to });
+  params.locationIds?.forEach((id) => search.append("locationIds[]", id));
+  params.positionIds?.forEach((id) => search.append("positionIds[]", id));
+  return apiClient.request<ScheduleSummaryResponse>(
+    `${SCHEDULE_PREFIX}/summary?${search.toString()}`,
+  );
 }
 
 export async function apiListLocations(): Promise<LocationRecord[]> {

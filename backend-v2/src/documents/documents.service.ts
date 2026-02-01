@@ -1,11 +1,8 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { Role } from '@prisma/client';
+import { UpdateDocumentDto } from './dto/update-document.dto';
+import { EmployeeDocumentStatus, Role } from '@prisma/client';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -46,8 +43,12 @@ export class DocumentsService {
       data: {
         organisationId,
         employeeId,
-        name: dto.name,
+        type: dto.type,
+        title: dto.title,
         description: dto.description,
+        issuedAt: new Date(dto.issuedAt),
+        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+        status: dto.status ?? EmployeeDocumentStatus.ACTIVE,
         filename: dto.filename,
         storagePath: dto.storagePath,
         mimeType: dto.mimeType,
@@ -114,6 +115,49 @@ export class DocumentsService {
     }
 
     return document;
+  }
+
+  async update(
+    organisationId: string,
+    employeeId: string,
+    documentId: string,
+    dto: UpdateDocumentDto,
+  ) {
+    const document = await this.prisma.employeeDocument.findFirst({
+      where: {
+        id: documentId,
+        employeeId,
+        organisationId,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    const nextStatus = dto.status ?? document.status;
+
+    return this.prisma.employeeDocument.update({
+      where: { id: documentId },
+      data: {
+        type: dto.type ?? document.type,
+        title: dto.title ?? document.title,
+        description:
+          dto.description !== undefined ? dto.description : document.description,
+        issuedAt: dto.issuedAt ? new Date(dto.issuedAt) : document.issuedAt,
+        expiresAt:
+          dto.expiresAt !== undefined
+            ? dto.expiresAt
+              ? new Date(dto.expiresAt)
+              : null
+            : document.expiresAt,
+        status: nextStatus,
+        archivedAt:
+          nextStatus === EmployeeDocumentStatus.ARCHIVED
+            ? document.archivedAt ?? new Date()
+            : document.archivedAt,
+      },
+    });
   }
 
   async remove(organisationId: string, employeeId: string, documentId: string) {

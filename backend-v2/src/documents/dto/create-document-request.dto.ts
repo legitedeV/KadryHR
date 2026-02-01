@@ -1,24 +1,15 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsNumber,
-  Min,
-  IsEnum,
-  IsISO8601,
-} from 'class-validator';
+import { IsEnum, IsISO8601, IsOptional, IsString } from 'class-validator';
 import { EmployeeDocumentStatus, EmployeeDocumentType } from '@prisma/client';
 
-export class CreateDocumentDto {
+export class CreateDocumentRequestDto {
   @IsEnum(EmployeeDocumentType)
   type!: EmployeeDocumentType;
 
   @IsString()
-  @IsNotEmpty()
   title!: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   description?: string;
 
   @IsISO8601()
@@ -31,20 +22,4 @@ export class CreateDocumentDto {
   @IsOptional()
   @IsEnum(EmployeeDocumentStatus)
   status?: EmployeeDocumentStatus;
-
-  @IsString()
-  @IsNotEmpty()
-  filename!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  mimeType!: string;
-
-  @IsNumber()
-  @Min(0)
-  fileSize!: number;
-
-  @IsString()
-  @IsNotEmpty()
-  storagePath!: string;
 }

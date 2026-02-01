@@ -311,6 +311,20 @@ enum CompensationType {
   HOURLY_RATE
 }
 
+enum EmployeeDocumentType {
+  CERTIFICATE
+  SANEPID
+  MEDICAL
+  SICK_LEAVE
+  OTHER
+}
+
+enum EmployeeDocumentStatus {
+  ACTIVE
+  EXPIRED
+  ARCHIVED
+}
+
 model EmploymentContract {
   id             String         @id @default(uuid())
   organisationId String
@@ -359,8 +373,13 @@ model EmployeeDocument {
   id             String   @id @default(uuid())
   organisationId String
   employeeId     String
-  name           String
+  type           EmployeeDocumentType @default(OTHER)
+  title          String
   description    String?
+  issuedAt       DateTime
+  expiresAt      DateTime?
+  status         EmployeeDocumentStatus @default(ACTIVE)
+  archivedAt     DateTime?
   filename       String // Original filename
   storagePath    String // Path to file in storage
   mimeType       String

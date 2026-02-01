@@ -37,6 +37,8 @@ type ScheduleGridProps = {
   focusedCell: { employeeIndex: number; dayIndex: number } | null;
   canManage: boolean;
   isPublished: boolean;
+  summaryByDay?: Array<{ date: string; hours: number; cost: number }>;
+  summaryCurrency?: string;
   showLoadBars?: boolean;
   showSummaryRow?: boolean;
   showWeekendHighlight?: boolean;
@@ -57,6 +59,8 @@ export function ScheduleGrid({
   focusedCell,
   canManage,
   isPublished,
+  summaryByDay,
+  summaryCurrency,
   showLoadBars = true,
   showSummaryRow = true,
   showWeekendHighlight = true,
@@ -110,6 +114,14 @@ export function ScheduleGrid({
   const summaryHeaderClass = exportMode
     ? "border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400"
     : "sticky left-0 z-20 border-r border-surface-200 bg-white px-4 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-surface-400";
+  const summaryByDate = new Map(
+    (summaryByDay ?? []).map((entry) => [entry.date, entry]),
+  );
+  const currencyFormatter = new Intl.NumberFormat("pl-PL", {
+    style: "currency",
+    currency: summaryCurrency ?? "PLN",
+    maximumFractionDigits: 2,
+  });
 
   return (
     <div className="rounded-lg border border-surface-200 bg-white shadow-sm" data-onboarding-target="schedule-grid">
@@ -309,7 +321,11 @@ export function ScheduleGrid({
               {days.map((day, index) => {
                 const stats = dayStats[index];
                 const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
-                const hours = (stats.totalMinutes / 60).toFixed(1);
+                const summary = summaryByDate.get(stats.dayKey);
+                const hours = summary
+                  ? summary.hours.toFixed(1)
+                  : (stats.totalMinutes / 60).toFixed(1);
+                const costLabel = summary ? currencyFormatter.format(summary.cost) : "—";
                 return (
                   <div
                     key={day.iso}
@@ -320,7 +336,7 @@ export function ScheduleGrid({
                       <span>{stats.planned}</span>
                     </div>
                     <div className="mt-1 text-[11px] text-surface-500">{hours} godz.</div>
-                    <div className="text-[11px] text-surface-400">Koszt: —</div>
+                    <div className="text-[11px] text-surface-400">Koszt: {costLabel}</div>
                   </div>
                 );
               })}

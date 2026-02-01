@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  apiCreateEmployeeContract,
+  apiDeleteEmployeeDocument,
+  apiListEmployeeContracts,
+  apiListEmployeeDocuments,
   apiListEmployees,
+  apiTerminateEmployeeContract,
+  apiUpdateEmployeeContract,
+  apiUpdateEmployeeDocument,
+  apiUploadEmployeeDocument,
+  type EmployeeContractRecord,
+  type EmployeeDocumentRecord,
+  type EmployeeDocumentStatus,
+  type EmployeeDocumentType,
   type EmployeeRecord,
   type PaginatedResponse,
 } from "@/lib/api";
@@ -10,6 +22,8 @@ import { apiClient } from "@/lib/api-client";
 import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { pushToast } from "@/lib/toast";
+import { EmployeeDocumentsList } from "@/features/employees/EmployeeDocumentsList";
+import { EmployeeContractsList } from "@/features/employees/EmployeeContractsList";
 
 // Employee form data type
 interface EmployeeFormData {
@@ -20,20 +34,10 @@ interface EmployeeFormData {
   position: string;
 }
 
-// Document metadata type (for display without actual file storage)
-interface DocumentMetadata {
-  id: string;
-  name: string;
-  description?: string;
-  filename: string;
-  mimeType: string;
-  fileSize: number;
-  createdAt: string;
-}
-
 // Employee detail type with additional fields
 interface EmployeeDetail extends EmployeeRecord {
-  documents?: DocumentMetadata[];
+  documents?: EmployeeDocumentRecord[];
+  contracts?: EmployeeContractRecord[];
 }
 
 type ViewMode = "list" | "add" | "edit" | "view";
@@ -49,7 +53,64 @@ export default function PracownicyPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [activeTab, setActiveTab] = useState<"data" | "documents" | "contracts">("data");
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDetail | null>(null);
+  const [documents, setDocuments] = useState<EmployeeDocumentRecord[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [documentFormLoading, setDocumentFormLoading] = useState(false);
+  const [documentFormError, setDocumentFormError] = useState<string | null>(null);
+  const [documentForm, setDocumentForm] = useState<{
+    type: EmployeeDocumentType;
+    title: string;
+    description: string;
+    issuedAt: string;
+    expiresAt: string;
+    file: File | null;
+  }>({
+    type: "OTHER",
+    title: "",
+    description: "",
+    issuedAt: "",
+    expiresAt: "",
+    file: null,
+  });
+  const [editingDocument, setEditingDocument] = useState<EmployeeDocumentRecord | null>(null);
+  const [documentEditData, setDocumentEditData] = useState<{
+    type: EmployeeDocumentType;
+    title: string;
+    description: string;
+    issuedAt: string;
+    expiresAt: string;
+    status: EmployeeDocumentStatus;
+  } | null>(null);
+  const [contracts, setContracts] = useState<EmployeeContractRecord[]>([]);
+  const [contractsLoading, setContractsLoading] = useState(false);
+  const [contractsError, setContractsError] = useState<string | null>(null);
+  const [contractFormLoading, setContractFormLoading] = useState(false);
+  const [contractFormError, setContractFormError] = useState<string | null>(null);
+  const [contractForm, setContractForm] = useState<{
+    contractType: EmployeeContractRecord["contractType"];
+    hourlyRate: string;
+    currency: string;
+    validFrom: string;
+    validTo: string;
+  }>({
+    contractType: "UOP",
+    hourlyRate: "",
+    currency: "PLN",
+    validFrom: "",
+    validTo: "",
+  });
+  const [editingContract, setEditingContract] = useState<EmployeeContractRecord | null>(null);
+  const [contractEditData, setContractEditData] = useState<{
+    contractType: EmployeeContractRecord["contractType"];
+    hourlyRate: string;
+    currency: string;
+    validFrom: string;
+    validTo: string;
+    status: EmployeeContractRecord["status"];
+  } | null>(null);
   const [formData, setFormData] = useState<EmployeeFormData>({
     firstName: "",
     lastName: "",
@@ -99,6 +160,9 @@ export default function PracownicyPage() {
     });
     setFormError(null);
     setSelectedEmployee(null);
+    setActiveTab("data");
+    setDocuments([]);
+    setContracts([]);
   };
 
   // Handle add employee
@@ -124,18 +188,34 @@ export default function PracownicyPage() {
   const handleView = async (employee: EmployeeRecord) => {
     setSelectedEmployee(employee);
     setViewMode("view");
-    
-    // Fetch documents for this employee
+    setActiveTab("data");
+    setDocuments([]);
+    setContracts([]);
+
     try {
-      apiClient.hydrateFromStorage();
-      const docs = await apiClient.request<DocumentMetadata[]>(
-        `/employees/${employee.id}/documents`,
-        { suppressToast: true }
-      );
-      setSelectedEmployee((prev) => prev ? { ...prev, documents: docs } : null);
-    } catch {
-      // Documents might not be available, that's ok
-      setSelectedEmployee((prev) => prev ? { ...prev, documents: [] } : null);
+      setDocumentsLoading(true);
+      const docs = await apiListEmployeeDocuments(employee.id);
+      setDocuments(docs);
+      setSelectedEmployee((prev) => (prev ? { ...prev, documents: docs } : null));
+      setDocumentsError(null);
+    } catch (err) {
+      setDocumentsError(err instanceof Error ? err.message : "Nie udało się pobrać dokumentów");
+      setDocuments([]);
+    } finally {
+      setDocumentsLoading(false);
+    }
+
+    try {
+      setContractsLoading(true);
+      const data = await apiListEmployeeContracts(employee.id);
+      setContracts(data);
+      setSelectedEmployee((prev) => (prev ? { ...prev, contracts: data } : null));
+      setContractsError(null);
+    } catch (err) {
+      setContractsError(err instanceof Error ? err.message : "Nie udało się pobrać umów");
+      setContracts([]);
+    } finally {
+      setContractsLoading(false);
     }
   };
 
@@ -253,6 +333,283 @@ export default function PracownicyPage() {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const documentTypeLabels: Record<EmployeeDocumentType, string> = {
+    CERTIFICATE: "Certyfikat",
+    SANEPID: "Sanepid",
+    MEDICAL: "Medyczne",
+    SICK_LEAVE: "Zwolnienie",
+    OTHER: "Inne",
+  };
+
+  const documentStatusLabels: Record<EmployeeDocumentStatus, string> = {
+    ACTIVE: "Aktywny",
+    EXPIRED: "Wygasły",
+    ARCHIVED: "Archiwum",
+  };
+
+  const contractTypeLabels: Record<EmployeeContractRecord["contractType"], string> = {
+    UOP: "Umowa o pracę",
+    UZ: "Umowa zlecenie",
+    B2B: "B2B",
+    UOD: "Umowa o dzieło",
+  };
+
+  const contractStatusLabels: Record<EmployeeContractRecord["status"], string> = {
+    ACTIVE: "Aktywna",
+    ENDED: "Zakończona",
+    SUSPENDED: "Wstrzymana",
+  };
+
+  const formatCurrency = (amount: number, currency = "PLN") =>
+    new Intl.NumberFormat("pl-PL", { style: "currency", currency }).format(amount);
+
+  const refreshDocuments = async (employeeId: string) => {
+    setDocumentsLoading(true);
+    try {
+      const data = await apiListEmployeeDocuments(employeeId);
+      setDocuments(data);
+      setDocumentsError(null);
+    } catch (err) {
+      setDocumentsError(err instanceof Error ? err.message : "Nie udało się pobrać dokumentów");
+      setDocuments([]);
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const refreshContracts = async (employeeId: string) => {
+    setContractsLoading(true);
+    try {
+      const data = await apiListEmployeeContracts(employeeId);
+      setContracts(data);
+      setContractsError(null);
+    } catch (err) {
+      setContractsError(err instanceof Error ? err.message : "Nie udało się pobrać umów");
+      setContracts([]);
+    } finally {
+      setContractsLoading(false);
+    }
+  };
+
+  const handleDocumentSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedEmployee) return;
+    if (!documentForm.file) {
+      setDocumentFormError("Wybierz plik do przesłania.");
+      return;
+    }
+    if (!documentForm.title.trim()) {
+      setDocumentFormError("Podaj tytuł dokumentu.");
+      return;
+    }
+    if (!documentForm.issuedAt) {
+      setDocumentFormError("Podaj datę wystawienia.");
+      return;
+    }
+
+    setDocumentFormLoading(true);
+    setDocumentFormError(null);
+    try {
+      await apiUploadEmployeeDocument({
+        employeeId: selectedEmployee.id,
+        file: documentForm.file,
+        type: documentForm.type,
+        title: documentForm.title.trim(),
+        description: documentForm.description.trim() || undefined,
+        issuedAt: new Date(documentForm.issuedAt).toISOString(),
+        expiresAt: documentForm.expiresAt ? new Date(documentForm.expiresAt).toISOString() : undefined,
+      });
+      setDocumentForm({
+        type: "OTHER",
+        title: "",
+        description: "",
+        issuedAt: "",
+        expiresAt: "",
+        file: null,
+      });
+      await refreshDocuments(selectedEmployee.id);
+      pushToast({ title: "Dodano dokument", variant: "success" });
+    } catch (err) {
+      setDocumentFormError(err instanceof Error ? err.message : "Nie udało się dodać dokumentu");
+    } finally {
+      setDocumentFormLoading(false);
+    }
+  };
+
+  const handleDocumentEdit = (document: EmployeeDocumentRecord) => {
+    setEditingDocument(document);
+    setDocumentEditData({
+      type: document.type,
+      title: document.title,
+      description: document.description ?? "",
+      issuedAt: document.issuedAt.slice(0, 10),
+      expiresAt: document.expiresAt?.slice(0, 10) ?? "",
+      status: document.status,
+    });
+  };
+
+  const handleDocumentUpdate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedEmployee || !editingDocument || !documentEditData) return;
+    try {
+      await apiUpdateEmployeeDocument({
+        employeeId: selectedEmployee.id,
+        documentId: editingDocument.id,
+        data: {
+          type: documentEditData.type,
+          title: documentEditData.title.trim(),
+          description: documentEditData.description.trim() || null,
+          issuedAt: new Date(documentEditData.issuedAt).toISOString(),
+          expiresAt: documentEditData.expiresAt
+            ? new Date(documentEditData.expiresAt).toISOString()
+            : null,
+          status: documentEditData.status,
+        },
+      });
+      await refreshDocuments(selectedEmployee.id);
+      setEditingDocument(null);
+      setDocumentEditData(null);
+      pushToast({ title: "Zaktualizowano dokument", variant: "success" });
+    } catch (err) {
+      pushToast({
+        title: "Nie udało się zaktualizować dokumentu",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "error",
+      });
+    }
+  };
+
+  const handleDocumentArchive = async (documentId: string) => {
+    if (!selectedEmployee) return;
+    try {
+      await apiUpdateEmployeeDocument({
+        employeeId: selectedEmployee.id,
+        documentId,
+        data: { status: "ARCHIVED" },
+      });
+      await refreshDocuments(selectedEmployee.id);
+      pushToast({ title: "Dokument zarchiwizowany", variant: "success" });
+    } catch (err) {
+      pushToast({
+        title: "Nie udało się zarchiwizować dokumentu",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "error",
+      });
+    }
+  };
+
+  const handleDocumentDelete = async (documentId: string) => {
+    if (!selectedEmployee) return;
+    try {
+      await apiDeleteEmployeeDocument({ employeeId: selectedEmployee.id, documentId });
+      await refreshDocuments(selectedEmployee.id);
+      pushToast({ title: "Dokument usunięty", variant: "success" });
+    } catch (err) {
+      pushToast({
+        title: "Nie udało się usunąć dokumentu",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "error",
+      });
+    }
+  };
+
+  const handleContractSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedEmployee) return;
+    if (!contractForm.validFrom) {
+      setContractFormError("Podaj datę obowiązywania umowy.");
+      return;
+    }
+    const hourlyRate = Number(contractForm.hourlyRate);
+    if (!hourlyRate || hourlyRate <= 0) {
+      setContractFormError("Podaj poprawną stawkę godzinową.");
+      return;
+    }
+
+    setContractFormLoading(true);
+    setContractFormError(null);
+    try {
+      await apiCreateEmployeeContract({
+        employeeId: selectedEmployee.id,
+        contractType: contractForm.contractType,
+        hourlyRate,
+        currency: contractForm.currency,
+        validFrom: new Date(contractForm.validFrom).toISOString(),
+        validTo: contractForm.validTo ? new Date(contractForm.validTo).toISOString() : undefined,
+      });
+      setContractForm({
+        contractType: "UOP",
+        hourlyRate: "",
+        currency: "PLN",
+        validFrom: "",
+        validTo: "",
+      });
+      await refreshContracts(selectedEmployee.id);
+      pushToast({ title: "Dodano umowę", variant: "success" });
+    } catch (err) {
+      setContractFormError(err instanceof Error ? err.message : "Nie udało się dodać umowy");
+    } finally {
+      setContractFormLoading(false);
+    }
+  };
+
+  const handleContractEdit = (contract: EmployeeContractRecord) => {
+    setEditingContract(contract);
+    setContractEditData({
+      contractType: contract.contractType,
+      hourlyRate: contract.hourlyRate?.toString() ?? "",
+      currency: contract.currency ?? "PLN",
+      validFrom: contract.validFrom.slice(0, 10),
+      validTo: contract.validTo?.slice(0, 10) ?? "",
+      status: contract.status,
+    });
+  };
+
+  const handleContractUpdate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedEmployee || !editingContract || !contractEditData) return;
+    const hourlyRate = contractEditData.hourlyRate ? Number(contractEditData.hourlyRate) : undefined;
+    try {
+      await apiUpdateEmployeeContract({
+        employeeId: selectedEmployee.id,
+        contractId: editingContract.id,
+        data: {
+          contractType: contractEditData.contractType,
+          hourlyRate: hourlyRate && hourlyRate > 0 ? hourlyRate : undefined,
+          currency: contractEditData.currency,
+          validFrom: new Date(contractEditData.validFrom).toISOString(),
+          validTo: contractEditData.validTo ? new Date(contractEditData.validTo).toISOString() : null,
+          status: contractEditData.status,
+        },
+      });
+      await refreshContracts(selectedEmployee.id);
+      setEditingContract(null);
+      setContractEditData(null);
+      pushToast({ title: "Zaktualizowano umowę", variant: "success" });
+    } catch (err) {
+      pushToast({
+        title: "Nie udało się zaktualizować umowy",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "error",
+      });
+    }
+  };
+
+  const handleContractTerminate = async (contractId: string) => {
+    if (!selectedEmployee) return;
+    try {
+      await apiTerminateEmployeeContract({ employeeId: selectedEmployee.id, contractId });
+      await refreshContracts(selectedEmployee.id);
+      pushToast({ title: "Umowa zakończona", variant: "success" });
+    } catch (err) {
+      pushToast({
+        title: "Nie udało się zakończyć umowy",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "error",
+      });
+    }
   };
 
   // Render employee list
@@ -703,101 +1060,298 @@ export default function PracownicyPage() {
             </div>
           </div>
 
-          {/* Details */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Contact info */}
-            <div className="card p-6">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600 mb-4">
-                Dane kontaktowe
-              </h3>
-              <dl className="space-y-3">
-                <div>
-                  <dt className="text-xs text-surface-600">Email</dt>
-                  <dd className="text-surface-900">{selectedEmployee.email ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-surface-600">Telefon</dt>
-                  <dd className="text-surface-900">{selectedEmployee.phone ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-surface-600">Lokalizacje</dt>
-                  <dd className="text-surface-900">
-                    {selectedEmployee.locations?.length > 0
-                      ? selectedEmployee.locations.map((l) => l.name).join(", ")
-                      : "—"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            {/* Employment info */}
-            <div className="card p-6">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600 mb-4">
-                Informacje o zatrudnieniu
-              </h3>
-              <dl className="space-y-3">
-                <div>
-                  <dt className="text-xs text-surface-600">Data utworzenia</dt>
-                  <dd className="text-surface-900">
-                    {new Date(selectedEmployee.createdAt).toLocaleDateString("pl-PL")}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-surface-600">Ostatnia aktualizacja</dt>
-                  <dd className="text-surface-900">
-                    {new Date(selectedEmployee.updatedAt).toLocaleDateString("pl-PL")}
-                  </dd>
-                </div>
-                {selectedEmployee.employmentEndDate && (
-                  <div>
-                    <dt className="text-xs text-surface-600">Data zakończenia zatrudnienia</dt>
-                    <dd className="text-surface-900">
-                      {new Date(selectedEmployee.employmentEndDate).toLocaleDateString("pl-PL")}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          </div>
-
-          {/* Documents section */}
           <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600">
-                Teczka pracownicza / Dokumenty
-              </h3>
+            <div className="flex flex-wrap gap-3 border-b border-surface-200 pb-4">
+              {(
+                [
+                  { key: "data", label: "Dane" },
+                  { key: "documents", label: "Dokumenty" },
+                  { key: "contracts", label: "Umowy" },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    activeTab === tab.key
+                      ? "bg-brand-500 text-white"
+                      : "bg-surface-100 text-surface-600 hover:bg-surface-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
-            
-            {selectedEmployee.documents && selectedEmployee.documents.length > 0 ? (
-              <div className="space-y-2">
-                {selectedEmployee.documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between rounded-lg border border-surface-200 bg-surface-50 p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <svg className="h-8 w-8 text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                      </svg>
-                      <div>
-                        <p className="font-medium text-surface-900">{doc.name}</p>
-                        <p className="text-xs text-surface-600">
-                          {doc.filename} • {formatFileSize(doc.fileSize)} • {new Date(doc.createdAt).toLocaleDateString("pl-PL")}
-                        </p>
-                      </div>
+
+            {activeTab === "data" && (
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                <div className="rounded-lg border border-surface-200 bg-surface-50 p-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600 mb-4">
+                    Dane kontaktowe
+                  </h3>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-xs text-surface-600">Email</dt>
+                      <dd className="text-surface-900">{selectedEmployee.email ?? "—"}</dd>
                     </div>
-                  </div>
-                ))}
+                    <div>
+                      <dt className="text-xs text-surface-600">Telefon</dt>
+                      <dd className="text-surface-900">{selectedEmployee.phone ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-surface-600">Lokalizacje</dt>
+                      <dd className="text-surface-900">
+                        {selectedEmployee.locations?.length > 0
+                          ? selectedEmployee.locations.map((l) => l.name).join(", ")
+                          : "—"}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                <div className="rounded-lg border border-surface-200 bg-surface-50 p-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600 mb-4">
+                    Informacje o zatrudnieniu
+                  </h3>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-xs text-surface-600">Data utworzenia</dt>
+                      <dd className="text-surface-900">
+                        {new Date(selectedEmployee.createdAt).toLocaleDateString("pl-PL")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-surface-600">Ostatnia aktualizacja</dt>
+                      <dd className="text-surface-900">
+                        {new Date(selectedEmployee.updatedAt).toLocaleDateString("pl-PL")}
+                      </dd>
+                    </div>
+                    {selectedEmployee.employmentEndDate && (
+                      <div>
+                        <dt className="text-xs text-surface-600">Data zakończenia zatrudnienia</dt>
+                        <dd className="text-surface-900">
+                          {new Date(selectedEmployee.employmentEndDate).toLocaleDateString("pl-PL")}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
               </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-surface-300 bg-surface-50 p-6 text-center">
-                <svg className="mx-auto h-10 w-10 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-                <p className="mt-2 text-sm text-surface-600">Brak dokumentów</p>
-                <p className="mt-1 text-xs text-surface-500">
-                  Dokumenty można dodać przez API lub panel administratora
-                </p>
+            )}
+
+            {activeTab === "documents" && (
+              <div className="mt-6 space-y-6">
+                <div className="rounded-lg border border-surface-200 bg-surface-50 p-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600 mb-4">
+                    Dodaj dokument
+                  </h3>
+                  <form className="grid gap-4 md:grid-cols-2" onSubmit={handleDocumentSubmit}>
+                    <div>
+                      <label className="text-xs text-surface-500">Typ dokumentu</label>
+                      <select
+                        value={documentForm.type}
+                        onChange={(e) =>
+                          setDocumentForm((prev) => ({ ...prev, type: e.target.value as EmployeeDocumentType }))
+                        }
+                        className="panel-input mt-1"
+                      >
+                        {Object.entries(documentTypeLabels).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-surface-500">Tytuł</label>
+                      <input
+                        type="text"
+                        value={documentForm.title}
+                        onChange={(e) => setDocumentForm((prev) => ({ ...prev, title: e.target.value }))}
+                        className="panel-input mt-1"
+                        placeholder="Np. Orzeczenie lekarskie"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-surface-500">Data wystawienia</label>
+                      <input
+                        type="date"
+                        value={documentForm.issuedAt}
+                        onChange={(e) => setDocumentForm((prev) => ({ ...prev, issuedAt: e.target.value }))}
+                        className="panel-input mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-surface-500">Data ważności</label>
+                      <input
+                        type="date"
+                        value={documentForm.expiresAt}
+                        onChange={(e) => setDocumentForm((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                        className="panel-input mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs text-surface-500">Opis</label>
+                      <textarea
+                        value={documentForm.description}
+                        onChange={(e) => setDocumentForm((prev) => ({ ...prev, description: e.target.value }))}
+                        className="panel-input mt-1 min-h-[80px]"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs text-surface-500">Plik</label>
+                      <input
+                        type="file"
+                        onChange={(e) =>
+                          setDocumentForm((prev) => ({ ...prev, file: e.target.files?.[0] ?? null }))
+                        }
+                        className="panel-input mt-1"
+                      />
+                    </div>
+                    {documentFormError && (
+                      <p className="text-sm text-rose-600 md:col-span-2">{documentFormError}</p>
+                    )}
+                    <div className="md:col-span-2">
+                      <button type="submit" className="btn-primary" disabled={documentFormLoading}>
+                        {documentFormLoading ? "Zapisywanie..." : "Dodaj dokument"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="rounded-lg border border-surface-200 bg-white p-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600">
+                      Dokumenty pracownika
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => selectedEmployee && refreshDocuments(selectedEmployee.id)}
+                      className="text-xs text-surface-500 hover:text-surface-700"
+                    >
+                      Odśwież
+                    </button>
+                  </div>
+
+                  {documentsLoading && (
+                    <p className="mt-4 text-sm text-surface-500">Ładowanie dokumentów...</p>
+                  )}
+                  {documentsError && (
+                    <p className="mt-4 text-sm text-rose-600">{documentsError}</p>
+                  )}
+                  {!documentsLoading && !documentsError && documents.length === 0 && (
+                    <p className="mt-4 text-sm text-surface-500">Brak dokumentów.</p>
+                  )}
+                  {!documentsLoading && documents.length > 0 && (
+                    <EmployeeDocumentsList
+                      documents={documents}
+                      documentTypeLabels={documentTypeLabels}
+                      documentStatusLabels={documentStatusLabels}
+                      formatFileSize={formatFileSize}
+                      onEdit={handleDocumentEdit}
+                      onArchive={handleDocumentArchive}
+                      onDelete={handleDocumentDelete}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "contracts" && (
+              <div className="mt-6 space-y-6">
+                <div className="rounded-lg border border-surface-200 bg-surface-50 p-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600 mb-4">
+                    Nowa umowa
+                  </h3>
+                  <form className="grid gap-4 md:grid-cols-2" onSubmit={handleContractSubmit}>
+                    <div>
+                      <label className="text-xs text-surface-500">Typ umowy</label>
+                      <select
+                        value={contractForm.contractType}
+                        onChange={(e) =>
+                          setContractForm((prev) => ({ ...prev, contractType: e.target.value as EmployeeContractRecord["contractType"] }))
+                        }
+                        className="panel-input mt-1"
+                      >
+                        {Object.entries(contractTypeLabels).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-surface-500">Stawka godzinowa (PLN)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={contractForm.hourlyRate}
+                        onChange={(e) => setContractForm((prev) => ({ ...prev, hourlyRate: e.target.value }))}
+                        className="panel-input mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-surface-500">Data od</label>
+                      <input
+                        type="date"
+                        value={contractForm.validFrom}
+                        onChange={(e) => setContractForm((prev) => ({ ...prev, validFrom: e.target.value }))}
+                        className="panel-input mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-surface-500">Data do</label>
+                      <input
+                        type="date"
+                        value={contractForm.validTo}
+                        onChange={(e) => setContractForm((prev) => ({ ...prev, validTo: e.target.value }))}
+                        className="panel-input mt-1"
+                      />
+                    </div>
+                    {contractFormError && (
+                      <p className="text-sm text-rose-600 md:col-span-2">{contractFormError}</p>
+                    )}
+                    <div className="md:col-span-2">
+                      <button type="submit" className="btn-primary" disabled={contractFormLoading}>
+                        {contractFormLoading ? "Zapisywanie..." : "Dodaj umowę"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="rounded-lg border border-surface-200 bg-white p-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-600">
+                      Umowy pracownika
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => selectedEmployee && refreshContracts(selectedEmployee.id)}
+                      className="text-xs text-surface-500 hover:text-surface-700"
+                    >
+                      Odśwież
+                    </button>
+                  </div>
+                  {contractsLoading && (
+                    <p className="mt-4 text-sm text-surface-500">Ładowanie umów...</p>
+                  )}
+                  {contractsError && (
+                    <p className="mt-4 text-sm text-rose-600">{contractsError}</p>
+                  )}
+                  {!contractsLoading && !contractsError && contracts.length === 0 && (
+                    <p className="mt-4 text-sm text-surface-500">Brak umów.</p>
+                  )}
+                  {!contractsLoading && contracts.length > 0 && (
+                    <EmployeeContractsList
+                      contracts={contracts}
+                      contractTypeLabels={contractTypeLabels}
+                      contractStatusLabels={contractStatusLabels}
+                      formatCurrency={formatCurrency}
+                      onEdit={handleContractEdit}
+                      onTerminate={handleContractTerminate}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -808,6 +1362,233 @@ export default function PracownicyPage() {
               Powrót do listy
             </button>
           </div>
+
+          <Modal
+            open={!!editingDocument && !!documentEditData}
+            title="Edytuj dokument"
+            description="Zaktualizuj metadane dokumentu pracownika."
+            onClose={() => {
+              setEditingDocument(null);
+              setDocumentEditData(null);
+            }}
+            size="lg"
+            footer={
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingDocument(null);
+                    setDocumentEditData(null);
+                  }}
+                  className="btn-secondary"
+                >
+                  Anuluj
+                </button>
+                <button
+                  type="submit"
+                  form="document-edit-form"
+                  className="btn-primary"
+                >
+                  Zapisz zmiany
+                </button>
+              </div>
+            }
+          >
+            {documentEditData && (
+              <form id="document-edit-form" className="grid gap-4 md:grid-cols-2" onSubmit={handleDocumentUpdate}>
+                <div>
+                  <label className="text-xs text-surface-500">Typ dokumentu</label>
+                  <select
+                    value={documentEditData.type}
+                    onChange={(e) =>
+                      setDocumentEditData((prev) =>
+                        prev ? { ...prev, type: e.target.value as EmployeeDocumentType } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  >
+                    {Object.entries(documentTypeLabels).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Tytuł</label>
+                  <input
+                    type="text"
+                    value={documentEditData.title}
+                    onChange={(e) =>
+                      setDocumentEditData((prev) => (prev ? { ...prev, title: e.target.value } : prev))
+                    }
+                    className="panel-input mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Data wystawienia</label>
+                  <input
+                    type="date"
+                    value={documentEditData.issuedAt}
+                    onChange={(e) =>
+                      setDocumentEditData((prev) => (prev ? { ...prev, issuedAt: e.target.value } : prev))
+                    }
+                    className="panel-input mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Data ważności</label>
+                  <input
+                    type="date"
+                    value={documentEditData.expiresAt}
+                    onChange={(e) =>
+                      setDocumentEditData((prev) => (prev ? { ...prev, expiresAt: e.target.value } : prev))
+                    }
+                    className="panel-input mt-1"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs text-surface-500">Opis</label>
+                  <textarea
+                    value={documentEditData.description}
+                    onChange={(e) =>
+                      setDocumentEditData((prev) =>
+                        prev ? { ...prev, description: e.target.value } : prev,
+                      )
+                    }
+                    className="panel-input mt-1 min-h-[80px]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Status</label>
+                  <select
+                    value={documentEditData.status}
+                    onChange={(e) =>
+                      setDocumentEditData((prev) =>
+                        prev ? { ...prev, status: e.target.value as EmployeeDocumentStatus } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  >
+                    {Object.entries(documentStatusLabels).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </form>
+            )}
+          </Modal>
+
+          <Modal
+            open={!!editingContract && !!contractEditData}
+            title="Edytuj umowę"
+            description="Zaktualizuj dane ostatniej umowy pracownika."
+            onClose={() => {
+              setEditingContract(null);
+              setContractEditData(null);
+            }}
+            size="lg"
+            footer={
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingContract(null);
+                    setContractEditData(null);
+                  }}
+                  className="btn-secondary"
+                >
+                  Anuluj
+                </button>
+                <button type="submit" form="contract-edit-form" className="btn-primary">
+                  Zapisz zmiany
+                </button>
+              </div>
+            }
+          >
+            {contractEditData && (
+              <form id="contract-edit-form" className="grid gap-4 md:grid-cols-2" onSubmit={handleContractUpdate}>
+                <div>
+                  <label className="text-xs text-surface-500">Typ umowy</label>
+                  <select
+                    value={contractEditData.contractType}
+                    onChange={(e) =>
+                      setContractEditData((prev) =>
+                        prev ? { ...prev, contractType: e.target.value as EmployeeContractRecord["contractType"] } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  >
+                    {Object.entries(contractTypeLabels).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Stawka godzinowa</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={contractEditData.hourlyRate}
+                    onChange={(e) =>
+                      setContractEditData((prev) =>
+                        prev ? { ...prev, hourlyRate: e.target.value } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Data od</label>
+                  <input
+                    type="date"
+                    value={contractEditData.validFrom}
+                    onChange={(e) =>
+                      setContractEditData((prev) =>
+                        prev ? { ...prev, validFrom: e.target.value } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Data do</label>
+                  <input
+                    type="date"
+                    value={contractEditData.validTo}
+                    onChange={(e) =>
+                      setContractEditData((prev) =>
+                        prev ? { ...prev, validTo: e.target.value } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-surface-500">Status</label>
+                  <select
+                    value={contractEditData.status}
+                    onChange={(e) =>
+                      setContractEditData((prev) =>
+                        prev ? { ...prev, status: e.target.value as EmployeeContractRecord["status"] } : prev,
+                      )
+                    }
+                    className="panel-input mt-1"
+                  >
+                    {Object.entries(contractStatusLabels).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </form>
+            )}
+          </Modal>
         </div>
       </>
     );

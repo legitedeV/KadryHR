@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { QueueService } from '../queue/queue.service';
 import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
+import { AvatarsService } from '../avatars/avatars.service';
 type Role = string;
 
 describe('AuthService', () => {
@@ -16,6 +17,7 @@ describe('AuthService', () => {
   let queueService: { addEmailDeliveryJob: jest.Mock };
   let shiftPresetsService: { createDefaultPresets: jest.Mock };
   let emailTemplates: { passwordResetTemplate: jest.Mock };
+  let avatarsService: { getInitials: jest.Mock; generateAvatarUrl: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -54,6 +56,11 @@ describe('AuthService', () => {
         html: '<p>Reset</p>',
       }),
     };
+    avatarsService = {
+      getInitials: jest.fn().mockReturnValue('AA'),
+      generateAvatarUrl: jest.fn().mockReturnValue('/static/avatar.png'),
+      buildPublicUrl: jest.fn().mockReturnValue('/static/avatar.png'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -69,6 +76,7 @@ describe('AuthService', () => {
         { provide: QueueService, useValue: queueService },
         { provide: ShiftPresetsService, useValue: shiftPresetsService },
         { provide: EmailTemplatesService, useValue: emailTemplates },
+        { provide: AvatarsService, useValue: avatarsService },
       ],
     }).compile();
 

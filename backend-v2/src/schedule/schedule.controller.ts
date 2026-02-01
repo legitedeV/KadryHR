@@ -7,6 +7,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -21,11 +23,17 @@ import { BulkDeleteShiftsDto } from './dto/bulk-delete-shifts.dto';
 import { ValidateScheduleDto } from './dto/validate-schedule.dto';
 import { PublishScheduleDto } from './dto/publish-schedule.dto';
 import { DuplicatePreviousPeriodDto } from './dto/duplicate-prev.dto';
+import { ScheduleCostService } from './schedule-cost.service';
+import { QueryScheduleSummaryDto } from './dto/query-schedule-summary.dto';
+import { Role } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('schedule')
 export class ScheduleController {
-  constructor(private readonly scheduleService: ScheduleService) {}
+  constructor(
+    private readonly scheduleService: ScheduleService,
+    private readonly scheduleCostService: ScheduleCostService,
+  ) {}
 
   @RequirePermissions(Permission.SCHEDULE_VIEW)
   @Get()
@@ -34,6 +42,23 @@ export class ScheduleController {
     @Query() query: QueryScheduleDto,
   ) {
     return this.scheduleService.getSchedule(user.organisationId, query);
+  }
+
+  @RequirePermissions(Permission.SCHEDULE_VIEW)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  @Get('summary')
+  async getSummary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: QueryScheduleSummaryDto,
+  ) {
+    return this.scheduleCostService.calculateScheduleSummary({
+      organisationId: user.organisationId,
+      from: new Date(query.from),
+      to: new Date(query.to),
+      locationIds: query.locationIds,
+      positionIds: query.positionIds,
+    });
   }
 
   @RequirePermissions(Permission.SCHEDULE_MANAGE)

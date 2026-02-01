@@ -87,7 +87,7 @@ describe('ShiftsService', () => {
         startsAt: '2024-01-01T08:00:00.000Z',
         endsAt: '2024-01-01T12:00:00.000Z',
       }),
-    ).rejects.toThrow('Employee already has a shift in this time range');
+    ).rejects.toThrow('Pracownik ma już zmianę w tym czasie.');
   });
 
   it('does not warn when default availability is implied', async () => {

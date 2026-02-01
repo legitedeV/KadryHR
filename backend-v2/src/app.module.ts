@@ -20,6 +20,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { DocumentsModule } from './documents/documents.module';
+import { EmployeeContractsModule } from './employee-contracts/employee-contracts.module';
 import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates.module';
 import { LeadsModule } from './leads/leads.module';
 import { AvatarsModule } from './avatars/avatars.module';
@@ -61,6 +62,7 @@ import { RcpModule } from './rcp/rcp.module';
     ContractsModule,
     PayrollModule,
     DocumentsModule,
+    EmployeeContractsModule,
     ScheduleTemplatesModule,
     LeadsModule,
     AvatarsModule,

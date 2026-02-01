@@ -11,7 +11,9 @@ import {
   UseInterceptors,
   ParseFilePipe,
   MaxFileSizeValidator,
+  FileTypeValidator,
   StreamableFile,
+  Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -25,6 +27,9 @@ import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
 import { Permission } from '../auth/permissions';
 import * as fs from 'fs/promises';
+import { CreateDocumentRequestDto } from './dto/create-document-request.dto';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @UseInterceptors(AuditLogInterceptor)
@@ -32,17 +37,27 @@ import * as fs from 'fs/promises';
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
+  private withDownloadUrl(employeeId: string, document: any) {
+    return {
+      ...document,
+      downloadUrl: `/api/employees/${employeeId}/documents/${document.id}/download`,
+    };
+  }
+
   @RequirePermissions(Permission.EMPLOYEE_VIEW)
   @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Param('employeeId') employeeId: string,
   ) {
-    return this.documentsService.findAll(
+    const documents = await this.documentsService.findAll(
       user.organisationId,
       employeeId,
       user.role,
       user.id,
+    );
+    return documents.map((document) =>
+      this.withDownloadUrl(employeeId, document),
     );
   }
 
@@ -53,17 +68,18 @@ export class DocumentsController {
     @Param('employeeId') employeeId: string,
     @Param('id') id: string,
   ) {
-    return this.documentsService.findOne(
+    const document = await this.documentsService.findOne(
       user.organisationId,
       employeeId,
       id,
       user.role,
       user.id,
     );
+    return this.withDownloadUrl(employeeId, document);
   }
 
   @RequirePermissions(Permission.EMPLOYEE_MANAGE)
-  @Post('upload')
+  @Post()
   @UseInterceptors(FileInterceptor('file'))
   @AuditLog({
     action: 'DOCUMENT_UPLOAD',
@@ -77,12 +93,15 @@ export class DocumentsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({
+            fileType:
+              /^(application\/pdf|image\/(jpeg|png)|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/,
+          }),
         ],
       }),
     )
     file: any, // Using any to avoid Multer type issues
-    @Body('name') name?: string,
-    @Body('description') description?: string,
+    @Body() body: CreateDocumentRequestDto,
   ) {
     // Generate storage path
     const storagePath = this.documentsService.generateStoragePath(
@@ -98,16 +117,44 @@ export class DocumentsController {
       employeeId,
       user.id,
       {
-        name: name || file.originalname,
-        description,
+        type: body.type,
+        title: body.title || file.originalname,
+        description: body.description,
+        issuedAt: body.issuedAt,
+        expiresAt: body.expiresAt,
+        status: body.status,
         filename: file.originalname,
         storagePath,
         mimeType: file.mimetype,
         fileSize: file.size,
-      },
+      } satisfies CreateDocumentDto,
     );
 
-    return document;
+    return this.withDownloadUrl(employeeId, document);
+  }
+
+  @RequirePermissions(Permission.EMPLOYEE_MANAGE)
+  @Patch(':id')
+  @AuditLog({
+    action: 'DOCUMENT_UPDATE',
+    entityType: 'document',
+    entityIdParam: 'id',
+    fetchBefore: true,
+    captureBody: true,
+  })
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('employeeId') employeeId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateDocumentDto,
+  ) {
+    const document = await this.documentsService.update(
+      user.organisationId,
+      employeeId,
+      id,
+      dto,
+    );
+    return this.withDownloadUrl(employeeId, document);
   }
 
   @RequirePermissions(Permission.EMPLOYEE_VIEW)

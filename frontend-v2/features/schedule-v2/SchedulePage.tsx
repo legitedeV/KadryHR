@@ -10,6 +10,7 @@ import {
   apiGetApprovedLeaves,
   apiGetAvailability,
   apiGetSchedule,
+  apiGetScheduleSummary,
   apiListEmployees,
   apiListLocations,
   apiPublishSchedule,
@@ -41,15 +42,19 @@ import {
 } from "./schedule-utils";
 import { useOnboarding } from "@/features/onboarding/OnboardingProvider";
 import { DateRangeModal } from "./DateRangeModal";
+import { useAuth } from "@/lib/auth-context";
+import { ScheduleCostSummaryBar } from "./ScheduleCostSummaryBar";
 
 const PUBLISHED_STORAGE_KEY = "kadryhr:schedule-v2:published";
 
 export function SchedulePage() {
   const { hasAnyPermission } = usePermissions();
+  const { user } = useAuth();
   const { startScheduleTour, hasScheduleTourCompleted, hasScheduleTourSkipped, isReady } = useOnboarding();
   const { setActionsSlot } = useTopbarActions();
   const [hasToken] = useState(() => Boolean(getAccessToken()));
   const canManage = hasAnyPermission(["SCHEDULE_MANAGE", "RCP_EDIT"]);
+  const canViewCosts = user?.role === "OWNER" || user?.role === "MANAGER";
   const queryClient = useQueryClient();
 
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
@@ -154,6 +159,17 @@ export function SchedulePage() {
         locationIds: selectedLocationId ? [selectedLocationId] : undefined,
       }),
     enabled: hasToken,
+  });
+
+  const summaryQuery = useQuery({
+    queryKey: ["schedule-summary", formatDateKey(weekStart), selectedLocationId],
+    queryFn: () =>
+      apiGetScheduleSummary({
+        from: formatDateKey(weekStart),
+        to: formatDateKey(weekEnd),
+        locationIds: selectedLocationId ? [selectedLocationId] : undefined,
+      }),
+    enabled: hasToken && canViewCosts,
   });
 
   useEffect(() => {
@@ -810,10 +826,19 @@ export function SchedulePage() {
         focusedCell={focusedCell}
         canManage={canManage}
         isPublished={isPublished}
+        summaryByDay={summaryQuery.data?.byDay}
+        summaryCurrency={summaryQuery.data?.totals.currency}
         showLoadBars={showLoadBars}
         showSummaryRow={showSummaryRow}
         showWeekendHighlight={showWeekendHighlight}
       />
+
+      {canViewCosts && (
+        <ScheduleCostSummaryBar
+          summary={summaryQuery.data ?? null}
+          isLoading={summaryQuery.isLoading}
+        />
+      )}
 
       {keyboardMode && showShortcuts && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-900/30 backdrop-blur-sm">

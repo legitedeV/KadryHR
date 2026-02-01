@@ -42,8 +42,8 @@ export class AvatarsService {
     entityId: string,
   ): Promise<void> {
     const uploadDir = this.getUploadDir(organisationId, entityType, entityId);
-    await fs.mkdir(this.baseUploadDir, { recursive: true, mode: 0o750 });
-    await fs.mkdir(uploadDir, { recursive: true, mode: 0o750 });
+    await fs.mkdir(this.baseUploadDir, { recursive: true, mode: 0o775 });
+    await fs.mkdir(uploadDir, { recursive: true, mode: 0o775 });
   }
 
   validateFile(mimeType: string, size: number): void {
@@ -81,7 +81,7 @@ export class AvatarsService {
     const fullPath = path.join(uploadDir, filename);
 
     try {
-      await fs.writeFile(fullPath, buffer, { mode: 0o640 });
+      await fs.writeFile(fullPath, buffer, { mode: 0o664 });
     } catch (error) {
       const trace =
         error instanceof Error ? error.stack : JSON.stringify(error);
