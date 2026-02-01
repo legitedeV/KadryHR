@@ -260,6 +260,12 @@ export class OAuthService {
       if (error.code === 'P2025') {
         return { status: HttpStatus.NOT_FOUND, code: 'oauth_record_missing' };
       }
+      if (error.code === 'P2021' || error.code === 'P2022') {
+        return {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          code: 'oauth_db_schema_missing',
+        };
+      }
     }
 
     return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'oauth_db_failed' };
@@ -606,6 +612,28 @@ export class OAuthService {
       userId = user.id;
       await this.authService.createSessionForUser(user.id, res);
     } catch (error) {
+      if (error instanceof HttpException) {
+        const status = error.getStatus();
+        const message = this.sanitizeErrorMessage(error.message);
+        const isSchemaError =
+          message === 'oauth_db_schema_missing' || message === 'oauth_tx_invalid';
+        this.logger.warn(
+          'OAuth callback failed with auth exception',
+          JSON.stringify({
+            requestId,
+            provider: resolvedProvider,
+            status,
+            message,
+          }),
+        );
+        return this.sendOAuthError(
+          res,
+          isSchemaError ? HttpStatus.INTERNAL_SERVER_ERROR : status,
+          isSchemaError ? message : 'oauth_auth_failed',
+          requestId,
+          { provider: resolvedProvider },
+        );
+      }
       this.logOAuthDbError(error, { requestId, provider: resolvedProvider });
       const mapped = this.mapOAuthDbError(error);
       if (mapped.code === 'oauth_db_failed') {
@@ -785,7 +813,32 @@ export class OAuthService {
           );
           throw new InternalServerErrorException('oauth_tx_invalid');
         }
-        const existingAccount = await tx.oauthAccount.findUnique({
+
+        const requiredModels: Array<keyof Prisma.TransactionClient> = [
+          'oAuthAccount',
+          'user',
+          'employee',
+          'organisation',
+        ];
+        const missingModels = requiredModels.filter((model) => {
+          const modelClient = tx[model] as
+            | { findUnique?: unknown; upsert?: unknown }
+            | undefined;
+          return !modelClient || typeof modelClient.findUnique !== 'function';
+        });
+        if (missingModels.length > 0) {
+          this.logger.error(
+            'OAuth transaction client missing models',
+            JSON.stringify({
+              requestId,
+              provider,
+              missingModels,
+            }),
+          );
+          throw new InternalServerErrorException('oauth_db_schema_missing');
+        }
+
+        const existingAccount = await tx.oAuthAccount.findUnique({
           where: {
             provider_providerAccountId: {
               provider,
@@ -855,7 +908,7 @@ export class OAuthService {
           },
         });
 
-        await tx.oauthAccount.upsert({
+        await tx.oAuthAccount.upsert({
           where: {
             provider_providerAccountId: {
               provider,
