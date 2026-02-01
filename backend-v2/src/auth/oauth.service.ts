@@ -615,6 +615,8 @@ export class OAuthService {
       if (error instanceof HttpException) {
         const status = error.getStatus();
         const message = this.sanitizeErrorMessage(error.message);
+        const isSchemaError =
+          message === 'oauth_db_schema_missing' || message === 'oauth_tx_invalid';
         this.logger.warn(
           'OAuth callback failed with auth exception',
           JSON.stringify({
@@ -626,8 +628,8 @@ export class OAuthService {
         );
         return this.sendOAuthError(
           res,
-          status,
-          'oauth_auth_failed',
+          isSchemaError ? HttpStatus.INTERNAL_SERVER_ERROR : status,
+          isSchemaError ? message : 'oauth_auth_failed',
           requestId,
           { provider: resolvedProvider },
         );
@@ -811,6 +813,31 @@ export class OAuthService {
           );
           throw new InternalServerErrorException('oauth_tx_invalid');
         }
+
+        const requiredModels: Array<keyof Prisma.TransactionClient> = [
+          'oauthAccount',
+          'user',
+          'employee',
+          'organisation',
+        ];
+        const missingModels = requiredModels.filter((model) => {
+          const modelClient = tx[model] as
+            | { findUnique?: unknown; upsert?: unknown }
+            | undefined;
+          return !modelClient || typeof modelClient.findUnique !== 'function';
+        });
+        if (missingModels.length > 0) {
+          this.logger.error(
+            'OAuth transaction client missing models',
+            JSON.stringify({
+              requestId,
+              provider,
+              missingModels,
+            }),
+          );
+          throw new InternalServerErrorException('oauth_db_schema_missing');
+        }
+
         const existingAccount = await tx.oauthAccount.findUnique({
           where: {
             provider_providerAccountId: {
