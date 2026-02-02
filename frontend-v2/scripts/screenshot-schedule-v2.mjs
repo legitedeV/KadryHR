@@ -208,11 +208,25 @@ const leaves = [
   },
 ];
 
-const summary = [
-  { employeeId: "emp-1", employeeName: "Anna Kowalska", hours: 8 },
-  { employeeId: "emp-2", employeeName: "Piotr Nowak", hours: 8 },
-  { employeeId: "emp-3", employeeName: "Marta Zielińska", hours: 8 },
-];
+const scheduleSummary = {
+  range: {
+    from: formatDateKey(weekStart),
+    to: formatDateKey(addDays(weekStart, 6)),
+  },
+  totals: {
+    hours: 24,
+    cost: 3120,
+    currency: "PLN",
+    shiftsCount: 3,
+    shiftsWithoutRate: 0,
+    employeesWithoutRate: 0,
+  },
+  byDay: [
+    { date: formatDateKey(weekStart), hours: 8, cost: 960 },
+    { date: formatDateKey(addDays(weekStart, 1)), hours: 8, cost: 1040 },
+    { date: formatDateKey(addDays(weekStart, 3)), hours: 8, cost: 1120 },
+  ],
+};
 
 const templates = [
   {
@@ -281,14 +295,6 @@ async function run() {
         });
       }
 
-      if (pathname.startsWith("/schedule")) {
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(shifts),
-        });
-      }
-
       if (pathname.startsWith("/availability")) {
         return route.fulfill({
           status: 200,
@@ -310,6 +316,22 @@ async function run() {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify(templates),
+        });
+      }
+
+      if (pathname.startsWith("/schedule/summary")) {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(scheduleSummary),
+        });
+      }
+
+      if (pathname.startsWith("/schedule")) {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(shifts),
         });
       }
 
