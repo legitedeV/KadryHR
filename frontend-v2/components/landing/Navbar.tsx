@@ -12,9 +12,9 @@ const navLinks = [
 
 export function Navbar() {
   return (
-    <header className="page-shell-bleed sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
-      <nav className="page-shell-inner flex flex-wrap items-center justify-between gap-4 py-3 lg:py-4">
-        <Logo asLink="/" size="sm" className="shrink-0" />
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
+      <nav className="landing-container flex flex-wrap items-center justify-between gap-4 py-3 lg:py-4">
+        <Logo asLink="/" size="sm" />
         <div className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
           {navLinks.map((link) => (
             <a key={link.label} href={link.href} className="transition hover:text-slate-900">
@@ -25,28 +25,28 @@ export function Navbar() {
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link
             href="/login"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 btn-hero-outline"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 btn-hero-outline"
           >
             <LogIn className="h-4 w-4" aria-hidden="true" />
             Zaloguj
           </Link>
           <Link
             href="/register"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 btn-hero"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 btn-hero"
           >
             <UserPlus className="h-4 w-4" aria-hidden="true" />
             Zarejestruj
           </Link>
           <a
             href="#kontakt"
-            className="hidden min-h-[44px] items-center gap-2 rounded-full border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 md:inline-flex"
+            className="hidden min-h-[44px] items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 md:inline-flex"
           >
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
             Dodaj sprawę
           </a>
           <a
             href="#kontakt"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
           >
             <Phone className="h-4 w-4" aria-hidden="true" />
             Skontaktuj się

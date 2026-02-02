@@ -784,10 +784,10 @@ export function SchedulePage() {
   }
 
   return (
-    <div className="space-y-8 relative">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-surface-900 sm:text-3xl">Grafik pracy</h1>
-        <p className="max-w-prose text-sm text-surface-600 sm:text-base">
+    <div className="space-y-6 relative">
+      <div>
+        <h1 className="text-[clamp(1.4rem,1.1vw+1rem,2rem)] font-semibold text-surface-900">Grafik pracy</h1>
+        <p className="text-sm text-surface-600">
           Układaj zmiany, sprawdzaj dyspozycje i publikuj grafik dla zespołu.
         </p>
       </div>
