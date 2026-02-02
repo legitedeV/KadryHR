@@ -16,15 +16,40 @@ const navItemToOnboardingTarget: Partial<Record<PanelNavItemId, OnboardingTarget
 };
 
 type SidebarProps = {
-  user: User;
+  user?: User | null;
   activePath: string;
   onLogout: () => void;
   footerSlot?: ReactNode;
   className?: string;
   collapsed?: boolean;
+  isLoading?: boolean;
+  errorMessage?: string | null;
 };
 
-export function Sidebar({ user, activePath, onLogout, footerSlot, className, collapsed = false }: SidebarProps) {
+const roleLabels: Record<User["role"], string> = {
+  OWNER: "Właściciel",
+  MANAGER: "Manager",
+  ADMIN: "Administrator",
+  EMPLOYEE: "Pracownik",
+};
+
+export function Sidebar({
+  user,
+  activePath,
+  onLogout,
+  footerSlot,
+  className,
+  collapsed = false,
+  isLoading = false,
+  errorMessage,
+}: SidebarProps) {
+  const userPermissions = user?.permissions ?? [];
+  const userName = user?.name?.trim() ?? "";
+  const roleLabel = user?.role ? roleLabels[user.role] : "";
+  const organisationName = user?.organisation?.name?.trim() ?? "";
+  const showError = Boolean(errorMessage);
+  const showLoading = isLoading && !user;
+
   return (
     <aside className={`flex flex-col bg-[var(--panel-sidebar-bg)] ${className ?? ""}`}>
       <div className={`h-16 flex items-center gap-3 border-b border-[var(--border-soft)] ${collapsed ? "px-3 justify-center" : "px-5"}`}>
@@ -41,7 +66,7 @@ export function Sidebar({ user, activePath, onLogout, footerSlot, className, col
             if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
               return true;
             }
-            return item.requiredPermissions.some((permission) => user.permissions.includes(permission));
+            return item.requiredPermissions.some((permission) => userPermissions.includes(permission));
           })
           .map((item) => {
           const active = activePath === item.href;
@@ -71,15 +96,26 @@ export function Sidebar({ user, activePath, onLogout, footerSlot, className, col
         <div className={`flex ${collapsed ? "flex-col items-center gap-3" : "items-center justify-between gap-3"} mb-3`}>
           <div className="flex items-center gap-3">
             <Avatar
-              name={user.name}
-              src={buildAvatarSrc(user.avatarUrl, user.avatarUpdatedAt)}
+              name={userName}
+              src={buildAvatarSrc(user?.avatarUrl ?? null, user?.avatarUpdatedAt ?? null)}
             />
             {!collapsed && (
               <div>
-                <div className="text-sm font-semibold text-[var(--text-main)]">
-                  {user.name}
-                </div>
-                <div className="text-xs text-[var(--text-muted)]">{user.role}</div>
+                {showLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-4 w-32 rounded bg-surface-100 animate-pulse" />
+                    <div className="h-3 w-24 rounded bg-surface-100 animate-pulse" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm font-semibold text-[var(--text-main)]">
+                      {showError ? "Problem z profilem" : userName}
+                    </div>
+                    {roleLabel && !showError && (
+                      <div className="text-xs text-[var(--text-muted)]">{roleLabel}</div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -107,7 +143,11 @@ export function Sidebar({ user, activePath, onLogout, footerSlot, className, col
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span>Żabka · demo</span>
+            {showLoading ? (
+              <span className="h-3 w-28 rounded bg-surface-100 animate-pulse" />
+            ) : (
+              <span>{showError ? "Problem z organizacją" : organisationName}</span>
+            )}
           </div>
         )}
         {footerSlot && <div className="mt-3">{footerSlot}</div>}
