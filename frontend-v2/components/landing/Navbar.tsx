@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogIn, MessageCircle, Phone, UserPlus } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 
 const navLinks = [
   { label: "Strona główna", href: "#" },
@@ -13,9 +14,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
       <nav className="landing-container flex flex-wrap items-center justify-between gap-4 py-3 lg:py-4">
-        <Link href="/" className="text-lg font-semibold text-slate-900">
-          KadryHR
-        </Link>
+        <Logo asLink="/" size="sm" />
         <div className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
           {navLinks.map((link) => (
             <a key={link.label} href={link.href} className="transition hover:text-slate-900">

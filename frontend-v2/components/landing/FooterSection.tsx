@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 
 export function FooterSection() {
   return (
     <footer className="border-t border-slate-200 bg-white py-14">
       <div className="landing-container grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-3">
-          <p className="text-lg font-semibold text-slate-900">KadryHR</p>
+          <Logo variant="compact" size="sm" />
           <p className="text-sm text-slate-600">
             Nowoczesne wsparcie kadrowo-płacowe i consulting HR dla firm w całej Polsce.
           </p>

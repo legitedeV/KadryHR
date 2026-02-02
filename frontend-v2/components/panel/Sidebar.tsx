@@ -29,7 +29,7 @@ export function Sidebar({ user, activePath, onLogout, footerSlot, className, col
     <aside className={`flex flex-col bg-[var(--panel-sidebar-bg)] ${className ?? ""}`}>
       <div className={`h-16 flex items-center gap-3 border-b border-[var(--border-soft)] ${collapsed ? "px-3 justify-center" : "px-5"}`}>
         <Link href="/panel/dashboard" className="shrink-0">
-          <BrandLogoStatic size={36} variant="icon" ariaLabel="KadryHR" />
+          <BrandLogoStatic size={48} variant="icon" ariaLabel="KadryHR" />
         </Link>
       </div>
       <nav className={`flex-1 py-6 ${collapsed ? "px-2" : "px-4"} space-y-2`}>

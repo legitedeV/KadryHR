@@ -84,6 +84,7 @@ export function SchedulePage() {
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
   const [initialShiftDate, setInitialShiftDate] = useState<Date | null>(null);
+  const [lockedEmployeeId, setLockedEmployeeId] = useState<string | null>(null);
   const [dateRangeModalOpen, setDateRangeModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [optionsDrawerOpen, setOptionsDrawerOpen] = useState(false);
@@ -608,10 +609,12 @@ export function SchedulePage() {
     if (!canManage) return;
     if (employeeId) {
       setActiveShift(null);
+      setLockedEmployeeId(employeeId);
       setInitialShiftDate(date ?? new Date());
       setShiftModalOpen(true);
     } else {
       setActiveShift(null);
+      setLockedEmployeeId(null);
       setInitialShiftDate(date ?? weekStart);
       setShiftModalOpen(true);
     }
@@ -620,6 +623,7 @@ export function SchedulePage() {
   const handleEditShift = (shift: ShiftRecord) => {
     if (!canManage) return;
     setActiveShift(shift);
+    setLockedEmployeeId(null);
     setShiftModalOpen(true);
   };
 
@@ -724,6 +728,7 @@ export function SchedulePage() {
     await queryClient.invalidateQueries({ queryKey: ["schedule"] });
     setShiftModalOpen(false);
     setActiveShift(null);
+    setLockedEmployeeId(null);
   };
 
   const handlePublishSchedule = async () => {
@@ -863,10 +868,12 @@ export function SchedulePage() {
         leaves={leaves}
         shift={activeShift}
         initialDate={initialShiftDate}
+        lockedEmployeeId={lockedEmployeeId}
         positionOptions={positionOptions}
         onClose={() => {
           setShiftModalOpen(false);
           setActiveShift(null);
+          setLockedEmployeeId(null);
         }}
         onSave={handleSaveShift}
         onSaveBulk={handleSaveBulk}
