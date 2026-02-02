@@ -62,11 +62,13 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--panel-bg)]">
-        <div className="w-full max-w-sm space-y-4">
-          <div className="h-10 w-10 rounded-md bg-surface-100" />
-          <LoadingSkeleton lines={4} />
-          <p className="text-sm text-surface-600">Ładowanie panelu...</p>
+      <div className="page-shell-bleed">
+        <div className="min-h-screen flex items-center justify-center bg-[var(--panel-bg)]">
+          <div className="w-full max-w-sm space-y-4">
+            <div className="h-10 w-10 rounded-md bg-surface-100" />
+            <LoadingSkeleton lines={4} />
+            <p className="text-sm text-surface-600">Ładowanie panelu...</p>
+          </div>
         </div>
       </div>
     );
@@ -77,9 +79,11 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
     <OnboardingProvider userId={user.id}>
       <TopbarActionsProvider>
-        <PanelContent user={user} onLogout={handleLogout}>
-          {children}
-        </PanelContent>
+        <div className="page-shell-bleed">
+          <PanelContent user={user} onLogout={handleLogout}>
+            {children}
+          </PanelContent>
+        </div>
       </TopbarActionsProvider>
     </OnboardingProvider>
   );

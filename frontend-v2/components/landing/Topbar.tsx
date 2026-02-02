@@ -1,7 +1,7 @@
 export function Topbar() {
   return (
-    <div className="border-b border-slate-200 bg-slate-50/80">
-      <div className="landing-container flex flex-wrap items-center justify-between gap-3 py-2 text-[clamp(0.7rem,0.4vw+0.6rem,0.8rem)] text-slate-600">
+    <div className="page-shell-bleed border-b border-slate-200 bg-slate-50/80">
+      <div className="page-shell-inner flex flex-wrap items-center justify-between gap-3 py-2 text-xs text-slate-600 sm:text-sm">
         <div className="flex flex-wrap items-center gap-3">
           <a className="transition hover:text-slate-900" href="mailto:kontakt@kadryhr.pl">
             kontakt@kadryhr.pl

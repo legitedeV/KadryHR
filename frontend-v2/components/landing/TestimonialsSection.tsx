@@ -1,3 +1,5 @@
+import { Section } from "@/components/layout/Section";
+
 const testimonials = [
   {
     quote:
@@ -21,18 +23,20 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <section className="landing-section">
-      <div className="landing-container flex flex-col gap-10">
-        <div className="max-w-2xl space-y-3">
-          <p className="text-[clamp(0.75rem,0.4vw+0.6rem,0.85rem)] font-semibold uppercase tracking-wide text-orange-600">
+    <Section>
+      <div className="flex flex-col gap-8">
+        <div className="max-w-prose space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
             Zaufanie klientów
           </p>
-          <h2 className="landing-title text-slate-900">Referencje, które potwierdzają jakość</h2>
-          <p className="landing-body text-slate-600">
+          <h2 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
+            Referencje, które potwierdzają jakość
+          </h2>
+          <p className="text-base text-slate-600 sm:text-lg">
             Wspieramy firmy z wielu branż, zapewniając im spokój, przewidywalność i stałe wsparcie ekspertów.
           </p>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {testimonials.map((testimonial) => (
             <figure key={testimonial.name} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <blockquote className="text-sm leading-relaxed text-slate-700">
@@ -44,6 +48,6 @@ export function TestimonialsSection() {
           ))}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

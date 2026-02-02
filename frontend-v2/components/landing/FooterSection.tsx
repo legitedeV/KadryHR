@@ -3,8 +3,8 @@ import { Logo } from "@/components/brand/Logo";
 
 export function FooterSection() {
   return (
-    <footer className="border-t border-slate-200 bg-white py-14">
-      <div className="landing-container grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="page-shell-bleed border-t border-slate-200 bg-white py-12">
+      <div className="page-shell-inner grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-3">
           <Logo variant="compact" size="sm" />
           <p className="text-sm text-slate-600">
@@ -57,7 +57,7 @@ export function FooterSection() {
           </div>
         </div>
       </div>
-      <div className="landing-container mt-10 flex flex-col justify-between gap-2 border-t border-slate-200 pt-6 text-xs text-slate-500 sm:flex-row">
+      <div className="page-shell-inner mt-10 flex flex-col justify-between gap-2 border-t border-slate-200 pt-6 text-xs text-slate-500 sm:flex-row">
         <span>© 2024 KadryHR. Wszelkie prawa zastrzeżone.</span>
         <span>Polityka prywatności · Regulamin</span>
       </div>

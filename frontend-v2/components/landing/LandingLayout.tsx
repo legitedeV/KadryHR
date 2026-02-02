@@ -10,7 +10,7 @@ import { TrustSection } from "@/components/landing/TrustSection";
 
 export function LandingLayout() {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="text-slate-900">
       <Topbar />
       <Navbar />
       <main className="relative overflow-hidden">

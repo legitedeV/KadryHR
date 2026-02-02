@@ -1,15 +1,18 @@
 import { Mail, MapPin, Phone } from "lucide-react";
+import { Section } from "@/components/layout/Section";
 
 export function ContactSection() {
   return (
-    <section id="kontakt" className="bg-slate-50/70 landing-section">
-      <div className="landing-container grid gap-10 lg:grid-cols-[1fr_0.85fr]">
+    <Section id="kontakt" className="page-shell-bleed bg-slate-50/70">
+      <div className="page-shell-inner grid gap-10 lg:grid-cols-[1fr_0.85fr] lg:gap-14">
         <div className="space-y-6">
-          <p className="text-[clamp(0.75rem,0.4vw+0.6rem,0.85rem)] font-semibold uppercase tracking-wide text-orange-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
             Kontakt
           </p>
-          <h2 className="landing-title text-slate-900">Porozmawiajmy o potrzebach Twojej organizacji</h2>
-          <p className="landing-body text-slate-600">
+          <h2 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
+            Porozmawiajmy o potrzebach Twojej organizacji
+          </h2>
+          <p className="max-w-prose text-base text-slate-600 sm:text-lg">
             Umów bezpłatną konsultację i sprawdź, jak możemy odciążyć Twój dział HR oraz zwiększyć
             przewidywalność kosztów kadrowo-płacowych.
           </p>
@@ -45,7 +48,7 @@ export function ContactSection() {
                 type="text"
                 name="name"
                 placeholder="Jan Kowalski"
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
             </label>
             <label className="text-sm font-medium text-slate-700">
@@ -54,7 +57,7 @@ export function ContactSection() {
                 type="email"
                 name="email"
                 placeholder="jan@firma.pl"
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
             </label>
             <label className="text-sm font-medium text-slate-700">
@@ -63,12 +66,12 @@ export function ContactSection() {
                 name="message"
                 rows={4}
                 placeholder="Opisz swoje potrzeby kadrowe"
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
             </label>
             <button
               type="submit"
-              className="min-h-[44px] rounded-full bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+              className="min-h-[44px] rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
             >
               Wyślij zapytanie
             </button>
@@ -76,6 +79,6 @@ export function ContactSection() {
           </div>
         </form>
       </div>
-    </section>
+    </Section>
   );
 }

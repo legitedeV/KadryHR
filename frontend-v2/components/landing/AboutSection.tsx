@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Section } from "@/components/layout/Section";
 
 const benefits = [
   "Indywidualne podejście do klienta",
@@ -8,14 +9,16 @@ const benefits = [
 
 export function AboutSection() {
   return (
-    <section id="o-nas" className="landing-section">
-      <div className="landing-container grid items-center gap-10 lg:grid-cols-[1fr_0.95fr]">
+    <Section id="o-nas">
+      <div className="grid items-center gap-10 lg:grid-cols-[1fr_0.95fr] lg:gap-14">
         <div className="space-y-6">
-          <div className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-[clamp(0.7rem,0.4vw+0.6rem,0.8rem)] font-semibold uppercase tracking-wide text-orange-700">
+          <div className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-700">
             O nas
           </div>
-          <h2 className="landing-title text-slate-900">Partnerstwo oparte na zaufaniu</h2>
-          <p className="landing-body text-slate-600">
+          <h2 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
+            Partnerstwo oparte na zaufaniu
+          </h2>
+          <p className="max-w-prose text-base text-slate-600 sm:text-lg">
             Od ponad dekady wspieramy firmy w budowaniu stabilnych zespołów. Dostarczamy czytelne
             procesy, raporty i stałe doradztwo, dzięki czemu możesz skupić się na rozwoju biznesu.
           </p>
@@ -45,7 +48,7 @@ export function AboutSection() {
           </ul>
           <a
             href="#kontakt"
-            className="inline-flex min-h-[44px] rounded-full border border-orange-200 bg-orange-50 px-6 py-3 text-sm font-semibold text-orange-700 transition hover:border-orange-300 hover:bg-orange-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+            className="inline-flex min-h-[44px] rounded-full border border-orange-200 bg-orange-50 px-5 py-2.5 text-sm font-semibold text-orange-700 transition hover:border-orange-300 hover:bg-orange-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
           >
             Dowiedz się więcej
           </a>
@@ -64,6 +67,6 @@ export function AboutSection() {
           </div>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
