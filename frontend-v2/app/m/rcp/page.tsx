@@ -22,6 +22,14 @@ interface RcpStatus {
   isClockedIn: boolean;
 }
 
+interface RcpEvent {
+  id: string;
+  type: 'CLOCK_IN' | 'CLOCK_OUT';
+  happenedAt: string;
+  locationName: string;
+  distanceMeters: number;
+}
+
 function MobileRcpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,6 +44,8 @@ function MobileRcpContent() {
     loading: false,
   });
   const [status, setStatus] = useState<RcpStatus | null>(null);
+  const [history, setHistory] = useState<RcpEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [clockLoading, setClockLoading] = useState(false);
   const [lastResult, setLastResult] = useState<{
     success: boolean;
@@ -64,6 +74,7 @@ function MobileRcpContent() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchStatus();
+      fetchHistory();
     }
   }, [isAuthenticated]);
 
@@ -75,6 +86,20 @@ function MobileRcpContent() {
       setStatus(response);
     } catch (error) {
       console.error('Failed to fetch status:', error);
+    }
+  };
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await apiClient.get<{
+        items: RcpEvent[];
+      }>('/rcp/events/me?take=10', { auth: true });
+      setHistory(response.items);
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -169,6 +194,7 @@ function MobileRcpContent() {
       
       // Refresh status
       await fetchStatus();
+      await fetchHistory();
     } catch (error: unknown) {
       let errorMessage = 'Nie udało się zarejestrować czasu pracy';
 
@@ -379,6 +405,57 @@ function MobileRcpContent() {
                   Odległość od lokalizacji: {lastResult.distance}m
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* History */}
+        <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-medium text-white">Ostatnie zdarzenia</div>
+            <button
+              type="button"
+              onClick={fetchHistory}
+              disabled={historyLoading}
+              className="text-xs text-blue-400 hover:text-blue-300 disabled:text-gray-500"
+            >
+              {historyLoading ? 'Odświeżanie...' : 'Odśwież'}
+            </button>
+          </div>
+
+          {historyLoading && history.length === 0 && (
+            <div className="text-sm text-gray-400">Ładowanie historii...</div>
+          )}
+
+          {!historyLoading && history.length === 0 && (
+            <div className="text-sm text-gray-400">Brak zapisanych zdarzeń.</div>
+          )}
+
+          {history.length > 0 && (
+            <div className="space-y-3">
+              {history.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <div>
+                    <div className="text-white font-medium">
+                      {event.type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {event.locationName} • {event.distanceMeters}m
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(event.happenedAt).toLocaleString('pl-PL', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      day: '2-digit',
+                      month: '2-digit',
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

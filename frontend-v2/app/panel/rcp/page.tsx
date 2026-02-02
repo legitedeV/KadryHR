@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { pushToast } from '@/lib/toast';
 import { useAuth } from '@/lib/auth-context';
+import { apiGetOrganisationMembers, OrganisationMember } from '@/lib/api';
 import QRCode from 'qrcode';
 
 interface Location {
@@ -21,6 +22,22 @@ interface Location {
 interface QrResult {
   qrUrl: string;
   tokenExpiresAt: string;
+}
+
+interface RcpEvent {
+  id: string;
+  type: 'CLOCK_IN' | 'CLOCK_OUT';
+  happenedAt: string;
+  locationId: string;
+  locationName: string;
+  distanceMeters: number;
+  accuracyMeters: number | null;
+  user?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
 }
 
 interface CreateLocationPayload {
@@ -43,6 +60,22 @@ export default function PanelRcpPage() {
   const [generating, setGenerating] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [creatingLocation, setCreatingLocation] = useState(false);
+  const [members, setMembers] = useState<OrganisationMember[]>([]);
+  const [events, setEvents] = useState<RcpEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [eventFilters, setEventFilters] = useState({
+    userId: '',
+    locationId: '',
+    type: '',
+    from: '',
+    to: '',
+  });
+  const [eventPagination, setEventPagination] = useState({
+    skip: 0,
+    take: 25,
+    total: 0,
+  });
   const [newLocation, setNewLocation] = useState<CreateLocationPayload>({
     name: '',
     geoRadiusMeters: 100,
@@ -61,8 +94,20 @@ export default function PanelRcpPage() {
       router.replace('/panel/dashboard');
     } else {
       fetchLocations();
+      fetchMembers();
+      fetchEvents(0);
     }
   }, [hasRcpAccess, router]);
+
+  const fetchMembers = async () => {
+    try {
+      const response = await apiGetOrganisationMembers();
+      setMembers(response.filter((member) => member.status === 'ACTIVE'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Nie udało się pobrać pracowników';
+      pushToast(errorMessage, 'error');
+    }
+  };
 
   const fetchLocations = async () => {
     setLoading(true);
@@ -81,6 +126,67 @@ export default function PanelRcpPage() {
       setLoading(false);
     }
   };
+
+  const buildEventsQuery = (skip: number) => {
+    const params = new URLSearchParams();
+    params.set('take', String(eventPagination.take));
+    params.set('skip', String(skip));
+
+    if (eventFilters.userId) {
+      params.set('userId', eventFilters.userId);
+    }
+    if (eventFilters.locationId) {
+      params.set('locationId', eventFilters.locationId);
+    }
+    if (eventFilters.type) {
+      params.set('type', eventFilters.type);
+    }
+    if (eventFilters.from) {
+      params.set(
+        'from',
+        new Date(`${eventFilters.from}T00:00:00`).toISOString(),
+      );
+    }
+    if (eventFilters.to) {
+      params.set(
+        'to',
+        new Date(`${eventFilters.to}T23:59:59.999`).toISOString(),
+      );
+    }
+
+    return params.toString();
+  };
+
+  const fetchEvents = async (skip: number) => {
+    setEventsLoading(true);
+    setEventsError(null);
+    try {
+      const response = await apiClient.get<{
+        items: RcpEvent[];
+        total: number;
+        skip: number;
+        take: number;
+      }>(`/rcp/events?${buildEventsQuery(skip)}`, { auth: true });
+      setEvents(response.items);
+      setEventPagination((prev) => ({
+        ...prev,
+        skip: response.skip,
+        take: response.take,
+        total: response.total,
+      }));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Nie udało się pobrać zdarzeń RCP';
+      setEventsError(errorMessage);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hasRcpAccess) {
+      fetchEvents(0);
+    }
+  }, [eventFilters, hasRcpAccess]);
 
   const generateQr = async () => {
     if (!selectedLocation) {
@@ -330,6 +436,203 @@ export default function PanelRcpPage() {
           >
             + Dodaj lokalizację
           </button>
+        </div>
+
+        {/* Events Overview */}
+        <div className="bg-surface-50 border border-surface-300 rounded-xl p-6 space-y-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-surface-900">
+                Podgląd zdarzeń RCP
+              </h2>
+              <p className="text-sm text-surface-600">
+                Ostatnie rejestracje pracowników z możliwością filtrowania.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchEvents(0)}
+              disabled={eventsLoading}
+              className="bg-surface-100 hover:bg-surface-200 text-surface-900 text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+            >
+              {eventsLoading ? 'Odświeżanie...' : 'Odśwież'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <select
+              value={eventFilters.userId}
+              onChange={(e) =>
+                setEventFilters((prev) => ({ ...prev, userId: e.target.value }))
+              }
+              className="bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Wszyscy pracownicy</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.firstName} {member.lastName} ({member.email})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={eventFilters.locationId}
+              onChange={(e) =>
+                setEventFilters((prev) => ({
+                  ...prev,
+                  locationId: e.target.value,
+                }))
+              }
+              className="bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Wszystkie lokalizacje</option>
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={eventFilters.type}
+              onChange={(e) =>
+                setEventFilters((prev) => ({ ...prev, type: e.target.value }))
+              }
+              className="bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Wszystkie statusy</option>
+              <option value="CLOCK_IN">Wejście</option>
+              <option value="CLOCK_OUT">Wyjście</option>
+            </select>
+
+            <input
+              type="date"
+              value={eventFilters.from}
+              onChange={(e) =>
+                setEventFilters((prev) => ({ ...prev, from: e.target.value }))
+              }
+              className="bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 text-sm"
+            />
+            <input
+              type="date"
+              value={eventFilters.to}
+              onChange={(e) =>
+                setEventFilters((prev) => ({ ...prev, to: e.target.value }))
+              }
+              className="bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div className="border border-surface-200 rounded-lg overflow-hidden bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-4 py-3 text-xs font-semibold text-surface-500 uppercase bg-surface-100">
+              <span>Pracownik</span>
+              <span>Status</span>
+              <span>Lokalizacja</span>
+              <span>Godzina</span>
+              <span>Odległość / GPS</span>
+            </div>
+            <div className="divide-y divide-surface-200">
+              {eventsLoading && (
+                <div className="px-4 py-6 text-sm text-surface-600">
+                  Ładowanie zdarzeń...
+                </div>
+              )}
+              {!eventsLoading && eventsError && (
+                <div className="px-4 py-6 text-sm text-red-600">
+                  {eventsError}
+                </div>
+              )}
+              {!eventsLoading && !eventsError && events.length === 0 && (
+                <div className="px-4 py-6 text-sm text-surface-600">
+                  Brak zdarzeń dla wybranych filtrów.
+                </div>
+              )}
+              {!eventsLoading &&
+                !eventsError &&
+                events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="grid grid-cols-1 md:grid-cols-5 gap-4 px-4 py-3 text-sm text-surface-900"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        {event.user?.firstName || ''}{' '}
+                        {event.user?.lastName || ''}
+                      </div>
+                      <div className="text-xs text-surface-500">
+                        {event.user?.email}
+                      </div>
+                    </div>
+                    <div>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          event.type === 'CLOCK_IN'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {event.type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-surface-700">
+                      {event.locationName}
+                    </div>
+                    <div className="text-sm text-surface-700">
+                      {new Date(event.happenedAt).toLocaleString('pl-PL', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                      })}
+                    </div>
+                    <div className="text-sm text-surface-700">
+                      {event.distanceMeters}m
+                      {event.accuracyMeters !== null && (
+                        <span className="text-xs text-surface-500">
+                          {' '}
+                          • ±{Math.round(event.accuracyMeters)}m
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm text-surface-600">
+            <span>
+              {eventPagination.total > 0
+                ? `Pokazujesz ${eventPagination.skip + 1}-${Math.min(
+                    eventPagination.skip + eventPagination.take,
+                    eventPagination.total,
+                  )} z ${eventPagination.total}`
+                : 'Brak wyników'}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fetchEvents(Math.max(eventPagination.skip - eventPagination.take, 0))}
+                disabled={eventsLoading || eventPagination.skip === 0}
+                className="bg-surface-100 hover:bg-surface-200 text-surface-900 px-3 py-1 rounded-lg disabled:opacity-60"
+              >
+                ← Poprzednie
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  fetchEvents(eventPagination.skip + eventPagination.take)
+                }
+                disabled={
+                  eventsLoading ||
+                  eventPagination.skip + eventPagination.take >=
+                    eventPagination.total
+                }
+                className="bg-surface-100 hover:bg-surface-200 text-surface-900 px-3 py-1 rounded-lg disabled:opacity-60"
+              >
+                Następne →
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
