@@ -11,3 +11,18 @@
 - Panel URL: `NEXT_PUBLIC_PANEL_APP_URL` (defaults to `https://kadryhr.pl`).
 - Auth UI: Google OAuth is supported for login/registration; Microsoft OAuth UI has been removed.
 - Optional E2E: `npm run test:e2e` (Playwright).
+
+## Favicons (RealFaviconGenerator)
+We use RealFaviconGenerator to manage the favicon set for the Next.js app.
+Binary assets are not committed to the repository, so they must be downloaded
+locally or on the server before running the app.
+
+Run the setup script:
+
+```bash
+cd frontend-v2
+bash scripts/setup-realfavicongenerator-favicons.sh
+```
+
+Run it on fresh clones, during deploys, or anytime you regenerate the favicon
+package in RealFaviconGenerator.
