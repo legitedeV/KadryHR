@@ -20,20 +20,20 @@ export function PanelShell({ user, onLogout, actionsSlot, children }: PanelShell
   const title = titleByPath[pathname] ?? "Dashboard";
 
   return (
-    <div className="panel-theme min-h-screen bg-[var(--panel-bg)] text-[var(--body-text)]">
-      <div className="flex min-h-screen">
+    <div className="panel-theme bg-[var(--panel-bg)] text-[var(--body-text)]">
+      <div className="relative h-screen overflow-hidden">
         <Sidebar
           user={user}
           activePath={pathname}
           onLogout={onLogout}
-          className="hidden lg:flex lg:w-64 border-r border-[var(--border-soft)]"
+          className="hidden lg:flex fixed inset-y-0 left-0 w-64 border-r border-[var(--border-soft)]"
         />
         <Sidebar
           user={user}
           activePath={pathname}
           onLogout={onLogout}
           collapsed
-          className="hidden md:flex lg:hidden md:w-20 border-r border-[var(--border-soft)]"
+          className="hidden md:flex lg:hidden fixed inset-y-0 left-0 w-20 border-r border-[var(--border-soft)]"
         />
 
         {mobileMenuOpen && (
@@ -52,14 +52,14 @@ export function PanelShell({ user, onLogout, actionsSlot, children }: PanelShell
           } border-r border-[var(--border-soft)]`}
         />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex h-full flex-col min-w-0 md:ml-20 lg:ml-64">
           <Topbar
             title={title}
             onMenuOpen={() => setMobileMenuOpen(true)}
             actionsSlot={actionsSlot}
           />
-          <main className="flex-1 px-4 sm:px-5 lg:px-6 py-6">
-            <div className="max-w-[1320px] w-full mx-auto space-y-6">{children}</div>
+          <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 lg:px-6 py-6">
+            <div className="w-full space-y-6">{children}</div>
           </main>
         </div>
       </div>
