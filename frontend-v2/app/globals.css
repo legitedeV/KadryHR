@@ -45,36 +45,6 @@
 
   /* Box shadow */
   --shadow-soft: 0 1px 2px rgba(31, 41, 55, 0.08);
-
-  /* Layout + typography scale */
-  --max-width-content: 72rem;
-
-  --text-xs: 0.75rem;
-  --text-xs--line-height: 1.4;
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.5;
-  --text-base: 1rem;
-  --text-base--line-height: 1.6;
-  --text-lg: 1.125rem;
-  --text-lg--line-height: 1.7;
-  --text-xl: 1.25rem;
-  --text-xl--line-height: 1.7;
-  --text-2xl: 1.5rem;
-  --text-2xl--line-height: 1.3;
-  --text-3xl: 1.875rem;
-  --text-3xl--line-height: 1.2;
-  --text-4xl: 2.25rem;
-  --text-4xl--line-height: 1.1;
-
-  --spacing-1: 0.25rem;
-  --spacing-2: 0.5rem;
-  --spacing-3: 0.75rem;
-  --spacing-4: 1rem;
-  --spacing-6: 1.5rem;
-  --spacing-8: 2rem;
-  --spacing-12: 3rem;
-  --spacing-16: 4rem;
-  --spacing-20: 5rem;
 }
 
 :root {
@@ -681,18 +651,31 @@ body::before {
   background-clip: text;
 }
 
-.page-shell-inner {
-  @apply mx-auto w-full max-w-content px-4 sm:px-6 lg:px-8;
+/* Landing layout utilities */
+.landing-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1280px;
+  padding-inline: clamp(1rem, 2.5vw, 2rem);
 }
 
-.page-shell-bleed {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+.landing-section {
+  padding-block: clamp(3rem, 8vh, 5rem);
 }
 
-.page-shell-bleed > .page-shell-inner {
-  @apply mx-auto w-full max-w-content px-4 sm:px-6 lg:px-8;
+.landing-section-tight {
+  padding-block: clamp(2.5rem, 6vh, 4.5rem);
+}
+
+.landing-title {
+  font-size: clamp(1.5rem, 1.6vw + 1rem, 2.25rem);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.landing-body {
+  font-size: clamp(1rem, 0.5vw + 0.9rem, 1.125rem);
+  line-height: 1.7;
 }
 
 /* Compact Panel Utilities */
