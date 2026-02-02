@@ -27,9 +27,9 @@ type SidebarProps = {
 export function Sidebar({ user, activePath, onLogout, footerSlot, className, collapsed = false }: SidebarProps) {
   return (
     <aside className={`flex flex-col bg-[var(--panel-sidebar-bg)] ${className ?? ""}`}>
-      <div className={`h-16 flex items-center gap-3 border-b border-[var(--border-soft)] ${collapsed ? "px-3 justify-center" : "px-5"}`}>
+      <div className={`h-16 flex items-center gap-3 border-b border-[var(--border-soft)] ${collapsed ? "px-3 justify-center" : "px-4"}`}>
         <Link href="/panel/dashboard" className="shrink-0">
-          <BrandLogoStatic size={48} variant="icon" ariaLabel="KadryHR" />
+          <BrandLogoStatic size={52} variant="icon" ariaLabel="KadryHR" />
         </Link>
       </div>
       <nav className={`flex-1 py-6 ${collapsed ? "px-2" : "px-4"} space-y-2`}>
@@ -67,7 +67,7 @@ export function Sidebar({ user, activePath, onLogout, footerSlot, className, col
           );
         })}
       </nav>
-      <div className={`border-t border-[var(--border-soft)] ${collapsed ? "px-3 py-4" : "px-5 py-4"}`}>
+      <div className={`border-t border-[var(--border-soft)] ${collapsed ? "px-3 py-4" : "px-4 py-4"}`}>
         <div className={`flex ${collapsed ? "flex-col items-center gap-3" : "items-center justify-between gap-3"} mb-3`}>
           <div className="flex items-center gap-3">
             <Avatar

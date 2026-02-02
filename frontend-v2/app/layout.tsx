@@ -4,6 +4,7 @@ import { QueryProvider } from "@/components/QueryProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/lib/auth-context";
 import { DEFAULT_LANG } from "@/lib/site-config";
+import { PageShell } from "@/components/layout/PageShell";
 
 export const viewport: Viewport = {
   themeColor: "#0ea371",
@@ -78,7 +79,7 @@ export default function RootLayout({
         <QueryProvider>
           <ToastProvider>
             <AuthProvider>
-              {children}
+              <PageShell>{children}</PageShell>
             </AuthProvider>
           </ToastProvider>
         </QueryProvider>

@@ -1,4 +1,5 @@
 import { BadgeDollarSign, Briefcase, FileText, UserSearch } from "lucide-react";
+import { Section } from "@/components/layout/Section";
 
 const services = [
   {
@@ -26,28 +27,30 @@ const services = [
 
 export function ServicesSection() {
   return (
-    <section id="uslugi" className="bg-slate-50/60 landing-section">
-      <div className="landing-container flex flex-col gap-10">
-        <div className="max-w-2xl space-y-3">
-          <p className="text-[clamp(0.75rem,0.4vw+0.6rem,0.85rem)] font-semibold uppercase tracking-wide text-orange-600">
+    <Section id="uslugi" className="page-shell-bleed bg-slate-50/60">
+      <div className="page-shell-inner flex flex-col gap-8">
+        <div className="max-w-prose space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
             Nasze usługi
           </p>
-          <h2 className="landing-title text-slate-900">Kompleksowe wsparcie HR dla biznesu</h2>
-          <p className="landing-body text-slate-600">
+          <h2 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
+            Kompleksowe wsparcie HR dla biznesu
+          </h2>
+          <p className="text-base text-slate-600 sm:text-lg">
             Łączymy wiedzę ekspercką z nowoczesnymi procesami, aby odciążyć działy kadr i zapewnić
             bezpieczeństwo formalne.
           </p>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {services.map((service) => (
             <article
               key={service.title}
-              className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+              className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-700">
                 <service.icon className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-[clamp(1rem,0.6vw+0.9rem,1.2rem)] font-semibold text-slate-900">{service.title}</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{service.title}</h3>
               <p className="mt-3 text-sm text-slate-600">{service.description}</p>
               <a
                 href="#kontakt"
@@ -59,6 +62,6 @@ export function ServicesSection() {
           ))}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
