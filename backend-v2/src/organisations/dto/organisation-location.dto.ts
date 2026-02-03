@@ -1,5 +1,14 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsBoolean, IsOptional, IsString, MaxLength, Matches } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateOrganisationLocationDto {
   @IsString()
@@ -51,6 +60,34 @@ export class CreateOrganisationLocationDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  geoLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  geoLng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(5000)
+  geoRadiusMeters?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  rcpEnabled?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(500)
+  rcpAccuracyMaxMeters?: number;
 }
 
 export class UpdateOrganisationLocationDto extends PartialType(

@@ -50,6 +50,7 @@ export interface OrganisationLocation {
   id: string;
   name: string;
   code?: string | null;
+  address?: string | null;
   addressStreet?: string | null;
   addressPostalCode?: string | null;
   addressCity?: string | null;
@@ -57,6 +58,11 @@ export interface OrganisationLocation {
   defaultOpeningTimeFrom?: string | null;
   defaultOpeningTimeTo?: string | null;
   isActive: boolean;
+  geoLat?: number | string | null;
+  geoLng?: number | string | null;
+  geoRadiusMeters?: number | string | null;
+  rcpEnabled?: boolean | null;
+  rcpAccuracyMaxMeters?: number | string | null;
   createdAt: string;
   updatedAt: string;
 }
