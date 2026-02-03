@@ -52,8 +52,8 @@ async function takeScreenshots() {
     });
   });
 
-  // Mock locations
-  await page.route('**/api/locations', async (route) => {
+  // Mock organisation locations
+  await page.route('**/api/organisation/locations**', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -63,30 +63,51 @@ async function takeScreenshots() {
             id: 'loc-1',
             name: 'Sklep Główny - Warszawa Centrum',
             address: 'ul. Marszałkowska 10, 00-000 Warszawa',
+            addressStreet: 'ul. Marszałkowska 10',
+            addressPostalCode: '00-000',
+            addressCity: 'Warszawa',
+            addressCountry: 'Polska',
             geoLat: 52.2297,
             geoLng: 21.0122,
             geoRadiusMeters: 100,
             rcpEnabled: true,
             rcpAccuracyMaxMeters: 100,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           },
         ]),
       });
-    } else if (route.request().method() === 'POST') {
-      // Mock creating location
+      return;
+    }
+
+    if (route.request().method() === 'PATCH') {
+      const payload = JSON.parse(route.request().postData() || '{}');
       await route.fulfill({
-        status: 201,
+        status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          id: 'loc-2',
-          name: 'Nowa Lokalizacja',
-          geoRadiusMeters: 100,
-          rcpEnabled: true,
-          rcpAccuracyMaxMeters: 100,
+          id: 'loc-1',
+          name: 'Sklep Główny - Warszawa Centrum',
+          address: 'ul. Marszałkowska 10, 00-000 Warszawa',
+          addressStreet: 'ul. Marszałkowska 10',
+          addressPostalCode: '00-000',
+          addressCity: 'Warszawa',
+          addressCountry: 'Polska',
+          geoLat: payload.geoLat ?? 52.2297,
+          geoLng: payload.geoLng ?? 21.0122,
+          geoRadiusMeters: payload.geoRadiusMeters ?? 100,
+          rcpEnabled: payload.rcpEnabled ?? true,
+          rcpAccuracyMaxMeters: payload.rcpAccuracyMaxMeters ?? 100,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }),
       });
-    } else {
-      await route.continue();
+      return;
     }
+
+    await route.continue();
   });
 
   // Mock QR generation
@@ -97,6 +118,56 @@ async function takeScreenshots() {
       body: JSON.stringify({
         qrUrl: 'http://localhost:3000/m/rcp?token=eyJvcmdJZCI6InRlc3Qtb3JnIiwibG9jYXRpb25JZCI6ImxvYy0xIn0',
         tokenExpiresAt: new Date(Date.now() + 3600000).toISOString(),
+      }),
+    });
+  });
+
+  // Mock organisation members
+  await page.route('**/api/organisation/members', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 'emp-1',
+          firstName: 'Agnieszka',
+          lastName: 'Nowak',
+          email: 'agnieszka.nowak@test.com',
+          role: 'EMPLOYEE',
+          status: 'ACTIVE',
+        },
+      ]),
+    });
+  });
+
+  // Mock RCP events
+  await page.route('**/api/rcp/events**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: 'event-1',
+            type: 'CLOCK_IN',
+            happenedAt: new Date(Date.now() - 3600000).toISOString(),
+            locationId: 'loc-1',
+            locationName: 'Sklep Główny - Warszawa Centrum',
+            distanceMeters: 42,
+            accuracyMeters: 20,
+            clientLat: 52.2297,
+            clientLng: 21.0122,
+            user: {
+              id: 'emp-1',
+              firstName: 'Agnieszka',
+              lastName: 'Nowak',
+              email: 'agnieszka.nowak@test.com',
+            },
+          },
+        ],
+        total: 1,
+        skip: 0,
+        take: 25,
       }),
     });
   });

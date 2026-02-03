@@ -21,12 +21,12 @@ import {
 import { EmployeeInline } from "./EmployeeInline";
 
 const TIME_PRESETS = [
-  "06:00-14:00",
-  "07:00-15:00",
-  "08:00-16:00",
-  "09:00-17:00",
-  "10:00-18:00",
-  "14:00-22:00",
+  { value: "06:00-14:30", label: "06:00–14:30" },
+  { value: "08:00-14:00", label: "08:00–14:00" },
+  { value: "10:00-16:00", label: "10:00–16:00" },
+  { value: "12:00-18:00", label: "12:00–18:00" },
+  { value: "14:00-22:00", label: "14:00–22:00" },
+  { value: "14:30-23:00", label: "14:30–23:00" },
 ] as const;
 
 const WEEKDAY_OPTIONS = [
@@ -458,8 +458,8 @@ export function ShiftModal({
                 <select className={selectClass} onChange={(event) => handlePresetSelect(event.target.value)} defaultValue="">
                   <option value="">Wybierz zakres</option>
                   {TIME_PRESETS.map((preset) => (
-                    <option key={preset} value={preset}>
-                      {preset}
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
                     </option>
                   ))}
                 </select>

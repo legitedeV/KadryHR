@@ -6,7 +6,12 @@ import dynamic from 'next/dynamic';
 import { apiClient } from '@/lib/api-client';
 import { pushToast } from '@/lib/toast';
 import { useAuth } from '@/lib/auth-context';
-import { apiGetOrganisationMembers, OrganisationMember } from '@/lib/api';
+import {
+  apiGetOrganisationLocations,
+  apiGetOrganisationMembers,
+  apiUpdateOrganisationLocation,
+  OrganisationMember,
+} from '@/lib/api';
 import QRCode from 'qrcode';
 import type { RcpMapCircle, RcpMapMarker } from '@/components/rcp/rcp-map';
 
@@ -133,12 +138,46 @@ export default function PanelRcpPage() {
   const fetchLocations = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get<Location[]>('/locations', {
-        auth: true,
+      const response = await apiGetOrganisationLocations();
+      const mappedLocations = response.map((location) => {
+        const addressParts = [
+          location.addressStreet,
+          location.addressPostalCode,
+          location.addressCity,
+          location.addressCountry,
+        ]
+          .filter(Boolean)
+          .join(', ');
+        const geoLat =
+          typeof location.geoLat === 'string'
+            ? Number(location.geoLat)
+            : location.geoLat;
+        const geoLng =
+          typeof location.geoLng === 'string'
+            ? Number(location.geoLng)
+            : location.geoLng;
+        const geoRadiusMeters =
+          typeof location.geoRadiusMeters === 'string'
+            ? Number(location.geoRadiusMeters)
+            : location.geoRadiusMeters;
+        const rcpAccuracyMaxMeters =
+          typeof location.rcpAccuracyMaxMeters === 'string'
+            ? Number(location.rcpAccuracyMaxMeters)
+            : location.rcpAccuracyMaxMeters;
+        return {
+          id: location.id,
+          name: location.name,
+          address: location.address ?? (addressParts || undefined),
+          geoLat,
+          geoLng,
+          geoRadiusMeters,
+          rcpEnabled: location.rcpEnabled ?? false,
+          rcpAccuracyMaxMeters: rcpAccuracyMaxMeters ?? 100,
+        } as Location;
       });
-      setLocations(response);
-      if (response.length > 0) {
-        setSelectedLocation(response[0]);
+      setLocations(mappedLocations);
+      if (mappedLocations.length > 0) {
+        setSelectedLocation(mappedLocations[0]);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Nie udało się pobrać lokalizacji';
@@ -495,16 +534,45 @@ export default function PanelRcpPage() {
     if (!selectedLocation) return;
 
     try {
-      await apiClient.patch(
-        `/locations/${selectedLocation.id}`,
+      const updated = await apiUpdateOrganisationLocation(
+        selectedLocation.id,
         updates,
-        { auth: true },
       );
+      const addressParts = [
+        updated.addressStreet,
+        updated.addressPostalCode,
+        updated.addressCity,
+        updated.addressCountry,
+      ]
+        .filter(Boolean)
+        .join(', ');
+      const nextLocation: Location = {
+        id: updated.id,
+        name: updated.name,
+        address: updated.address ?? (addressParts || undefined),
+        geoLat:
+          typeof updated.geoLat === 'string'
+            ? Number(updated.geoLat)
+            : updated.geoLat,
+        geoLng:
+          typeof updated.geoLng === 'string'
+            ? Number(updated.geoLng)
+            : updated.geoLng,
+        geoRadiusMeters:
+          typeof updated.geoRadiusMeters === 'string'
+            ? Number(updated.geoRadiusMeters)
+            : updated.geoRadiusMeters,
+        rcpEnabled: updated.rcpEnabled ?? false,
+        rcpAccuracyMaxMeters:
+          typeof updated.rcpAccuracyMaxMeters === 'string'
+            ? Number(updated.rcpAccuracyMaxMeters)
+            : updated.rcpAccuracyMaxMeters ?? 100,
+      };
 
-      setSelectedLocation({ ...selectedLocation, ...updates });
+      setSelectedLocation(nextLocation);
       setLocations(
         locations.map((loc) =>
-          loc.id === selectedLocation.id ? { ...loc, ...updates } : loc,
+          loc.id === selectedLocation.id ? nextLocation : loc,
         ),
       );
 
@@ -614,13 +682,6 @@ export default function PanelRcpPage() {
           <div className="text-surface-600 mb-4">
             Brak lokalizacji. Dodaj je w ustawieniach organizacji.
           </div>
-          <button 
-            type="button"
-            onClick={() => router.push('/panel/organizacja')}
-            className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Zarządzaj lokalizacjami
-          </button>
         </div>
       </div>
     );
@@ -639,13 +700,6 @@ export default function PanelRcpPage() {
               Generuj kody QR dla lokalizacji i umożliwiaj pracownikom rejestrowanie czasu pracy
             </p>
           </div>
-          <button 
-            type="button"
-            onClick={() => router.push('/panel/organizacja')}
-            className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
-          >
-            Zarządzaj lokalizacjami
-          </button>
         </div>
 
         {/* Events Overview */}
