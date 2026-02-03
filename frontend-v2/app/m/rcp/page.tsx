@@ -1,9 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { apiClient } from '@/lib/api-client';
 import { pushToast } from '@/lib/toast';
+import type { RcpMapCircle, RcpMapMarker } from '@/components/rcp/rcp-map';
+
+const RcpMap = dynamic(() => import('@/components/rcp/rcp-map'), { ssr: false });
 
 interface GeolocationState {
   lat: number | null;
@@ -30,6 +34,15 @@ interface RcpEvent {
   distanceMeters: number;
 }
 
+interface RcpLocation {
+  id: string;
+  name: string;
+  geoLat?: number;
+  geoLng?: number;
+  geoRadiusMeters?: number;
+  rcpEnabled: boolean;
+}
+
 function MobileRcpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +60,15 @@ function MobileRcpContent() {
   const [history, setHistory] = useState<RcpEvent[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [clockLoading, setClockLoading] = useState(false);
+  const [locations, setLocations] = useState<RcpLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [lastPunch, setLastPunch] = useState<{
+    lat: number;
+    lng: number;
+    type: 'CLOCK_IN' | 'CLOCK_OUT';
+    happenedAt: string;
+  } | null>(null);
   const [lastResult, setLastResult] = useState<{
     success: boolean;
     message: string;
@@ -75,6 +97,7 @@ function MobileRcpContent() {
     if (isAuthenticated) {
       fetchStatus();
       fetchHistory();
+      fetchLocations();
     }
   }, [isAuthenticated]);
 
@@ -100,6 +123,22 @@ function MobileRcpContent() {
       console.error('Failed to fetch history:', error);
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const fetchLocations = async () => {
+    setLocationsLoading(true);
+    setLocationsError(null);
+    try {
+      const response = await apiClient.get<RcpLocation[]>('/locations', {
+        auth: true,
+      });
+      setLocations(response.filter((location) => location.rcpEnabled));
+    } catch (error) {
+      console.error('Failed to fetch locations:', error);
+      setLocationsError('Nie udało się pobrać lokalizacji organizacji.');
+    } finally {
+      setLocationsLoading(false);
     }
   };
 
@@ -190,6 +229,14 @@ function MobileRcpContent() {
         message: `${actionText} zarejestrowane pomyślnie!`,
         distance: response.distanceMeters,
       });
+      if (geoState.lat !== null && geoState.lng !== null) {
+        setLastPunch({
+          lat: geoState.lat,
+          lng: geoState.lng,
+          type,
+          happenedAt: response.happenedAt,
+        });
+      }
       pushToast(`${actionText} zarejestrowane (${response.distanceMeters}m)`, 'success');
       
       // Refresh status
@@ -233,6 +280,70 @@ function MobileRcpContent() {
       setClockLoading(false);
     }
   };
+
+  const allowedLocations = locations.filter(
+    (location) => location.geoLat !== undefined && location.geoLng !== undefined,
+  );
+
+  const mapCenter = useMemo(() => {
+    if (geoState.lat !== null && geoState.lng !== null) {
+      return { lat: geoState.lat, lng: geoState.lng };
+    }
+    if (allowedLocations.length > 0) {
+      return {
+        lat: allowedLocations[0].geoLat as number,
+        lng: allowedLocations[0].geoLng as number,
+      };
+    }
+    return { lat: 52.2297, lng: 21.0122 };
+  }, [geoState.lat, geoState.lng, allowedLocations]);
+
+  const mapMarkers: RcpMapMarker[] = useMemo(() => {
+    const markers: RcpMapMarker[] = allowedLocations.map((location) => ({
+      id: `location-${location.id}`,
+      position: {
+        lat: location.geoLat as number,
+        lng: location.geoLng as number,
+      },
+      label: 'L',
+      title: location.name,
+    }));
+
+    if (geoState.lat !== null && geoState.lng !== null) {
+      markers.push({
+        id: 'current-location',
+        position: { lat: geoState.lat, lng: geoState.lng },
+        label: 'Ty',
+        title: 'Twoja lokalizacja',
+      });
+    }
+
+    if (lastPunch) {
+      markers.push({
+        id: 'last-punch',
+        position: { lat: lastPunch.lat, lng: lastPunch.lng },
+        label: lastPunch.type === 'CLOCK_IN' ? 'IN' : 'OUT',
+        title: `Ostatnie ${lastPunch.type === 'CLOCK_IN' ? 'wejście' : 'wyjście'}`,
+      });
+    }
+
+    return markers;
+  }, [allowedLocations, geoState.lat, geoState.lng, lastPunch]);
+
+  const mapCircles: RcpMapCircle[] = useMemo(
+    () =>
+      allowedLocations
+        .filter((location) => location.geoRadiusMeters)
+        .map((location) => ({
+          id: `circle-${location.id}`,
+          center: {
+            lat: location.geoLat as number,
+            lng: location.geoLng as number,
+          },
+          radiusMeters: location.geoRadiusMeters as number,
+        })),
+    [allowedLocations],
+  );
 
   if (isAuthenticated === null) {
     return (
@@ -368,6 +479,39 @@ function MobileRcpContent() {
                 </button>
               </div>
             )}
+          </div>
+
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-3">
+            <div className="text-sm font-medium text-white">🗺️ Mapa RCP</div>
+            {geoState.error && (
+              <div className="text-xs text-red-300">
+                Brak dostępu do lokalizacji – mapa pokazuje dozwolone lokalizacje.
+              </div>
+            )}
+            {locationsError && (
+              <div className="text-xs text-red-300">{locationsError}</div>
+            )}
+            {!geoState.lat &&
+              allowedLocations.length === 0 &&
+              !locationsLoading &&
+              !locationsError && (
+                <div className="text-xs text-gray-400">
+                  Brak zapisanych lokalizacji – dodaj je w panelu.
+                </div>
+              )}
+            <div className="h-56 w-full overflow-hidden rounded-lg border border-gray-700">
+              <RcpMap center={mapCenter} zoom={15} markers={mapMarkers} circles={mapCircles} />
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+              <span>• L = lokalizacja firmy</span>
+              <span>• Ty = bieżąca pozycja</span>
+              {lastPunch && (
+                <span>
+                  • {lastPunch.type === 'CLOCK_IN' ? 'IN' : 'OUT'} = ostatnie
+                  zdarzenie
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons */}

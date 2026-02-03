@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { apiClient } from '@/lib/api-client';
 import { pushToast } from '@/lib/toast';
 import { useAuth } from '@/lib/auth-context';
 import { apiGetOrganisationMembers, OrganisationMember } from '@/lib/api';
 import QRCode from 'qrcode';
+import type { RcpMapCircle, RcpMapMarker } from '@/components/rcp/rcp-map';
+
+const RcpMap = dynamic(() => import('@/components/rcp/rcp-map'), { ssr: false });
 
 interface Location {
   id: string;
@@ -32,6 +36,8 @@ interface RcpEvent {
   locationName: string;
   distanceMeters: number;
   accuracyMeters: number | null;
+  clientLat?: number | null;
+  clientLng?: number | null;
   user?: {
     id: string;
     firstName: string | null;
@@ -64,6 +70,7 @@ export default function PanelRcpPage() {
   const [events, setEvents] = useState<RcpEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [eventFilters, setEventFilters] = useState({
     userId: '',
     locationId: '',
@@ -187,6 +194,16 @@ export default function PanelRcpPage() {
       fetchEvents(0);
     }
   }, [eventFilters, hasRcpAccess]);
+
+  useEffect(() => {
+    if (events.length === 0) {
+      setSelectedEventId(null);
+      return;
+    }
+    if (!selectedEventId || !events.some((event) => event.id === selectedEventId)) {
+      setSelectedEventId(events[0].id);
+    }
+  }, [events, selectedEventId]);
 
   const generateQr = async () => {
     if (!selectedLocation) {
@@ -384,6 +401,85 @@ export default function PanelRcpPage() {
     }
   };
 
+  const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
+  const selectedEventLocation = selectedEvent
+    ? locations.find((location) => location.id === selectedEvent.locationId) || null
+    : null;
+  const selectedEventHasCoords =
+    selectedEvent?.clientLat !== null &&
+    selectedEvent?.clientLng !== null &&
+    selectedEvent?.clientLat !== undefined &&
+    selectedEvent?.clientLng !== undefined;
+
+  const eventMapCenter = useMemo(() => {
+    if (selectedEventHasCoords && selectedEvent) {
+      return {
+        lat: selectedEvent.clientLat as number,
+        lng: selectedEvent.clientLng as number,
+      };
+    }
+    if (
+      selectedEventLocation?.geoLat !== undefined &&
+      selectedEventLocation.geoLng !== undefined
+    ) {
+      return {
+        lat: selectedEventLocation.geoLat,
+        lng: selectedEventLocation.geoLng,
+      };
+    }
+    return { lat: 52.2297, lng: 21.0122 };
+  }, [selectedEvent, selectedEventHasCoords, selectedEventLocation]);
+
+  const eventMapMarkers: RcpMapMarker[] = useMemo(() => {
+    const markers: RcpMapMarker[] = [];
+    if (selectedEventHasCoords && selectedEvent) {
+      markers.push({
+        id: `event-${selectedEvent.id}`,
+        position: {
+          lat: selectedEvent.clientLat as number,
+          lng: selectedEvent.clientLng as number,
+        },
+        label: selectedEvent.type === 'CLOCK_IN' ? 'IN' : 'OUT',
+        title: `Zdarzenie: ${selectedEvent.type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście'}`,
+      });
+    }
+    if (
+      selectedEventLocation?.geoLat !== undefined &&
+      selectedEventLocation.geoLng !== undefined
+    ) {
+      markers.push({
+        id: `location-${selectedEventLocation.id}`,
+        position: {
+          lat: selectedEventLocation.geoLat,
+          lng: selectedEventLocation.geoLng,
+        },
+        label: 'L',
+        title: selectedEventLocation.name,
+      });
+    }
+    return markers;
+  }, [selectedEvent, selectedEventHasCoords, selectedEventLocation]);
+
+  const eventMapCircles: RcpMapCircle[] = useMemo(() => {
+    if (
+      selectedEventLocation?.geoLat !== undefined &&
+      selectedEventLocation.geoLng !== undefined &&
+      selectedEventLocation.geoRadiusMeters
+    ) {
+      return [
+        {
+          id: `circle-${selectedEventLocation.id}`,
+          center: {
+            lat: selectedEventLocation.geoLat,
+            lng: selectedEventLocation.geoLng,
+          },
+          radiusMeters: selectedEventLocation.geoRadiusMeters,
+        },
+      ];
+    }
+    return [];
+  }, [selectedEventLocation]);
+
   // Guard - jeśli nie ma dostępu, nie renderuj niczego (przekierowanie w useEffect)
   if (!hasRcpAccess) {
     return null;
@@ -552,7 +648,19 @@ export default function PanelRcpPage() {
                 events.map((event) => (
                   <div
                     key={event.id}
-                    className="grid grid-cols-1 md:grid-cols-5 gap-4 px-4 py-3 text-sm text-surface-900"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedEventId(event.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedEventId(event.id);
+                      }
+                    }}
+                    className={`grid grid-cols-1 md:grid-cols-5 gap-4 px-4 py-3 text-sm text-surface-900 transition-colors ${
+                      selectedEventId === event.id
+                        ? 'bg-brand-50/60'
+                        : 'hover:bg-surface-50'
+                    }`}
                   >
                     <div>
                       <div className="font-medium">
@@ -632,6 +740,38 @@ export default function PanelRcpPage() {
                 Następne →
               </button>
             </div>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            <h3 className="text-sm font-semibold text-surface-700">
+              Mapa wybranego zdarzenia
+            </h3>
+            {!selectedEvent && (
+              <div className="rounded-lg border border-dashed border-surface-300 bg-surface-50 p-6 text-sm text-surface-600">
+                Wybierz zdarzenie, aby zobaczyć lokalizację na mapie.
+              </div>
+            )}
+            {selectedEvent && !selectedEventHasCoords && (
+              <div className="rounded-lg border border-dashed border-surface-300 bg-surface-50 p-6 text-sm text-surface-600">
+                Brak lokalizacji zapisanej dla tego zdarzenia.
+              </div>
+            )}
+            {selectedEvent && selectedEventHasCoords && (
+              <>
+                <div className="h-64 w-full overflow-hidden rounded-lg border border-surface-200">
+                  <RcpMap
+                    center={eventMapCenter}
+                    zoom={15}
+                    markers={eventMapMarkers}
+                    circles={eventMapCircles}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-surface-500">
+                  <span>• IN/OUT = miejsce zdarzenia</span>
+                  <span>• L = dozwolona lokalizacja</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
