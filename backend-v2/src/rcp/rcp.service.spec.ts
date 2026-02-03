@@ -44,10 +44,13 @@ describe('RcpService - Integration', () => {
     rcpEvent: {
       findFirst: jest.fn(),
       create: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
     },
     auditLog: {
       create: jest.fn(),
     },
+    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -69,6 +72,9 @@ describe('RcpService - Integration', () => {
     tokenService = module.get<RcpTokenService>(RcpTokenService);
 
     jest.clearAllMocks();
+    mockPrismaService.$transaction.mockImplementation((actions) =>
+      Promise.all(actions),
+    );
   });
 
   describe('generateQr', () => {
@@ -349,6 +355,86 @@ describe('RcpService - Integration', () => {
 
       expect(result.isClockedIn).toBe(false);
       expect(result.lastEvent).toBeNull();
+    });
+  });
+
+  describe('listEventsForUser', () => {
+    it('should list user events with pagination', async () => {
+      const mockEvents = [
+        {
+          id: 'event-1',
+          type: 'CLOCK_IN',
+          happenedAt: new Date('2024-05-01T08:00:00Z'),
+          locationId: mockLocation.id,
+          location: { name: mockLocation.name },
+          distanceMeters: 12,
+          accuracyMeters: 20,
+        },
+      ];
+
+      mockPrismaService.rcpEvent.count.mockResolvedValue(1);
+      mockPrismaService.rcpEvent.findMany.mockResolvedValue(mockEvents);
+
+      const result = await service.listEventsForUser(
+        mockUser.id,
+        mockOrg.id,
+        { take: 10, skip: 0 },
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].locationName).toBe(mockLocation.name);
+      expect(mockPrismaService.rcpEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({ organisationId: mockOrg.id }),
+              expect.objectContaining({ userId: mockUser.id }),
+            ]),
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('listEventsForOrganisation', () => {
+    it('should list organisation events with user details', async () => {
+      const mockEvents = [
+        {
+          id: 'event-2',
+          type: 'CLOCK_OUT',
+          happenedAt: new Date('2024-05-01T16:00:00Z'),
+          locationId: mockLocation.id,
+          location: { name: mockLocation.name },
+          distanceMeters: 8,
+          accuracyMeters: 10,
+          user: {
+            id: mockUser.id,
+            firstName: 'Jan',
+            lastName: 'Kowalski',
+            email: mockUser.email,
+          },
+        },
+      ];
+
+      mockPrismaService.rcpEvent.count.mockResolvedValue(1);
+      mockPrismaService.rcpEvent.findMany.mockResolvedValue(mockEvents);
+
+      const result = await service.listEventsForOrganisation(mockOrg.id, {
+        take: 5,
+      });
+
+      expect(result.items[0].user?.email).toBe(mockUser.email);
+      expect(mockPrismaService.rcpEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            organisationId: mockOrg.id,
+          }),
+          include: expect.objectContaining({
+            user: true,
+          }),
+        }),
+      );
     });
   });
 });

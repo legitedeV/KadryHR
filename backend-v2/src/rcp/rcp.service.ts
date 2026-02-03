@@ -32,6 +32,29 @@ export interface RcpStatusResult {
   isClockedIn: boolean;
 }
 
+export interface RcpEventListItem {
+  id: string;
+  type: RcpEventType;
+  happenedAt: Date;
+  locationId: string;
+  locationName: string;
+  distanceMeters: number;
+  accuracyMeters: number | null;
+  user?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
+}
+
+export interface RcpEventListResult {
+  total: number;
+  skip: number;
+  take: number;
+  items: RcpEventListItem[];
+}
+
 @Injectable()
 export class RcpService {
   constructor(
@@ -369,6 +392,157 @@ export class RcpService {
       },
       isClockedIn: lastEvent.type === 'CLOCK_IN',
     };
+  }
+
+  async listEventsForUser(
+    userId: string,
+    organisationId: string,
+    query: {
+      skip?: number;
+      take?: number;
+      type?: RcpEventType;
+      locationId?: string;
+      from?: string;
+      to?: string;
+    },
+  ): Promise<RcpEventListResult> {
+    const where = this.buildEventsWhereClause({
+      organisationId,
+      userId,
+      locationId: query.locationId,
+      type: query.type,
+      from: query.from,
+      to: query.to,
+    });
+
+    const skip = query.skip ?? 0;
+    const take = query.take ?? 50;
+
+    const [total, events] = await this.prisma.$transaction([
+      this.prisma.rcpEvent.count({ where }),
+      this.prisma.rcpEvent.findMany({
+        where,
+        orderBy: { happenedAt: 'desc' },
+        skip,
+        take,
+        include: {
+          location: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      skip,
+      take,
+      items: events.map((event) => ({
+        id: event.id,
+        type: event.type,
+        happenedAt: event.happenedAt,
+        locationId: event.locationId,
+        locationName: event.location.name,
+        distanceMeters: event.distanceMeters,
+        accuracyMeters: event.accuracyMeters,
+      })),
+    };
+  }
+
+  async listEventsForOrganisation(
+    organisationId: string,
+    query: {
+      skip?: number;
+      take?: number;
+      type?: RcpEventType;
+      userId?: string;
+      locationId?: string;
+      from?: string;
+      to?: string;
+    },
+  ): Promise<RcpEventListResult> {
+    const where = this.buildEventsWhereClause({
+      organisationId,
+      userId: query.userId,
+      locationId: query.locationId,
+      type: query.type,
+      from: query.from,
+      to: query.to,
+    });
+
+    const skip = query.skip ?? 0;
+    const take = query.take ?? 50;
+
+    const [total, events] = await this.prisma.$transaction([
+      this.prisma.rcpEvent.count({ where }),
+      this.prisma.rcpEvent.findMany({
+        where,
+        orderBy: { happenedAt: 'desc' },
+        skip,
+        take,
+        include: {
+          location: true,
+          user: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      skip,
+      take,
+      items: events.map((event) => ({
+        id: event.id,
+        type: event.type,
+        happenedAt: event.happenedAt,
+        locationId: event.locationId,
+        locationName: event.location.name,
+        distanceMeters: event.distanceMeters,
+        accuracyMeters: event.accuracyMeters,
+        user: {
+          id: event.user.id,
+          firstName: event.user.firstName,
+          lastName: event.user.lastName,
+          email: event.user.email,
+        },
+      })),
+    };
+  }
+
+  private buildEventsWhereClause(params: {
+    organisationId: string;
+    userId?: string;
+    locationId?: string;
+    type?: RcpEventType;
+    from?: string;
+    to?: string;
+  }): Prisma.RcpEventWhereInput {
+    const filters: Prisma.RcpEventWhereInput[] = [
+      { organisationId: params.organisationId },
+    ];
+
+    if (params.userId) {
+      filters.push({ userId: params.userId });
+    }
+
+    if (params.locationId) {
+      filters.push({ locationId: params.locationId });
+    }
+
+    if (params.type) {
+      filters.push({ type: params.type });
+    }
+
+    if (params.from || params.to) {
+      const happenedAt: Prisma.DateTimeFilter = {};
+      if (params.from) {
+        happenedAt.gte = new Date(params.from);
+      }
+      if (params.to) {
+        happenedAt.lte = new Date(params.to);
+      }
+      filters.push({ happenedAt });
+    }
+
+    return filters.length > 1 ? { AND: filters } : filters[0];
   }
 
   private async auditDenial(

@@ -14,6 +14,7 @@ import { Role } from '@prisma/client';
 import { RcpService } from './rcp.service';
 import { GenerateQrDto } from './dto/generate-qr.dto';
 import { ClockDto } from './dto/clock.dto';
+import { ListRcpEventsDto } from './dto/list-rcp-events.dto';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 import { ConfigService } from '@nestjs/config';
 
@@ -78,5 +79,30 @@ export class RcpController {
     );
 
     return result;
+  }
+
+  @Get('events/me')
+  async listMyEvents(
+    @Query() query: ListRcpEventsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.listEventsForUser(
+      req.user.id,
+      req.user.organisationId,
+      query,
+    );
+  }
+
+  @Get('events')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async listOrganisationEvents(
+    @Query() query: ListRcpEventsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.listEventsForOrganisation(
+      req.user.organisationId,
+      query,
+    );
   }
 }
