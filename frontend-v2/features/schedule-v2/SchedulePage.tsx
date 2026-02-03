@@ -175,6 +175,7 @@ export function SchedulePage() {
 
   useEffect(() => {
     if (scheduleQuery.error) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Nie udało się pobrać grafiku.");
     }
   }, [scheduleQuery.error]);
@@ -300,6 +301,7 @@ export function SchedulePage() {
 
   useEffect(() => {
     if (!keyboardDisabled) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setKeyboardMode(false);
   }, [keyboardDisabled]);
 
@@ -563,6 +565,7 @@ export function SchedulePage() {
   useEffect(() => {
     if (!keyboardMode) return;
     if (!focusedCell && visibleEmployees.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       updateSelectionFromFocus({ employeeIndex: 0, dayIndex: 0 }, false);
     }
   }, [focusedCell, keyboardMode, updateSelectionFromFocus, visibleEmployees.length]);

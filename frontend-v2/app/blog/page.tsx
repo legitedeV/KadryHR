@@ -12,12 +12,12 @@ export default function BlogPage() {
           Już wkrótce opublikujemy materiały o kadrach, płacach i trendach HR. Jeśli chcesz otrzymać
           powiadomienie o nowych publikacjach, skontaktuj się z nami.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-flex rounded-full bg-orange-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-orange-400"
         >
           Wróć do konsultacji
-        </a>
+        </Link>
       </div>
     </main>
   );
