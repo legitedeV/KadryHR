@@ -101,6 +101,22 @@ async function takeScreenshots() {
     });
   });
 
+  // Mock RCP status
+  await page.route('**/api/rcp/status**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        lastEvent: {
+          type: 'CLOCK_IN',
+          happenedAt: new Date(Date.now() - 3600000).toISOString(),
+          locationName: 'Sklep Główny - Warszawa Centrum',
+        },
+        isClockedIn: true,
+      }),
+    });
+  });
+
   // Screenshot 1: Panel RCP page
   console.log('📸 Capturing /panel/rcp screenshot...');
   await page.goto(`${BASE_URL}/panel/rcp`);

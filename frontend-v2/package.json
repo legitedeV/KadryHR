@@ -16,6 +16,7 @@
     "export:schedule-month": "node scripts/export-schedule-month.mjs"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
     "@tailwindcss/postcss": "^4.1.18",
     "@tanstack/react-query": "^5.85.5",
     "@types/node": "^20",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
+    "@types/google.maps": "^3.58.1",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1"
