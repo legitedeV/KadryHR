@@ -55,15 +55,6 @@ interface RcpEvent {
   };
 }
 
-interface CreateLocationPayload {
-  name: string;
-  geoLat?: number;
-  geoLng?: number;
-  geoRadiusMeters?: number;
-  rcpEnabled?: boolean;
-  rcpAccuracyMaxMeters?: number;
-}
-
 export default function PanelRcpPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -95,8 +86,6 @@ export default function PanelRcpPage() {
     distance?: number;
   } | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const [creatingLocation, setCreatingLocation] = useState(false);
   const [members, setMembers] = useState<OrganisationMember[]>([]);
   const [events, setEvents] = useState<RcpEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -113,12 +102,6 @@ export default function PanelRcpPage() {
     skip: 0,
     take: 25,
     total: 0,
-  });
-  const [newLocation, setNewLocation] = useState<CreateLocationPayload>({
-    name: '',
-    geoRadiusMeters: 100,
-    rcpEnabled: true,
-    rcpAccuracyMaxMeters: 100,
   });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -425,49 +408,6 @@ export default function PanelRcpPage() {
     }
   };
 
-  const createLocation = async () => {
-    if (!newLocation.name.trim()) {
-      pushToast('Nazwa lokalizacji jest wymagana', 'error');
-      return;
-    }
-
-    setCreatingLocation(true);
-    try {
-      const payload: CreateLocationPayload = {
-        name: newLocation.name,
-      };
-      
-      // Dodaj opcjonalne pola tylko jeśli są ustawione
-      if (newLocation.geoLat !== undefined) payload.geoLat = newLocation.geoLat;
-      if (newLocation.geoLng !== undefined) payload.geoLng = newLocation.geoLng;
-      if (newLocation.geoRadiusMeters !== undefined) payload.geoRadiusMeters = newLocation.geoRadiusMeters;
-      if (newLocation.rcpEnabled !== undefined) payload.rcpEnabled = newLocation.rcpEnabled;
-      if (newLocation.rcpAccuracyMaxMeters !== undefined) payload.rcpAccuracyMaxMeters = newLocation.rcpAccuracyMaxMeters;
-
-      const created = await apiClient.post<Location>('/locations', payload, { auth: true });
-      
-      pushToast('Lokalizacja została utworzona', 'success');
-      setShowLocationModal(false);
-      setNewLocation({
-        name: '',
-        geoRadiusMeters: 100,
-        rcpEnabled: true,
-        rcpAccuracyMaxMeters: 100,
-      });
-      
-      // Odśwież listę lokalizacji
-      await fetchLocations();
-      
-      // Ustaw jako wybraną
-      setSelectedLocation(created);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Nie udało się utworzyć lokalizacji';
-      pushToast(errorMessage, 'error');
-    } finally {
-      setCreatingLocation(false);
-    }
-  };
-
   const downloadQr = () => {
     if (!qrDataUrl || !selectedLocation) return;
 
@@ -672,14 +612,14 @@ export default function PanelRcpPage() {
       <div className="p-6">
         <div className="bg-surface-50 border border-surface-300 rounded-xl p-8 text-center">
           <div className="text-surface-600 mb-4">
-            Brak lokalizacji. Najpierw dodaj lokalizację.
+            Brak lokalizacji. Dodaj je w ustawieniach organizacji.
           </div>
           <button 
             type="button"
-            onClick={() => setShowLocationModal(true)}
+            onClick={() => router.push('/panel/organizacja')}
             className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-lg transition-colors"
           >
-            Dodaj lokalizację
+            Zarządzaj lokalizacjami
           </button>
         </div>
       </div>
@@ -701,10 +641,10 @@ export default function PanelRcpPage() {
           </div>
           <button 
             type="button"
-            onClick={() => setShowLocationModal(true)}
+            onClick={() => router.push('/panel/organizacja')}
             className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
           >
-            + Dodaj lokalizację
+            Zarządzaj lokalizacjami
           </button>
         </div>
 
@@ -1373,142 +1313,6 @@ export default function PanelRcpPage() {
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
 
-      {/* Modal lokalizacji */}
-      {showLocationModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-surface-900">Nowa lokalizacja</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLocationModal(false);
-                  setNewLocation({
-                    name: '',
-                    geoRadiusMeters: 100,
-                    rcpEnabled: true,
-                    rcpAccuracyMaxMeters: 100,
-                  });
-                }}
-                className="text-surface-500 hover:text-surface-900"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-surface-900 mb-1">
-                  Nazwa lokalizacji *
-                </label>
-                <input
-                  type="text"
-                  value={newLocation.name}
-                  onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
-                  placeholder="np. Sklep Warszawa Centrum"
-                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-surface-900 mb-1">
-                    Szerokość geogr.
-                  </label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={newLocation.geoLat || ''}
-                    onChange={(e) => setNewLocation({ ...newLocation, geoLat: parseFloat(e.target.value) || undefined })}
-                    placeholder="52.2297"
-                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-surface-900 mb-1">
-                    Długość geogr.
-                  </label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={newLocation.geoLng || ''}
-                    onChange={(e) => setNewLocation({ ...newLocation, geoLng: parseFloat(e.target.value) || undefined })}
-                    placeholder="21.0122"
-                    className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-surface-900 mb-1">
-                  Promień geofence (metry)
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  max="5000"
-                  value={newLocation.geoRadiusMeters || 100}
-                  onChange={(e) => setNewLocation({ ...newLocation, geoRadiusMeters: parseInt(e.target.value) || 100 })}
-                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-surface-900 mb-1">
-                  Maks. niedokładność GPS (metry)
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  max="500"
-                  value={newLocation.rcpAccuracyMaxMeters || 100}
-                  onChange={(e) => setNewLocation({ ...newLocation, rcpAccuracyMaxMeters: parseInt(e.target.value) || 100 })}
-                  className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="rcpEnabled"
-                  checked={newLocation.rcpEnabled || false}
-                  onChange={(e) => setNewLocation({ ...newLocation, rcpEnabled: e.target.checked })}
-                  className="rounded border-surface-300 text-[var(--accent)] focus:ring-[var(--focus-ring)]"
-                />
-                <label htmlFor="rcpEnabled" className="text-sm text-surface-900">
-                  RCP włączone
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLocationModal(false);
-                  setNewLocation({
-                    name: '',
-                    geoRadiusMeters: 100,
-                    rcpEnabled: true,
-                    rcpAccuracyMaxMeters: 100,
-                  });
-                }}
-                className="flex-1 bg-surface-100 hover:bg-surface-200 text-surface-900 font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Anuluj
-              </button>
-              <button
-                type="button"
-                onClick={createLocation}
-                disabled={creatingLocation || !newLocation.name.trim()}
-                className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:bg-surface-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                {creatingLocation ? 'Tworzenie...' : 'Utwórz'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
