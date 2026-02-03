@@ -496,7 +496,8 @@ function MobileRcpContent() {
               !locationsLoading &&
               !locationsError && (
                 <div className="text-xs text-gray-400">
-                  Brak zapisanych lokalizacji – dodaj je w panelu.
+                  Brak zapisanych lokalizacji – dodaj je w panelu. Mapa pokazuje domyślną
+                  lokalizację (Warszawa).
                 </div>
               )}
             <div className="h-56 w-full overflow-hidden rounded-lg border border-gray-700">

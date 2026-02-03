@@ -142,7 +142,7 @@ async function takeScreenshots() {
       fullPage: true,
     });
     console.log(`✅ Saved: ${panelWithQrPath}`);
-  } catch (e) {
+  } catch {
     console.log('⚠️  Could not generate QR (button might be disabled)');
   }
 

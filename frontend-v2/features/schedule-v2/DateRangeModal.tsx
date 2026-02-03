@@ -56,6 +56,7 @@ export function DateRangeModal({ open, weekStart, weekEnd, onClose, onApply }: D
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRangeStart(weekStart);
     setRangeEnd(weekEnd);
     setBaseMonth(weekStart);
