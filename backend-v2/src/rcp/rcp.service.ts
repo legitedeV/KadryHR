@@ -40,6 +40,8 @@ export interface RcpEventListItem {
   locationName: string;
   distanceMeters: number;
   accuracyMeters: number | null;
+  clientLat: number | null;
+  clientLng: number | null;
   user?: {
     id: string;
     firstName: string | null;
@@ -443,6 +445,8 @@ export class RcpService {
         locationName: event.location.name,
         distanceMeters: event.distanceMeters,
         accuracyMeters: event.accuracyMeters,
+        clientLat: event.clientLat ? Number(event.clientLat) : null,
+        clientLng: event.clientLng ? Number(event.clientLng) : null,
       })),
     };
   }
@@ -497,6 +501,8 @@ export class RcpService {
         locationName: event.location.name,
         distanceMeters: event.distanceMeters,
         accuracyMeters: event.accuracyMeters,
+        clientLat: event.clientLat ? Number(event.clientLat) : null,
+        clientLng: event.clientLng ? Number(event.clientLng) : null,
         user: {
           id: event.user.id,
           firstName: event.user.firstName,
