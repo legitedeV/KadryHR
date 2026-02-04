@@ -31,14 +31,16 @@ export class RcpController {
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async generateQr(@Body() dto: GenerateQrDto, @Req() req: RequestWithUser) {
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const baseUrl =
+      this.configService.get<string>('FRONTEND_BASE_URL') ??
+      'http://localhost:3000';
+    const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
 
     const result = await this.rcpService.generateQr(
       req.user.id,
       req.user.organisationId,
       dto.locationId,
-      frontendUrl,
+      normalizedBaseUrl,
     );
 
     return result;
