@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RcpTokenService } from './services/rcp-token.service';
@@ -30,6 +31,26 @@ export interface RcpStatusResult {
     locationName: string;
   } | null;
   isClockedIn: boolean;
+}
+
+export interface MobileRcpSessionResult {
+  organization: {
+    id: string;
+    name: string;
+  };
+  location: {
+    id: string;
+    name: string;
+    address: string | null;
+    lat: number | null;
+    lng: number | null;
+    radiusMeters: number | null;
+  };
+  rcpStatus: {
+    isClockedIn: boolean;
+    lastPunchAt: Date | null;
+    lastEventType: RcpEventType | null;
+  };
 }
 
 export interface RcpEventListItem {
@@ -355,6 +376,86 @@ export class RcpService {
     };
   }
 
+  async getMobileSession(
+    userId: string,
+    organisationId: string,
+    token: string,
+  ): Promise<MobileRcpSessionResult> {
+    const tokenResult = this.tokenService.verifyTokenDetailed(token);
+    if (tokenResult.error === 'rcp_token_invalid') {
+      throw new BadRequestException({
+        code: 'rcp_token_invalid',
+        message: 'Token is invalid',
+      });
+    }
+
+    if (tokenResult.error === 'rcp_token_expired') {
+      throw new UnauthorizedException({
+        code: 'rcp_token_expired',
+        message: 'Token has expired',
+      });
+    }
+
+    const payload = tokenResult.payload;
+    if (!payload) {
+      throw new BadRequestException({
+        code: 'rcp_token_invalid',
+        message: 'Token is invalid',
+      });
+    }
+
+    if (payload.orgId !== organisationId) {
+      throw new ForbiddenException({
+        code: 'rcp_access_denied',
+        message: 'Token does not belong to your organisation',
+      });
+    }
+
+    const [organization, location] = await Promise.all([
+      this.prisma.organisation.findUnique({
+        where: { id: organisationId },
+        select: { id: true, name: true },
+      }),
+      this.prisma.location.findFirst({
+        where: {
+          id: payload.locationId,
+          organisationId,
+          rcpEnabled: true,
+        },
+      }),
+    ]);
+
+    if (!organization || !location) {
+      throw new ForbiddenException({
+        code: 'rcp_access_denied',
+        message: 'Access denied',
+      });
+    }
+
+    const status = await this.getStatus(
+      userId,
+      organisationId,
+      location.id,
+    );
+
+    return {
+      organization,
+      location: {
+        id: location.id,
+        name: location.name,
+        address: this.formatLocationAddress(location),
+        lat: location.geoLat ? Number(location.geoLat) : null,
+        lng: location.geoLng ? Number(location.geoLng) : null,
+        radiusMeters: location.geoRadiusMeters ?? null,
+      },
+      rcpStatus: {
+        isClockedIn: status.isClockedIn,
+        lastPunchAt: status.lastEvent?.happenedAt ?? null,
+        lastEventType: status.lastEvent?.type ?? null,
+      },
+    };
+  }
+
   async getStatus(
     userId: string,
     organisationId: string,
@@ -549,6 +650,27 @@ export class RcpService {
     }
 
     return filters.length > 1 ? { AND: filters } : filters[0];
+  }
+
+  private formatLocationAddress(location: {
+    address?: string | null;
+    addressStreet?: string | null;
+    addressPostalCode?: string | null;
+    addressCity?: string | null;
+    addressCountry?: string | null;
+  }): string | null {
+    if (location.address) {
+      return location.address;
+    }
+
+    const parts = [
+      location.addressStreet,
+      location.addressPostalCode,
+      location.addressCity,
+      location.addressCountry,
+    ].filter((part) => part && part.trim().length > 0);
+
+    return parts.length > 0 ? parts.join(', ') : null;
   }
 
   private async auditDenial(

@@ -18,12 +18,9 @@ interface GeolocationState {
 }
 
 interface RcpStatus {
-  lastEvent: {
-    type: 'CLOCK_IN' | 'CLOCK_OUT';
-    happenedAt: string;
-    locationName: string;
-  } | null;
   isClockedIn: boolean;
+  lastPunchAt: string | null;
+  lastEventType: 'CLOCK_IN' | 'CLOCK_OUT' | null;
 }
 
 interface RcpEvent {
@@ -37,10 +34,19 @@ interface RcpEvent {
 interface RcpLocation {
   id: string;
   name: string;
-  geoLat?: number;
-  geoLng?: number;
-  geoRadiusMeters?: number;
-  rcpEnabled: boolean;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  radiusMeters: number | null;
+}
+
+interface MobileRcpSession {
+  organization: {
+    id: string;
+    name: string;
+  };
+  location: RcpLocation;
+  rcpStatus: RcpStatus;
 }
 
 function MobileRcpContent() {
@@ -60,9 +66,9 @@ function MobileRcpContent() {
   const [history, setHistory] = useState<RcpEvent[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [clockLoading, setClockLoading] = useState(false);
-  const [locations, setLocations] = useState<RcpLocation[]>([]);
-  const [locationsLoading, setLocationsLoading] = useState(false);
-  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [session, setSession] = useState<MobileRcpSession | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [lastPunch, setLastPunch] = useState<{
     lat: number;
     lng: number;
@@ -95,52 +101,70 @@ function MobileRcpContent() {
   // Fetch status
   useEffect(() => {
     if (isAuthenticated) {
-      fetchStatus();
-      fetchHistory();
-      fetchLocations();
+      fetchSession();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchSession]);
 
-  const fetchStatus = async () => {
+  useEffect(() => {
+    if (session?.location.id) {
+      fetchHistory(session.location.id);
+    }
+  }, [session?.location.id, fetchHistory]);
+
+  const fetchSession = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+    setSessionLoading(true);
+    setSessionError(null);
     try {
-      const response = await apiClient.request<RcpStatus>('/rcp/status', {
-        auth: true,
-      });
-      setStatus(response);
-    } catch (error) {
-      console.error('Failed to fetch status:', error);
-    }
-  };
+      const response = await apiClient.request<MobileRcpSession>(
+        '/rcp/mobile/session',
+        {
+          method: 'POST',
+          auth: true,
+          body: JSON.stringify({ token }),
+        },
+      );
+      setSession(response);
+      setStatus(response.rcpStatus);
+    } catch (error: unknown) {
+      let errorMessage = 'Nie udało się zweryfikować tokenu RCP.';
 
-  const fetchHistory = async () => {
+      const err = error as { message?: string };
+      if (err?.message) {
+        try {
+          const parsed = JSON.parse(err.message);
+          if (parsed.code === 'rcp_token_invalid') {
+            errorMessage = 'Link wygasł lub jest nieprawidłowy.';
+          } else if (parsed.code === 'rcp_token_expired') {
+            errorMessage = 'Link wygasł lub jest nieprawidłowy.';
+          }
+        } catch {
+          errorMessage = err.message || errorMessage;
+        }
+      }
+      setSessionError(errorMessage);
+      setSession(null);
+      setStatus(null);
+    } finally {
+      setSessionLoading(false);
+    }
+  }, [token]);
+
+  const fetchHistory = useCallback(async (locationId: string) => {
     setHistoryLoading(true);
     try {
       const response = await apiClient.request<{
         items: RcpEvent[];
-      }>('/rcp/events/me?take=10', { auth: true });
+      }>(`/rcp/events/me?take=10&locationId=${locationId}`, { auth: true });
       setHistory(response.items);
     } catch (error) {
       console.error('Failed to fetch history:', error);
     } finally {
       setHistoryLoading(false);
     }
-  };
-
-  const fetchLocations = async () => {
-    setLocationsLoading(true);
-    setLocationsError(null);
-    try {
-      const response = await apiClient.request<RcpLocation[]>('/locations', {
-        auth: true,
-      });
-      setLocations(response.filter((location) => location.rcpEnabled));
-    } catch (error) {
-      console.error('Failed to fetch locations:', error);
-      setLocationsError('Nie udało się pobrać lokalizacji organizacji.');
-    } finally {
-      setLocationsLoading(false);
-    }
-  };
+  }, []);
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -195,6 +219,11 @@ function MobileRcpContent() {
       return;
     }
 
+    if (!session?.location.id) {
+      pushToast('Brak lokalizacji z tokenu QR', 'error');
+      return;
+    }
+
     if (geoState.lat === null || geoState.lng === null) {
       pushToast('Najpierw pobierz swoją lokalizację', 'warning');
       return;
@@ -240,8 +269,10 @@ function MobileRcpContent() {
       pushToast(`${actionText} zarejestrowane (${response.distanceMeters}m)`, 'success');
       
       // Refresh status
-      await fetchStatus();
-      await fetchHistory();
+      await fetchSession();
+      if (session?.location.id) {
+        await fetchHistory(session.location.id);
+      }
     } catch (error: unknown) {
       let errorMessage = 'Nie udało się zarejestrować czasu pracy';
 
@@ -281,33 +312,33 @@ function MobileRcpContent() {
     }
   };
 
-  const allowedLocations = locations.filter(
-    (location) => location.geoLat !== undefined && location.geoLng !== undefined,
-  );
-
   const mapCenter = useMemo(() => {
     if (geoState.lat !== null && geoState.lng !== null) {
       return { lat: geoState.lat, lng: geoState.lng };
     }
-    if (allowedLocations.length > 0) {
+    if (session?.location.lat !== null && session?.location.lng !== null) {
       return {
-        lat: allowedLocations[0].geoLat as number,
-        lng: allowedLocations[0].geoLng as number,
+        lat: session.location.lat as number,
+        lng: session.location.lng as number,
       };
     }
     return { lat: 52.2297, lng: 21.0122 };
-  }, [geoState.lat, geoState.lng, allowedLocations]);
+  }, [geoState.lat, geoState.lng, session?.location.lat, session?.location.lng]);
 
   const mapMarkers: RcpMapMarker[] = useMemo(() => {
-    const markers: RcpMapMarker[] = allowedLocations.map((location) => ({
-      id: `location-${location.id}`,
-      position: {
-        lat: location.geoLat as number,
-        lng: location.geoLng as number,
-      },
-      label: 'L',
-      title: location.name,
-    }));
+    const markers: RcpMapMarker[] = [];
+
+    if (session?.location.lat !== null && session?.location.lng !== null) {
+      markers.push({
+        id: `location-${session.location.id}`,
+        position: {
+          lat: session.location.lat as number,
+          lng: session.location.lng as number,
+        },
+        label: 'L',
+        title: session.location.name,
+      });
+    }
 
     if (geoState.lat !== null && geoState.lng !== null) {
       markers.push({
@@ -328,21 +359,30 @@ function MobileRcpContent() {
     }
 
     return markers;
-  }, [allowedLocations, geoState.lat, geoState.lng, lastPunch]);
+  }, [geoState.lat, geoState.lng, lastPunch, session?.location]);
 
   const mapCircles: RcpMapCircle[] = useMemo(
     () =>
-      allowedLocations
-        .filter((location) => location.geoRadiusMeters)
-        .map((location) => ({
-          id: `circle-${location.id}`,
-          center: {
-            lat: location.geoLat as number,
-            lng: location.geoLng as number,
-          },
-          radiusMeters: location.geoRadiusMeters as number,
-        })),
-    [allowedLocations],
+      session?.location.lat !== null &&
+      session?.location.lng !== null &&
+      session?.location.radiusMeters
+        ? [
+            {
+              id: `circle-${session.location.id}`,
+              center: {
+                lat: session.location.lat as number,
+                lng: session.location.lng as number,
+              },
+              radiusMeters: session.location.radiusMeters as number,
+            },
+          ]
+        : [],
+    [
+      session?.location.id,
+      session?.location.lat,
+      session?.location.lng,
+      session?.location.radiusMeters,
+    ],
   );
 
   if (isAuthenticated === null) {
@@ -371,6 +411,35 @@ function MobileRcpContent() {
     );
   }
 
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center text-white">Ładowanie danych RCP...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Link wygasł lub jest nieprawidłowy
+            </h1>
+            <p className="text-gray-400 mb-4">{sessionError}</p>
+            <p className="text-gray-500 text-sm">
+              Zeskanuj kod QR ponownie lub skontaktuj się z managerem.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full space-y-6">
@@ -383,8 +452,30 @@ function MobileRcpContent() {
           </p>
         </div>
 
+        {session && (
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-2">
+            <div className="text-xs uppercase tracking-wide text-gray-500">
+              Organizacja
+            </div>
+            <div className="text-white font-semibold">
+              {session.organization.name}
+            </div>
+            <div className="text-xs uppercase tracking-wide text-gray-500 pt-2">
+              Lokalizacja
+            </div>
+            <div className="text-white font-semibold">
+              {session.location.name}
+            </div>
+            {session.location.address && (
+              <div className="text-xs text-gray-400">
+                {session.location.address}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Status */}
-        {status && status.lastEvent && (
+        {status && (
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
             <div className="text-sm text-gray-400 mb-1">Twój status:</div>
             <div className="flex items-center justify-between">
@@ -393,16 +484,22 @@ function MobileRcpContent() {
                   {status.isClockedIn ? '🟢 Zalogowany' : '🔴 Wylogowany'}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {status.lastEvent.locationName}
+                  {status.lastEventType
+                    ? status.lastEventType === 'CLOCK_IN'
+                      ? 'Ostatnie wejście'
+                      : 'Ostatnie wyjście'
+                    : 'Brak zdarzeń'}
                 </div>
               </div>
               <div className="text-xs text-gray-500">
-                {new Date(status.lastEvent.happenedAt).toLocaleString('pl-PL', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  day: '2-digit',
-                  month: '2-digit',
-                })}
+                {status.lastPunchAt
+                  ? new Date(status.lastPunchAt).toLocaleString('pl-PL', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      day: '2-digit',
+                      month: '2-digit',
+                    })
+                  : '--'}
               </div>
             </div>
           </div>
@@ -485,19 +582,14 @@ function MobileRcpContent() {
             <div className="text-sm font-medium text-white">🗺️ Mapa RCP</div>
             {geoState.error && (
               <div className="text-xs text-red-300">
-                Brak dostępu do lokalizacji – mapa pokazuje dozwolone lokalizacje.
+                Brak dostępu do lokalizacji – mapa pokazuje lokalizację z kodu QR.
               </div>
             )}
-            {locationsError && (
-              <div className="text-xs text-red-300">{locationsError}</div>
-            )}
             {!geoState.lat &&
-              allowedLocations.length === 0 &&
-              !locationsLoading &&
-              !locationsError && (
+              (!session?.location.lat || !session?.location.lng) && (
                 <div className="text-xs text-gray-400">
-                  Brak zapisanych lokalizacji – dodaj je w panelu. Mapa pokazuje domyślną
-                  lokalizację (Warszawa).
+                  Brak współrzędnych lokalizacji – mapa pokazuje domyślną lokalizację
+                  (Warszawa).
                 </div>
               )}
             <div className="h-56 w-full overflow-hidden rounded-lg border border-gray-700">
@@ -560,8 +652,8 @@ function MobileRcpContent() {
             <div className="text-sm font-medium text-white">Ostatnie zdarzenia</div>
             <button
               type="button"
-              onClick={fetchHistory}
-              disabled={historyLoading}
+              onClick={() => session?.location.id && fetchHistory(session.location.id)}
+              disabled={historyLoading || !session?.location.id}
               className="text-xs text-blue-400 hover:text-blue-300 disabled:text-gray-500"
             >
               {historyLoading ? 'Odświeżanie...' : 'Odśwież'}

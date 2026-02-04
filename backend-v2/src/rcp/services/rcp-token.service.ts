@@ -10,6 +10,8 @@ export interface RcpTokenPayload {
   nonce: string;
 }
 
+export type RcpTokenValidationError = 'rcp_token_invalid' | 'rcp_token_expired';
+
 @Injectable()
 export class RcpTokenService {
   private readonly secret: string;
@@ -81,6 +83,37 @@ export class RcpTokenService {
       return payload;
     } catch (error) {
       return null;
+    }
+  }
+
+  verifyTokenDetailed(
+    token: string,
+  ): { payload?: RcpTokenPayload; error?: RcpTokenValidationError } {
+    try {
+      const [payloadBase64, signature] = token.split('.');
+      if (!payloadBase64 || !signature) {
+        return { error: 'rcp_token_invalid' };
+      }
+
+      const payloadStr = Buffer.from(payloadBase64, 'base64url').toString(
+        'utf8',
+      );
+      const expectedSignature = this.createSignature(payloadStr);
+
+      if (!this.secureCompare(signature, expectedSignature)) {
+        return { error: 'rcp_token_invalid' };
+      }
+
+      const payload = JSON.parse(payloadStr) as RcpTokenPayload;
+
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp < now) {
+        return { error: 'rcp_token_expired' };
+      }
+
+      return { payload };
+    } catch (error) {
+      return { error: 'rcp_token_invalid' };
     }
   }
 

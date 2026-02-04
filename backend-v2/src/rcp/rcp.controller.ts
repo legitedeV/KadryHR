@@ -15,6 +15,7 @@ import { RcpService } from './rcp.service';
 import { GenerateQrDto } from './dto/generate-qr.dto';
 import { ClockDto } from './dto/clock.dto';
 import { ListRcpEventsDto } from './dto/list-rcp-events.dto';
+import { MobileRcpSessionDto } from './dto/mobile-session.dto';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 import { ConfigService } from '@nestjs/config';
 
@@ -65,6 +66,18 @@ export class RcpController {
     );
 
     return result;
+  }
+
+  @Post('mobile/session')
+  async getMobileSession(
+    @Body() dto: MobileRcpSessionDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.getMobileSession(
+      req.user.id,
+      req.user.organisationId,
+      dto.token,
+    );
   }
 
   @Get('status')

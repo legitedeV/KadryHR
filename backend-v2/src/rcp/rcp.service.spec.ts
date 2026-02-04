@@ -5,7 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RcpTokenService } from './services/rcp-token.service';
 import { RcpRateLimitService } from './services/rcp-rate-limit.service';
 import { RcpEventType } from '@prisma/client';
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 describe('RcpService - Integration', () => {
   let service: RcpService;
@@ -33,6 +37,9 @@ describe('RcpService - Integration', () => {
   };
 
   const mockPrismaService = {
+    organisation: {
+      findUnique: jest.fn(),
+    },
     location: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
@@ -316,6 +323,79 @@ describe('RcpService - Integration', () => {
 
       expect(result.ok).toBe(true);
       expect(result.type).toBe('CLOCK_OUT');
+    });
+  });
+
+  describe('getMobileSession', () => {
+    it('should return mobile session context for a valid token', async () => {
+      const { token } = tokenService.generateToken(
+        mockOrg.id,
+        mockLocation.id,
+        3600,
+      );
+
+      mockPrismaService.organisation.findUnique.mockResolvedValue(mockOrg);
+      mockPrismaService.location.findFirst.mockResolvedValue(mockLocation);
+      mockPrismaService.rcpEvent.findFirst.mockResolvedValue({
+        type: 'CLOCK_IN',
+        happenedAt: new Date(),
+        location: mockLocation,
+      });
+
+      const result = await service.getMobileSession(
+        mockUser.id,
+        mockUser.organisationId,
+        token,
+      );
+
+      expect(result.organization).toEqual({
+        id: mockOrg.id,
+        name: mockOrg.name,
+      });
+      expect(result.location.id).toBe(mockLocation.id);
+      expect(result.rcpStatus.isClockedIn).toBe(true);
+    });
+
+    it('should throw error for expired token', async () => {
+      const { token } = tokenService.generateToken(
+        mockOrg.id,
+        mockLocation.id,
+        -1,
+      );
+
+      await expect(
+        service.getMobileSession(
+          mockUser.id,
+          mockUser.organisationId,
+          token,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw error for invalid token', async () => {
+      await expect(
+        service.getMobileSession(
+          mockUser.id,
+          mockUser.organisationId,
+          'invalid-token',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should deny access when token organisation mismatches', async () => {
+      const { token } = tokenService.generateToken(
+        'other-org',
+        mockLocation.id,
+        3600,
+      );
+
+      await expect(
+        service.getMobileSession(
+          mockUser.id,
+          mockUser.organisationId,
+          token,
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
