@@ -47,6 +47,10 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  GOOGLE_MAPS_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
   MICROSOFT_CLIENT_ID?: string;
 
   @IsOptional()

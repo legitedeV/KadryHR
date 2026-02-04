@@ -21,6 +21,10 @@ interface Location {
   id: string;
   name: string;
   address?: string;
+  addressStreet?: string;
+  addressPostalCode?: string;
+  addressCity?: string;
+  addressCountry?: string;
   geoLat?: number;
   geoLng?: number;
   geoRadiusMeters?: number;
@@ -60,6 +64,15 @@ interface RcpEvent {
   };
 }
 
+interface GeocodeResponse {
+  formattedAddress: string | null;
+  street: string | null;
+  streetNumber: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string | null;
+}
+
 export default function PanelRcpPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -95,6 +108,8 @@ export default function PanelRcpPage() {
   const [events, setEvents] = useState<RcpEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
+  const [geocodeLoading, setGeocodeLoading] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [eventFilters, setEventFilters] = useState({
     userId: '',
@@ -168,6 +183,10 @@ export default function PanelRcpPage() {
           id: location.id,
           name: location.name,
           address: location.address ?? (addressParts || undefined),
+          addressStreet: location.addressStreet ?? undefined,
+          addressPostalCode: location.addressPostalCode ?? undefined,
+          addressCity: location.addressCity ?? undefined,
+          addressCountry: location.addressCountry ?? undefined,
           geoLat,
           geoLng,
           geoRadiusMeters,
@@ -221,7 +240,7 @@ export default function PanelRcpPage() {
     setEventsLoading(true);
     setEventsError(null);
     try {
-      const response = await apiClient.get<{
+      const response = await apiClient.request<{
         items: RcpEvent[];
         total: number;
         skip: number;
@@ -246,7 +265,7 @@ export default function PanelRcpPage() {
     setStatusLoading(true);
     try {
       const query = locationId ? `?locationId=${locationId}` : '';
-      const response = await apiClient.get<RcpStatus>(`/rcp/status${query}`, {
+      const response = await apiClient.request<RcpStatus>(`/rcp/status${query}`, {
         auth: true,
       });
       setStatus(response);
@@ -328,24 +347,24 @@ export default function PanelRcpPage() {
     setClockResult(null);
 
     try {
-      const response = await apiClient.post<{
+      const response = await apiClient.request<{
         ok: boolean;
         distanceMeters: number;
         happenedAt: string;
         locationName: string;
         type: string;
-      }>(
-        '/rcp/clock',
-        {
+      }>('/rcp/clock', {
+        method: 'POST',
+        auth: true,
+        body: JSON.stringify({
           token: qrToken,
           type,
           clientLat: geoState.lat,
           clientLng: geoState.lng,
           accuracyMeters: geoState.accuracy || undefined,
           clientTime: new Date().toISOString(),
-        },
-        { auth: true },
-      );
+        }),
+      });
 
       const actionText = type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście';
       setClockResult({
@@ -416,13 +435,13 @@ export default function PanelRcpPage() {
     setQrDataUrl(null);
 
     try {
-      const result = await apiClient.post<QrResult>(
-        '/rcp/qr/generate',
-        {
+      const result = await apiClient.request<QrResult>('/rcp/qr/generate', {
+        method: 'POST',
+        auth: true,
+        body: JSON.stringify({
           locationId: selectedLocation.id,
-        },
-        { auth: true },
-      );
+        }),
+      });
 
       setQrResult(result);
       setQrToken(extractToken(result.qrUrl));
@@ -550,6 +569,10 @@ export default function PanelRcpPage() {
         id: updated.id,
         name: updated.name,
         address: updated.address ?? (addressParts || undefined),
+        addressStreet: updated.addressStreet ?? undefined,
+        addressPostalCode: updated.addressPostalCode ?? undefined,
+        addressCity: updated.addressCity ?? undefined,
+        addressCountry: updated.addressCountry ?? undefined,
         geoLat:
           typeof updated.geoLat === 'string'
             ? Number(updated.geoLat)
@@ -1059,6 +1082,172 @@ export default function PanelRcpPage() {
                   <p className="text-xs text-surface-500">
                     Użyj Google Maps lub innej usługi aby znaleźć współrzędne lokalizacji
                   </p>
+                  <div className="space-y-2">
+                    {geocodeError && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        {geocodeError}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedLocation) return;
+                        const lat = selectedLocation.geoLat ?? geoState.lat;
+                        const lng = selectedLocation.geoLng ?? geoState.lng;
+
+                        if (lat === null || lat === undefined || lng === null || lng === undefined) {
+                          pushToast('Uzupełnij współrzędne lub pobierz lokalizację GPS.', 'warning');
+                          return;
+                        }
+
+                        setGeocodeLoading(true);
+                        setGeocodeError(null);
+
+                        try {
+                          const response = await apiClient.request<GeocodeResponse>(
+                            '/locations/geocode',
+                            {
+                              method: 'POST',
+                              auth: true,
+                              body: JSON.stringify({ lat, lng }),
+                            },
+                          );
+
+                          const combinedStreet = [response.street, response.streetNumber]
+                            .filter(Boolean)
+                            .join(' ');
+                          const formattedAddress =
+                            response.formattedAddress ?? (combinedStreet || undefined);
+
+                          await updateLocationSettings({
+                            geoLat: lat,
+                            geoLng: lng,
+                            addressStreet: combinedStreet || undefined,
+                            addressPostalCode: response.postalCode ?? undefined,
+                            addressCity: response.city ?? undefined,
+                            addressCountry: response.country ?? undefined,
+                            address: formattedAddress,
+                          });
+
+                          pushToast('Adres lokalizacji został uzupełniony.', 'success');
+                        } catch (err) {
+                          const errorMessage =
+                            err instanceof Error
+                              ? err.message
+                              : 'Nie udało się pobrać adresu lokalizacji';
+                          setGeocodeError(errorMessage);
+                          pushToast(errorMessage, 'error');
+                        } finally {
+                          setGeocodeLoading(false);
+                        }
+                      }}
+                      disabled={geocodeLoading}
+                      className="w-full rounded-lg border border-brand-600 text-brand-700 bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:border-surface-200 disabled:text-surface-400"
+                    >
+                      {geocodeLoading ? 'Pobieranie adresu...' : 'Pobierz lokalizację'}
+                    </button>
+                    <p className="text-xs text-surface-500">
+                      Pobierze adres na podstawie współrzędnych (Google Maps).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-surface-900 font-medium">
+                    Adres lokalizacji
+                  </label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="block text-sm text-surface-600 mb-1">
+                        Ulica i numer
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedLocation.addressStreet || ''}
+                        onChange={(e) =>
+                          setSelectedLocation({
+                            ...selectedLocation,
+                            addressStreet: e.target.value || undefined,
+                          })
+                        }
+                        onBlur={() =>
+                          updateLocationSettings({
+                            addressStreet: selectedLocation.addressStreet,
+                          })
+                        }
+                        placeholder="ul. Marszałkowska 10"
+                        className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-surface-600 mb-1">
+                          Kod pocztowy
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedLocation.addressPostalCode || ''}
+                          onChange={(e) =>
+                            setSelectedLocation({
+                              ...selectedLocation,
+                              addressPostalCode: e.target.value || undefined,
+                            })
+                          }
+                          onBlur={() =>
+                            updateLocationSettings({
+                              addressPostalCode: selectedLocation.addressPostalCode,
+                            })
+                          }
+                          placeholder="00-000"
+                          className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-surface-600 mb-1">
+                          Miasto
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedLocation.addressCity || ''}
+                          onChange={(e) =>
+                            setSelectedLocation({
+                              ...selectedLocation,
+                              addressCity: e.target.value || undefined,
+                            })
+                          }
+                          onBlur={() =>
+                            updateLocationSettings({
+                              addressCity: selectedLocation.addressCity,
+                            })
+                          }
+                          placeholder="Warszawa"
+                          className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-surface-600 mb-1">
+                        Kraj
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedLocation.addressCountry || ''}
+                        onChange={(e) =>
+                          setSelectedLocation({
+                            ...selectedLocation,
+                            addressCountry: e.target.value || undefined,
+                          })
+                        }
+                        onBlur={() =>
+                          updateLocationSettings({
+                            addressCountry: selectedLocation.addressCountry,
+                          })
+                        }
+                        placeholder="Polska"
+                        className="w-full bg-white border border-surface-300 text-surface-900 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--accent-border)]"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Radius */}
