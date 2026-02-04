@@ -18,6 +18,7 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { UpdateLocationEmployeesDto } from './dto/update-location-employees.dto';
+import { GeocodeLocationDto } from './dto/geocode-location.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('locations')
@@ -73,5 +74,11 @@ export class LocationsController {
     @Param('id') id: string,
   ) {
     return this.locationsService.remove(user.organisationId, id);
+  }
+
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Post('geocode')
+  async geocode(@Body() dto: GeocodeLocationDto) {
+    return this.locationsService.geocodeLocation(dto.lat, dto.lng);
   }
 }

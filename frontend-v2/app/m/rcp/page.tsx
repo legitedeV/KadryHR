@@ -79,7 +79,7 @@ function MobileRcpContent() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await apiClient.get('/auth/me', { auth: true });
+        await apiClient.request('/auth/me', { auth: true });
         setIsAuthenticated(true);
       } catch {
         setIsAuthenticated(false);
@@ -103,7 +103,7 @@ function MobileRcpContent() {
 
   const fetchStatus = async () => {
     try {
-      const response = await apiClient.get<RcpStatus>('/rcp/status', {
+      const response = await apiClient.request<RcpStatus>('/rcp/status', {
         auth: true,
       });
       setStatus(response);
@@ -115,7 +115,7 @@ function MobileRcpContent() {
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await apiClient.get<{
+      const response = await apiClient.request<{
         items: RcpEvent[];
       }>('/rcp/events/me?take=10', { auth: true });
       setHistory(response.items);
@@ -130,7 +130,7 @@ function MobileRcpContent() {
     setLocationsLoading(true);
     setLocationsError(null);
     try {
-      const response = await apiClient.get<RcpLocation[]>('/locations', {
+      const response = await apiClient.request<RcpLocation[]>('/locations', {
         auth: true,
       });
       setLocations(response.filter((location) => location.rcpEnabled));
@@ -204,24 +204,24 @@ function MobileRcpContent() {
     setLastResult(null);
 
     try {
-      const response = await apiClient.post<{
+      const response = await apiClient.request<{
         ok: boolean;
         distanceMeters: number;
         happenedAt: string;
         locationName: string;
         type: string;
-      }>(
-        '/rcp/clock',
-        {
+      }>('/rcp/clock', {
+        method: 'POST',
+        auth: true,
+        body: JSON.stringify({
           token,
           type,
           clientLat: geoState.lat,
           clientLng: geoState.lng,
           accuracyMeters: geoState.accuracy || undefined,
           clientTime: new Date().toISOString(),
-        },
-        { auth: true },
-      );
+        }),
+      });
 
       const actionText = type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście';
       setLastResult({

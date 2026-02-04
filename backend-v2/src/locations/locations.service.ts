@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLocationDto } from './dto/create-location.dto';
@@ -30,7 +31,10 @@ type LocationWithEmployees = Prisma.LocationGetPayload<{
 
 @Injectable()
 export class LocationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async create(organisationId: string, dto: CreateLocationDto) {
     const { employeeIds = [] as string[], ...data } = dto;
@@ -139,6 +143,69 @@ export class LocationsService {
     return { success: true };
   }
 
+  async geocodeLocation(lat: number, lng: number) {
+    this.assertValidCoordinates(lat, lng);
+
+    const apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
+    if (!apiKey) {
+      throw new BadRequestException('GOOGLE_MAPS_API_KEY is not configured');
+    }
+
+    const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+    url.searchParams.set('latlng', `${lat},${lng}`);
+    url.searchParams.set('key', apiKey);
+    url.searchParams.set('language', 'pl');
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new BadRequestException('Google Maps geocoding failed');
+    }
+
+    const payload = (await response.json()) as {
+      status: string;
+      error_message?: string;
+      results?: Array<{
+        formatted_address?: string;
+        address_components?: Array<{
+          long_name: string;
+          short_name: string;
+          types: string[];
+        }>;
+      }>;
+    };
+
+    if (payload.status !== 'OK' || !payload.results?.length) {
+      throw new BadRequestException(
+        payload.error_message ?? 'Nie udało się znaleźć adresu',
+      );
+    }
+
+    const [result] = payload.results;
+    const component = (types: string[]) =>
+      result.address_components?.find((item) =>
+        types.every((type) => item.types.includes(type)),
+      );
+
+    const street = component(['route'])?.long_name ?? null;
+    const streetNumber = component(['street_number'])?.long_name ?? null;
+    const postalCode = component(['postal_code'])?.long_name ?? null;
+    const city =
+      component(['locality'])?.long_name ??
+      component(['postal_town'])?.long_name ??
+      component(['administrative_area_level_2'])?.long_name ??
+      null;
+    const country = component(['country'])?.long_name ?? null;
+
+    return {
+      formattedAddress: result.formatted_address ?? null,
+      street,
+      streetNumber,
+      postalCode,
+      city,
+      country,
+    };
+  }
+
   private mapLocation(location: LocationWithEmployees) {
     return {
       ...location,
@@ -170,6 +237,15 @@ export class LocationsService {
     }
 
     return uniqueIds;
+  }
+
+  private assertValidCoordinates(lat: number, lng: number) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new BadRequestException('Nieprawidłowe współrzędne');
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      throw new BadRequestException('Nieprawidłowe współrzędne');
+    }
   }
 
   private async setLocationEmployees(
