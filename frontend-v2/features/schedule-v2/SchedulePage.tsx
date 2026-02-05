@@ -6,6 +6,7 @@ import {
   apiCreateScheduleShiftsBulk,
   apiCreateScheduleShift,
   apiCreateLeaveRequest,
+  apiUpdateLeaveRequestStatus,
   apiCreateShiftSwapRequest,
   apiDeleteScheduleShiftsBulk,
   apiDeleteShift,
@@ -706,6 +707,9 @@ export function SchedulePage() {
         case "add-leave":
           setLeaveModalState({ employee, date });
           break;
+        case "mark-day-off":
+          void handleMarkDayOff(employee, date);
+          break;
         case "edit-shift":
           if (shift) handleEditShift(shift);
           break;
@@ -719,7 +723,7 @@ export function SchedulePage() {
           break;
       }
     },
-    [contextMenuState, handleEditShift, openShiftModal],
+    [contextMenuState, handleEditShift, handleMarkDayOff, openShiftModal],
   );
 
   const hasOverlap = useCallback(
@@ -854,10 +858,11 @@ export function SchedulePage() {
   }) => {
     setLeaveSubmitting(true);
     try {
-      await apiCreateLeaveRequest(payload);
+      const created = await apiCreateLeaveRequest(payload);
+      await apiUpdateLeaveRequestStatus(created.id, "APPROVED");
       await refreshAvailabilityAndLeaves();
       await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-      pushToast({ title: "Dodano wniosek urlopowy", variant: "success" });
+      pushToast({ title: "Dodano urlop", variant: "success" });
       setLeaveModalState(null);
     } catch (error) {
       console.error(error);
@@ -866,6 +871,29 @@ export function SchedulePage() {
       setLeaveSubmitting(false);
     }
   };
+
+  const handleMarkDayOff = useCallback(
+    async (employee: EmployeeRecord, date: Date) => {
+      const dateKey = formatDateKey(date);
+      try {
+        const created = await apiCreateLeaveRequest({
+          employeeId: employee.id,
+          type: "OTHER",
+          startDate: dateKey,
+          endDate: dateKey,
+          reason: "Dzień wolny",
+        });
+        await apiUpdateLeaveRequestStatus(created.id, "APPROVED");
+        await refreshAvailabilityAndLeaves();
+        await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+        pushToast({ title: "Oznaczono dzień wolny", variant: "success" });
+      } catch (error) {
+        console.error(error);
+        pushToast({ title: "Nie udało się oznaczyć dnia wolnego", variant: "error" });
+      }
+    },
+    [queryClient, refreshAvailabilityAndLeaves],
+  );
 
   const handleCreateSwapRequest = async (payload: {
     shiftId: string;

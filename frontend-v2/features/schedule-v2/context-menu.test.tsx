@@ -10,7 +10,7 @@ test("manager sees add options on empty cell", () => {
   });
   assert.deepEqual(
     options.map((option) => option.id),
-    ["add-shift", "add-leave"],
+    ["add-shift", "add-leave", "mark-day-off"],
   );
 });
 

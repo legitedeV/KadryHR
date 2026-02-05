@@ -121,6 +121,8 @@ export interface LeaveRequestPayload {
   reason?: string;
 }
 
+export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+
 export interface ShiftSwapRequestPayload {
   shiftId: string;
   targetEmployeeId: string;
@@ -700,6 +702,14 @@ export async function apiCreateLeaveRequest(payload: LeaveRequestPayload) {
   return apiClient.request(`/leave-requests`, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateLeaveRequestStatus(leaveRequestId: string, status: LeaveStatus) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(`/leave-requests/${leaveRequestId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
   });
 }
 

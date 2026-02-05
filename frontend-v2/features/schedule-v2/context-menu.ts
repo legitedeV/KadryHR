@@ -1,6 +1,7 @@
 export type ScheduleContextMenuAction =
   | "add-shift"
   | "add-leave"
+  | "mark-day-off"
   | "edit-shift"
   | "delete-shift"
   | "request-swap";
@@ -29,6 +30,7 @@ export function getScheduleContextMenuOptions(params: {
     return [
       { id: "add-shift", label: "Dodaj zmianę" },
       { id: "add-leave", label: "Dodaj urlop" },
+      { id: "mark-day-off", label: "Oznacz jako dzień wolny" },
     ];
   }
 
