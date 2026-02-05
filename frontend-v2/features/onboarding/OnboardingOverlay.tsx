@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useOnboarding } from "./OnboardingProvider";
-import { OnboardingTargetId } from "./onboarding.types";
+import { OnboardingTargetId, OnboardingTourConfig } from "./onboarding.types";
 import { getNavItemById, PanelNavItemId } from "@/lib/panel-navigation";
 
 type TargetRect = {
@@ -88,17 +87,26 @@ function getCardStyle(rect: TargetRect, position: CardPosition): React.CSSProper
   }
 }
 
-export function OnboardingOverlay() {
+type OnboardingOverlayProps = {
+  tour: OnboardingTourConfig;
+  currentStepIndex: number;
+  isOpen: boolean;
+  nextStep: () => void;
+  prevStep: () => void;
+  skipTour: () => void;
+  finishTour: () => void;
+};
+
+export function OnboardingOverlay({
+  tour,
+  currentStepIndex,
+  isOpen,
+  nextStep,
+  prevStep,
+  skipTour,
+  finishTour,
+}: OnboardingOverlayProps) {
   const router = useRouter();
-  const {
-    tour,
-    currentStepIndex,
-    isOpen,
-    nextStep,
-    prevStep,
-    skipTour,
-    finishTour,
-  } = useOnboarding();
   const titleId = useId();
   const descriptionId = useId();
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
