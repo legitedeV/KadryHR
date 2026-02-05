@@ -25,6 +25,7 @@ import { ScheduleTemplatesModule } from './schedule-templates/schedule-templates
 import { LeadsModule } from './leads/leads.module';
 import { AvatarsModule } from './avatars/avatars.module';
 import { ShiftPresetsModule } from './shift-presets/shift-presets.module';
+import { ShiftSwapsModule } from './shift-swaps/shift-swaps.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
@@ -67,6 +68,7 @@ import { RcpModule } from './rcp/rcp.module';
     LeadsModule,
     AvatarsModule,
     ShiftPresetsModule,
+    ShiftSwapsModule,
     AdminModule,
     ReportsModule,
     SubscriptionsModule,

@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   apiCreateScheduleShiftsBulk,
   apiCreateScheduleShift,
+  apiCreateLeaveRequest,
+  apiCreateShiftSwapRequest,
   apiDeleteScheduleShiftsBulk,
   apiDeleteShift,
   apiGetApprovedLeaves,
@@ -33,6 +35,10 @@ import { ScheduleGrid } from "./ScheduleGrid";
 import { ScheduleToolbar } from "./ScheduleToolbar";
 import { ShiftModal } from "./ShiftModal";
 import { OptionsDrawer } from "./OptionsDrawer";
+import { LeaveRequestModal } from "./LeaveRequestModal";
+import { ShiftSwapRequestModal } from "./ShiftSwapRequestModal";
+import { ScheduleContextMenu } from "./ScheduleContextMenu";
+import { getScheduleContextMenuOptions } from "./context-menu";
 import {
   addDays,
   buildCellKey,
@@ -80,6 +86,20 @@ export function SchedulePage() {
   const [timeBuffer, setTimeBuffer] = useState("");
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
+  const [contextMenuState, setContextMenuState] = useState<{
+    employee: EmployeeRecord;
+    date: Date;
+    shift?: ShiftRecord;
+    position: { x: number; y: number };
+  } | null>(null);
+  const [leaveModalState, setLeaveModalState] = useState<{
+    employee: EmployeeRecord;
+    date: Date;
+  } | null>(null);
+  const [swapModalShift, setSwapModalShift] = useState<ShiftRecord | null>(null);
+  const [confirmDeleteShift, setConfirmDeleteShift] = useState<ShiftRecord | null>(null);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [swapSubmitting, setSwapSubmitting] = useState(false);
 
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
@@ -105,11 +125,30 @@ export function SchedulePage() {
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart],
   );
+  const currentEmployeeId = useMemo(() => {
+    if (!user?.email) return null;
+    const match = employees.find(
+      (employee) => employee.email?.toLowerCase() === user.email.toLowerCase(),
+    );
+    return match?.id ?? null;
+  }, [employees, user?.email]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem(PUBLISHED_STORAGE_KEY, JSON.stringify(publishedWeeks));
   }, [publishedWeeks]);
+
+  const refreshAvailabilityAndLeaves = useCallback(async () => {
+    const from = formatDateKey(weekStart);
+    const to = formatDateKey(weekEnd);
+    const [availabilityResponse, leaveResponse] = await Promise.all([
+      apiGetAvailability({ from, to }),
+      apiGetApprovedLeaves({ from, to }),
+    ]);
+    setAvailability(availabilityResponse);
+    setLeaves(leaveResponse);
+    setError(null);
+  }, [weekEnd, weekStart]);
 
   useEffect(() => {
     if (!hasToken) return;
@@ -137,19 +176,11 @@ export function SchedulePage() {
 
   useEffect(() => {
     if (!hasToken) return;
-    const from = formatDateKey(weekStart);
-    const to = formatDateKey(weekEnd);
-    Promise.all([apiGetAvailability({ from, to }), apiGetApprovedLeaves({ from, to })])
-      .then(([availabilityResponse, leaveResponse]) => {
-        setAvailability(availabilityResponse);
-        setLeaves(leaveResponse);
-        setError(null);
-      })
-      .catch((errorResponse) => {
-        console.error(errorResponse);
-        setError("Nie udało się pobrać grafiku.");
-      });
-  }, [hasToken, weekEnd, weekStart]);
+    refreshAvailabilityAndLeaves().catch((errorResponse) => {
+      console.error(errorResponse);
+      setError("Nie udało się pobrać grafiku.");
+    });
+  }, [hasToken, refreshAvailabilityAndLeaves]);
 
   const scheduleQuery = useQuery({
     queryKey: ["schedule", formatDateKey(weekStart), selectedLocationId],
@@ -336,6 +367,7 @@ export function SchedulePage() {
         : undefined,
     }));
   }, [employees, locations, scheduleQuery.data]);
+
 
   const getCellKey = useCallback(
     (employeeIndex: number, dayIndex: number) => {
@@ -630,6 +662,66 @@ export function SchedulePage() {
     setShiftModalOpen(true);
   };
 
+  const contextMenuOptions = useMemo(() => {
+    if (!contextMenuState) return [];
+    const hasShift = Boolean(contextMenuState.shift);
+    const isOwnShift = contextMenuState.shift?.employeeId === currentEmployeeId;
+    return getScheduleContextMenuOptions({
+      canManage,
+      hasShift,
+      isOwnShift: Boolean(isOwnShift),
+    });
+  }, [canManage, contextMenuState, currentEmployeeId]);
+
+  const handleOpenContextMenu = useCallback(
+    (params: {
+      employee: EmployeeRecord;
+      date: Date;
+      shift?: ShiftRecord;
+      position: { x: number; y: number };
+    }) => {
+      const hasShift = Boolean(params.shift);
+      const isOwnShift = params.shift?.employeeId === currentEmployeeId;
+      const options = getScheduleContextMenuOptions({
+        canManage,
+        hasShift,
+        isOwnShift: Boolean(isOwnShift),
+      });
+      if (!options.length) return;
+      setContextMenuState(params);
+    },
+    [canManage, currentEmployeeId],
+  );
+
+  const handleContextMenuSelect = useCallback(
+    (actionId: ReturnType<typeof getScheduleContextMenuOptions>[number]["id"]) => {
+      if (!contextMenuState) return;
+      const { employee, date, shift } = contextMenuState;
+      setContextMenuState(null);
+
+      switch (actionId) {
+        case "add-shift":
+          openShiftModal(employee.id, date);
+          break;
+        case "add-leave":
+          setLeaveModalState({ employee, date });
+          break;
+        case "edit-shift":
+          if (shift) handleEditShift(shift);
+          break;
+        case "delete-shift":
+          if (shift) setConfirmDeleteShift(shift);
+          break;
+        case "request-swap":
+          if (shift) setSwapModalShift(shift);
+          break;
+        default:
+          break;
+      }
+    },
+    [contextMenuState, handleEditShift, openShiftModal],
+  );
+
   const hasOverlap = useCallback(
     (employeeId: string, start: Date, end: Date, excludeId?: string) =>
       shifts.some((shift) => {
@@ -727,11 +819,72 @@ export function SchedulePage() {
   };
 
   const handleDeleteShift = async (shiftId: string) => {
-    await apiDeleteShift(shiftId);
-    await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-    setShiftModalOpen(false);
-    setActiveShift(null);
-    setLockedEmployeeId(null);
+    try {
+      await apiDeleteShift(shiftId);
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      setShiftModalOpen(false);
+      setActiveShift(null);
+      setLockedEmployeeId(null);
+      pushToast({ title: "Usunięto zmianę", variant: "success" });
+    } catch (error) {
+      console.error(error);
+      pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
+    }
+  };
+
+  const handleConfirmDeleteShift = async () => {
+    if (!confirmDeleteShift) return;
+    try {
+      await apiDeleteShift(confirmDeleteShift.id);
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      pushToast({ title: "Usunięto zmianę", variant: "success" });
+      setConfirmDeleteShift(null);
+    } catch (error) {
+      console.error(error);
+      pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
+    }
+  };
+
+  const handleCreateLeaveRequest = async (payload: {
+    employeeId: string;
+    type: "PAID_LEAVE" | "SICK" | "UNPAID" | "OTHER";
+    startDate: string;
+    endDate: string;
+    reason?: string;
+  }) => {
+    setLeaveSubmitting(true);
+    try {
+      await apiCreateLeaveRequest(payload);
+      await refreshAvailabilityAndLeaves();
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      pushToast({ title: "Dodano wniosek urlopowy", variant: "success" });
+      setLeaveModalState(null);
+    } catch (error) {
+      console.error(error);
+      pushToast({ title: "Nie udało się dodać urlopu", variant: "error" });
+    } finally {
+      setLeaveSubmitting(false);
+    }
+  };
+
+  const handleCreateSwapRequest = async (payload: {
+    shiftId: string;
+    targetEmployeeId: string;
+    targetDate: string;
+    note?: string;
+  }) => {
+    setSwapSubmitting(true);
+    try {
+      await apiCreateShiftSwapRequest(payload);
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      pushToast({ title: "Wysłano prośbę o zamianę", variant: "success" });
+      setSwapModalShift(null);
+    } catch (error) {
+      console.error(error);
+      pushToast({ title: "Nie udało się wysłać prośby o zamianę", variant: "error" });
+    } finally {
+      setSwapSubmitting(false);
+    }
   };
 
   const handlePublishSchedule = async () => {
@@ -830,6 +983,7 @@ export function SchedulePage() {
         onEditShift={handleEditShift}
         onDropShift={handleDropShift}
         onCellFocus={handleCellFocus}
+        onOpenContextMenu={handleOpenContextMenu}
         selectedCells={selectedCells}
         focusedCell={focusedCell}
         canManage={canManage}
@@ -839,6 +993,14 @@ export function SchedulePage() {
         showLoadBars={showLoadBars}
         showSummaryRow={showSummaryRow}
         showWeekendHighlight={showWeekendHighlight}
+      />
+
+      <ScheduleContextMenu
+        open={Boolean(contextMenuState)}
+        position={contextMenuState?.position ?? null}
+        options={contextMenuOptions}
+        onClose={() => setContextMenuState(null)}
+        onSelect={handleContextMenuSelect}
       />
 
       {canViewCosts && (
@@ -883,12 +1045,77 @@ export function SchedulePage() {
         onDelete={handleDeleteShift}
       />
 
+      <LeaveRequestModal
+        key={
+          leaveModalState
+            ? `${leaveModalState.employee.id}-${leaveModalState.date.toISOString()}`
+            : "leave-modal"
+        }
+        open={Boolean(leaveModalState)}
+        employee={leaveModalState?.employee ?? null}
+        date={leaveModalState?.date ?? null}
+        isSubmitting={leaveSubmitting}
+        onClose={() => setLeaveModalState(null)}
+        onSubmit={handleCreateLeaveRequest}
+      />
+
+      <ShiftSwapRequestModal
+        key={swapModalShift?.id ?? "swap-modal"}
+        open={Boolean(swapModalShift)}
+        shift={swapModalShift}
+        employees={visibleEmployees}
+        isSubmitting={swapSubmitting}
+        onClose={() => setSwapModalShift(null)}
+        onSubmit={handleCreateSwapRequest}
+      />
+
+      <Modal
+        open={Boolean(confirmDeleteShift)}
+        title="Usuń zmianę"
+        description="Czy na pewno chcesz usunąć tę zmianę?"
+        onClose={() => setConfirmDeleteShift(null)}
+        variant="light"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteShift(null)}
+              className="rounded-md border border-surface-200 bg-white px-4 py-2 text-sm text-surface-600 hover:bg-surface-100"
+            >
+              Anuluj
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDeleteShift}
+              className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-600"
+            >
+              Usuń zmianę
+            </button>
+          </>
+        }
+      >
+        {confirmDeleteShift && (
+          <p className="text-sm text-surface-600">
+            {new Date(confirmDeleteShift.startsAt).toLocaleDateString("pl-PL")} •{" "}
+            {new Date(confirmDeleteShift.startsAt).toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            –{" "}
+            {new Date(confirmDeleteShift.endsAt).toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        )}
+      </Modal>
+
       <DateRangeModal
         open={dateRangeModalOpen}
         weekStart={weekStart}
         weekEnd={weekEnd}
         onClose={() => setDateRangeModalOpen(false)}
-        onApply={(start, end) => {
+        onApply={(start) => {
           setWeekStart(startOfWeek(start));
           setDateRangeModalOpen(false);
         }}

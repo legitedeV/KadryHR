@@ -33,6 +33,12 @@ type ScheduleGridProps = {
   onEditShift: (shift: ShiftRecord) => void;
   onDropShift: (shiftId: string, targetEmployeeId: string, targetDate: Date, copy: boolean) => void;
   onCellFocus: (employeeIndex: number, dayIndex: number, extend: boolean) => void;
+  onOpenContextMenu: (params: {
+    employee: EmployeeRecord;
+    date: Date;
+    shift?: ShiftRecord;
+    position: { x: number; y: number };
+  }) => void;
   selectedCells: Set<string>;
   focusedCell: { employeeIndex: number; dayIndex: number } | null;
   canManage: boolean;
@@ -55,6 +61,7 @@ export function ScheduleGrid({
   onEditShift,
   onDropShift,
   onCellFocus,
+  onOpenContextMenu,
   selectedCells,
   focusedCell,
   canManage,
@@ -212,6 +219,16 @@ export function ScheduleGrid({
                       showWeekendHighlight && isWeekend ? "bg-surface-100/70" : "bg-white"
                     } ${isSelected ? "ring-2 ring-brand-400/60" : ""} ${isFocused ? "z-10 ring-2 ring-brand-500" : ""}`}
                     onMouseDown={(event) => onCellFocus(employeeIndex, dayIndex, event.shiftKey)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      if (cellShifts.length > 1) return;
+                      onOpenContextMenu({
+                        employee,
+                        date: day.date,
+                        shift: cellShifts[0],
+                        position: { x: event.clientX, y: event.clientY },
+                      });
+                    }}
                     onDragOver={(event) => {
                       event.preventDefault();
                     }}
@@ -264,15 +281,30 @@ export function ScheduleGrid({
                           <button
                             key={shift.id}
                             type="button"
-                            onClick={() => onEditShift(shift)}
+                            onClick={() => {
+                              if (canManage) onEditShift(shift);
+                            }}
+                            onContextMenu={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              onOpenContextMenu({
+                                employee,
+                                date: day.date,
+                                shift,
+                                position: { x: event.clientX, y: event.clientY },
+                              });
+                            }}
                             draggable={canManage}
                             onDragStart={(event) => {
                               event.dataTransfer.setData("text/plain", shift.id);
                               event.dataTransfer.effectAllowed = "move";
                             }}
-                            className="flex flex-col gap-1 rounded-md border border-surface-200 px-3 py-2 text-left text-xs text-surface-800 transition hover:border-brand-400/60 hover:bg-surface-50"
+                            className={`flex flex-col gap-1 rounded-md border border-surface-200 px-3 py-2 text-left text-xs text-surface-800 transition ${
+                              canManage ? "hover:border-brand-400/60 hover:bg-surface-50" : "cursor-default"
+                            }`}
                             role="button"
-                            disabled={!canManage}
+                            aria-disabled={!canManage}
+                            tabIndex={canManage ? 0 : -1}
                             style={{
                               borderColor: accentColor,
                               background: isDraft ? buildStripedBackground(accentColor) : "#ffffff",
