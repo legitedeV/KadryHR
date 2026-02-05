@@ -54,8 +54,8 @@ export class ScheduleController {
   ) {
     return this.scheduleCostService.calculateScheduleSummary({
       organisationId: user.organisationId,
-      from: new Date(query.from),
-      to: new Date(query.to),
+      from: query.from,
+      to: query.to,
       locationIds: query.locationIds,
       positionIds: query.positionIds,
     });

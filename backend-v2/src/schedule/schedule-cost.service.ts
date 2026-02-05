@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ScheduleRepository } from './schedule.repository';
 import { EmployeeContractsService } from '../employee-contracts/employee-contracts.service';
 import type { Shift } from '@prisma/client';
+import { buildScheduleRange } from './schedule-date.utils';
 
 const BREAK_REGEX = /przerwa:\s*(\d+)\s*min/i;
 
@@ -57,16 +58,16 @@ export class ScheduleCostService {
 
   async calculateScheduleSummary(params: {
     organisationId: string;
-    from: Date;
-    to: Date;
+    from: string;
+    to: string;
     locationIds?: string[];
     positionIds?: string[];
   }) {
+    const { from, to, toExclusive } = buildScheduleRange(params.from, params.to);
     const shifts = await this.scheduleRepository.findShifts({
       where: {
         organisationId: params.organisationId,
-        startsAt: { gte: params.from },
-        endsAt: { lte: params.to },
+        startsAt: { gte: from, lt: toExclusive },
         locationId: params.locationIds?.length
           ? { in: params.locationIds }
           : undefined,
@@ -116,8 +117,8 @@ export class ScheduleCostService {
 
     return {
       range: {
-        from: params.from.toISOString(),
-        to: params.to.toISOString(),
+        from: from.toISOString(),
+        to: to.toISOString(),
       },
       totals: {
         hours: Number(totals.hours.toFixed(2)),

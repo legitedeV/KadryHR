@@ -56,8 +56,8 @@ describe('ScheduleCostService', () => {
 
     const summary = await service.calculateScheduleSummary({
       organisationId: 'org-1',
-      from: new Date('2024-02-01T00:00:00Z'),
-      to: new Date('2024-02-03T00:00:00Z'),
+      from: '2024-02-01',
+      to: '2024-02-03',
     });
 
     expect(summary.totals.shiftsCount).toBe(2);
