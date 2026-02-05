@@ -193,7 +193,15 @@ export function OnboardingProvider({ userId, children }: OnboardingProviderProps
   return (
     <OnboardingContext.Provider value={value}>
       {children}
-      <OnboardingOverlay />
+      <OnboardingOverlay
+        tour={value.tour}
+        currentStepIndex={value.currentStepIndex}
+        isOpen={value.isOpen}
+        nextStep={value.nextStep}
+        prevStep={value.prevStep}
+        skipTour={value.skipTour}
+        finishTour={value.finishTour}
+      />
     </OnboardingContext.Provider>
   );
 }
