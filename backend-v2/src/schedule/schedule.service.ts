@@ -20,6 +20,7 @@ import { PublishScheduleDto } from './dto/publish-schedule.dto';
 import { DuplicatePreviousPeriodDto } from './dto/duplicate-prev.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
+import { buildScheduleRange } from './schedule-date.utils';
 
 type ErrorPayload = {
   code: string;
@@ -49,14 +50,12 @@ export class ScheduleService {
   }
 
   async getSchedule(organisationId: string, query: QueryScheduleDto) {
-    const from = new Date(query.from);
-    const to = new Date(query.to);
+    const { from, toExclusive } = buildScheduleRange(query.from, query.to);
 
     const shifts = await this.scheduleRepository.findShifts({
       where: {
         organisationId,
-        startsAt: { gte: from },
-        endsAt: { lte: to },
+        startsAt: { gte: from, lt: toExclusive },
         locationId: query.locationIds?.length
           ? { in: query.locationIds }
           : undefined,
