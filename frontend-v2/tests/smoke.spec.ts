@@ -68,4 +68,23 @@ test.describe('Smoke Tests', () => {
     const url = page.url();
     expect(url).toMatch(/\/(panel\/pracownicy|login)/);
   });
+
+  test('schedule page route responds', async ({ page }) => {
+    await page.goto('/panel/grafik');
+    await page.waitForLoadState('domcontentloaded');
+
+    const currentUrl = page.url();
+    if (currentUrl.includes('/login')) {
+      await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+      return;
+    }
+
+    const errorMessage = page.getByText(/Zaloguj się, aby zobaczyć grafik/i);
+    if (await errorMessage.isVisible()) {
+      await expect(errorMessage).toBeVisible();
+      return;
+    }
+
+    await expect(page.getByRole('heading', { name: /grafik pracy/i })).toBeVisible();
+  });
 });

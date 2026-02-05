@@ -16,16 +16,23 @@ export class ApiError extends Error {
   status?: number;
   kind?: "timeout" | "network";
   data?: unknown;
+  requestId?: string;
 
   constructor(
     message: string,
-    options?: { status?: number; kind?: "timeout" | "network"; data?: unknown },
+    options?: {
+      status?: number;
+      kind?: "timeout" | "network";
+      data?: unknown;
+      requestId?: string;
+    },
   ) {
     super(message);
     this.name = "ApiError";
     this.status = options?.status;
     this.kind = options?.kind;
     this.data = options?.data;
+    this.requestId = options?.requestId;
   }
 }
 
@@ -114,6 +121,11 @@ class ApiClient {
       }
     }
 
+    const requestId = response.headers.get("x-request-id") ?? undefined;
+    if (requestId && typeof window !== "undefined") {
+      sessionStorage.setItem("kadryhr:last-request-id", requestId);
+    }
+
     if (!response.ok) {
       const { message, data } = await this.parseErrorResponse(response);
       if (!suppressToast) {
@@ -126,6 +138,7 @@ class ApiClient {
       throw new ApiError(message ?? response.statusText, {
         status: response.status,
         data,
+        requestId,
       });
     }
 
