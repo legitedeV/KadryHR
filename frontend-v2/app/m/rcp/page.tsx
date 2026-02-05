@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { apiClient } from '@/lib/api-client';
+import { ApiError, apiClient } from '@/lib/api-client';
 import { pushToast } from '@/lib/toast';
 import type { RcpMapCircle, RcpMapMarker } from '@/components/rcp/rcp-map';
 
@@ -98,19 +98,6 @@ function MobileRcpContent() {
     checkAuth();
   }, [router, token]);
 
-  // Fetch status
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchSession();
-    }
-  }, [isAuthenticated, fetchSession]);
-
-  useEffect(() => {
-    if (session?.location.id) {
-      fetchHistory(session.location.id);
-    }
-  }, [session?.location.id, fetchHistory]);
-
   const fetchSession = useCallback(async () => {
     if (!token) {
       return;
@@ -124,24 +111,57 @@ function MobileRcpContent() {
           method: 'POST',
           auth: true,
           body: JSON.stringify({ token }),
+          suppressToast: true,
         },
       );
       setSession(response);
       setStatus(response.rcpStatus);
     } catch (error: unknown) {
       let errorMessage = 'Nie udało się zweryfikować tokenu RCP.';
+      let code: string | undefined;
+      let backendMessage: string | undefined;
 
-      const err = error as { message?: string };
-      if (err?.message) {
-        try {
-          const parsed = JSON.parse(err.message);
-          if (parsed.code === 'rcp_token_invalid') {
-            errorMessage = 'Link wygasł lub jest nieprawidłowy.';
-          } else if (parsed.code === 'rcp_token_expired') {
-            errorMessage = 'Link wygasł lub jest nieprawidłowy.';
+      if (error instanceof ApiError) {
+        const data =
+          typeof error.data === 'object' && error.data !== null
+            ? (error.data as Record<string, unknown>)
+            : undefined;
+        if (data) {
+          if (typeof data.code === 'string') {
+            code = data.code;
           }
-        } catch {
-          errorMessage = err.message || errorMessage;
+
+          const messagePayload = data.message;
+          if (typeof messagePayload === 'string') {
+            backendMessage = messagePayload;
+          } else if (typeof messagePayload === 'object' && messagePayload !== null) {
+            const nested = messagePayload as Record<string, unknown>;
+            if (typeof nested.code === 'string') {
+              code = nested.code;
+            }
+            if (typeof nested.message === 'string') {
+              backendMessage = nested.message;
+            }
+          }
+        }
+        if (!backendMessage && error.message) {
+          backendMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        backendMessage = String((error as { message?: string }).message ?? '');
+      }
+
+      if (code === 'rcp_token_invalid' || code === 'rcp_token_expired') {
+        errorMessage = 'Link wygasł lub jest nieprawidłowy.';
+      } else if (code === 'rcp_access_denied') {
+        errorMessage = 'Brak dostępu do tej lokalizacji RCP.';
+      } else if (backendMessage) {
+        if (backendMessage.toLowerCase().includes('expired')) {
+          errorMessage = 'Link wygasł lub jest nieprawidłowy.';
+        } else if (backendMessage.toLowerCase().includes('invalid')) {
+          errorMessage = 'Link wygasł lub jest nieprawidłowy.';
+        } else {
+          errorMessage = backendMessage;
         }
       }
       setSessionError(errorMessage);
@@ -157,7 +177,10 @@ function MobileRcpContent() {
     try {
       const response = await apiClient.request<{
         items: RcpEvent[];
-      }>(`/rcp/events/me?take=10&locationId=${locationId}`, { auth: true });
+      }>(`/rcp/events/me?take=10&locationId=${locationId}`, {
+        auth: true,
+        suppressToast: true,
+      });
       setHistory(response.items);
     } catch (error) {
       console.error('Failed to fetch history:', error);
@@ -165,6 +188,19 @@ function MobileRcpContent() {
       setHistoryLoading(false);
     }
   }, []);
+
+  // Fetch status
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSession();
+    }
+  }, [isAuthenticated, fetchSession]);
+
+  useEffect(() => {
+    if (session?.location.id) {
+      fetchHistory(session.location.id);
+    }
+  }, [session?.location.id, fetchHistory]);
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -250,6 +286,7 @@ function MobileRcpContent() {
           accuracyMeters: geoState.accuracy || undefined,
           clientTime: new Date().toISOString(),
         }),
+        suppressToast: true,
       });
 
       const actionText = type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście';
@@ -275,31 +312,53 @@ function MobileRcpContent() {
       }
     } catch (error: unknown) {
       let errorMessage = 'Nie udało się zarejestrować czasu pracy';
+      let code: string | undefined;
+      let backendMessage: string | undefined;
 
-      const err = error as { message?: string };
-      if (err?.message) {
-        try {
-          const parsed = JSON.parse(err.message);
-          if (parsed.code) {
-            if (parsed.code === 'RCP_OUTSIDE_GEOFENCE') {
-              errorMessage = parsed.message || 'Znajdujesz się poza obszarem lokalizacji';
-            } else if (parsed.code === 'RCP_TOKEN_EXPIRED') {
-              errorMessage = 'Token wygasł. Poproś kierownika o nowy kod QR';
-            } else if (parsed.code === 'RCP_LOW_ACCURACY') {
-              errorMessage = 'Dokładność lokalizacji jest zbyt niska. Spróbuj ponownie na zewnątrz.';
-            } else if (parsed.code === 'RCP_ALREADY_CLOCKED_IN') {
-              errorMessage = 'Jesteś już zalogowany. Najpierw zarejestruj wyjście.';
-            } else if (parsed.code === 'RCP_ALREADY_CLOCKED_OUT') {
-              errorMessage = 'Jesteś już wylogowany. Najpierw zarejestruj wejście.';
-            } else if (parsed.code === 'RCP_RATE_LIMIT') {
-              errorMessage = 'Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie.';
-            } else {
-              errorMessage = parsed.message || errorMessage;
+      if (error instanceof ApiError) {
+        const data =
+          typeof error.data === 'object' && error.data !== null
+            ? (error.data as Record<string, unknown>)
+            : undefined;
+        if (data) {
+          if (typeof data.code === 'string') {
+            code = data.code;
+          }
+
+          const messagePayload = data.message;
+          if (typeof messagePayload === 'string') {
+            backendMessage = messagePayload;
+          } else if (typeof messagePayload === 'object' && messagePayload !== null) {
+            const nested = messagePayload as Record<string, unknown>;
+            if (typeof nested.code === 'string') {
+              code = nested.code;
+            }
+            if (typeof nested.message === 'string') {
+              backendMessage = nested.message;
             }
           }
-        } catch {
-          errorMessage = err.message || errorMessage;
         }
+        if (!backendMessage && error.message) {
+          backendMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        backendMessage = String((error as { message?: string }).message ?? '');
+      }
+
+      if (code === 'RCP_OUTSIDE_GEOFENCE') {
+        errorMessage = 'Znajdujesz się poza obszarem lokalizacji';
+      } else if (code === 'RCP_TOKEN_EXPIRED') {
+        errorMessage = 'Token wygasł. Poproś kierownika o nowy kod QR';
+      } else if (code === 'RCP_LOW_ACCURACY') {
+        errorMessage = 'Dokładność lokalizacji jest zbyt niska. Spróbuj ponownie na zewnątrz.';
+      } else if (code === 'RCP_ALREADY_CLOCKED_IN') {
+        errorMessage = 'Jesteś już zalogowany. Najpierw zarejestruj wyjście.';
+      } else if (code === 'RCP_ALREADY_CLOCKED_OUT') {
+        errorMessage = 'Jesteś już wylogowany. Najpierw zarejestruj wejście.';
+      } else if (code === 'RCP_RATE_LIMIT') {
+        errorMessage = 'Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie.';
+      } else if (backendMessage) {
+        errorMessage = backendMessage;
       }
 
       setLastResult({
@@ -316,19 +375,20 @@ function MobileRcpContent() {
     if (geoState.lat !== null && geoState.lng !== null) {
       return { lat: geoState.lat, lng: geoState.lng };
     }
-    if (session?.location.lat !== null && session?.location.lng !== null) {
+    const location = session?.location;
+    if (location?.lat != null && location?.lng != null) {
       return {
-        lat: session.location.lat as number,
-        lng: session.location.lng as number,
+        lat: location.lat,
+        lng: location.lng,
       };
     }
     return { lat: 52.2297, lng: 21.0122 };
-  }, [geoState.lat, geoState.lng, session?.location.lat, session?.location.lng]);
+  }, [geoState.lat, geoState.lng, session?.location]);
 
   const mapMarkers: RcpMapMarker[] = useMemo(() => {
     const markers: RcpMapMarker[] = [];
 
-    if (session?.location.lat !== null && session?.location.lng !== null) {
+    if (session?.location?.lat != null && session?.location?.lng != null) {
       markers.push({
         id: `location-${session.location.id}`,
         position: {
@@ -363,9 +423,9 @@ function MobileRcpContent() {
 
   const mapCircles: RcpMapCircle[] = useMemo(
     () =>
-      session?.location.lat !== null &&
-      session?.location.lng !== null &&
-      session?.location.radiusMeters
+      session?.location?.lat != null &&
+      session?.location?.lng != null &&
+      session?.location?.radiusMeters
         ? [
             {
               id: `circle-${session.location.id}`,
