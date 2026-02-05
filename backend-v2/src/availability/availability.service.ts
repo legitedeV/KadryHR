@@ -895,12 +895,15 @@ export class AvailabilityService {
     });
 
     if (submit) {
-      const managers = await this.prisma.user.findMany({
-        where: {
-          organisationId,
-          role: { in: [Role.OWNER, Role.MANAGER, Role.ADMIN] },
-        },
-      });
+      const roleCandidates = [Role.OWNER, Role.MANAGER, Role.ADMIN];
+      let managers = await this.findUsersByRole(organisationId, roleCandidates);
+
+      if (!managers.length && roleCandidates.includes(Role.ADMIN)) {
+        managers = await this.findUsersByRole(organisationId, [
+          Role.OWNER,
+          Role.MANAGER,
+        ]);
+      }
 
       await Promise.all(
         managers.map((manager) =>
@@ -958,6 +961,36 @@ export class AvailabilityService {
       reviewedCount,
       pendingCount: totalEmployees - submittedCount - reviewedCount,
     };
+  }
+
+  private async findUsersByRole(
+    organisationId: string,
+    roles: Role[],
+  ) {
+    try {
+      return await this.prisma.user.findMany({
+        where: {
+          organisationId,
+          role: { in: roles },
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2007' &&
+        typeof error.meta?.driverAdapterError === 'object' &&
+        error.meta?.driverAdapterError !== null &&
+        String(error.meta.driverAdapterError.message ?? '').includes('Role')
+      ) {
+        return this.prisma.user.findMany({
+          where: {
+            organisationId,
+            role: { in: roles.filter((role) => role !== Role.ADMIN) },
+          },
+        });
+      }
+      throw error;
+    }
   }
 
   async getWindowTeamAvailability(

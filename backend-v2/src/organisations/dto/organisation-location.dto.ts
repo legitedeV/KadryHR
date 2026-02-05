@@ -23,6 +23,11 @@ export class CreateOrganisationLocationDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   addressStreet?: string;
 
   @IsOptional()
