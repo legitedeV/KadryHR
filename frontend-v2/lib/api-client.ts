@@ -15,15 +15,17 @@ type RequestOptions = RequestInit & {
 export class ApiError extends Error {
   status?: number;
   kind?: "timeout" | "network";
+  data?: unknown;
 
   constructor(
     message: string,
-    options?: { status?: number; kind?: "timeout" | "network" },
+    options?: { status?: number; kind?: "timeout" | "network"; data?: unknown },
   ) {
     super(message);
     this.name = "ApiError";
     this.status = options?.status;
     this.kind = options?.kind;
+    this.data = options?.data;
   }
 }
 
@@ -113,7 +115,7 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const message = await this.safeErrorMessage(response);
+      const { message, data } = await this.parseErrorResponse(response);
       if (!suppressToast) {
         pushToast({
           title: "Błąd", 
@@ -123,6 +125,7 @@ class ApiClient {
       }
       throw new ApiError(message ?? response.statusText, {
         status: response.status,
+        data,
       });
     }
 
@@ -175,17 +178,29 @@ class ApiClient {
     }
   }
 
-  private async safeErrorMessage(res: Response): Promise<string | null> {
-    if (res.bodyUsed) return null;
+  private async parseErrorResponse(
+    res: Response,
+  ): Promise<{ message: string | null; data?: unknown }> {
+    if (res.bodyUsed) return { message: null };
     const text = await res.text();
-    if (!text) return null;
+    if (!text) return { message: null };
     try {
       const data = JSON.parse(text);
-      if (typeof data?.message === "string") return data.message;
-      if (Array.isArray(data?.message)) return data.message.join(", ");
-      return null;
+      if (typeof data?.message === "string") {
+        return { message: data.message, data };
+      }
+      if (Array.isArray(data?.message)) {
+        return { message: data.message.join(", "), data };
+      }
+      if (typeof data?.message?.message === "string") {
+        return { message: data.message.message, data };
+      }
+      if (typeof data?.error === "string") {
+        return { message: data.error, data };
+      }
+      return { message: null, data };
     } catch {
-      return null;
+      return { message: text };
     }
   }
 

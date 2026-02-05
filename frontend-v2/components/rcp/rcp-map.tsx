@@ -31,56 +31,60 @@ const containerStyle: CSSProperties = {
   height: '100%',
 };
 
-export default function RcpMap({
+function RcpMapFallback({
   center,
-  zoom = 15,
-  markers = [],
-  circles = [],
+  zoom,
   className,
-}: RcpMapProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  message,
+}: {
+  center: google.maps.LatLngLiteral;
+  zoom: number;
+  className?: string;
+  message: string;
+}) {
+  const fallbackSrc = `https://www.google.com/maps?q=${center.lat},${center.lng}&z=${zoom}&output=embed`;
 
+  return (
+    <div className={`relative h-full overflow-hidden rounded-lg ${className ?? ''}`}>
+      <iframe
+        title="Mapa lokalizacji"
+        src={fallbackSrc}
+        className="absolute inset-0 h-full w-full"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 flex items-start justify-center bg-black/35 p-3 text-xs text-white">
+        {message}
+      </div>
+    </div>
+  );
+}
+
+function RcpMapLoaded({
+  center,
+  zoom,
+  markers,
+  circles,
+  className,
+  apiKey,
+}: RcpMapProps & { apiKey: string }) {
   const { isLoaded, loadError } = useJsApiLoader(
     useMemo(
       () => ({
         id: 'rcp-google-maps',
-        googleMapsApiKey: apiKey ?? '',
+        googleMapsApiKey: apiKey,
       }),
       [apiKey],
     ),
   );
 
-  const fallbackSrc = `https://www.google.com/maps?q=${center.lat},${center.lng}&z=${zoom}&output=embed`;
-
-  if (!apiKey) {
-    return (
-      <div className={`relative h-full overflow-hidden rounded-lg ${className ?? ''}`}>
-        <iframe
-          title="Mapa lokalizacji"
-          src={fallbackSrc}
-          className="absolute inset-0 h-full w-full"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 flex items-start justify-center bg-black/35 p-3 text-xs text-white">
-          Brak klucza Google Maps. Ustaw NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
-        </div>
-      </div>
-    );
-  }
-
   if (loadError) {
     return (
-      <div className={`relative h-full overflow-hidden rounded-lg ${className ?? ''}`}>
-        <iframe
-          title="Mapa lokalizacji"
-          src={fallbackSrc}
-          className="absolute inset-0 h-full w-full"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 flex items-start justify-center bg-black/35 p-3 text-xs text-white">
-          Nie udało się załadować Google Maps.
-        </div>
-      </div>
+      <RcpMapFallback
+        center={center}
+        zoom={zoom ?? 15}
+        className={className}
+        message="Nie udało się załadować Google Maps."
+      />
     );
   }
 
@@ -130,5 +134,37 @@ export default function RcpMap({
         ))}
       </GoogleMap>
     </div>
+  );
+}
+
+export default function RcpMap({
+  center,
+  zoom = 15,
+  markers = [],
+  circles = [],
+  className,
+}: RcpMapProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    return (
+      <RcpMapFallback
+        center={center}
+        zoom={zoom}
+        className={className}
+        message="Mapa tymczasowo niedostępna (brak klucza Google Maps)."
+      />
+    );
+  }
+
+  return (
+    <RcpMapLoaded
+      center={center}
+      zoom={zoom}
+      markers={markers}
+      circles={circles}
+      className={className}
+      apiKey={apiKey}
+    />
   );
 }

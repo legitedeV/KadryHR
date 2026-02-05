@@ -197,7 +197,7 @@ export class OrganisationSettingsService {
         defaultOpeningTimeFrom: dto.defaultOpeningTimeFrom ?? null,
         defaultOpeningTimeTo: dto.defaultOpeningTimeTo ?? null,
         isActive: dto.isActive ?? true,
-        address: dto.addressStreet ?? undefined,
+        address: dto.address ?? dto.addressStreet ?? undefined,
       },
     });
 
@@ -231,7 +231,9 @@ export class OrganisationSettingsService {
       ...dto,
     };
 
-    if (dto.addressStreet !== undefined) {
+    if (dto.address !== undefined) {
+      updateData.address = dto.address ?? null;
+    } else if (dto.addressStreet !== undefined) {
       updateData.address = dto.addressStreet ?? null;
     }
 
