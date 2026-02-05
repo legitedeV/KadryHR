@@ -209,6 +209,7 @@ model Organisation {
   scheduleTemplates       ScheduleTemplate[]
   leaveBalances           LeaveBalance[]
   shiftPresets            ShiftPreset[]
+  shiftSwapRequests       ShiftSwapRequest[]
   subscription            Subscription?
   positions               Position[]
   schedulePeriods         SchedulePeriod[]
