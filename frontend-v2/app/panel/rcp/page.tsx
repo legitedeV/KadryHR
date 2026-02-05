@@ -949,12 +949,14 @@ export default function PanelRcpPage() {
             )}
             {selectedEvent && selectedEventHasCoords && (
               <>
-                <div className="h-64 w-full overflow-hidden rounded-lg border border-surface-200">
+                <div className="w-full overflow-hidden rounded-lg border border-surface-200">
                   <RcpMap
                     center={eventMapCenter}
                     zoom={15}
                     markers={eventMapMarkers}
                     circles={eventMapCircles}
+                    heightPx={320}
+                    className="h-[320px]"
                   />
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs text-surface-500">

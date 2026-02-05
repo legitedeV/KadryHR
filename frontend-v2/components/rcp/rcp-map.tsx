@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { GoogleMap, Marker, Circle, useJsApiLoader } from '@react-google-maps/api';
 
 export interface RcpMapMarker {
@@ -24,28 +24,31 @@ interface RcpMapProps {
   markers?: RcpMapMarker[];
   circles?: RcpMapCircle[];
   className?: string;
+  heightPx?: number;
 }
 
-const containerStyle: CSSProperties = {
-  width: '100%',
-  height: '100%',
-};
+const DEFAULT_HEIGHT_PX = 320;
 
 function RcpMapFallback({
   center,
   zoom,
   className,
   message,
+  heightPx,
 }: {
   center: google.maps.LatLngLiteral;
   zoom: number;
   className?: string;
   message: string;
+  heightPx: number;
 }) {
   const fallbackSrc = `https://www.google.com/maps?q=${center.lat},${center.lng}&z=${zoom}&output=embed`;
 
   return (
-    <div className={`relative h-full overflow-hidden rounded-lg ${className ?? ''}`}>
+    <div
+      className={`relative w-full overflow-hidden rounded-lg ${className ?? ''}`}
+      style={{ height: `${heightPx}px` }}
+    >
       <iframe
         title="Mapa lokalizacji"
         src={fallbackSrc}
@@ -66,6 +69,7 @@ function RcpMapLoaded({
   circles,
   className,
   apiKey,
+  heightPx,
 }: RcpMapProps & { apiKey: string }) {
   const { isLoaded, loadError } = useJsApiLoader(
     useMemo(
@@ -76,6 +80,21 @@ function RcpMapLoaded({
       [apiKey],
     ),
   );
+  const loggedErrorRef = useRef(false);
+  const containerStyle: CSSProperties = useMemo(
+    () => ({
+      width: '100%',
+      height: `${heightPx}px`,
+    }),
+    [heightPx],
+  );
+
+  useEffect(() => {
+    if (loadError && !loggedErrorRef.current) {
+      console.error('Google Maps failed to load on RCP map.', loadError);
+      loggedErrorRef.current = true;
+    }
+  }, [loadError]);
 
   if (loadError) {
     return (
@@ -84,6 +103,7 @@ function RcpMapLoaded({
         zoom={zoom ?? 15}
         className={className}
         message="Nie udało się załadować Google Maps."
+        heightPx={heightPx}
       />
     );
   }
@@ -91,7 +111,8 @@ function RcpMapLoaded({
   if (!isLoaded) {
     return (
       <div
-        className={`flex h-full items-center justify-center rounded-lg border border-gray-700 bg-gray-900/40 text-sm text-gray-300 ${className ?? ''}`}
+        className={`flex w-full items-center justify-center rounded-lg border border-gray-700 bg-gray-900/40 text-sm text-gray-300 ${className ?? ''}`}
+        style={{ height: `${heightPx}px` }}
       >
         Ładowanie mapy...
       </div>
@@ -99,7 +120,7 @@ function RcpMapLoaded({
   }
 
   return (
-    <div className={className}>
+    <div className={`w-full ${className ?? ''}`}>
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
@@ -143,6 +164,7 @@ export default function RcpMap({
   markers = [],
   circles = [],
   className,
+  heightPx = DEFAULT_HEIGHT_PX,
 }: RcpMapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -153,6 +175,7 @@ export default function RcpMap({
         zoom={zoom}
         className={className}
         message="Mapa tymczasowo niedostępna (brak klucza Google Maps)."
+        heightPx={heightPx}
       />
     );
   }
@@ -165,6 +188,7 @@ export default function RcpMap({
       circles={circles}
       className={className}
       apiKey={apiKey}
+      heightPx={heightPx}
     />
   );
 }
