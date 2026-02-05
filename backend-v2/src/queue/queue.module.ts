@@ -24,7 +24,7 @@ import { NewsletterEmailProcessor } from './newsletter-email.processor';
             port,
             lazyConnect: !enabled,
             // Graceful degradation: if Redis connection fails, the app continues
-            maxRetriesPerRequest: 3,
+            maxRetriesPerRequest: null,
             retryStrategy: (times: number) => {
               if (times > 3) {
                 return null; // stop retrying
