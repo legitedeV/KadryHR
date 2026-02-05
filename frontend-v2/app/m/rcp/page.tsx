@@ -652,8 +652,15 @@ function MobileRcpContent() {
                   (Warszawa).
                 </div>
               )}
-            <div className="h-56 w-full overflow-hidden rounded-lg border border-gray-700">
-              <RcpMap center={mapCenter} zoom={15} markers={mapMarkers} circles={mapCircles} />
+            <div className="w-full overflow-hidden rounded-lg border border-gray-700">
+              <RcpMap
+                center={mapCenter}
+                zoom={15}
+                markers={mapMarkers}
+                circles={mapCircles}
+                heightPx={240}
+                className="h-[240px]"
+              />
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-gray-400">
               <span>• L = lokalizacja firmy</span>
