@@ -176,6 +176,7 @@ export function ScheduleExportView({ month }: ScheduleExportViewProps) {
         onEditShift={() => undefined}
         onDropShift={() => undefined}
         onCellFocus={() => undefined}
+        onOpenContextMenu={() => undefined}
         selectedCells={new Set()}
         focusedCell={null}
         canManage={false}
