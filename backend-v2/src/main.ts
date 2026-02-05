@@ -1,5 +1,6 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { randomUUID } from 'crypto';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -21,7 +22,33 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  });
+
+  const requestLogger = new Logger('RequestLogger');
+  app.use((req: any, res, next) => {
+    const headerRequestId = req.headers?.['x-request-id'];
+    const requestId =
+      (Array.isArray(headerRequestId)
+        ? headerRequestId[0]
+        : headerRequestId) ?? randomUUID();
+    req.requestId = requestId;
+    res.setHeader('x-request-id', requestId);
+    res.on('finish', () => {
+      if (res.statusCode < 400) return;
+      const payload = JSON.stringify({
+        requestId,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+      });
+      if (res.statusCode >= 500) {
+        requestLogger.error(payload);
+      } else {
+        requestLogger.warn(payload);
+      }
+    });
+    next();
   });
 
   app.use((req: any, _res, next) => {

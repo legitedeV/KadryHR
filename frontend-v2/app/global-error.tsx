@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import "./globals.css";
 import { DEFAULT_LANG } from "@/lib/site-config";
 
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -13,6 +14,20 @@ export default function GlobalError({
   const handleReset = useCallback(() => {
     reset();
   }, [reset]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const requestId =
+      (error as { requestId?: string }).requestId ??
+      sessionStorage.getItem("kadryhr:last-request-id") ??
+      undefined;
+    console.error("[GlobalError]", {
+      route: window.location.pathname,
+      requestId,
+      digest: error.digest,
+      message: error.message,
+    });
+  }, [error]);
 
   return (
     <html lang={DEFAULT_LANG}>
