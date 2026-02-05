@@ -111,6 +111,23 @@ export interface ShiftRecord {
   leaveWarning?: string | null;
 }
 
+export type LeaveCategory = "PAID_LEAVE" | "SICK" | "UNPAID" | "OTHER";
+
+export interface LeaveRequestPayload {
+  employeeId?: string;
+  type: LeaveCategory;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+export interface ShiftSwapRequestPayload {
+  shiftId: string;
+  targetEmployeeId: string;
+  targetDate: string;
+  note?: string;
+}
+
 export interface ScheduleShiftRecord {
   id: string;
   organisationId?: string;
@@ -676,6 +693,22 @@ export async function apiGetApprovedLeaves(params: {
   return apiClient.request<ApprovedLeaveRecord[]>(
     `/leave-requests/approved${query ? `?${query}` : ""}`,
   );
+}
+
+export async function apiCreateLeaveRequest(payload: LeaveRequestPayload) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(`/leave-requests`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiCreateShiftSwapRequest(payload: ShiftSwapRequestPayload) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(`/shift-swaps`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function apiGetActiveAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
