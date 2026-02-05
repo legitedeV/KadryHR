@@ -50,6 +50,13 @@ enum LeaveStatus {
   CANCELLED
 }
 
+enum ShiftSwapStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum NotificationType {
   TEST
   LEAVE_STATUS
@@ -202,6 +209,7 @@ model Organisation {
   scheduleTemplates       ScheduleTemplate[]
   leaveBalances           LeaveBalance[]
   shiftPresets            ShiftPreset[]
+  shiftSwapRequests       ShiftSwapRequest[]
   subscription            Subscription?
   positions               Position[]
   schedulePeriods         SchedulePeriod[]
@@ -305,6 +313,8 @@ model Employee {
   leaveBalances           LeaveBalance[]
   availabilitySubmissions AvailabilitySubmission[]
   scheduleValidations     ScheduleValidation[]
+  shiftSwapRequests       ShiftSwapRequest[] @relation("ShiftSwapRequester")
+  shiftSwapTargets        ShiftSwapRequest[] @relation("ShiftSwapTarget")
 
   @@index([organisationId])
 }
@@ -533,11 +543,35 @@ model Shift {
   positionRef  Position?       @relation(fields: [positionId], references: [id], onDelete: SetNull)
   createdBy    User?           @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy    User?           @relation("ShiftUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  swapRequests ShiftSwapRequest[]
 
   @@index([organisationId])
   @@index([periodId, employeeId])
   @@index([employeeId])
   @@index([locationId])
+}
+
+model ShiftSwapRequest {
+  id               String          @id @default(uuid())
+  organisationId   String
+  requesterId      String
+  shiftId          String
+  targetEmployeeId String
+  targetDate       DateTime
+  note             String?
+  status           ShiftSwapStatus @default(PENDING)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  requester      Employee     @relation("ShiftSwapRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  shift          Shift        @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  targetEmployee Employee     @relation("ShiftSwapTarget", fields: [targetEmployeeId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([requesterId])
+  @@index([targetEmployeeId])
+  @@index([shiftId])
 }
 
 model ScheduleValidation {
