@@ -14,9 +14,11 @@ import {
   apiGetAvailability,
   apiGetSchedule,
   apiGetScheduleSummary,
+  apiListOrgEmployees,
   apiListEmployees,
   apiListLocations,
   apiPublishSchedule,
+  apiUpdateOrgEmployeeOrder,
   apiUpdateShift,
   ApprovedLeaveRecord,
   AvailabilityRecord,
@@ -98,6 +100,10 @@ export function SchedulePage() {
     shift?: ShiftRecord;
     position: { x: number; y: number };
   } | null>(null);
+  const [rowMenuState, setRowMenuState] = useState<{
+    employeeId: string;
+    position: { x: number; y: number };
+  } | null>(null);
   const [leaveModalState, setLeaveModalState] = useState<{
     employee: EmployeeRecord;
     date: Date;
@@ -124,6 +130,8 @@ export function SchedulePage() {
   const editModeHoldTimerRef = useRef<number | null>(null);
   const editModeInactivityTimerRef = useRef<number | null>(null);
   const editModeLastActivityRef = useRef<number>(Date.now());
+  const [draggedEmployeeId, setDraggedEmployeeId] = useState<string | null>(null);
+  const [dragOverEmployeeId, setDragOverEmployeeId] = useState<string | null>(null);
 
   const [publishedWeeks, setPublishedWeeks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -271,7 +279,10 @@ export function SchedulePage() {
   useEffect(() => {
     if (!hasToken) return;
     let isMounted = true;
-    Promise.all([apiListEmployees({ take: 200, skip: 0, status: "active" }), apiListLocations()])
+    const employeesRequest = canEnableEditMode
+      ? apiListOrgEmployees()
+      : apiListEmployees({ take: 200, skip: 0, status: "active" });
+    Promise.all([employeesRequest, apiListLocations()])
       .then(([employeesResponse, locationsResponse]) => {
         if (!isMounted) return;
         setEmployees(employeesResponse.data);
@@ -290,7 +301,7 @@ export function SchedulePage() {
     return () => {
       isMounted = false;
     };
-  }, [hasToken]);
+  }, [canEnableEditMode, hasToken]);
 
   useEffect(() => {
     if (!hasToken) return;
@@ -456,6 +467,66 @@ export function SchedulePage() {
 
   const keyboardDisabled = !selectedLocationId;
   const gridHasSelection = Boolean(focusedCell) || selectedCells.size > 0;
+  const orderingEnabled = editModeEnabled && canEnableEditMode && sortMode === "custom";
+
+  const persistEmployeeOrder = useCallback(
+    async (nextEmployees: EmployeeRecord[], previousEmployees: EmployeeRecord[]) => {
+      try {
+        await apiUpdateOrgEmployeeOrder(nextEmployees.map((employee) => employee.id));
+      } catch {
+        console.warn("employee_order_update_failed", {
+          route: pathname,
+          requestId: getLastRequestId(),
+        });
+        setEmployees(previousEmployees);
+        pushToast({
+          title: "Nie udało się zapisać kolejności",
+          variant: "error",
+        });
+      }
+    },
+    [getLastRequestId, pathname],
+  );
+
+  const reorderEmployeesById = useCallback(
+    (sourceId: string, targetId: string) => {
+      if (sourceId === targetId) return;
+      setEmployees((current) => {
+        const previous = [...current];
+        const sourceIndex = previous.findIndex((employee) => employee.id === sourceId);
+        const targetIndex = previous.findIndex((employee) => employee.id === targetId);
+        if (sourceIndex < 0 || targetIndex < 0) return current;
+        const nextEmployees = [...previous];
+        const [removed] = nextEmployees.splice(sourceIndex, 1);
+        nextEmployees.splice(targetIndex, 0, removed);
+        void persistEmployeeOrder(nextEmployees, previous);
+        return nextEmployees;
+      });
+    },
+    [persistEmployeeOrder],
+  );
+
+  const moveEmployeeByOffset = useCallback(
+    (employeeId: string, offset: number) => {
+      setEmployees((current) => {
+        const previous = [...current];
+        const index = previous.findIndex((employee) => employee.id === employeeId);
+        if (index < 0) return current;
+        const nextIndex = Math.max(0, Math.min(previous.length - 1, index + offset));
+        if (index === nextIndex) return current;
+        const nextEmployees = [...previous];
+        const [removed] = nextEmployees.splice(index, 1);
+        nextEmployees.splice(nextIndex, 0, removed);
+        void persistEmployeeOrder(nextEmployees, previous);
+        return nextEmployees;
+      });
+    },
+    [persistEmployeeOrder],
+  );
+
+  const openRowMenu = useCallback((employeeId: string, position: { x: number; y: number }) => {
+    setRowMenuState({ employeeId, position });
+  }, []);
 
   useEffect(() => {
     if (!keyboardDisabled) return;
@@ -1151,6 +1222,17 @@ export function SchedulePage() {
     updateSelectionFromFocus({ employeeIndex, dayIndex }, extend);
   };
 
+  const handleRowMenuSelect = useCallback(
+    (actionId: "move-up" | "move-down") => {
+      if (!rowMenuState) return;
+      if (!orderingEnabled) return;
+      const offset = actionId === "move-up" ? -1 : 1;
+      moveEmployeeByOffset(rowMenuState.employeeId, offset);
+      setRowMenuState(null);
+    },
+    [moveEmployeeByOffset, orderingEnabled, rowMenuState],
+  );
+
   const rangeLabel = formatShortRangeLabel(weekStart, weekEnd);
 
   if (loading || scheduleQuery.isLoading) {
@@ -1242,6 +1324,32 @@ export function SchedulePage() {
         showSummaryRow={showSummaryRow}
         showWeekendHighlight={showWeekendHighlight}
         editModeEnabled={editModeEnabled}
+        orderingEnabled={orderingEnabled}
+        draggedEmployeeId={draggedEmployeeId}
+        dragOverEmployeeId={dragOverEmployeeId}
+        onRowDragStart={(employeeId) => {
+          if (!orderingEnabled) return;
+          setDraggedEmployeeId(employeeId);
+        }}
+        onRowDragOver={(employeeId) => {
+          if (!orderingEnabled) return;
+          setDragOverEmployeeId(employeeId);
+        }}
+        onRowDrop={(employeeId) => {
+          if (!orderingEnabled || !draggedEmployeeId) return;
+          reorderEmployeesById(draggedEmployeeId, employeeId);
+          setDraggedEmployeeId(null);
+          setDragOverEmployeeId(null);
+          markEditModeActivity();
+        }}
+        onRowDragEnd={() => {
+          setDraggedEmployeeId(null);
+          setDragOverEmployeeId(null);
+        }}
+        onOpenRowMenu={(employeeId, position) => {
+          if (!orderingEnabled) return;
+          openRowMenu(employeeId, position);
+        }}
       />
 
       <ScheduleContextMenu
@@ -1250,6 +1358,25 @@ export function SchedulePage() {
         options={contextMenuOptions}
         onClose={() => setContextMenuState(null)}
         onSelect={handleContextMenuSelect}
+      />
+
+      <ScheduleContextMenu
+        open={Boolean(rowMenuState)}
+        position={rowMenuState?.position ?? null}
+        options={
+          orderingEnabled
+            ? [
+                { id: "move-up", label: "Przenieś w górę" },
+                { id: "move-down", label: "Przenieś w dół" },
+              ]
+            : []
+        }
+        onClose={() => setRowMenuState(null)}
+        onSelect={(optionId) => {
+          if (optionId === "move-up" || optionId === "move-down") {
+            handleRowMenuSelect(optionId);
+          }
+        }}
       />
 
       {canViewCosts && (

@@ -50,6 +50,14 @@ type ScheduleGridProps = {
   showWeekendHighlight?: boolean;
   exportMode?: boolean;
   editModeEnabled?: boolean;
+  orderingEnabled?: boolean;
+  draggedEmployeeId?: string | null;
+  dragOverEmployeeId?: string | null;
+  onRowDragStart?: (employeeId: string) => void;
+  onRowDragOver?: (employeeId: string) => void;
+  onRowDrop?: (employeeId: string) => void;
+  onRowDragEnd?: () => void;
+  onOpenRowMenu?: (employeeId: string, position: { x: number; y: number }) => void;
 };
 
 export function ScheduleGrid({
@@ -74,6 +82,14 @@ export function ScheduleGrid({
   showWeekendHighlight = true,
   exportMode = false,
   editModeEnabled = false,
+  orderingEnabled = false,
+  draggedEmployeeId = null,
+  dragOverEmployeeId = null,
+  onRowDragStart,
+  onRowDragOver,
+  onRowDrop,
+  onRowDragEnd,
+  onOpenRowMenu,
 }: ScheduleGridProps) {
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
@@ -198,17 +214,69 @@ export function ScheduleGrid({
             })}
           </div>
 
-          {employees.map((employee, employeeIndex) => (
+          {employees.map((employee, employeeIndex) => {
+            const isDragging = draggedEmployeeId === employee.id;
+            const isDragOver = dragOverEmployeeId === employee.id && !isDragging;
+
+            return (
             <div
               key={employee.id}
-              className="grid border-b border-surface-200"
+              className={`grid border-b border-surface-200 ${isDragging ? "opacity-60" : ""} ${
+                isDragOver ? "bg-amber-50/40 ring-2 ring-amber-300/60" : ""
+              }`}
               style={{ gridTemplateColumns }}
+              onDragOver={(event) => {
+                if (!orderingEnabled) return;
+                event.preventDefault();
+                onRowDragOver?.(employee.id);
+              }}
+              onDrop={(event) => {
+                if (!orderingEnabled) return;
+                event.preventDefault();
+                onRowDrop?.(employee.id);
+              }}
+              onDragEnd={() => onRowDragEnd?.()}
             >
               <div className={rowHeaderClass}>
-                <EmployeeInline
-                  employee={employee}
-                  subtitle={employee.position ?? employee.email ?? null}
-                />
+                <div className="flex items-center gap-2">
+                  {orderingEnabled && (
+                    <button
+                      type="button"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-surface-200 text-sm text-surface-500 transition hover:bg-surface-100 cursor-grab active:cursor-grabbing"
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData("text/plain", employee.id);
+                        event.dataTransfer.effectAllowed = "move";
+                        onRowDragStart?.(employee.id);
+                      }}
+                      onContextMenu={(event) => {
+                        if (!orderingEnabled) return;
+                        event.preventDefault();
+                        onOpenRowMenu?.(employee.id, { x: event.clientX, y: event.clientY });
+                      }}
+                      onClick={(event) => {
+                        if (!orderingEnabled) return;
+                        if (typeof window === "undefined") return;
+                        const isTouch =
+                          window.matchMedia?.("(pointer: coarse)").matches ||
+                          navigator.maxTouchPoints > 0;
+                        if (!isTouch) return;
+                        event.preventDefault();
+                        onOpenRowMenu?.(employee.id, {
+                          x: event.clientX || event.pageX,
+                          y: event.clientY || event.pageY,
+                        });
+                      }}
+                      aria-label={`Przenieś ${employee.firstName} ${employee.lastName}`}
+                    >
+                      ⋮⋮
+                    </button>
+                  )}
+                  <EmployeeInline
+                    employee={employee}
+                    subtitle={employee.position ?? employee.email ?? null}
+                  />
+                </div>
               </div>
               {days.map((day, dayIndex) => {
                 const dateKey = formatDateKey(day.date);
@@ -344,7 +412,8 @@ export function ScheduleGrid({
                 );
               })}
             </div>
-          ))}
+          );
+          })}
 
           {showSummaryRow && (
             <div
