@@ -704,6 +704,29 @@ export function SchedulePage() {
     [canManage, currentEmployeeId],
   );
 
+  const handleMarkDayOff = useCallback(
+    async (employee: EmployeeRecord, date: Date) => {
+      const dateKey = formatDateKey(date);
+      try {
+        const created = await apiCreateLeaveRequest({
+          employeeId: employee.id,
+          type: "OTHER",
+          startDate: dateKey,
+          endDate: dateKey,
+          reason: "Dzień wolny",
+        });
+        await apiUpdateLeaveRequestStatus(created.id, "APPROVED");
+        await refreshAvailabilityAndLeaves();
+        await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+        pushToast({ title: "Oznaczono dzień wolny", variant: "success" });
+      } catch (error) {
+        console.error(error);
+        pushToast({ title: "Nie udało się oznaczyć dnia wolnego", variant: "error" });
+      }
+    },
+    [queryClient, refreshAvailabilityAndLeaves],
+  );
+
   const handleContextMenuSelect = useCallback(
     (actionId: ReturnType<typeof getScheduleContextMenuOptions>[number]["id"]) => {
       if (!contextMenuState) return;
@@ -881,29 +904,6 @@ export function SchedulePage() {
       setLeaveSubmitting(false);
     }
   };
-
-  const handleMarkDayOff = useCallback(
-    async (employee: EmployeeRecord, date: Date) => {
-      const dateKey = formatDateKey(date);
-      try {
-        const created = await apiCreateLeaveRequest({
-          employeeId: employee.id,
-          type: "OTHER",
-          startDate: dateKey,
-          endDate: dateKey,
-          reason: "Dzień wolny",
-        });
-        await apiUpdateLeaveRequestStatus(created.id, "APPROVED");
-        await refreshAvailabilityAndLeaves();
-        await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-        pushToast({ title: "Oznaczono dzień wolny", variant: "success" });
-      } catch (error) {
-        console.error(error);
-        pushToast({ title: "Nie udało się oznaczyć dnia wolnego", variant: "error" });
-      }
-    },
-    [queryClient, refreshAvailabilityAndLeaves],
-  );
 
   const handleCreateSwapRequest = async (payload: {
     shiftId: string;
