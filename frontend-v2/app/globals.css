@@ -219,10 +219,24 @@ body::before {
   }
 }
 
+@keyframes edit-mode-hold-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 .chart-line {
   stroke-dasharray: 400;
   stroke-dashoffset: 400;
   animation: line-draw 0.7s ease-out forwards;
+}
+
+.edit-mode-hold-progress__bar {
+  transform-origin: left;
+  animation: edit-mode-hold-progress 1s linear forwards;
 }
 
 .panel-card {

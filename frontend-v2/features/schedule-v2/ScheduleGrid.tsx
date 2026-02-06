@@ -49,6 +49,7 @@ type ScheduleGridProps = {
   showSummaryRow?: boolean;
   showWeekendHighlight?: boolean;
   exportMode?: boolean;
+  editModeEnabled?: boolean;
 };
 
 export function ScheduleGrid({
@@ -72,6 +73,7 @@ export function ScheduleGrid({
   showSummaryRow = true,
   showWeekendHighlight = true,
   exportMode = false,
+  editModeEnabled = false,
 }: ScheduleGridProps) {
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
@@ -172,7 +174,14 @@ export function ScheduleGrid({
             </div>
           )}
 
-          <div className="grid border-b border-surface-200 bg-white" style={{ gridTemplateColumns }}>
+          <div
+            className={`grid border-b bg-white ${
+              editModeEnabled
+                ? "border-amber-200/80 bg-amber-50/40"
+                : "border-surface-200"
+            }`}
+            style={{ gridTemplateColumns }}
+          >
             <div className={headerCellClass}>
               <p className="text-xs uppercase tracking-[0.18em] text-surface-400">Pracownicy</p>
             </div>

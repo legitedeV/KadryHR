@@ -14,6 +14,10 @@ type ScheduleToolbarProps = {
   sortMode: string;
   searchValue: string;
   timeBuffer: string;
+  editModeEnabled: boolean;
+  editModeHoldActive: boolean;
+  editModeDisabled: boolean;
+  onToggleEditMode: () => void;
   onPrevWeek: () => void;
   onNextWeek: () => void;
   onOpenRangeModal: () => void;
@@ -39,6 +43,10 @@ export function ScheduleToolbar({
   sortMode,
   searchValue,
   timeBuffer,
+  editModeEnabled,
+  editModeHoldActive,
+  editModeDisabled,
+  onToggleEditMode,
   onPrevWeek,
   onNextWeek,
   onOpenRangeModal,
@@ -152,6 +160,28 @@ export function ScheduleToolbar({
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleEditMode}
+            disabled={editModeDisabled}
+            title={
+              editModeDisabled
+                ? "Tryb edycji jest dostępny tylko dla managerów i administratorów."
+                : "Przełącz tryb edycji"
+            }
+            className={`relative min-h-[36px] rounded-md border px-2.5 py-1.5 text-sm font-semibold transition-colors ${
+              editModeEnabled
+                ? "border-amber-300 bg-amber-50 text-amber-700"
+                : "border-surface-200 bg-white text-surface-700"
+            } ${editModeDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-surface-100"}`}
+          >
+            <span>Tryb edycji: {editModeEnabled ? "Włączony" : "Wyłączony"}</span>
+            {editModeHoldActive && (
+              <span className="edit-mode-hold-progress pointer-events-none absolute inset-x-2 bottom-1 h-0.5 overflow-hidden rounded-full bg-amber-200/60">
+                <span className="edit-mode-hold-progress__bar block h-full w-full rounded-full bg-amber-500/80" />
+              </span>
+            )}
+          </button>
           <button
             type="button"
             onClick={onSortAction}
