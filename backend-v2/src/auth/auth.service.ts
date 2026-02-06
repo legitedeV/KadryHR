@@ -103,26 +103,7 @@ export class AuthService {
   }
 
   private async buildSafeUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        organisationId: true,
-        firstName: true,
-        lastName: true,
-        avatarPath: true,
-        avatarUrl: true,
-        updatedAt: true,
-        organisation: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    const user = await this.safeFindUser(userId);
 
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -139,6 +120,44 @@ export class AuthService {
       avatarUpdatedAt: updatedAt ?? null,
       permissions: getPermissionsForRole(user.role),
     };
+  }
+
+  private async safeFindUser(userId: string) {
+    try {
+      return await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          organisationId: true,
+          firstName: true,
+          lastName: true,
+          avatarPath: true,
+          avatarUrl: true,
+          updatedAt: true,
+          organisation: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2007' &&
+        typeof error.meta?.driverAdapterError === 'object' &&
+        error.meta?.driverAdapterError !== null &&
+        String(error.meta.driverAdapterError.message ?? '').includes('Role')
+      ) {
+        throw new UnauthorizedException(
+          'Nieprawidłowa rola użytkownika. Skontaktuj się z administratorem.',
+        );
+      }
+      throw error;
+    }
   }
 
   private async validateUser(email: string, password: string) {

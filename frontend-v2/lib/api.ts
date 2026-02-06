@@ -1,4 +1,4 @@
-import { apiClient } from "./api-client";
+import { ApiError, apiClient } from "./api-client";
 import { clearAuthTokens } from "./auth";
 
 export type UserRole = "OWNER" | "MANAGER" | "EMPLOYEE" | "ADMIN";
@@ -497,11 +497,21 @@ export async function apiResetPassword(payload: { token: string; password: strin
 
 export async function apiGetMe(): Promise<User> {
   apiClient.hydrateFromStorage();
-  const data = await apiClient.request<UserResponse>(`${AUTH_PREFIX}/me`, {
-    suppressToast: true,
-  });
+  try {
+    const data = await apiClient.request<UserResponse>(`${AUTH_PREFIX}/me`, {
+      suppressToast: true,
+    });
 
-  return mapUser(data);
+    return mapUser(data);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      clearAuthTokens();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+    throw error;
+  }
 }
 
 export async function apiLogout() {
