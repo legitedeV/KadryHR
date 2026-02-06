@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import type { AuthenticatedUser } from '../types/authenticated-user.type';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getPermissionsForRole } from '../permissions';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,15 +22,37 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: AuthenticatedUser): Promise<AuthenticatedUser> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.id },
-      select: {
-        id: true,
-        email: true,
-        organisationId: true,
-        role: true,
-      },
-    });
+    let user: {
+      id: string;
+      email: string;
+      organisationId: string;
+      role: AuthenticatedUser['role'];
+    } | null = null;
+
+    try {
+      user = await this.prisma.user.findUnique({
+        where: { id: payload.id },
+        select: {
+          id: true,
+          email: true,
+          organisationId: true,
+          role: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2007' &&
+        typeof error.meta?.driverAdapterError === 'object' &&
+        error.meta?.driverAdapterError !== null &&
+        String(error.meta.driverAdapterError.message ?? '').includes('Role')
+      ) {
+        throw new UnauthorizedException(
+          'Nieprawidłowa rola użytkownika. Skontaktuj się z administratorem.',
+        );
+      }
+      throw error;
+    }
 
     if (!user) {
       throw new UnauthorizedException('User not found');
