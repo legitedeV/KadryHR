@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   apiCreateScheduleShiftsBulk,
@@ -14,9 +14,11 @@ import {
   apiGetAvailability,
   apiGetSchedule,
   apiGetScheduleSummary,
+  apiListOrgEmployees,
   apiListEmployees,
   apiListLocations,
   apiPublishSchedule,
+  apiUpdateOrgEmployeeOrder,
   apiUpdateShift,
   ApprovedLeaveRecord,
   AvailabilityRecord,
@@ -51,16 +53,21 @@ import { useOnboarding } from "@/features/onboarding/OnboardingProvider";
 import { DateRangeModal } from "./DateRangeModal";
 import { useAuth } from "@/lib/auth-context";
 import { ScheduleCostSummaryBar } from "./ScheduleCostSummaryBar";
+import { usePathname } from "next/navigation";
 
 const PUBLISHED_STORAGE_KEY = "kadryhr:schedule-v2:published";
+const EDIT_MODE_HOLD_MS = 1000;
+const EDIT_MODE_TIMEOUT_MS = 120000;
 
 export function SchedulePage() {
   const { hasAnyPermission } = usePermissions();
   const { user } = useAuth();
+  const pathname = usePathname();
   const { startScheduleTour, hasScheduleTourCompleted, hasScheduleTourSkipped, isReady } = useOnboarding();
   const { setActionsSlot } = useTopbarActions();
   const [hasToken] = useState(() => Boolean(getAccessToken()));
   const canManage = hasAnyPermission(["SCHEDULE_MANAGE", "RCP_EDIT"]);
+  const canEnableEditMode = user?.role === "MANAGER" || user?.role === "ADMIN";
   const canViewCosts = user?.role === "OWNER" || user?.role === "MANAGER";
   const queryClient = useQueryClient();
 
@@ -93,6 +100,10 @@ export function SchedulePage() {
     shift?: ShiftRecord;
     position: { x: number; y: number };
   } | null>(null);
+  const [rowMenuState, setRowMenuState] = useState<{
+    employeeId: string;
+    position: { x: number; y: number };
+  } | null>(null);
   const [leaveModalState, setLeaveModalState] = useState<{
     employee: EmployeeRecord;
     date: Date;
@@ -114,6 +125,13 @@ export function SchedulePage() {
   const [showSummaryRow, setShowSummaryRow] = useState(true);
   const [showWeekendHighlight, setShowWeekendHighlight] = useState(true);
   const [showEmployeesWithoutShifts, setShowEmployeesWithoutShifts] = useState(true);
+  const [editModeEnabled, setEditModeEnabled] = useState(false);
+  const [editModeHoldActive, setEditModeHoldActive] = useState(false);
+  const editModeHoldTimerRef = useRef<number | null>(null);
+  const editModeInactivityTimerRef = useRef<number | null>(null);
+  const editModeLastActivityRef = useRef<number>(Date.now());
+  const [draggedEmployeeId, setDraggedEmployeeId] = useState<string | null>(null);
+  const [dragOverEmployeeId, setDragOverEmployeeId] = useState<string | null>(null);
 
   const [publishedWeeks, setPublishedWeeks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -149,6 +167,103 @@ export function SchedulePage() {
     localStorage.setItem(PUBLISHED_STORAGE_KEY, JSON.stringify(publishedWeeks));
   }, [publishedWeeks]);
 
+  const getLastRequestId = useCallback(() => {
+    if (typeof window === "undefined") return undefined;
+    return sessionStorage.getItem("kadryhr:last-request-id") ?? undefined;
+  }, []);
+
+  const logEditModeEvent = useCallback(
+    (status: "edit_mode_enabled" | "edit_mode_disabled", requestId?: string) => {
+      console.info(status, {
+        route: pathname,
+        requestId,
+      });
+    },
+    [pathname],
+  );
+
+  const clearEditModeInactivityTimer = useCallback(() => {
+    if (editModeInactivityTimerRef.current) {
+      window.clearTimeout(editModeInactivityTimerRef.current);
+      editModeInactivityTimerRef.current = null;
+    }
+  }, []);
+
+  const clearEditModeHoldTimer = useCallback(() => {
+    if (editModeHoldTimerRef.current) {
+      window.clearTimeout(editModeHoldTimerRef.current);
+      editModeHoldTimerRef.current = null;
+    }
+    setEditModeHoldActive(false);
+  }, []);
+
+  const scheduleEditModeTimeout = useCallback(() => {
+    clearEditModeInactivityTimer();
+    editModeInactivityTimerRef.current = window.setTimeout(() => {
+      if (!editModeEnabled) return;
+      disableEditMode();
+      pushToast({
+        title: "Tryb edycji wyłączony (brak aktywności)",
+        variant: "warning",
+      });
+    }, EDIT_MODE_TIMEOUT_MS);
+  }, [clearEditModeInactivityTimer, disableEditMode, editModeEnabled]);
+
+  const markEditModeActivity = useCallback(() => {
+    editModeLastActivityRef.current = Date.now();
+    scheduleEditModeTimeout();
+  }, [scheduleEditModeTimeout]);
+
+  const enableEditMode = useCallback(() => {
+    if (!canEnableEditMode) return;
+    editModeLastActivityRef.current = Date.now();
+    setEditModeEnabled(true);
+    setEditModeHoldActive(false);
+    scheduleEditModeTimeout();
+    logEditModeEvent("edit_mode_enabled", getLastRequestId());
+  }, [canEnableEditMode, getLastRequestId, logEditModeEvent, scheduleEditModeTimeout]);
+
+  const disableEditMode = useCallback(
+    (requestId?: string) => {
+      setEditModeEnabled(false);
+      setEditModeHoldActive(false);
+      clearEditModeInactivityTimer();
+      clearEditModeHoldTimer();
+      logEditModeEvent("edit_mode_disabled", requestId ?? getLastRequestId());
+    },
+    [clearEditModeHoldTimer, clearEditModeInactivityTimer, getLastRequestId, logEditModeEvent],
+  );
+
+  useEffect(() => {
+    if (editModeEnabled) {
+      scheduleEditModeTimeout();
+    } else {
+      clearEditModeInactivityTimer();
+    }
+  }, [clearEditModeInactivityTimer, editModeEnabled, scheduleEditModeTimeout]);
+
+  useEffect(() => {
+    if (!editModeEnabled) return;
+    if (canEnableEditMode) return;
+    disableEditMode();
+  }, [canEnableEditMode, disableEditMode, editModeEnabled]);
+
+  useEffect(() => {
+    if (!editModeEnabled) return;
+    if (pathname.startsWith("/panel/grafik")) return;
+    disableEditMode();
+  }, [disableEditMode, editModeEnabled, pathname]);
+
+  useEffect(() => {
+    if (!editModeEnabled) return;
+    const handleUnauthorized = (event: Event) => {
+      const detail = (event as CustomEvent<{ requestId?: string }>).detail;
+      disableEditMode(detail?.requestId);
+    };
+    window.addEventListener("kadryhr:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("kadryhr:unauthorized", handleUnauthorized);
+  }, [disableEditMode, editModeEnabled]);
+
   const refreshAvailabilityAndLeaves = useCallback(async () => {
     const from = formatDateKey(weekStart);
     const to = formatDateKey(weekEnd);
@@ -164,7 +279,10 @@ export function SchedulePage() {
   useEffect(() => {
     if (!hasToken) return;
     let isMounted = true;
-    Promise.all([apiListEmployees({ take: 200, skip: 0, status: "active" }), apiListLocations()])
+    const employeesRequest = canEnableEditMode
+      ? apiListOrgEmployees()
+      : apiListEmployees({ take: 200, skip: 0, status: "active" });
+    Promise.all([employeesRequest, apiListLocations()])
       .then(([employeesResponse, locationsResponse]) => {
         if (!isMounted) return;
         setEmployees(employeesResponse.data);
@@ -183,7 +301,7 @@ export function SchedulePage() {
     return () => {
       isMounted = false;
     };
-  }, [hasToken]);
+  }, [canEnableEditMode, hasToken]);
 
   useEffect(() => {
     if (!hasToken) return;
@@ -260,6 +378,9 @@ export function SchedulePage() {
         updateScheduleCache((current) => current.filter((shift) => !context.optimisticIds.includes(shift.id)));
       }
       updateScheduleCache((current) => [...current, ...result]);
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
@@ -286,6 +407,11 @@ export function SchedulePage() {
         );
       }
       pushToast({ title: "Nie udało się usunąć zmian", variant: "error" });
+    },
+    onSuccess: () => {
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
@@ -340,12 +466,79 @@ export function SchedulePage() {
   }, [employees, positionFilter, searchValue, selectedLocationId, sortMode]);
 
   const keyboardDisabled = !selectedLocationId;
+  const gridHasSelection = Boolean(focusedCell) || selectedCells.size > 0;
+  const orderingEnabled = editModeEnabled && canEnableEditMode && sortMode === "custom";
+
+  const persistEmployeeOrder = useCallback(
+    async (nextEmployees: EmployeeRecord[], previousEmployees: EmployeeRecord[]) => {
+      try {
+        await apiUpdateOrgEmployeeOrder(nextEmployees.map((employee) => employee.id));
+      } catch {
+        console.warn("employee_order_update_failed", {
+          route: pathname,
+          requestId: getLastRequestId(),
+        });
+        setEmployees(previousEmployees);
+        pushToast({
+          title: "Nie udało się zapisać kolejności",
+          variant: "error",
+        });
+      }
+    },
+    [getLastRequestId, pathname],
+  );
+
+  const reorderEmployeesById = useCallback(
+    (sourceId: string, targetId: string) => {
+      if (sourceId === targetId) return;
+      setEmployees((current) => {
+        const previous = [...current];
+        const sourceIndex = previous.findIndex((employee) => employee.id === sourceId);
+        const targetIndex = previous.findIndex((employee) => employee.id === targetId);
+        if (sourceIndex < 0 || targetIndex < 0) return current;
+        const nextEmployees = [...previous];
+        const [removed] = nextEmployees.splice(sourceIndex, 1);
+        nextEmployees.splice(targetIndex, 0, removed);
+        void persistEmployeeOrder(nextEmployees, previous);
+        return nextEmployees;
+      });
+    },
+    [persistEmployeeOrder],
+  );
+
+  const moveEmployeeByOffset = useCallback(
+    (employeeId: string, offset: number) => {
+      setEmployees((current) => {
+        const previous = [...current];
+        const index = previous.findIndex((employee) => employee.id === employeeId);
+        if (index < 0) return current;
+        const nextIndex = Math.max(0, Math.min(previous.length - 1, index + offset));
+        if (index === nextIndex) return current;
+        const nextEmployees = [...previous];
+        const [removed] = nextEmployees.splice(index, 1);
+        nextEmployees.splice(nextIndex, 0, removed);
+        void persistEmployeeOrder(nextEmployees, previous);
+        return nextEmployees;
+      });
+    },
+    [persistEmployeeOrder],
+  );
+
+  const openRowMenu = useCallback((employeeId: string, position: { x: number; y: number }) => {
+    setRowMenuState({ employeeId, position });
+  }, []);
 
   useEffect(() => {
     if (!keyboardDisabled) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setKeyboardMode(false);
   }, [keyboardDisabled]);
+
+  useEffect(() => {
+    if (!gridHasSelection) {
+      clearEditModeHoldTimer();
+    }
+  }, [clearEditModeHoldTimer, gridHasSelection]);
 
   const shifts = useMemo(() => {
     const scheduleShifts = (scheduleQuery.data ?? []) as ScheduleShiftRecord[];
@@ -619,6 +812,58 @@ export function SchedulePage() {
     return () => window.clearTimeout(timer);
   }, [timeBuffer]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) {
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (!gridHasSelection) return;
+      if (!canEnableEditMode) return;
+
+      if (event.code === "Escape" && editModeHoldActive) {
+        clearEditModeHoldTimer();
+        return;
+      }
+
+      if (event.code !== "KeyE") return;
+      if (event.repeat) return;
+      event.preventDefault();
+
+      if (editModeEnabled) {
+        disableEditMode();
+        return;
+      }
+
+      setEditModeHoldActive(true);
+      editModeHoldTimerRef.current = window.setTimeout(() => {
+        enableEditMode();
+        setEditModeHoldActive(false);
+      }, EDIT_MODE_HOLD_MS);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== "KeyE") return;
+      clearEditModeHoldTimer();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [
+    canEnableEditMode,
+    clearEditModeHoldTimer,
+    disableEditMode,
+    editModeEnabled,
+    editModeHoldActive,
+    enableEditMode,
+    gridHasSelection,
+  ]);
+
   // Set topbar actions
   useEffect(() => {
     setActionsSlot(
@@ -797,6 +1042,9 @@ export function SchedulePage() {
       });
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
       pushToast({ title: "Skopiowano zmianę", variant: "success" });
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
       return;
     }
 
@@ -811,6 +1059,9 @@ export function SchedulePage() {
     });
     queryClient.invalidateQueries({ queryKey: ["schedule"] });
     pushToast({ title: "Przeniesiono zmianę", variant: "success" });
+    if (editModeEnabled) {
+      markEditModeActivity();
+    }
   };
 
   const handleSaveShift = async (payload: ShiftPayload, shiftId?: string) => {
@@ -838,6 +1089,9 @@ export function SchedulePage() {
       });
     }
     await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    if (editModeEnabled) {
+      markEditModeActivity();
+    }
   };
 
   const handleSaveBulk = async (payloads: ShiftPayload[]) => {
@@ -853,6 +1107,9 @@ export function SchedulePage() {
       })),
     });
     pushToast({ title: "Dodano serię zmian", variant: "success" });
+    if (editModeEnabled) {
+      markEditModeActivity();
+    }
   };
 
   const handleDeleteShift = async (shiftId: string) => {
@@ -863,6 +1120,9 @@ export function SchedulePage() {
       setActiveShift(null);
       setLockedEmployeeId(null);
       pushToast({ title: "Usunięto zmianę", variant: "success" });
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
     } catch (error) {
       console.error(error);
       pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
@@ -876,6 +1136,9 @@ export function SchedulePage() {
       await queryClient.invalidateQueries({ queryKey: ["schedule"] });
       pushToast({ title: "Usunięto zmianę", variant: "success" });
       setConfirmDeleteShift(null);
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
     } catch (error) {
       console.error(error);
       pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
@@ -959,6 +1222,17 @@ export function SchedulePage() {
     updateSelectionFromFocus({ employeeIndex, dayIndex }, extend);
   };
 
+  const handleRowMenuSelect = useCallback(
+    (actionId: "move-up" | "move-down") => {
+      if (!rowMenuState) return;
+      if (!orderingEnabled) return;
+      const offset = actionId === "move-up" ? -1 : 1;
+      moveEmployeeByOffset(rowMenuState.employeeId, offset);
+      setRowMenuState(null);
+    },
+    [moveEmployeeByOffset, orderingEnabled, rowMenuState],
+  );
+
   const rangeLabel = formatShortRangeLabel(weekStart, weekEnd);
 
   if (loading || scheduleQuery.isLoading) {
@@ -980,7 +1254,14 @@ export function SchedulePage() {
   return (
     <div className="space-y-6 relative">
       <div>
-        <h1 className="text-[clamp(1.4rem,1.1vw+1rem,2rem)] font-semibold text-surface-900">Grafik pracy</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[clamp(1.4rem,1.1vw+1rem,2rem)] font-semibold text-surface-900">Grafik pracy</h1>
+          {editModeEnabled && (
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+              TRYB EDYCJI
+            </span>
+          )}
+        </div>
         <p className="text-sm text-surface-600">
           Układaj zmiany, sprawdzaj dyspozycje i publikuj grafik dla zespołu.
         </p>
@@ -998,6 +1279,17 @@ export function SchedulePage() {
         sortMode={sortMode}
         searchValue={searchValue}
         timeBuffer={timeBuffer}
+        editModeEnabled={editModeEnabled}
+        editModeHoldActive={editModeHoldActive}
+        editModeDisabled={!canEnableEditMode}
+        onToggleEditMode={() => {
+          if (!canEnableEditMode) return;
+          if (editModeEnabled) {
+            disableEditMode();
+          } else {
+            enableEditMode();
+          }
+        }}
         onPrevWeek={() => setWeekStart((prev) => addDays(prev, -7))}
         onNextWeek={() => setWeekStart((prev) => addDays(prev, 7))}
         onOpenRangeModal={() => setDateRangeModalOpen(true)}
@@ -1031,6 +1323,33 @@ export function SchedulePage() {
         showLoadBars={showLoadBars}
         showSummaryRow={showSummaryRow}
         showWeekendHighlight={showWeekendHighlight}
+        editModeEnabled={editModeEnabled}
+        orderingEnabled={orderingEnabled}
+        draggedEmployeeId={draggedEmployeeId}
+        dragOverEmployeeId={dragOverEmployeeId}
+        onRowDragStart={(employeeId) => {
+          if (!orderingEnabled) return;
+          setDraggedEmployeeId(employeeId);
+        }}
+        onRowDragOver={(employeeId) => {
+          if (!orderingEnabled) return;
+          setDragOverEmployeeId(employeeId);
+        }}
+        onRowDrop={(employeeId) => {
+          if (!orderingEnabled || !draggedEmployeeId) return;
+          reorderEmployeesById(draggedEmployeeId, employeeId);
+          setDraggedEmployeeId(null);
+          setDragOverEmployeeId(null);
+          markEditModeActivity();
+        }}
+        onRowDragEnd={() => {
+          setDraggedEmployeeId(null);
+          setDragOverEmployeeId(null);
+        }}
+        onOpenRowMenu={(employeeId, position) => {
+          if (!orderingEnabled) return;
+          openRowMenu(employeeId, position);
+        }}
       />
 
       <ScheduleContextMenu
@@ -1039,6 +1358,25 @@ export function SchedulePage() {
         options={contextMenuOptions}
         onClose={() => setContextMenuState(null)}
         onSelect={handleContextMenuSelect}
+      />
+
+      <ScheduleContextMenu
+        open={Boolean(rowMenuState)}
+        position={rowMenuState?.position ?? null}
+        options={
+          orderingEnabled
+            ? [
+                { id: "move-up", label: "Przenieś w górę" },
+                { id: "move-down", label: "Przenieś w dół" },
+              ]
+            : []
+        }
+        onClose={() => setRowMenuState(null)}
+        onSelect={(optionId) => {
+          if (optionId === "move-up" || optionId === "move-down") {
+            handleRowMenuSelect(optionId);
+          }
+        }}
       />
 
       {canViewCosts && (

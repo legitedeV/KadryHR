@@ -433,6 +433,7 @@ const LOCATIONS_PREFIX = "/locations";
 const AVAILABILITY_PREFIX = "/availability";
 const ORGANISATIONS_PREFIX = "/organisations";
 const ORGANISATION_PREFIX = "/organisation";
+const ORG_EMPLOYEES_PREFIX = "/org/employees";
 const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
 const SHIFT_PRESETS_PREFIX = "/shift-presets";
 const SCHEDULE_PREFIX = "/schedule";
@@ -556,6 +557,23 @@ export async function apiGetSchedule(params: {
   params.positionIds?.forEach((id) => search.append("positionIds[]", id));
 
   return apiClient.request<ScheduleShiftRecord[]>(`${SCHEDULE_PREFIX}?${search.toString()}`);
+}
+
+export async function apiListOrgEmployees(): Promise<{ data: EmployeeRecord[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ data: EmployeeRecord[]; total: number }>(`${ORG_EMPLOYEES_PREFIX}`);
+}
+
+export async function apiUpdateOrgEmployeeOrder(orderedEmployeeIds: string[]) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ success: boolean; updatedCount?: number; requestId?: string }>(
+    `${ORG_EMPLOYEES_PREFIX}/order`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedEmployeeIds }),
+    },
+  );
 }
 
 export async function apiGetShiftSummary(params: {

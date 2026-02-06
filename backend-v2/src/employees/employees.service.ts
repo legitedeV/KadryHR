@@ -116,6 +116,67 @@ export class EmployeesService {
   }
 
   /**
+   * Lista pracowników do grafiku (stabilna kolejność sortOrder ASC, nulls last, następnie nazwisko/imie).
+   */
+  async findAllForOrganisationOrdering(organisationId: string) {
+    const items = await this.prisma.employee.findMany({
+      where: { organisationId },
+      orderBy: [
+        { sortOrder: { sort: 'asc', nulls: 'last' } },
+        { lastName: 'asc' },
+        { firstName: 'asc' },
+      ],
+      include: {
+        locations: { include: { location: true } },
+      },
+    });
+
+    const mapped = items.map((item) => ({
+      ...this.mapEmployeeAvatar(item),
+      locations: (item.locations ?? []).map((entry) => entry.location),
+    }));
+
+    return {
+      data: mapped,
+      total: mapped.length,
+    };
+  }
+
+  async updateEmployeeOrdering(
+    organisationId: string,
+    orderedEmployeeIds: string[],
+  ) {
+    if (!orderedEmployeeIds.length) {
+      return { updatedCount: 0, orderedIds: [] as string[] };
+    }
+
+    const existing = await this.prisma.employee.findMany({
+      where: {
+        organisationId,
+        id: { in: orderedEmployeeIds },
+      },
+      select: { id: true },
+    });
+
+    const existingIds = new Set(existing.map((employee) => employee.id));
+    const filteredOrderedIds = orderedEmployeeIds.filter((id) =>
+      existingIds.has(id),
+    );
+
+    const updates = filteredOrderedIds.map((employeeId, index) =>
+      this.prisma.employee.updateMany({
+        where: { id: employeeId, organisationId },
+        data: { sortOrder: index },
+      }),
+    );
+
+    const results = await this.prisma.$transaction(updates);
+    const updatedCount = results.reduce((sum, result) => sum + result.count, 0);
+
+    return { updatedCount, orderedIds: filteredOrderedIds };
+  }
+
+  /**
    * Lista pracowników – z paginacją, wyszukiwaniem, sortowaniem.
    * Dla EMPLOYEE można ograniczyć widok do jednego employee (options.restrictToEmployeeId).
    */

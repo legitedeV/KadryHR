@@ -299,6 +299,7 @@ model Employee {
   isActive          Boolean   @default(true)
   isDeleted         Boolean   @default(false)
   employmentEndDate DateTime?
+  sortOrder         Int?
 
   organisation            Organisation             @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   user                    User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)

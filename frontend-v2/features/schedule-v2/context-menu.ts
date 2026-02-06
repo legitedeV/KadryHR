@@ -4,7 +4,9 @@ export type ScheduleContextMenuAction =
   | "mark-day-off"
   | "edit-shift"
   | "delete-shift"
-  | "request-swap";
+  | "request-swap"
+  | "move-up"
+  | "move-down";
 
 export interface ScheduleContextMenuOption {
   id: ScheduleContextMenuAction;
