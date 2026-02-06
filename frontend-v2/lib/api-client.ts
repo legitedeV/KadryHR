@@ -104,6 +104,11 @@ class ApiClient {
       );
     } catch (error) {
       const apiError = this.normalizeNetworkError(error);
+      console.error("[ApiClient] Network error", {
+        path,
+        message: apiError.message,
+        kind: apiError.kind,
+      });
       if (!suppressToast) {
         pushToast({
           title: "Błąd sieci",
@@ -128,6 +133,12 @@ class ApiClient {
 
     if (!response.ok) {
       const { message, data } = await this.parseErrorResponse(response);
+      console.error("[ApiClient] Request failed", {
+        path,
+        status: response.status,
+        requestId,
+        message,
+      });
       if (!suppressToast) {
         pushToast({
           title: "Błąd", 

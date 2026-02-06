@@ -21,11 +21,14 @@ export default function GlobalError({
       (error as { requestId?: string }).requestId ??
       sessionStorage.getItem("kadryhr:last-request-id") ??
       undefined;
+    const stack = typeof error.stack === "string" ? error.stack : undefined;
     console.error("[GlobalError]", {
       route: window.location.pathname,
       requestId,
       digest: error.digest,
+      name: error.name,
       message: error.message,
+      stack,
     });
   }, [error]);
 
