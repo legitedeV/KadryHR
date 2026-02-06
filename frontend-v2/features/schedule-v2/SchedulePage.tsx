@@ -1027,7 +1027,7 @@ export function SchedulePage() {
         canManage={canManage}
         isPublished={isPublished}
         summaryByDay={summaryQuery.data?.byDay}
-        summaryCurrency={summaryQuery.data?.totals.currency}
+        summaryCurrency={summaryQuery.data?.totals?.currency}
         showLoadBars={showLoadBars}
         showSummaryRow={showSummaryRow}
         showWeekendHighlight={showWeekendHighlight}
