@@ -58,6 +58,10 @@ export function buildCellKey(employeeId: string, dateKey: string) {
   return `${employeeId}::${dateKey}`;
 }
 
+export function buildGridCellId(rowIndex: number, colIndex: number) {
+  return `grafik-cell-r${rowIndex}-c${colIndex}`;
+}
+
 export function parseTimeToMinutes(value: string) {
   const [h, m] = value.split(":").map((part) => Number(part));
   if (Number.isNaN(h) || Number.isNaN(m)) return 0;

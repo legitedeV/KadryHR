@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   apiCreateScheduleShiftsBulk,
@@ -45,6 +54,7 @@ import { getScheduleContextMenuOptions } from "./context-menu";
 import {
   addDays,
   buildCellKey,
+  buildGridCellId,
   formatDateKey,
   formatShortRangeLabel,
   startOfWeek,
@@ -159,6 +169,9 @@ export function SchedulePage() {
   const redoStackRef = useRef<
     Array<{ type: "create" | "delete"; payloads: ScheduleShiftPayload[]; createdIds: string[] }>
   >([]);
+  const gridRootRef = useRef<HTMLDivElement | null>(null);
+  const gridActiveRef = useRef(false);
+  const [gridActive, setGridActive] = useState(false);
 
   const [publishedWeeks, setPublishedWeeks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -215,6 +228,61 @@ export function SchedulePage() {
       requestId: getLastRequestId(),
     });
   }, [getLastRequestId, pathname]);
+
+  const logHotkeyAction = useCallback(
+    (action: string) => {
+      console.info("[grafik-hotkeys]", {
+        action,
+        route: pathname,
+        requestId: getLastRequestId(),
+      });
+    },
+    [getLastRequestId, pathname],
+  );
+
+  const isTypingTarget = useCallback((target: EventTarget | null) => {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+  }, []);
+
+  const isGridActive = useCallback(() => {
+    if (typeof document === "undefined") return false;
+    const root = gridRootRef.current;
+    if (!root) return false;
+    const activeElement = document.activeElement;
+    if (!activeElement || !(activeElement instanceof HTMLElement)) return false;
+    if (activeElement === root) return true;
+    if (!root.contains(activeElement)) return false;
+    return !isTypingTarget(activeElement);
+  }, [isTypingTarget]);
+
+  const setGridActiveState = useCallback((next: boolean) => {
+    gridActiveRef.current = next;
+    setGridActive(next);
+  }, []);
+
+  const handleGridFocusCapture = useCallback(() => {
+    setGridActiveState(true);
+  }, [setGridActiveState]);
+
+  const handleGridBlurCapture = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      const nextTarget = event.relatedTarget as HTMLElement | null;
+      if (nextTarget && gridRootRef.current?.contains(nextTarget)) return;
+      setGridActiveState(false);
+      clearEditModeHoldTimer();
+    },
+    [clearEditModeHoldTimer, setGridActiveState],
+  );
+
+  const handleGridPointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (isTypingTarget(event.target)) return;
+      gridRootRef.current?.focus();
+    },
+    [isTypingTarget],
+  );
 
   const setSessionSkipDeleteConfirm = useCallback((value: boolean) => {
     setSkipDeleteConfirm(value);
@@ -383,7 +451,6 @@ export function SchedulePage() {
 
   useEffect(() => {
     if (scheduleQuery.error) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Nie udało się pobrać grafiku.");
     }
   }, [scheduleQuery.error]);
@@ -515,7 +582,6 @@ export function SchedulePage() {
   }, [employees, positionFilter, searchValue, selectedLocationId, sortMode]);
 
   const keyboardDisabled = !selectedLocationId;
-  const gridHasSelection = Boolean(focusedCell) || selectedCells.size > 0;
   const orderingEnabled = editModeEnabled && canEnableEditMode && sortMode === "custom";
 
   const persistEmployeeOrder = useCallback(
@@ -579,15 +645,14 @@ export function SchedulePage() {
 
   useEffect(() => {
     if (!keyboardDisabled) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setKeyboardMode(false);
   }, [keyboardDisabled]);
 
   useEffect(() => {
-    if (!gridHasSelection) {
+    if (!gridActive) {
       clearEditModeHoldTimer();
     }
-  }, [clearEditModeHoldTimer, gridHasSelection]);
+  }, [clearEditModeHoldTimer, gridActive]);
 
   const shifts = useMemo(() => {
     const scheduleShifts = (scheduleQuery.data ?? []) as ScheduleShiftRecord[];
@@ -962,20 +1027,31 @@ export function SchedulePage() {
   const weekKey = formatDateKey(weekStart);
   const isPublished = publishedWeeks.includes(weekKey);
 
-  const isEditableTarget = useCallback((target: EventTarget | null) => {
-    if (!target || !(target instanceof HTMLElement)) return false;
-    if (target.isContentEditable) return true;
-    return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  const scrollToGridCell = useCallback((employeeIndex: number, dayIndex: number) => {
+    if (typeof document === "undefined") return;
+    const cellId = buildGridCellId(employeeIndex, dayIndex);
+    requestAnimationFrame(() => {
+      const cell = document.getElementById(cellId);
+      cell?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
+  const handleGridKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (!isGridActive()) return;
+      if (isTypingTarget(event.target)) return;
+      if (event.ctrlKey && event.altKey) return;
 
       const withMeta = event.metaKey || event.ctrlKey;
+      const key = event.key;
+      const lowerKey = key.toLowerCase();
 
-      if (event.key === "Escape") {
+      if (key === "Escape") {
         let handled = false;
+        if (editModeHoldActive) {
+          clearEditModeHoldTimer();
+          handled = true;
+        }
         if (contextMenuState) {
           setContextMenuState(null);
           handled = true;
@@ -1026,191 +1102,196 @@ export function SchedulePage() {
         }
         if (handled) {
           event.preventDefault();
+          logHotkeyAction("escape");
         }
         return;
       }
 
-      if (!keyboardMode) return;
-
-      if (event.code === "Space") {
+      if (event.code === "Space" && keyboardMode) {
         event.preventDefault();
         setShowShortcuts(true);
+        logHotkeyAction("shortcuts");
         return;
       }
 
-      if (!editModeEnabled) {
-        return;
-      }
-
-      if (withMeta && event.key.toLowerCase() === "z") {
-        if (!canManage) return;
-        const canHandle = event.shiftKey ? redoStackRef.current.length > 0 : undoStackRef.current.length > 0;
-        if (!canHandle) return;
+      if (event.code === "KeyE" && !withMeta && !event.altKey) {
+        if (!canEnableEditMode) return;
+        if (event.repeat) return;
         event.preventDefault();
-        if (event.shiftKey) {
-          void redoHistory();
-        } else {
-          void undoHistory();
+
+        if (editModeEnabled) {
+          disableEditMode();
+          logHotkeyAction("edit-mode-disable");
+          return;
+        }
+
+        if (!editModeHoldActive) {
+          setEditModeHoldActive(true);
+          editModeHoldTimerRef.current = window.setTimeout(() => {
+            editModeHoldTimerRef.current = null;
+            enableEditMode();
+            setEditModeHoldActive(false);
+            logHotkeyAction("edit-mode-enable");
+          }, EDIT_MODE_HOLD_MS);
+          logHotkeyAction("edit-mode-hold-start");
         }
         return;
       }
 
-      if (withMeta && event.key.toLowerCase() === "y") {
-        if (!canManage) return;
-        if (!redoStackRef.current.length) return;
-        event.preventDefault();
-        void redoHistory();
-        return;
+      if (withMeta) {
+        if (lowerKey === "c") {
+          if (!canManage) return;
+          const handled = handleCopySelection();
+          if (handled) {
+            event.preventDefault();
+            logHotkeyAction("copy");
+          }
+          return;
+        }
+        if (lowerKey === "v") {
+          if (!canManage || !editModeEnabled) return;
+          const handled = handlePasteSelection();
+          if (handled) {
+            event.preventDefault();
+            logHotkeyAction("paste");
+          }
+          return;
+        }
+        if (lowerKey === "z") {
+          if (!canManage || !editModeEnabled) return;
+          const canHandle = event.shiftKey
+            ? redoStackRef.current.length > 0
+            : undoStackRef.current.length > 0;
+          if (!canHandle) return;
+          event.preventDefault();
+          if (event.shiftKey) {
+            void redoHistory();
+            logHotkeyAction("redo");
+          } else {
+            void undoHistory();
+            logHotkeyAction("undo");
+          }
+          return;
+        }
+        if (lowerKey === "y") {
+          if (!canManage || !editModeEnabled) return;
+          if (!redoStackRef.current.length) return;
+          event.preventDefault();
+          void redoHistory();
+          logHotkeyAction("redo");
+          return;
+        }
       }
 
-      if (withMeta && event.key.toLowerCase() === "c") {
-        if (!canManage) return;
-        const handled = handleCopySelection();
-        if (handled) event.preventDefault();
-        return;
-      }
-
-      if (withMeta && event.key.toLowerCase() === "v") {
-        if (!canManage) return;
-        const handled = handlePasteSelection();
-        if (handled) event.preventDefault();
-        return;
-      }
-
-      if (event.key === "Delete" || event.key === "Backspace") {
-        if (!canManage) return;
+      if (key === "Delete" || key === "Backspace") {
+        if (!canManage || !editModeEnabled) return;
         const handled = handleDeleteSelection();
-        if (handled) event.preventDefault();
+        if (handled) {
+          event.preventDefault();
+          logHotkeyAction("delete");
+        }
         return;
       }
 
-      if (event.key === "Enter" || event.key === "F2") {
+      if (key === "Enter" || key === "F2") {
         if (!canManage) return;
         const handled = handleOpenDetailsModal();
-        if (handled) event.preventDefault();
+        if (handled) {
+          event.preventDefault();
+          logHotkeyAction("open-details");
+        }
         return;
       }
 
-      if (!focusedCell) return;
-
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
+        if (!focusedCell) {
+          if (visibleEmployees.length === 0 || weekDays.length === 0) return;
+          updateSelectionFromFocus({ employeeIndex: 0, dayIndex: 0 }, false);
+          scrollToGridCell(0, 0);
+          event.preventDefault();
+          logHotkeyAction("navigate");
+          return;
+        }
         const delta = {
           ArrowUp: { row: -1, col: 0 },
           ArrowDown: { row: 1, col: 0 },
           ArrowLeft: { row: 0, col: -1 },
           ArrowRight: { row: 0, col: 1 },
-        }[event.key as "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight"];
+        }[key as "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight"];
         const nextRow = Math.max(0, Math.min(visibleEmployees.length - 1, focusedCell.employeeIndex + delta.row));
         const nextCol = Math.max(0, Math.min(weekDays.length - 1, focusedCell.dayIndex + delta.col));
         updateSelectionFromFocus({ employeeIndex: nextRow, dayIndex: nextCol }, event.shiftKey);
+        scrollToGridCell(nextRow, nextCol);
         event.preventDefault();
+        logHotkeyAction("navigate");
         return;
       }
-    };
+    },
+    [
+      canEnableEditMode,
+      canManage,
+      clearEditModeHoldTimer,
+      confirmBulkDelete,
+      confirmDeleteShift,
+      contextMenuState,
+      dateRangeModalOpen,
+      disableEditMode,
+      editModeEnabled,
+      editModeHoldActive,
+      enableEditMode,
+      focusedCell,
+      handleCopySelection,
+      handleDeleteSelection,
+      handleOpenDetailsModal,
+      handlePasteSelection,
+      isGridActive,
+      isTypingTarget,
+      keyboardMode,
+      leaveModalState,
+      logHotkeyAction,
+      optionsDrawerOpen,
+      publishModalOpen,
+      redoHistory,
+      rowMenuState,
+      scrollToGridCell,
+      selectedCells,
+      shiftModalOpen,
+      swapModalShift,
+      undoHistory,
+      updateSelectionFromFocus,
+      visibleEmployees.length,
+      weekDays.length,
+    ],
+  );
 
-    const handleKeyUp = (event: KeyboardEvent) => {
+  const handleGridKeyUp = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (!isGridActive()) return;
+      if (isTypingTarget(event.target)) return;
       if (event.code === "Space" && keyboardMode) {
         setShowShortcuts(false);
+        return;
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [
-    canManage,
-    confirmBulkDelete,
-    confirmDeleteShift,
-    contextMenuState,
-    dateRangeModalOpen,
-    editModeEnabled,
-    focusedCell,
-    handleCopySelection,
-    handleDeleteSelection,
-    handleOpenDetailsModal,
-    handlePasteSelection,
-    isEditableTarget,
-    keyboardMode,
-    leaveModalState,
-    optionsDrawerOpen,
-    publishModalOpen,
-    redoHistory,
-    rowMenuState,
-    selectedCells,
-    shiftModalOpen,
-    swapModalShift,
-    undoHistory,
-    updateSelectionFromFocus,
-    visibleEmployees,
-    weekDays,
-  ]);
+      if (event.code === "KeyE") {
+        clearEditModeHoldTimer();
+      }
+    },
+    [clearEditModeHoldTimer, isGridActive, isTypingTarget, keyboardMode],
+  );
 
   useEffect(() => {
-    if (!keyboardMode) return;
+    if (!gridActive) return;
     if (!focusedCell && visibleEmployees.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       updateSelectionFromFocus({ employeeIndex: 0, dayIndex: 0 }, false);
+      scrollToGridCell(0, 0);
     }
-  }, [focusedCell, keyboardMode, updateSelectionFromFocus, visibleEmployees.length]);
+  }, [focusedCell, gridActive, scrollToGridCell, updateSelectionFromFocus, visibleEmployees.length]);
 
   useEffect(() => {
     if (!timeBuffer) return;
     const timer = window.setTimeout(() => setTimeBuffer(""), 1800);
     return () => window.clearTimeout(timer);
   }, [timeBuffer]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (!gridHasSelection) return;
-      if (!canEnableEditMode) return;
-
-      if (event.code === "Escape" && editModeHoldActive) {
-        clearEditModeHoldTimer();
-        return;
-      }
-
-      if (event.code !== "KeyE") return;
-      if (event.repeat) return;
-      event.preventDefault();
-
-      if (editModeEnabled) {
-        disableEditMode();
-        return;
-      }
-
-      setEditModeHoldActive(true);
-      editModeHoldTimerRef.current = window.setTimeout(() => {
-        enableEditMode();
-        setEditModeHoldActive(false);
-      }, EDIT_MODE_HOLD_MS);
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code !== "KeyE") return;
-      clearEditModeHoldTimer();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [
-    canEnableEditMode,
-    clearEditModeHoldTimer,
-    disableEditMode,
-    editModeEnabled,
-    editModeHoldActive,
-    enableEditMode,
-    gridHasSelection,
-    isEditableTarget,
-  ]);
 
   // Set topbar actions
   useEffect(() => {
@@ -1533,6 +1614,9 @@ export function SchedulePage() {
   }, []);
 
   const handleCellFocus = (employeeIndex: number, dayIndex: number, extend: boolean) => {
+    if (typeof document !== "undefined" && !isTypingTarget(document.activeElement)) {
+      gridRootRef.current?.focus();
+    }
     updateSelectionFromFocus({ employeeIndex, dayIndex }, extend);
   };
 
@@ -1548,6 +1632,9 @@ export function SchedulePage() {
   );
 
   const rangeLabel = formatShortRangeLabel(weekStart, weekEnd);
+  const activeDescendantId = focusedCell
+    ? buildGridCellId(focusedCell.employeeIndex, focusedCell.dayIndex)
+    : undefined;
 
   if (loading || scheduleQuery.isLoading) {
     return (
@@ -1571,7 +1658,10 @@ export function SchedulePage() {
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-[clamp(1.4rem,1.1vw+1rem,2rem)] font-semibold text-surface-900">Grafik pracy</h1>
           {editModeEnabled && (
-            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+            <span
+              className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700"
+              data-testid="grafik-edit-mode-badge"
+            >
               TRYB EDYCJI
             </span>
           )}
@@ -1617,54 +1707,68 @@ export function SchedulePage() {
         onOpenOptions={() => setOptionsDrawerOpen(true)}
       />
 
-      <ScheduleGrid
-        employees={visibleEmployees}
-        days={weekDays.map((date) => ({ date, iso: formatDateKey(date) }))}
-        shifts={shifts}
-        leaves={leaves}
-        availability={availability}
-        onAddShift={(employeeId, date) => openShiftModal(employeeId, date)}
-        onEditShift={handleEditShift}
-        onDropShift={handleDropShift}
-        onCellFocus={handleCellFocus}
-        onOpenContextMenu={handleOpenContextMenu}
-        selectedCells={selectedCells}
-        focusedCell={focusedCell}
-        canManage={canManage}
-        isPublished={isPublished}
-        summaryByDay={summaryQuery.data?.byDay}
-        summaryCurrency={summaryQuery.data?.totals?.currency}
-        showLoadBars={showLoadBars}
-        showSummaryRow={showSummaryRow}
-        showWeekendHighlight={showWeekendHighlight}
-        editModeEnabled={editModeEnabled}
-        orderingEnabled={orderingEnabled}
-        draggedEmployeeId={draggedEmployeeId}
-        dragOverEmployeeId={dragOverEmployeeId}
-        onRowDragStart={(employeeId) => {
-          if (!orderingEnabled) return;
-          setDraggedEmployeeId(employeeId);
-        }}
-        onRowDragOver={(employeeId) => {
-          if (!orderingEnabled) return;
-          setDragOverEmployeeId(employeeId);
-        }}
-        onRowDrop={(employeeId) => {
-          if (!orderingEnabled || !draggedEmployeeId) return;
-          reorderEmployeesById(draggedEmployeeId, employeeId);
-          setDraggedEmployeeId(null);
-          setDragOverEmployeeId(null);
-          markEditModeActivity();
-        }}
-        onRowDragEnd={() => {
-          setDraggedEmployeeId(null);
-          setDragOverEmployeeId(null);
-        }}
-        onOpenRowMenu={(employeeId, position) => {
-          if (!orderingEnabled) return;
-          openRowMenu(employeeId, position);
-        }}
-      />
+      <div
+        ref={gridRootRef}
+        tabIndex={0}
+        role="grid"
+        aria-label="Grafik"
+        aria-activedescendant={activeDescendantId || undefined}
+        data-testid="grafik-grid-root"
+        onPointerDown={handleGridPointerDown}
+        onFocusCapture={handleGridFocusCapture}
+        onBlurCapture={handleGridBlurCapture}
+        onKeyDown={handleGridKeyDown}
+        onKeyUp={handleGridKeyUp}
+      >
+        <ScheduleGrid
+          employees={visibleEmployees}
+          days={weekDays.map((date) => ({ date, iso: formatDateKey(date) }))}
+          shifts={shifts}
+          leaves={leaves}
+          availability={availability}
+          onAddShift={(employeeId, date) => openShiftModal(employeeId, date)}
+          onEditShift={handleEditShift}
+          onDropShift={handleDropShift}
+          onCellFocus={handleCellFocus}
+          onOpenContextMenu={handleOpenContextMenu}
+          selectedCells={selectedCells}
+          focusedCell={focusedCell}
+          canManage={canManage}
+          isPublished={isPublished}
+          summaryByDay={summaryQuery.data?.byDay}
+          summaryCurrency={summaryQuery.data?.totals?.currency}
+          showLoadBars={showLoadBars}
+          showSummaryRow={showSummaryRow}
+          showWeekendHighlight={showWeekendHighlight}
+          editModeEnabled={editModeEnabled}
+          orderingEnabled={orderingEnabled}
+          draggedEmployeeId={draggedEmployeeId}
+          dragOverEmployeeId={dragOverEmployeeId}
+          onRowDragStart={(employeeId) => {
+            if (!orderingEnabled) return;
+            setDraggedEmployeeId(employeeId);
+          }}
+          onRowDragOver={(employeeId) => {
+            if (!orderingEnabled) return;
+            setDragOverEmployeeId(employeeId);
+          }}
+          onRowDrop={(employeeId) => {
+            if (!orderingEnabled || !draggedEmployeeId) return;
+            reorderEmployeesById(draggedEmployeeId, employeeId);
+            setDraggedEmployeeId(null);
+            setDragOverEmployeeId(null);
+            markEditModeActivity();
+          }}
+          onRowDragEnd={() => {
+            setDraggedEmployeeId(null);
+            setDragOverEmployeeId(null);
+          }}
+          onOpenRowMenu={(employeeId, position) => {
+            if (!orderingEnabled) return;
+            openRowMenu(employeeId, position);
+          }}
+        />
+      </div>
 
       <ScheduleContextMenu
         open={Boolean(contextMenuState)}
