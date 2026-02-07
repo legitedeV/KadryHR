@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
 import { apiGetMe, User } from "@/lib/api";
 import { OnboardingProvider } from "@/features/onboarding/OnboardingProvider";
@@ -21,15 +21,20 @@ function PanelContent({ children, user, onLogout }: { children: ReactNode; user:
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const hasSession = useMemo(() => !!getAccessToken(), []);
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(hasSession);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasSession) {
+    const token = getAccessToken();
+    if (!token) {
+      setHasSession(false);
+      setLoading(false);
       router.replace("/login");
       return;
     }
+
+    setHasSession(true);
 
     let cancelled = false;
 
@@ -51,16 +56,14 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [hasSession, router]);
+  }, [router]);
 
   function handleLogout() {
     clearAuthTokens();
     router.push("/login");
   }
 
-  if (!hasSession) return null;
-
-  if (loading) {
+  if (hasSession === null || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--panel-bg)]">
         <div className="w-full max-w-sm space-y-4">
@@ -71,6 +74,8 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       </div>
     );
   }
+
+  if (!hasSession) return null;
 
   if (!user) return null;
 
