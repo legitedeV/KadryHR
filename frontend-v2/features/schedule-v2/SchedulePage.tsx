@@ -854,8 +854,8 @@ export function SchedulePage() {
   }, [bulkCreateMutation, focusedCell, hasOverlap, pushHistoryEntry, visibleEmployees, weekDays]);
 
   const handleDeleteSelection = useCallback(() => {
+    if (!canManage || !editModeEnabled) return false;
     if (!selectedShifts.length) {
-      pushToast({ title: "Brak zmian do usunięcia", variant: "warning" });
       return false;
     }
     const shiftIds = selectedShifts.map((shift) => shift.id);
@@ -880,6 +880,8 @@ export function SchedulePage() {
   }, [
     buildShiftPayload,
     bulkDeleteMutation,
+    canManage,
+    editModeEnabled,
     pushHistoryEntry,
     selectedShifts,
     skipDeleteConfirm,
@@ -1037,14 +1039,6 @@ export function SchedulePage() {
       }
 
       if (!editModeEnabled) {
-        if (event.key === "Delete" || event.key === "Backspace") {
-          if (!canManage) return;
-          pushToast({
-            title: "Włącz tryb edycji, aby usuwać zmiany",
-            variant: "warning",
-          });
-          event.preventDefault();
-        }
         return;
       }
 
