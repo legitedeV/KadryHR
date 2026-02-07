@@ -1,5 +1,6 @@
 "use client";
 
+import type { DragEvent } from "react";
 import { AvailabilityRecord, ApprovedLeaveRecord, EmployeeRecord, ShiftRecord } from "@/lib/api";
 import { EmployeeInline } from "./EmployeeInline";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./schedule-utils";
 
 const WEEKEND_DAYS = new Set([0, 6]);
+const EMPLOYEE_ROW_DRAG_TYPE = "application/x-employee-row";
 
 const buildStripedBackground = (color: string) =>
   `repeating-linear-gradient(135deg, ${color}1a, ${color}1a 8px, ${color}33 8px, ${color}33 16px)`;
@@ -91,6 +93,8 @@ export function ScheduleGrid({
   onRowDragEnd,
   onOpenRowMenu,
 }: ScheduleGridProps) {
+  const isEmployeeRowDrag = (event: DragEvent<HTMLElement>) =>
+    Array.from(event.dataTransfer.types ?? []).includes(EMPLOYEE_ROW_DRAG_TYPE);
   const shiftsByCell = new Map<string, ShiftRecord[]>();
   shifts.forEach((shift) => {
     const dateKey = formatDateKey(new Date(shift.startsAt));
@@ -221,22 +225,27 @@ export function ScheduleGrid({
             return (
             <div
               key={employee.id}
-              className={`grid border-b border-surface-200 ${isDragging ? "opacity-60" : ""} ${
+              className={`relative grid border-b border-surface-200 ${isDragging ? "opacity-60" : ""} ${
                 isDragOver ? "bg-amber-50/40 ring-2 ring-amber-300/60" : ""
               }`}
               style={{ gridTemplateColumns }}
               onDragOver={(event) => {
                 if (!orderingEnabled) return;
+                if (!isEmployeeRowDrag(event)) return;
                 event.preventDefault();
                 onRowDragOver?.(employee.id);
               }}
               onDrop={(event) => {
                 if (!orderingEnabled) return;
+                if (!isEmployeeRowDrag(event)) return;
                 event.preventDefault();
                 onRowDrop?.(employee.id);
               }}
               onDragEnd={() => onRowDragEnd?.()}
             >
+              {isDragOver && orderingEnabled && (
+                <div className="pointer-events-none absolute inset-0 rounded-md border-2 border-dashed border-amber-300/80 bg-amber-50/30" />
+              )}
               <div className={rowHeaderClass}>
                 <div className="flex items-center gap-2">
                   {orderingEnabled && (
@@ -245,6 +254,7 @@ export function ScheduleGrid({
                       className="flex h-8 w-8 items-center justify-center rounded-md border border-surface-200 text-sm text-surface-500 transition hover:bg-surface-100 cursor-grab active:cursor-grabbing"
                       draggable
                       onDragStart={(event) => {
+                        event.dataTransfer.setData(EMPLOYEE_ROW_DRAG_TYPE, employee.id);
                         event.dataTransfer.setData("text/plain", employee.id);
                         event.dataTransfer.effectAllowed = "move";
                         onRowDragStart?.(employee.id);
@@ -307,9 +317,11 @@ export function ScheduleGrid({
                       });
                     }}
                     onDragOver={(event) => {
+                      if (isEmployeeRowDrag(event)) return;
                       event.preventDefault();
                     }}
                     onDrop={(event) => {
+                      if (isEmployeeRowDrag(event)) return;
                       event.preventDefault();
                       const shiftId = event.dataTransfer.getData("text/plain");
                       if (shiftId) {
