@@ -194,6 +194,34 @@ const setupGrafikMocks = async (page: Page, options: GrafikMockOptions): Promise
       });
     }
 
+    if (path === '/schedule/shifts/bulk' && method === 'POST') {
+      const payload = request.postDataJSON() as {
+        shifts?: Array<{
+          employeeId: string;
+          locationId?: string | null;
+          position?: string | null;
+          note?: string | null;
+          startAt?: string;
+          endAt?: string;
+          startsAt?: string;
+          endsAt?: string;
+        }>;
+      } | null;
+      const created =
+        payload?.shifts?.map((shift, index) => ({
+          id: `shift-bulk-${Date.now()}-${index}`,
+          employeeId: shift.employeeId,
+          locationId: shift.locationId ?? options.location.id,
+          position: shift.position ?? null,
+          note: shift.note ?? null,
+          startsAt: shift.startAt ?? shift.startsAt ?? nowIso(),
+          endsAt: shift.endAt ?? shift.endsAt ?? nowIso(),
+          status: 'DRAFT',
+        })) ?? [];
+      shiftsState = [...shiftsState, ...created];
+      return fulfillJson(created);
+    }
+
     if (path === '/schedule/shifts/bulk' && method === 'DELETE') {
       bulkDeleteCalls += 1;
       const payload = request.postDataJSON() as { shiftIds?: string[] } | null;
@@ -237,7 +265,14 @@ const getRowNames = async (page: Page) =>
     .locator('[data-onboarding-target="schedule-grid"] .sticky.left-0 .text-sm.font-semibold')
     .allTextContents();
 
-const getEditModePill = (page: Page) => page.getByText('TRYB EDYCJI', { exact: true });
+const getEditModePill = (page: Page) => page.getByTestId('grafik-edit-mode-badge');
+
+const focusGrafikGrid = async (page: Page) => {
+  const gridRoot = page.getByTestId('grafik-grid-root');
+  await gridRoot.click();
+  await expect(gridRoot).toBeFocused();
+  await expect(page.getByTestId('grafik-selected-cell')).toBeVisible();
+};
 
 const dragRowHandle = async (
   page: Page,
@@ -300,6 +335,31 @@ test.describe('Grafik (manager)', () => {
     await expect(page.locator('[data-onboarding-target="schedule-grid"]')).toBeVisible();
   });
 
+  test('Grid focus and arrow navigation updates selection', async ({ page }) => {
+    const employees = buildBaseEmployees();
+    const shifts: ScheduleShiftRecord[] = [];
+
+    await setupGrafikMocks(page, {
+      role: 'MANAGER',
+      employees,
+      shifts,
+      location: baseLocation,
+    });
+
+    await openGrafikPage(page);
+    await selectLocationAndEnableKeyboard(page);
+    await focusGrafikGrid(page);
+
+    const gridRoot = page.getByTestId('grafik-grid-root');
+    await expect(gridRoot).toHaveAttribute('aria-activedescendant', 'grafik-cell-r0-c0');
+
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowDown');
+
+    await expect(gridRoot).toHaveAttribute('aria-activedescendant', 'grafik-cell-r1-c2');
+  });
+
   test('Hold-to-edit respects press duration', async ({ page }) => {
     const weekStart = startOfWeek(new Date());
     const employees = buildBaseEmployees();
@@ -315,7 +375,8 @@ test.describe('Grafik (manager)', () => {
 
     await openGrafikPage(page);
 
-    await page.getByText('Brak zmian').first().click();
+    await selectLocationAndEnableKeyboard(page);
+    await focusGrafikGrid(page);
 
     await expect(page.getByRole('button', { name: /Tryb edycji: Wyłączony/i })).toBeVisible();
     await page.keyboard.press('E', { delay: 100 });
@@ -326,6 +387,42 @@ test.describe('Grafik (manager)', () => {
     await page.keyboard.up('E');
 
     await expect(getEditModePill(page)).toBeVisible();
+  });
+
+  test('Clipboard hotkeys copy/paste and undo/redo', async ({ page }) => {
+    const weekStart = startOfWeek(new Date());
+    const employees = buildBaseEmployees();
+    const shifts = [buildShift('shift-1', employees[0].id, baseLocation.id, weekStart, 0)];
+
+    await setupGrafikMocks(page, {
+      role: 'MANAGER',
+      employees,
+      shifts,
+      location: baseLocation,
+      editModeTimeoutMs: 15000,
+    });
+
+    await openGrafikPage(page);
+    await selectLocationAndEnableKeyboard(page);
+    await focusGrafikGrid(page);
+
+    await page.getByRole('button', { name: /Tryb edycji/i }).click();
+    await expect(getEditModePill(page)).toBeVisible();
+
+    const modKey = process.platform === 'darwin' ? 'Meta' : 'Control';
+    await page.keyboard.press(`${modKey}+C`);
+    await expect(page.getByRole('status').getByText('Skopiowano zaznaczone')).toBeVisible();
+
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press(`${modKey}+V`);
+    await expect(page.getByRole('status').getByText('Wklejono zmiany')).toBeVisible();
+    await expect(page.getByRole('button', { name: /08:00/ })).toHaveCount(2);
+
+    await page.keyboard.press(`${modKey}+Z`);
+    await expect(page.getByRole('button', { name: /08:00/ })).toHaveCount(1);
+
+    await page.keyboard.press(`${modKey}+Shift+Z`);
+    await expect(page.getByRole('button', { name: /08:00/ })).toHaveCount(2);
   });
 
   test('Auto-timeout disables edit mode and shows toast', async ({ page }) => {
@@ -370,6 +467,7 @@ test.describe('Grafik (manager)', () => {
 
     await openGrafikPage(page);
     await selectLocationAndEnableKeyboard(page);
+    await focusGrafikGrid(page);
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowUp');
 
@@ -398,6 +496,7 @@ test.describe('Grafik (manager)', () => {
     await page.reload();
     await openGrafikPage(page);
     await selectLocationAndEnableKeyboard(page);
+    await focusGrafikGrid(page);
     await page.getByRole('button', { name: /Tryb edycji/i }).click();
 
     await page.keyboard.press('ArrowDown');
@@ -512,7 +611,7 @@ test.describe('Grafik (employee)', () => {
     await expect(page.getByRole('button', { name: /Tryb edycji/i })).toBeDisabled();
     await expect(page.getByRole('button', { name: /Przenieś/i })).toHaveCount(0);
 
-    await page.getByText('Brak zmian').first().click();
+    await focusGrafikGrid(page);
     await page.keyboard.press('E');
     await expect(getEditModePill(page)).toHaveCount(0);
     expect(state.getOrderUpdates()).toBe(0);

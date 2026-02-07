@@ -5,6 +5,7 @@ import { AvailabilityRecord, ApprovedLeaveRecord, EmployeeRecord, ShiftRecord } 
 import { EmployeeInline } from "./EmployeeInline";
 import {
   buildCellKey,
+  buildGridCellId,
   findLeaveForDay,
   formatDayLabel,
   formatDateKey,
@@ -291,6 +292,7 @@ export function ScheduleGrid({
               {days.map((day, dayIndex) => {
                 const dateKey = formatDateKey(day.date);
                 const key = buildCellKey(employee.id, dateKey);
+                const cellId = buildGridCellId(employeeIndex, dayIndex);
                 const cellShifts = shiftsByCell.get(key) ?? [];
                 const leave = findLeaveForDay(leaves, employee.id, day.date);
                 const availabilitySlots = availabilityByEmployee.get(employee.id) ?? [];
@@ -302,6 +304,12 @@ export function ScheduleGrid({
                 return (
                   <div
                     key={key}
+                    id={cellId}
+                    role="gridcell"
+                    aria-selected={isSelected}
+                    data-selected={isSelected ? "true" : undefined}
+                    data-focused={isFocused ? "true" : undefined}
+                    data-testid={isFocused ? "grafik-selected-cell" : undefined}
                     className={`group relative min-h-[120px] border-r border-surface-200 px-3 py-3 ${
                       showWeekendHighlight && isWeekend ? "bg-surface-100/70" : "bg-white"
                     } ${isSelected ? "ring-2 ring-brand-400/60" : ""} ${isFocused ? "z-10 ring-2 ring-brand-500" : ""}`}
