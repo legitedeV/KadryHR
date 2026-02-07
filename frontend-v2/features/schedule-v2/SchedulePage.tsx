@@ -93,7 +93,6 @@ export function SchedulePage() {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [timeBuffer, setTimeBuffer] = useState("");
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(false);
   const [contextMenuState, setContextMenuState] = useState<{
     employee: EmployeeRecord;
     date: Date;
@@ -110,6 +109,11 @@ export function SchedulePage() {
   } | null>(null);
   const [swapModalShift, setSwapModalShift] = useState<ShiftRecord | null>(null);
   const [confirmDeleteShift, setConfirmDeleteShift] = useState<ShiftRecord | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeletePayloads, setBulkDeletePayloads] = useState<ScheduleShiftPayload[]>([]);
+  const [bulkDeleteShiftIds, setBulkDeleteShiftIds] = useState<string[]>([]);
+  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
+  const [skipDeleteConfirmChecked, setSkipDeleteConfirmChecked] = useState(false);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [swapSubmitting, setSwapSubmitting] = useState(false);
 
@@ -132,6 +136,12 @@ export function SchedulePage() {
   const editModeLastActivityRef = useRef<number>(Date.now());
   const [draggedEmployeeId, setDraggedEmployeeId] = useState<string | null>(null);
   const [dragOverEmployeeId, setDragOverEmployeeId] = useState<string | null>(null);
+  const undoStackRef = useRef<
+    Array<{ type: "create" | "delete"; payloads: ScheduleShiftPayload[]; createdIds: string[] }>
+  >([]);
+  const redoStackRef = useRef<
+    Array<{ type: "create" | "delete"; payloads: ScheduleShiftPayload[]; createdIds: string[] }>
+  >([]);
 
   const [publishedWeeks, setPublishedWeeks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -181,6 +191,27 @@ export function SchedulePage() {
     },
     [pathname],
   );
+
+  const logDeleteFailure = useCallback(() => {
+    console.warn("schedule_delete_failed", {
+      route: pathname,
+      requestId: getLastRequestId(),
+    });
+  }, [getLastRequestId, pathname]);
+
+  const setSessionSkipDeleteConfirm = useCallback((value: boolean) => {
+    setSkipDeleteConfirm(value);
+    if (typeof window === "undefined") return;
+    (window as Window & { __scheduleSkipDeleteConfirm?: boolean }).__scheduleSkipDeleteConfirm = value;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const flag = (window as Window & { __scheduleSkipDeleteConfirm?: boolean }).__scheduleSkipDeleteConfirm;
+    if (flag) {
+      setSkipDeleteConfirm(true);
+    }
+  }, []);
 
   const clearEditModeInactivityTimer = useCallback(() => {
     if (editModeInactivityTimerRef.current) {
@@ -406,6 +437,7 @@ export function SchedulePage() {
           context.previous,
         );
       }
+      logDeleteFailure();
       pushToast({ title: "Nie udało się usunąć zmian", variant: "error" });
     },
     onSuccess: () => {
@@ -572,6 +604,14 @@ export function SchedulePage() {
     }));
   }, [employees, locations, scheduleQuery.data]);
 
+  const selectedShifts = useMemo(
+    () =>
+      shifts.filter((shift) =>
+        selectedCells.has(buildCellKey(shift.employeeId, formatDateKey(new Date(shift.startsAt)))),
+      ),
+    [selectedCells, shifts],
+  );
+
 
   const getCellKey = useCallback(
     (employeeIndex: number, dayIndex: number) => {
@@ -612,147 +652,387 @@ export function SchedulePage() {
     [getCellKey, selectionAnchor],
   );
 
+  const buildShiftPayload = useCallback((shift: ShiftRecord): ScheduleShiftPayload => {
+    return {
+      employeeId: shift.employeeId,
+      locationId: shift.locationId ?? undefined,
+      position: shift.position ?? undefined,
+      note: shift.notes ?? undefined,
+      startAt: shift.startsAt,
+      endAt: shift.endsAt,
+    };
+  }, []);
+
+  const getFocusedCellMeta = useCallback(() => {
+    if (!focusedCell) return null;
+    const employee = visibleEmployees[focusedCell.employeeIndex];
+    const day = weekDays[focusedCell.dayIndex];
+    if (!employee || !day) return null;
+    const dateKey = formatDateKey(day);
+    const cellShifts = shifts.filter(
+      (shift) =>
+        shift.employeeId === employee.id &&
+        formatDateKey(new Date(shift.startsAt)) === dateKey,
+    );
+    return {
+      employee,
+      day,
+      dateKey,
+      shifts: cellShifts,
+    };
+  }, [focusedCell, shifts, visibleEmployees, weekDays]);
+
+  const pushHistoryEntry = useCallback(
+    (entry: { type: "create" | "delete"; payloads: ScheduleShiftPayload[]; createdIds: string[] }) => {
+      undoStackRef.current = [entry, ...undoStackRef.current].slice(0, 20);
+      redoStackRef.current = [];
+    },
+    [],
+  );
+
+  const undoHistory = useCallback(async () => {
+    const entry = undoStackRef.current[0];
+    if (!entry) return false;
+    undoStackRef.current = undoStackRef.current.slice(1);
+    try {
+      if (entry.type === "create") {
+        if (!entry.createdIds.length) return false;
+        await bulkDeleteMutation.mutateAsync({ shiftIds: entry.createdIds });
+      } else {
+        if (!entry.payloads.length) return false;
+        const created = await bulkCreateMutation.mutateAsync({ shifts: entry.payloads });
+        entry.createdIds = created.map((shift) => shift.id);
+      }
+      redoStackRef.current = [entry, ...redoStackRef.current].slice(0, 20);
+      return true;
+    } catch {
+      if (entry.type === "create") {
+        logDeleteFailure();
+      }
+      pushToast({ title: "Nie udało się cofnąć akcji", variant: "error" });
+      return false;
+    }
+  }, [bulkCreateMutation, bulkDeleteMutation, logDeleteFailure]);
+
+  const redoHistory = useCallback(async () => {
+    const entry = redoStackRef.current[0];
+    if (!entry) return false;
+    redoStackRef.current = redoStackRef.current.slice(1);
+    try {
+      if (entry.type === "create") {
+        const created = await bulkCreateMutation.mutateAsync({ shifts: entry.payloads });
+        entry.createdIds = created.map((shift) => shift.id);
+      } else {
+        if (!entry.createdIds.length) return false;
+        await bulkDeleteMutation.mutateAsync({ shiftIds: entry.createdIds });
+      }
+      undoStackRef.current = [entry, ...undoStackRef.current].slice(0, 20);
+      return true;
+    } catch {
+      if (entry.type === "delete") {
+        logDeleteFailure();
+      }
+      pushToast({ title: "Nie udało się ponowić akcji", variant: "error" });
+      return false;
+    }
+  }, [bulkCreateMutation, bulkDeleteMutation, logDeleteFailure]);
+
+  const handleCopySelection = useCallback(() => {
+    if (!selectedShifts.length) {
+      pushToast({ title: "Brak zmian do skopiowania", variant: "warning" });
+      return false;
+    }
+    const copied = selectedShifts
+      .map((shift) => {
+        const dayIndex = weekDays.findIndex(
+          (day) => formatDateKey(day) === formatDateKey(new Date(shift.startsAt)),
+        );
+        const employeeIndex = visibleEmployees.findIndex((emp) => emp.id === shift.employeeId);
+        return { shift, dayIndex, employeeIndex };
+      })
+      .filter((entry) => entry.dayIndex >= 0 && entry.employeeIndex >= 0);
+    if (!copied.length) {
+      pushToast({ title: "Brak zmian do skopiowania", variant: "warning" });
+      return false;
+    }
+    const anchor = copied[0];
+    (window as Window & { __scheduleClipboard?: typeof copied }).__scheduleClipboard = copied.map((entry) => ({
+      shift: entry.shift,
+      offsetDay: entry.dayIndex - anchor.dayIndex,
+      offsetEmployee: entry.employeeIndex - anchor.employeeIndex,
+    }));
+    pushToast({ title: "Skopiowano zaznaczone", variant: "success" });
+    return true;
+  }, [selectedShifts, visibleEmployees, weekDays]);
+
+  const handlePasteSelection = useCallback(() => {
+    const clipboard = (window as Window & {
+      __scheduleClipboard?: Array<{ shift: ShiftRecord; offsetDay: number; offsetEmployee: number }>;
+    }).__scheduleClipboard;
+    if (!clipboard?.length) {
+      pushToast({ title: "Schowek jest pusty", variant: "warning" });
+      return false;
+    }
+    if (!focusedCell) {
+      pushToast({ title: "Wybierz komórkę docelową", variant: "warning" });
+      return false;
+    }
+    const payloads: ScheduleShiftPayload[] = [];
+    for (const entry of clipboard) {
+      const targetEmployee = visibleEmployees[focusedCell.employeeIndex + entry.offsetEmployee];
+      const targetDay = weekDays[focusedCell.dayIndex + entry.offsetDay];
+      if (!targetEmployee || !targetDay) {
+        pushToast({ title: "Wklejenie poza zakresem", variant: "warning" });
+        return false;
+      }
+      const start = new Date(entry.shift.startsAt);
+      const end = new Date(entry.shift.endsAt);
+      const startDate = new Date(targetDay);
+      startDate.setHours(start.getHours(), start.getMinutes(), 0, 0);
+      const endDate = new Date(targetDay);
+      endDate.setHours(end.getHours(), end.getMinutes(), 0, 0);
+      if (hasOverlap(targetEmployee.id, startDate, endDate)) {
+        pushToast({ title: "Konflikt zmian", description: "Zmiany nachodzą na siebie.", variant: "warning" });
+        return false;
+      }
+      payloads.push({
+        employeeId: targetEmployee.id,
+        locationId: entry.shift.locationId ?? undefined,
+        position: entry.shift.position ?? undefined,
+        note: entry.shift.notes ?? undefined,
+        startAt: startDate.toISOString(),
+        endAt: endDate.toISOString(),
+      });
+    }
+    if (!payloads.length) {
+      pushToast({ title: "Brak zmian do wklejenia", variant: "warning" });
+      return false;
+    }
+    void (async () => {
+      try {
+        const created = await bulkCreateMutation.mutateAsync({ shifts: payloads });
+        pushHistoryEntry({
+          type: "create",
+          payloads,
+          createdIds: created.map((shift) => shift.id),
+        });
+        pushToast({ title: "Wklejono zmiany", variant: "success" });
+      } catch {
+        // onError handles toast
+      }
+    })();
+    return true;
+  }, [bulkCreateMutation, focusedCell, hasOverlap, pushHistoryEntry, visibleEmployees, weekDays]);
+
+  const handleDeleteSelection = useCallback(() => {
+    if (!selectedShifts.length) {
+      pushToast({ title: "Brak zmian do usunięcia", variant: "warning" });
+      return false;
+    }
+    const shiftIds = selectedShifts.map((shift) => shift.id);
+    const payloads = selectedShifts.map((shift) => buildShiftPayload(shift));
+    if (skipDeleteConfirm) {
+      void (async () => {
+        try {
+          await bulkDeleteMutation.mutateAsync({ shiftIds });
+          pushHistoryEntry({ type: "delete", payloads, createdIds: shiftIds });
+          pushToast({ title: "Usunięto zmiany", variant: "success" });
+        } catch {
+          // onError handles toast
+        }
+      })();
+      return true;
+    }
+    setBulkDeleteShiftIds(shiftIds);
+    setBulkDeletePayloads(payloads);
+    setSkipDeleteConfirmChecked(skipDeleteConfirm);
+    setConfirmBulkDelete(true);
+    return true;
+  }, [
+    buildShiftPayload,
+    bulkDeleteMutation,
+    pushHistoryEntry,
+    selectedShifts,
+    skipDeleteConfirm,
+  ]);
+
+  const handleConfirmBulkDelete = useCallback(() => {
+    if (!bulkDeleteShiftIds.length) {
+      setConfirmBulkDelete(false);
+      return;
+    }
+    if (skipDeleteConfirmChecked) {
+      setSessionSkipDeleteConfirm(true);
+    }
+    void (async () => {
+      try {
+        await bulkDeleteMutation.mutateAsync({ shiftIds: bulkDeleteShiftIds });
+        pushHistoryEntry({
+          type: "delete",
+          payloads: bulkDeletePayloads,
+          createdIds: bulkDeleteShiftIds,
+        });
+        pushToast({ title: "Usunięto zmiany", variant: "success" });
+        setConfirmBulkDelete(false);
+        setBulkDeleteShiftIds([]);
+        setBulkDeletePayloads([]);
+      } catch {
+        // onError handles toast
+      }
+    })();
+  }, [
+    bulkDeletePayloads,
+    bulkDeleteShiftIds,
+    bulkDeleteMutation,
+    pushHistoryEntry,
+    setSessionSkipDeleteConfirm,
+    skipDeleteConfirmChecked,
+  ]);
+
+  const handleOpenDetailsModal = useCallback(() => {
+    const meta = getFocusedCellMeta();
+    if (!meta) return false;
+    if (!meta.shifts.length) {
+      openShiftModal(meta.employee.id, meta.day);
+      return true;
+    }
+    handleEditShift(meta.shifts[0]);
+    return true;
+  }, [getFocusedCellMeta, handleEditShift, openShiftModal]);
+
   const weekKey = formatDateKey(weekStart);
   const isPublished = publishedWeeks.includes(weekKey);
 
-  useEffect(() => {
-    if (!keyboardMode) return;
+  const isEditableTarget = useCallback((target: EventTarget | null) => {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  }, []);
 
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (isEditableTarget(event.target)) return;
 
       const withMeta = event.metaKey || event.ctrlKey;
+
+      if (event.key === "Escape") {
+        let handled = false;
+        if (contextMenuState) {
+          setContextMenuState(null);
+          handled = true;
+        }
+        if (rowMenuState) {
+          setRowMenuState(null);
+          handled = true;
+        }
+        if (confirmBulkDelete) {
+          setConfirmBulkDelete(false);
+          handled = true;
+        }
+        if (confirmDeleteShift) {
+          setConfirmDeleteShift(null);
+          handled = true;
+        }
+        if (swapModalShift) {
+          setSwapModalShift(null);
+          handled = true;
+        }
+        if (leaveModalState) {
+          setLeaveModalState(null);
+          handled = true;
+        }
+        if (shiftModalOpen) {
+          setShiftModalOpen(false);
+          setActiveShift(null);
+          setLockedEmployeeId(null);
+          handled = true;
+        }
+        if (dateRangeModalOpen) {
+          setDateRangeModalOpen(false);
+          handled = true;
+        }
+        if (publishModalOpen) {
+          setPublishModalOpen(false);
+          handled = true;
+        }
+        if (optionsDrawerOpen) {
+          setOptionsDrawerOpen(false);
+          handled = true;
+        }
+        if (!handled && (selectedCells.size > 0 || focusedCell)) {
+          setSelectedCells(new Set());
+          setSelectionAnchor(null);
+          setFocusedCell(null);
+          handled = true;
+        }
+        if (handled) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (!keyboardMode) return;
+
       if (event.code === "Space") {
         event.preventDefault();
         setShowShortcuts(true);
         return;
       }
 
-      if (!focusedCell) return;
+      if (!editModeEnabled) return;
+
+      if (withMeta && event.key.toLowerCase() === "z") {
+        if (!canManage) return;
+        const canHandle = event.shiftKey ? redoStackRef.current.length > 0 : undoStackRef.current.length > 0;
+        if (!canHandle) return;
+        event.preventDefault();
+        if (event.shiftKey) {
+          void redoHistory();
+        } else {
+          void undoHistory();
+        }
+        return;
+      }
+
+      if (withMeta && event.key.toLowerCase() === "y") {
+        if (!canManage) return;
+        if (!redoStackRef.current.length) return;
+        event.preventDefault();
+        void redoHistory();
+        return;
+      }
 
       if (withMeta && event.key.toLowerCase() === "c") {
-        event.preventDefault();
-        const copied = shifts
-          .filter((shift) =>
-            selectedCells.has(buildCellKey(shift.employeeId, formatDateKey(new Date(shift.startsAt)))),
-          )
-          .map((shift) => {
-            const dayIndex = weekDays.findIndex(
-              (day) => formatDateKey(day) === formatDateKey(new Date(shift.startsAt)),
-            );
-            const employeeIndex = visibleEmployees.findIndex((emp) => emp.id === shift.employeeId);
-            return { shift, dayIndex, employeeIndex };
-          })
-          .filter((entry) => entry.dayIndex >= 0 && entry.employeeIndex >= 0);
-        if (copied.length === 0) {
-          pushToast({ title: "Brak zmian do skopiowania", variant: "warning" });
-          return;
-        }
-        const anchor = copied[0];
-        (window as Window & { __scheduleClipboard?: typeof copied }).__scheduleClipboard = copied.map((entry) => ({
-          shift: entry.shift,
-          offsetDay: entry.dayIndex - anchor.dayIndex,
-          offsetEmployee: entry.employeeIndex - anchor.employeeIndex,
-        }));
-        pushToast({ title: "Skopiowano zaznaczone", variant: "success" });
+        if (!canManage) return;
+        const handled = handleCopySelection();
+        if (handled) event.preventDefault();
         return;
       }
 
       if (withMeta && event.key.toLowerCase() === "v") {
-        event.preventDefault();
-        const clipboard = (window as Window & { __scheduleClipboard?: Array<{ shift: ShiftRecord; offsetDay: number; offsetEmployee: number }> })
-          .__scheduleClipboard;
-        if (!clipboard?.length) {
-          pushToast({ title: "Schowek jest pusty", variant: "warning" });
-          return;
-        }
-        const payloads: ScheduleShiftPayload[] = clipboard
-          .map((entry) => {
-            const targetEmployee = visibleEmployees[focusedCell.employeeIndex + entry.offsetEmployee];
-            const targetDay = weekDays[focusedCell.dayIndex + entry.offsetDay];
-            if (!targetEmployee || !targetDay) return null;
-            const start = new Date(entry.shift.startsAt);
-            const end = new Date(entry.shift.endsAt);
-            const startDate = new Date(targetDay);
-            startDate.setHours(start.getHours(), start.getMinutes(), 0, 0);
-            const endDate = new Date(targetDay);
-            endDate.setHours(end.getHours(), end.getMinutes(), 0, 0);
-            return {
-              employeeId: targetEmployee.id,
-              locationId: entry.shift.locationId ?? undefined,
-              position: entry.shift.position ?? undefined,
-              note: entry.shift.notes ?? undefined,
-              startAt: startDate.toISOString(),
-              endAt: endDate.toISOString(),
-            };
-          })
-          .filter(Boolean) as ScheduleShiftPayload[];
-        if (payloads.length) {
-          bulkCreateMutation.mutate({ shifts: payloads });
-          pushToast({ title: "Wklejono zmiany", variant: "success" });
-        }
+        if (!canManage) return;
+        const handled = handlePasteSelection();
+        if (handled) event.preventDefault();
         return;
       }
 
-      if (event.key === "Backspace") {
-        event.preventDefault();
-        setPendingDelete(true);
-        pushToast({
-          title: "Usuń zaznaczone?",
-          description: "Naciśnij Enter, aby potwierdzić usunięcie zmian.",
-          variant: "warning",
-        });
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (!canManage) return;
+        const handled = handleDeleteSelection();
+        if (handled) event.preventDefault();
         return;
       }
 
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if (pendingDelete) {
-          const shiftIds = shifts
-            .filter((shift) =>
-              selectedCells.has(buildCellKey(shift.employeeId, formatDateKey(new Date(shift.startsAt)))),
-            )
-            .map((shift) => shift.id);
-          if (shiftIds.length) {
-            bulkDeleteMutation.mutate({ shiftIds });
-            pushToast({ title: "Usunięto zmiany", variant: "success" });
-          }
-          setPendingDelete(false);
-          return;
-        }
-        if (timeBuffer.includes("-")) {
-          const [startTime, endTime] = timeBuffer.split("-");
-          const payloads: ScheduleShiftPayload[] = Array.from(selectedCells)
-            .map((key) => {
-              const [employeeId, dateKey] = key.split("::");
-              const start = new Date(`${dateKey}T${startTime}:00`);
-              const end = new Date(`${dateKey}T${endTime}:00`);
-              if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-              return {
-                employeeId,
-                startAt: start.toISOString(),
-                endAt: end.toISOString(),
-              };
-            })
-            .filter(Boolean)
-            .map((payload) => ({
-              ...payload,
-              locationId: selectedLocationId || undefined,
-              position: undefined,
-              note: undefined,
-            })) as ScheduleShiftPayload[];
-          if (payloads.length) {
-            bulkCreateMutation.mutate({ shifts: payloads });
-            pushToast({ title: "Dodano zmiany", variant: "success" });
-          }
-          setTimeBuffer("");
-        }
+      if (event.key === "Enter" || event.key === "F2") {
+        if (!canManage) return;
+        const handled = handleOpenDetailsModal();
+        if (handled) event.preventDefault();
         return;
       }
+
+      if (!focusedCell) return;
 
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-        event.preventDefault();
         const delta = {
           ArrowUp: { row: -1, col: 0 },
           ArrowDown: { row: 1, col: 0 },
@@ -762,17 +1042,13 @@ export function SchedulePage() {
         const nextRow = Math.max(0, Math.min(visibleEmployees.length - 1, focusedCell.employeeIndex + delta.row));
         const nextCol = Math.max(0, Math.min(weekDays.length - 1, focusedCell.dayIndex + delta.col));
         updateSelectionFromFocus({ employeeIndex: nextRow, dayIndex: nextCol }, event.shiftKey);
-        return;
-      }
-
-      if (/^[0-9:\-]$/.test(event.key)) {
         event.preventDefault();
-        setTimeBuffer((prev) => `${prev}${event.key}`.slice(0, 11));
+        return;
       }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code === "Space") {
+      if (event.code === "Space" && keyboardMode) {
         setShowShortcuts(false);
       }
     };
@@ -784,15 +1060,28 @@ export function SchedulePage() {
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [
-    bulkCreateMutation,
-    bulkDeleteMutation,
+    canManage,
+    confirmBulkDelete,
+    confirmDeleteShift,
+    contextMenuState,
+    dateRangeModalOpen,
+    editModeEnabled,
     focusedCell,
+    handleCopySelection,
+    handleDeleteSelection,
+    handleOpenDetailsModal,
+    handlePasteSelection,
+    isEditableTarget,
     keyboardMode,
-    pendingDelete,
+    leaveModalState,
+    optionsDrawerOpen,
+    publishModalOpen,
+    redoHistory,
+    rowMenuState,
     selectedCells,
-    selectedLocationId,
-    shifts,
-    timeBuffer,
+    shiftModalOpen,
+    swapModalShift,
+    undoHistory,
     updateSelectionFromFocus,
     visibleEmployees,
     weekDays,
@@ -814,10 +1103,7 @@ export function SchedulePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) {
-        return;
-      }
+      if (isEditableTarget(event.target)) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (!gridHasSelection) return;
       if (!canEnableEditMode) return;
@@ -862,6 +1148,7 @@ export function SchedulePage() {
     editModeHoldActive,
     enableEditMode,
     gridHasSelection,
+    isEditableTarget,
   ]);
 
   // Set topbar actions
@@ -896,27 +1183,33 @@ export function SchedulePage() {
     return () => setActionsSlot(null);
   }, [canManage, keyboardMode, keyboardDisabled, setActionsSlot]);
 
-  const openShiftModal = (employeeId?: string, date?: Date) => {
-    if (!canManage) return;
-    if (employeeId) {
-      setActiveShift(null);
-      setLockedEmployeeId(employeeId);
-      setInitialShiftDate(date ?? new Date());
-      setShiftModalOpen(true);
-    } else {
-      setActiveShift(null);
-      setLockedEmployeeId(null);
-      setInitialShiftDate(date ?? weekStart);
-      setShiftModalOpen(true);
-    }
-  };
+  const openShiftModal = useCallback(
+    (employeeId?: string, date?: Date) => {
+      if (!canManage) return;
+      if (employeeId) {
+        setActiveShift(null);
+        setLockedEmployeeId(employeeId);
+        setInitialShiftDate(date ?? new Date());
+        setShiftModalOpen(true);
+      } else {
+        setActiveShift(null);
+        setLockedEmployeeId(null);
+        setInitialShiftDate(date ?? weekStart);
+        setShiftModalOpen(true);
+      }
+    },
+    [canManage, weekStart],
+  );
 
-  const handleEditShift = (shift: ShiftRecord) => {
-    if (!canManage) return;
-    setActiveShift(shift);
-    setLockedEmployeeId(null);
-    setShiftModalOpen(true);
-  };
+  const handleEditShift = useCallback(
+    (shift: ShiftRecord) => {
+      if (!canManage) return;
+      setActiveShift(shift);
+      setLockedEmployeeId(null);
+      setShiftModalOpen(true);
+    },
+    [canManage],
+  );
 
   const contextMenuOptions = useMemo(() => {
     if (!contextMenuState) return [];
@@ -1123,8 +1416,8 @@ export function SchedulePage() {
       if (editModeEnabled) {
         markEditModeActivity();
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
+      logDeleteFailure();
       pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
     }
   };
@@ -1139,8 +1432,8 @@ export function SchedulePage() {
       if (editModeEnabled) {
         markEditModeActivity();
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
+      logDeleteFailure();
       pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
     }
   };
@@ -1393,9 +1686,10 @@ export function SchedulePage() {
             <ul className="mt-3 space-y-2 text-sm text-surface-600">
               <li>↑ ↓ ← → — nawigacja po komórkach</li>
               <li>Shift + strzałki — zaznaczanie zakresu</li>
-              <li>Wpisz “HH:MM-HH:MM” + Enter — dodaj zmianę</li>
+              <li>Enter / F2 — szczegóły zmiany</li>
               <li>Ctrl/Cmd + C / V — kopiuj / wklej</li>
-              <li>Backspace + Enter — usuń zaznaczone</li>
+              <li>Delete / Backspace — usuń zaznaczone</li>
+              <li>Ctrl/Cmd + Z / Shift + Z / Y — cofaj / ponów</li>
             </ul>
           </div>
         </div>
@@ -1484,6 +1778,45 @@ export function SchedulePage() {
             })}
           </p>
         )}
+      </Modal>
+
+      <Modal
+        open={confirmBulkDelete}
+        title="Usuń zaznaczone zmiany"
+        description="Ta operacja jest nieodwracalna."
+        onClose={() => setConfirmBulkDelete(false)}
+        variant="light"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setConfirmBulkDelete(false)}
+              className="rounded-md border border-surface-200 bg-white px-4 py-2 text-sm text-surface-600 hover:bg-surface-100"
+            >
+              Anuluj
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmBulkDelete}
+              className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-600"
+            >
+              Usuń zmiany
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm text-surface-600">
+          <p>Wybrane zmiany zostaną trwale usunięte z grafiku.</p>
+          <label className="flex items-center gap-2 text-sm text-surface-700">
+            <input
+              type="checkbox"
+              checked={skipDeleteConfirmChecked}
+              onChange={(event) => setSkipDeleteConfirmChecked(event.target.checked)}
+              className="h-4 w-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
+            />
+            Nie pokazuj ponownie w tej sesji
+          </label>
+        </div>
       </Modal>
 
       <DateRangeModal
