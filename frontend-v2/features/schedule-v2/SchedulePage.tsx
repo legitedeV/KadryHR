@@ -57,7 +57,24 @@ import { usePathname } from "next/navigation";
 
 const PUBLISHED_STORAGE_KEY = "kadryhr:schedule-v2:published";
 const EDIT_MODE_HOLD_MS = 1000;
-const EDIT_MODE_TIMEOUT_MS = 120000;
+const DEFAULT_EDIT_MODE_TIMEOUT_MS = 120000;
+const EDIT_MODE_TIMEOUT_MS = (() => {
+  if (process.env.NEXT_PUBLIC_E2E === "true") {
+    if (typeof window !== "undefined") {
+      const runtimeOverride = Number(
+        (window as Window & { __scheduleEditModeTimeoutMs?: number }).__scheduleEditModeTimeoutMs,
+      );
+      if (Number.isFinite(runtimeOverride) && runtimeOverride > 0) {
+        return runtimeOverride;
+      }
+    }
+    const override = Number(process.env.NEXT_PUBLIC_GRAFIK_EDIT_MODE_TIMEOUT_MS);
+    if (Number.isFinite(override) && override > 0) {
+      return override;
+    }
+  }
+  return DEFAULT_EDIT_MODE_TIMEOUT_MS;
+})();
 
 export function SchedulePage() {
   const { hasAnyPermission } = usePermissions();
@@ -228,6 +245,17 @@ export function SchedulePage() {
     setEditModeHoldActive(false);
   }, []);
 
+  const disableEditMode = useCallback(
+    (requestId?: string) => {
+      setEditModeEnabled(false);
+      setEditModeHoldActive(false);
+      clearEditModeInactivityTimer();
+      clearEditModeHoldTimer();
+      logEditModeEvent("edit_mode_disabled", requestId ?? getLastRequestId());
+    },
+    [clearEditModeHoldTimer, clearEditModeInactivityTimer, getLastRequestId, logEditModeEvent],
+  );
+
   const scheduleEditModeTimeout = useCallback(() => {
     clearEditModeInactivityTimer();
     editModeInactivityTimerRef.current = window.setTimeout(() => {
@@ -253,17 +281,6 @@ export function SchedulePage() {
     scheduleEditModeTimeout();
     logEditModeEvent("edit_mode_enabled", getLastRequestId());
   }, [canEnableEditMode, getLastRequestId, logEditModeEvent, scheduleEditModeTimeout]);
-
-  const disableEditMode = useCallback(
-    (requestId?: string) => {
-      setEditModeEnabled(false);
-      setEditModeHoldActive(false);
-      clearEditModeInactivityTimer();
-      clearEditModeHoldTimer();
-      logEditModeEvent("edit_mode_disabled", requestId ?? getLastRequestId());
-    },
-    [clearEditModeHoldTimer, clearEditModeInactivityTimer, getLastRequestId, logEditModeEvent],
-  );
 
   useEffect(() => {
     if (editModeEnabled) {
@@ -765,6 +782,18 @@ export function SchedulePage() {
     return true;
   }, [selectedShifts, visibleEmployees, weekDays]);
 
+  const hasOverlap = useCallback(
+    (employeeId: string, start: Date, end: Date, excludeId?: string) =>
+      shifts.some((shift) => {
+        if (shift.employeeId !== employeeId) return false;
+        if (excludeId && shift.id === excludeId) return false;
+        const existingStart = new Date(shift.startsAt);
+        const existingEnd = new Date(shift.endsAt);
+        return start < existingEnd && end > existingStart;
+      }),
+    [shifts],
+  );
+
   const handlePasteSelection = useCallback(() => {
     const clipboard = (window as Window & {
       __scheduleClipboard?: Array<{ shift: ShiftRecord; offsetDay: number; offsetEmployee: number }>;
@@ -889,6 +918,34 @@ export function SchedulePage() {
     skipDeleteConfirmChecked,
   ]);
 
+  const openShiftModal = useCallback(
+    (employeeId?: string, date?: Date) => {
+      if (!canManage) return;
+      if (employeeId) {
+        setActiveShift(null);
+        setLockedEmployeeId(employeeId);
+        setInitialShiftDate(date ?? new Date());
+        setShiftModalOpen(true);
+      } else {
+        setActiveShift(null);
+        setLockedEmployeeId(null);
+        setInitialShiftDate(date ?? weekStart);
+        setShiftModalOpen(true);
+      }
+    },
+    [canManage, weekStart],
+  );
+
+  const handleEditShift = useCallback(
+    (shift: ShiftRecord) => {
+      if (!canManage) return;
+      setActiveShift(shift);
+      setLockedEmployeeId(null);
+      setShiftModalOpen(true);
+    },
+    [canManage],
+  );
+
   const handleOpenDetailsModal = useCallback(() => {
     const meta = getFocusedCellMeta();
     if (!meta) return false;
@@ -979,7 +1036,17 @@ export function SchedulePage() {
         return;
       }
 
-      if (!editModeEnabled) return;
+      if (!editModeEnabled) {
+        if (event.key === "Delete" || event.key === "Backspace") {
+          if (!canManage) return;
+          pushToast({
+            title: "Włącz tryb edycji, aby usuwać zmiany",
+            variant: "warning",
+          });
+          event.preventDefault();
+        }
+        return;
+      }
 
       if (withMeta && event.key.toLowerCase() === "z") {
         if (!canManage) return;
@@ -1183,34 +1250,6 @@ export function SchedulePage() {
     return () => setActionsSlot(null);
   }, [canManage, keyboardMode, keyboardDisabled, setActionsSlot]);
 
-  const openShiftModal = useCallback(
-    (employeeId?: string, date?: Date) => {
-      if (!canManage) return;
-      if (employeeId) {
-        setActiveShift(null);
-        setLockedEmployeeId(employeeId);
-        setInitialShiftDate(date ?? new Date());
-        setShiftModalOpen(true);
-      } else {
-        setActiveShift(null);
-        setLockedEmployeeId(null);
-        setInitialShiftDate(date ?? weekStart);
-        setShiftModalOpen(true);
-      }
-    },
-    [canManage, weekStart],
-  );
-
-  const handleEditShift = useCallback(
-    (shift: ShiftRecord) => {
-      if (!canManage) return;
-      setActiveShift(shift);
-      setLockedEmployeeId(null);
-      setShiftModalOpen(true);
-    },
-    [canManage],
-  );
-
   const contextMenuOptions = useMemo(() => {
     if (!contextMenuState) return [];
     const hasShift = Boolean(contextMenuState.shift);
@@ -1295,18 +1334,6 @@ export function SchedulePage() {
       }
     },
     [contextMenuState, handleEditShift, handleMarkDayOff, openShiftModal],
-  );
-
-  const hasOverlap = useCallback(
-    (employeeId: string, start: Date, end: Date, excludeId?: string) =>
-      shifts.some((shift) => {
-        if (shift.employeeId !== employeeId) return false;
-        if (excludeId && shift.id === excludeId) return false;
-        const existingStart = new Date(shift.startsAt);
-        const existingEnd = new Date(shift.endsAt);
-        return start < existingEnd && end > existingStart;
-      }),
-    [shifts],
   );
 
   const handleDropShift = async (shiftId: string, targetEmployeeId: string, targetDate: Date, copy: boolean) => {
