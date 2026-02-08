@@ -92,7 +92,7 @@ export function ScheduleExportView({ month }: ScheduleExportViewProps) {
         setEmployees(employeesResponse.data);
         const employeeMap = new Map(employeesResponse.data.map((employee) => [employee.id, employee]));
         const locationMap = new Map(locationsResponse.map((location) => [location.id, location]));
-        const scheduleShifts = (scheduleResponse ?? []) as ScheduleShiftRecord[];
+        const scheduleShifts = (scheduleResponse?.shifts ?? []) as ScheduleShiftRecord[];
         const mappedShifts = scheduleShifts.map((shift) => ({
           id: shift.id,
           employeeId: shift.employeeId,

@@ -3,8 +3,10 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -30,6 +32,8 @@ import { Role } from '@prisma/client';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('schedule')
 export class ScheduleController {
+  private readonly logger = new Logger(ScheduleController.name);
+
   constructor(
     private readonly scheduleService: ScheduleService,
     private readonly scheduleCostService: ScheduleCostService,
@@ -40,7 +44,15 @@ export class ScheduleController {
   async getSchedule(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: QueryScheduleDto,
+    @Req() req: { requestId?: string; originalUrl?: string },
   ) {
+    this.logger.log(
+      JSON.stringify({
+        requestId: req.requestId,
+        organisationId: user.organisationId,
+        route: req.originalUrl ?? '/schedule',
+      }),
+    );
     return this.scheduleService.getSchedule(user.organisationId, query);
   }
 

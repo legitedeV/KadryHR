@@ -18,8 +18,13 @@ export function getScheduleContextMenuOptions(params: {
   canManage: boolean;
   hasShift: boolean;
   isOwnShift: boolean;
+  isPublished: boolean;
 }): ScheduleContextMenuOption[] {
-  const { canManage, hasShift, isOwnShift } = params;
+  const { canManage, hasShift, isOwnShift, isPublished } = params;
+
+  if (isPublished) {
+    return [];
+  }
 
   if (canManage) {
     if (hasShift) {

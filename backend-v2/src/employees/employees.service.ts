@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { NotificationType, type Prisma } from '@prisma/client';
+import { NotificationType, ScheduleStatus, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditService } from '../audit/audit.service';
@@ -145,7 +146,29 @@ export class EmployeesService {
   async updateEmployeeOrdering(
     organisationId: string,
     orderedEmployeeIds: string[],
+    periodId?: string,
   ) {
+    if (periodId) {
+      const period = await this.prisma.schedulePeriod.findFirst({
+        where: { organisationId, id: periodId },
+        select: { id: true, status: true },
+      });
+
+      if (!period) {
+        throw new NotFoundException('Schedule period not found');
+      }
+
+      if (period.status === ScheduleStatus.PUBLISHED) {
+        throw new ConflictException(
+          {
+            code: 'PERIOD_READONLY',
+            message: 'Grafik opublikowany — odblokuj, aby edytować',
+            details: { periodId: period.id },
+          },
+        );
+      }
+    }
+
     if (!orderedEmployeeIds.length) {
       return { updatedCount: 0, orderedIds: [] as string[] };
     }

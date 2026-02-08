@@ -202,17 +202,27 @@ test.describe('Smoke Tests', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            id: 'shift-1',
-            employeeId: 'emp-1',
+        body: JSON.stringify({
+          period: {
+            id: 'period-1',
+            status: 'DRAFT',
+            from: new Date().toISOString(),
+            to: new Date().toISOString(),
             locationId: 'loc-1',
-            position: 'Kasjer',
-            notes: 'Zmiana poranna',
-            startsAt: new Date().toISOString(),
-            endsAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+            version: 1,
           },
-        ]),
+          shifts: [
+            {
+              id: 'shift-1',
+              employeeId: 'emp-1',
+              locationId: 'loc-1',
+              position: 'Kasjer',
+              notes: 'Zmiana poranna',
+              startsAt: new Date().toISOString(),
+              endsAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+            },
+          ],
+        }),
       });
     });
 

@@ -94,6 +94,7 @@ export function ScheduleGrid({
   onRowDragEnd,
   onOpenRowMenu,
 }: ScheduleGridProps) {
+  const canEdit = canManage && !isPublished;
   const isEmployeeRowDrag = (event: DragEvent<HTMLElement>) =>
     Array.from(event.dataTransfer.types ?? []).includes(EMPLOYEE_ROW_DRAG_TYPE);
   const shiftsByCell = new Map<string, ShiftRecord[]>();
@@ -315,6 +316,7 @@ export function ScheduleGrid({
                     } ${isSelected ? "ring-2 ring-brand-400/60" : ""} ${isFocused ? "z-10 ring-2 ring-brand-500" : ""}`}
                     onMouseDown={(event) => onCellFocus(employeeIndex, dayIndex, event.shiftKey)}
                     onContextMenu={(event) => {
+                      if (!canEdit) return;
                       event.preventDefault();
                       if (cellShifts.length > 1) return;
                       onOpenContextMenu({
@@ -325,10 +327,12 @@ export function ScheduleGrid({
                       });
                     }}
                     onDragOver={(event) => {
+                      if (!canEdit) return;
                       if (isEmployeeRowDrag(event)) return;
                       event.preventDefault();
                     }}
                     onDrop={(event) => {
+                      if (!canEdit) return;
                       if (isEmployeeRowDrag(event)) return;
                       event.preventDefault();
                       const shiftId = event.dataTransfer.getData("text/plain");
@@ -337,7 +341,7 @@ export function ScheduleGrid({
                       }
                     }}
                   >
-                    {canManage && (
+                    {canEdit && (
                       <div className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
                         <button
                           type="button"
@@ -378,30 +382,32 @@ export function ScheduleGrid({
                           <button
                             key={shift.id}
                             type="button"
-                            onClick={() => {
-                              if (canManage) onEditShift(shift);
-                            }}
-                            onContextMenu={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              onOpenContextMenu({
+                          onClick={() => {
+                            if (canEdit) onEditShift(shift);
+                          }}
+                          onContextMenu={(event) => {
+                            if (!canEdit) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onOpenContextMenu({
                                 employee,
                                 date: day.date,
                                 shift,
                                 position: { x: event.clientX, y: event.clientY },
                               });
                             }}
-                            draggable={canManage}
-                            onDragStart={(event) => {
-                              event.dataTransfer.setData("text/plain", shift.id);
-                              event.dataTransfer.effectAllowed = "move";
-                            }}
-                            className={`flex flex-col gap-1 rounded-md border border-surface-200 px-3 py-2 text-left text-xs text-surface-800 transition ${
-                              canManage ? "hover:border-brand-400/60 hover:bg-surface-50" : "cursor-default"
+                          draggable={canEdit}
+                          onDragStart={(event) => {
+                            if (!canEdit) return;
+                            event.dataTransfer.setData("text/plain", shift.id);
+                            event.dataTransfer.effectAllowed = "move";
+                          }}
+                          className={`flex flex-col gap-1 rounded-md border border-surface-200 px-3 py-2 text-left text-xs text-surface-800 transition ${
+                              canEdit ? "hover:border-brand-400/60 hover:bg-surface-50" : "cursor-default"
                             }`}
-                            role="button"
-                            aria-disabled={!canManage}
-                            tabIndex={canManage ? 0 : -1}
+                          role="button"
+                          aria-disabled={!canEdit}
+                          tabIndex={canEdit ? 0 : -1}
                             style={{
                               borderColor: accentColor,
                               background: isDraft ? buildStripedBackground(accentColor) : "#ffffff",
