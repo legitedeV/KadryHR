@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,6 +8,7 @@ import {
   AvailabilityStatus,
   LeaveStatus,
   NotificationType,
+  ScheduleStatus,
   type Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -42,6 +44,56 @@ export class ShiftsService {
       permissions.includes(Permission.SCHEDULE_MANAGE) ||
       permissions.includes(Permission.RCP_EDIT)
     );
+  }
+
+  private async ensureScheduleEditable(
+    organisationId: string,
+    params: {
+      locationId: string | null;
+      startsAt: Date;
+      endsAt: Date;
+      periodId: string | null;
+    },
+  ) {
+    const publishedPeriod = params.periodId
+      ? await this.prisma.schedulePeriod.findFirst({
+          where: {
+            organisationId,
+            id: params.periodId,
+            status: ScheduleStatus.PUBLISHED,
+          },
+          select: { id: true },
+        })
+      : params.locationId
+        ? await this.prisma.schedulePeriod.findFirst({
+            where: {
+              organisationId,
+              locationId: params.locationId,
+              status: ScheduleStatus.PUBLISHED,
+              from: { lte: params.startsAt },
+              to: { gte: params.endsAt },
+            },
+            select: { id: true },
+          })
+        : null;
+
+    if (publishedPeriod) {
+      throw new ConflictException(
+        this.buildError(
+          'PERIOD_READONLY',
+          'Grafik opublikowany — odblokuj, aby edytować',
+          { periodId: publishedPeriod.id },
+        ),
+      );
+    }
+  }
+
+  private buildError(
+    code: string,
+    message: string,
+    details?: Record<string, unknown>,
+  ) {
+    return { code, message, details };
   }
 
   /**
@@ -90,6 +142,12 @@ export class ShiftsService {
       throw new BadRequestException('Shift start must be before end');
     }
 
+    await this.ensureScheduleEditable(organisationId, {
+      locationId: dto.locationId ?? null,
+      startsAt,
+      endsAt,
+      periodId: dto.periodId ?? null,
+    });
     await this.ensureEmployee(organisationId, dto.employeeId);
     if (dto.locationId) {
       await this.ensureLocation(organisationId, dto.locationId);
@@ -164,6 +222,12 @@ export class ShiftsService {
       throw new BadRequestException('Shift start must be before end');
     }
 
+    await this.ensureScheduleEditable(organisationId, {
+      locationId: nextLocationId ?? null,
+      startsAt: nextStartsAt,
+      endsAt: nextEndsAt,
+      periodId: existing.periodId ?? null,
+    });
     await this.ensureEmployee(organisationId, nextEmployeeId);
     if (nextLocationId) {
       await this.ensureLocation(organisationId, nextLocationId);
@@ -232,6 +296,13 @@ export class ShiftsService {
     if (!existing) {
       throw new NotFoundException('Shift not found');
     }
+
+    await this.ensureScheduleEditable(organisationId, {
+      locationId: existing.locationId ?? null,
+      startsAt: existing.startsAt,
+      endsAt: existing.endsAt,
+      periodId: existing.periodId ?? null,
+    });
 
     await this.prisma.shift.delete({
       where: { id },

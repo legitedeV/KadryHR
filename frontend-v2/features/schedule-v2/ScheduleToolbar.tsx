@@ -17,6 +17,7 @@ type ScheduleToolbarProps = {
   editModeEnabled: boolean;
   editModeHoldActive: boolean;
   editModeDisabled: boolean;
+  editModeDisabledReason?: string;
   onToggleEditMode: () => void;
   onPrevWeek: () => void;
   onNextWeek: () => void;
@@ -46,6 +47,7 @@ export function ScheduleToolbar({
   editModeEnabled,
   editModeHoldActive,
   editModeDisabled,
+  editModeDisabledReason,
   onToggleEditMode,
   onPrevWeek,
   onNextWeek,
@@ -162,11 +164,12 @@ export function ScheduleToolbar({
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={onToggleEditMode}
-            disabled={editModeDisabled}
-            title={
+          onClick={onToggleEditMode}
+          disabled={editModeDisabled}
+          title={
               editModeDisabled
-                ? "Tryb edycji jest dostępny tylko dla managerów i administratorów."
+                ? editModeDisabledReason ??
+                  "Tryb edycji jest dostępny tylko dla managerów i administratorów."
                 : "Przełącz tryb edycji"
             }
             className={`relative min-h-[36px] rounded-md border px-2.5 py-1.5 text-sm font-semibold transition-colors ${
