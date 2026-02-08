@@ -231,27 +231,6 @@ export function SchedulePage() {
     [getLastRequestId, pathname],
   );
 
-  const handleReadonlyError = useCallback(
-    (error: unknown) => {
-      if (error instanceof ApiError && error.status === 409) {
-        const code = (error.data as { code?: string } | null)?.code;
-        if (code === "PERIOD_READONLY") {
-          pushToast({
-            title: "Grafik opublikowany",
-            description: "Grafik opublikowany — odblokuj, aby edytować.",
-            variant: "warning",
-          });
-          if (editModeEnabled) {
-            disableEditMode();
-          }
-          return true;
-        }
-      }
-      return false;
-    },
-    [disableEditMode, editModeEnabled],
-  );
-
   const isTypingTarget = useCallback((target: EventTarget | null) => {
     if (!target || !(target instanceof HTMLElement)) return false;
     if (target.isContentEditable) return true;
@@ -334,6 +313,27 @@ export function SchedulePage() {
       logEditModeEvent("edit_mode_disabled", requestId ?? getLastRequestId());
     },
     [clearEditModeHoldTimer, clearEditModeInactivityTimer, getLastRequestId, logEditModeEvent],
+  );
+
+  const handleReadonlyError = useCallback(
+    (error: unknown) => {
+      if (error instanceof ApiError && error.status === 409) {
+        const code = (error.data as { code?: string } | null)?.code;
+        if (code === "PERIOD_READONLY") {
+          pushToast({
+            title: "Grafik opublikowany",
+            description: "Grafik opublikowany — odblokuj, aby edytować.",
+            variant: "warning",
+          });
+          if (editModeEnabled) {
+            disableEditMode();
+          }
+          return true;
+        }
+      }
+      return false;
+    },
+    [disableEditMode, editModeEnabled],
   );
 
   const scheduleEditModeTimeout = useCallback(() => {
