@@ -128,7 +128,14 @@ class ApiClient {
 
     const requestId = response.headers.get("x-request-id") ?? undefined;
     if (requestId && typeof window !== "undefined") {
-      sessionStorage.setItem("kadryhr:last-request-id", requestId);
+      try {
+        sessionStorage.setItem("kadryhr:last-request-id", requestId);
+      } catch (error) {
+        console.warn("[ApiClient] Unable to persist request id", {
+          requestId,
+          error,
+        });
+      }
     }
 
     if (!response.ok) {
