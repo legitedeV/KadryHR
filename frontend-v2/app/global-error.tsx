@@ -17,9 +17,15 @@ export default function GlobalError({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    let storedRequestId: string | null = null;
+    try {
+      storedRequestId = sessionStorage.getItem("kadryhr:last-request-id");
+    } catch (storageError) {
+      console.warn("[GlobalError] Unable to read request id from session storage", storageError);
+    }
     const requestId =
       (error as { requestId?: string }).requestId ??
-      sessionStorage.getItem("kadryhr:last-request-id") ??
+      storedRequestId ??
       undefined;
     const stack = typeof error.stack === "string" ? error.stack : undefined;
     console.error("[GlobalError]", {
