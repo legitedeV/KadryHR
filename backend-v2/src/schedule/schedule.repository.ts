@@ -52,6 +52,36 @@ export class ScheduleRepository {
     });
   }
 
+  findPeriodByRange(
+    organisationId: string,
+    locationId: string,
+    from: Date,
+    to: Date,
+  ) {
+    return this.prisma.schedulePeriod.findFirst({
+      where: {
+        organisationId,
+        locationId,
+        from,
+        to,
+      },
+      select: {
+        id: true,
+        from: true,
+        to: true,
+        status: true,
+        version: true,
+        locationId: true,
+        publishedAt: true,
+        publishedById: true,
+      },
+    });
+  }
+
+  createPeriod(data: Prisma.SchedulePeriodCreateInput) {
+    return this.prisma.schedulePeriod.create({ data });
+  }
+
   findPreviousPeriods(
     organisationId: string,
     locationId: string,

@@ -88,6 +88,7 @@ export class OrgEmployeesController {
       const result = await this.employeesService.updateEmployeeOrdering(
         user.organisationId,
         dto.orderedEmployeeIds ?? [],
+        dto.periodId,
       );
       this.logger.log(
         JSON.stringify({

@@ -80,7 +80,23 @@ export class ScheduleService {
       },
     });
 
-    return shifts.map((shift) => {
+    const locationCandidates = query.locationIds?.length
+      ? query.locationIds
+      : Array.from(
+          new Set(
+            shifts
+              .map((shift) => shift.locationId)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        );
+    const locationId =
+      locationCandidates.length === 1 ? locationCandidates[0] : null;
+
+    const period = locationId
+      ? await this.findOrCreatePeriod(organisationId, locationId, from, query.to)
+      : null;
+
+    const mappedShifts = shifts.map((shift) => {
       if (!shift.employee) return shift;
       const { avatarPath, avatarUrl, updatedAt, ...restEmployee } =
         shift.employee;
@@ -93,6 +109,11 @@ export class ScheduleService {
         },
       };
     });
+
+    return {
+      period,
+      shifts: mappedShifts,
+    };
   }
 
   async createShift(
@@ -526,11 +547,16 @@ export class ScheduleService {
       );
     }
 
-    if (period.status === ScheduleStatus.PUBLISHED) {
-      throw new BadRequestException(
-        this.buildError('PERIOD_PUBLISHED', 'Schedule period is published', {
-          periodId: period.id,
-        }),
+    if (period.status !== ScheduleStatus.APPROVED) {
+      throw new ConflictException(
+        this.buildError(
+          'PERIOD_INVALID_TRANSITION',
+          'Schedule period must be approved before publishing',
+          {
+            periodId: period.id,
+            status: period.status,
+          },
+        ),
       );
     }
 
@@ -637,6 +663,138 @@ export class ScheduleService {
     };
   }
 
+  async approveSchedule(
+    organisationId: string,
+    actorId: string,
+    periodId: string,
+  ) {
+    const period = await this.scheduleRepository.findPeriodById(
+      organisationId,
+      periodId,
+    );
+
+    if (!period) {
+      throw new NotFoundException(
+        this.buildError('PERIOD_NOT_FOUND', 'Schedule period not found'),
+      );
+    }
+
+    if (period.status !== ScheduleStatus.DRAFT) {
+      throw new ConflictException(
+        this.buildError(
+          'PERIOD_INVALID_TRANSITION',
+          'Schedule period must be draft to approve',
+          {
+            periodId: period.id,
+            status: period.status,
+          },
+        ),
+      );
+    }
+
+    const updatedPeriod = await this.scheduleRepository.updatePeriodPublish(
+      period.id,
+      {
+        status: ScheduleStatus.APPROVED,
+        publishedAt: null,
+        publishedBy: { disconnect: true },
+        version: { increment: 1 },
+      },
+    );
+
+    await this.scheduleRepository.updateShiftsStatusForPeriod(
+      organisationId,
+      period.id,
+      ScheduleStatus.APPROVED,
+      actorId,
+    );
+
+    await this.scheduleRepository.createAudit({
+      organisation: { connect: { id: organisationId } },
+      entityType: 'SchedulePeriod',
+      entityId: period.id,
+      action: 'SCHEDULE_APPROVE',
+      afterJson: {
+        periodId: period.id,
+        status: ScheduleStatus.APPROVED,
+        version: updatedPeriod.version,
+      } as Prisma.JsonObject,
+      actor: { connect: { id: actorId } },
+    });
+
+    return {
+      periodId: period.id,
+      status: ScheduleStatus.APPROVED,
+      version: updatedPeriod.version,
+    };
+  }
+
+  async unpublishSchedule(
+    organisationId: string,
+    actorId: string,
+    periodId: string,
+  ) {
+    const period = await this.scheduleRepository.findPeriodById(
+      organisationId,
+      periodId,
+    );
+
+    if (!period) {
+      throw new NotFoundException(
+        this.buildError('PERIOD_NOT_FOUND', 'Schedule period not found'),
+      );
+    }
+
+    if (period.status !== ScheduleStatus.PUBLISHED) {
+      throw new ConflictException(
+        this.buildError(
+          'PERIOD_INVALID_TRANSITION',
+          'Schedule period must be published to unpublish',
+          {
+            periodId: period.id,
+            status: period.status,
+          },
+        ),
+      );
+    }
+
+    const updatedPeriod = await this.scheduleRepository.updatePeriodPublish(
+      period.id,
+      {
+        status: ScheduleStatus.APPROVED,
+        publishedAt: null,
+        publishedBy: { disconnect: true },
+        version: { increment: 1 },
+      },
+    );
+
+    await this.scheduleRepository.updateShiftsStatusForPeriod(
+      organisationId,
+      period.id,
+      ScheduleStatus.APPROVED,
+      actorId,
+    );
+
+    await this.scheduleRepository.createAudit({
+      organisation: { connect: { id: organisationId } },
+      entityType: 'SchedulePeriod',
+      entityId: period.id,
+      action: 'SCHEDULE_UNPUBLISH',
+      afterJson: {
+        periodId: period.id,
+        status: ScheduleStatus.APPROVED,
+        version: updatedPeriod.version,
+      } as Prisma.JsonObject,
+      actor: { connect: { id: actorId } },
+    });
+
+    return {
+      periodId: period.id,
+      status: ScheduleStatus.APPROVED,
+      version: updatedPeriod.version,
+    };
+  }
+
   async duplicatePreviousPeriod(
     organisationId: string,
     actorId: string,
@@ -654,10 +812,14 @@ export class ScheduleService {
     }
 
     if (period.status === ScheduleStatus.PUBLISHED) {
-      throw new BadRequestException(
-        this.buildError('PERIOD_PUBLISHED', 'Schedule period is published', {
-          periodId: period.id,
-        }),
+      throw new ConflictException(
+        this.buildError(
+          'PERIOD_READONLY',
+          'Grafik opublikowany — odblokuj, aby edytować',
+          {
+            periodId: period.id,
+          },
+        ),
       );
     }
 
@@ -815,12 +977,42 @@ export class ScheduleService {
       (period) => period.status === ScheduleStatus.PUBLISHED,
     );
     if (published) {
-      throw new BadRequestException(
-        this.buildError('PERIOD_PUBLISHED', 'Schedule period is published', {
-          periodId: published.id,
-        }),
+      throw new ConflictException(
+        this.buildError(
+          'PERIOD_READONLY',
+          'Grafik opublikowany — odblokuj, aby edytować',
+          {
+            periodId: published.id,
+          },
+        ),
       );
     }
+  }
+
+  private async findOrCreatePeriod(
+    organisationId: string,
+    locationId: string,
+    from: Date,
+    to: string,
+  ) {
+    const toDate = new Date(to);
+    if (Number.isNaN(toDate.valueOf())) return null;
+    const existing = await this.scheduleRepository.findPeriodByRange(
+      organisationId,
+      locationId,
+      from,
+      toDate,
+    );
+    if (existing) return existing;
+
+    return this.scheduleRepository.createPeriod({
+      organisation: { connect: { id: organisationId } },
+      location: { connect: { id: locationId } },
+      from,
+      to: toDate,
+      status: ScheduleStatus.DRAFT,
+      version: 1,
+    });
   }
 
   private buildWeeklyWindows(from: Date, to: Date) {

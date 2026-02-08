@@ -46,6 +46,8 @@ export interface OrganisationScheduleSettings {
   schedulePeriod: SchedulePeriodType;
 }
 
+export type SchedulePeriodStatus = "DRAFT" | "APPROVED" | "PUBLISHED";
+
 export interface OrganisationLocation {
   id: string;
   name: string;
@@ -154,6 +156,22 @@ export interface ScheduleShiftRecord {
     avatarUrl?: string | null;
     avatarUpdatedAt?: string | null;
   };
+}
+
+export interface SchedulePeriodInfo {
+  id: string;
+  status: SchedulePeriodStatus;
+  from: string;
+  to: string;
+  locationId: string;
+  publishedAt?: string | null;
+  publishedById?: string | null;
+  version?: number;
+}
+
+export interface ScheduleResponse {
+  period: SchedulePeriodInfo | null;
+  shifts: ScheduleShiftRecord[];
 }
 
 export interface ScheduleShiftPayload {
@@ -437,6 +455,7 @@ const ORG_EMPLOYEES_PREFIX = "/org/employees";
 const SCHEDULE_TEMPLATES_PREFIX = "/schedule-templates";
 const SHIFT_PRESETS_PREFIX = "/shift-presets";
 const SCHEDULE_PREFIX = "/schedule";
+const GRAFIK_PREFIX = "/grafik";
 
 export async function apiLogin(email: string, password: string) {
   const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/login`, {
@@ -547,7 +566,7 @@ export async function apiGetSchedule(params: {
   to: string;
   locationIds?: string[];
   positionIds?: string[];
-}): Promise<ScheduleShiftRecord[]> {
+}): Promise<ScheduleResponse> {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams({
     from: params.from,
@@ -556,7 +575,7 @@ export async function apiGetSchedule(params: {
   params.locationIds?.forEach((id) => search.append("locationIds[]", id));
   params.positionIds?.forEach((id) => search.append("positionIds[]", id));
 
-  return apiClient.request<ScheduleShiftRecord[]>(`${SCHEDULE_PREFIX}?${search.toString()}`);
+  return apiClient.request<ScheduleResponse>(`${SCHEDULE_PREFIX}?${search.toString()}`);
 }
 
 export async function apiListOrgEmployees(): Promise<{ data: EmployeeRecord[]; total: number }> {
@@ -564,14 +583,14 @@ export async function apiListOrgEmployees(): Promise<{ data: EmployeeRecord[]; t
   return apiClient.request<{ data: EmployeeRecord[]; total: number }>(`${ORG_EMPLOYEES_PREFIX}`);
 }
 
-export async function apiUpdateOrgEmployeeOrder(orderedEmployeeIds: string[]) {
+export async function apiUpdateOrgEmployeeOrder(orderedEmployeeIds: string[], periodId?: string) {
   apiClient.hydrateFromStorage();
   return apiClient.request<{ success: boolean; updatedCount?: number; requestId?: string }>(
     `${ORG_EMPLOYEES_PREFIX}/order`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedEmployeeIds }),
+      body: JSON.stringify({ orderedEmployeeIds, periodId }),
     },
   );
 }
@@ -649,6 +668,42 @@ export async function apiPublishSchedule(payload: {
 }): Promise<{ success: boolean; notified: number }> {
   apiClient.hydrateFromStorage();
   return apiClient.request<{ success: boolean; notified: number }>(`${SHIFTS_PREFIX}/publish-schedule`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiApproveGrafikPeriod(payload: { periodId: string }): Promise<{
+  periodId: string;
+  status: SchedulePeriodStatus;
+  version: number;
+}> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(`${GRAFIK_PREFIX}/approve`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiPublishGrafikPeriod(payload: {
+  periodId: string;
+  notify?: boolean;
+  comment?: string;
+}): Promise<{ periodId: string; version: number; notifiedCount: number; publishedAt?: string | null }> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(`${GRAFIK_PREFIX}/publish`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUnpublishGrafikPeriod(payload: { periodId: string }): Promise<{
+  periodId: string;
+  status: SchedulePeriodStatus;
+  version: number;
+}> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request(`${GRAFIK_PREFIX}/unpublish`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

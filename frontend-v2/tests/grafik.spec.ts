@@ -1,5 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
-import type { EmployeeRecord, LocationRecord, ScheduleShiftRecord } from '../lib/api';
+import type {
+  EmployeeRecord,
+  LocationRecord,
+  SchedulePeriodStatus,
+  ScheduleShiftRecord,
+} from '../lib/api';
 
 type GrafikMockState = {
   getEmployees: () => EmployeeRecord[];
@@ -15,6 +20,8 @@ type GrafikMockOptions = {
   shifts: ScheduleShiftRecord[];
   location: LocationRecord;
   editModeTimeoutMs?: number;
+  periodStatus?: SchedulePeriodStatus;
+  periodId?: string;
 };
 
 const nowIso = () => new Date().toISOString();
@@ -74,6 +81,8 @@ const setupGrafikMocks = async (page: Page, options: GrafikMockOptions): Promise
   let shiftsState = [...options.shifts];
   let bulkDeleteCalls = 0;
   let orderUpdates = 0;
+  let periodStatus: SchedulePeriodStatus = options.periodStatus ?? 'DRAFT';
+  const periodId = options.periodId ?? 'period-1';
 
   const timeoutOverride = options.editModeTimeoutMs;
 
@@ -167,7 +176,17 @@ const setupGrafikMocks = async (page: Page, options: GrafikMockOptions): Promise
     }
 
     if (path === '/schedule' && method === 'GET') {
-      return fulfillJson(shiftsState);
+      return fulfillJson({
+        period: {
+          id: periodId,
+          status: periodStatus,
+          from: weekStart.toISOString(),
+          to: weekEnd.toISOString(),
+          locationId: options.location.id,
+          version: 1,
+        },
+        shifts: shiftsState,
+      });
     }
 
     if (path === '/schedule/summary' && method === 'GET') {
@@ -220,6 +239,51 @@ const setupGrafikMocks = async (page: Page, options: GrafikMockOptions): Promise
         })) ?? [];
       shiftsState = [...shiftsState, ...created];
       return fulfillJson(created);
+    }
+
+    if (path === '/grafik/approve' && method === 'POST') {
+      const payload = request.postDataJSON() as { periodId?: string } | null;
+      if (!payload?.periodId || payload.periodId !== periodId) {
+        return fulfillJson({ code: 'PERIOD_NOT_FOUND', message: 'Schedule period not found' }, 404);
+      }
+      if (periodStatus !== 'DRAFT') {
+        return fulfillJson(
+          { code: 'PERIOD_INVALID_TRANSITION', message: 'Schedule period must be draft to approve' },
+          409,
+        );
+      }
+      periodStatus = 'APPROVED';
+      return fulfillJson({ periodId, status: periodStatus, version: 2 });
+    }
+
+    if (path === '/grafik/publish' && method === 'POST') {
+      const payload = request.postDataJSON() as { periodId?: string } | null;
+      if (!payload?.periodId || payload.periodId !== periodId) {
+        return fulfillJson({ code: 'PERIOD_NOT_FOUND', message: 'Schedule period not found' }, 404);
+      }
+      if (periodStatus !== 'APPROVED') {
+        return fulfillJson(
+          { code: 'PERIOD_INVALID_TRANSITION', message: 'Schedule period must be approved before publishing' },
+          409,
+        );
+      }
+      periodStatus = 'PUBLISHED';
+      return fulfillJson({ periodId, version: 3, notifiedCount: employeesState.length });
+    }
+
+    if (path === '/grafik/unpublish' && method === 'POST') {
+      const payload = request.postDataJSON() as { periodId?: string } | null;
+      if (!payload?.periodId || payload.periodId !== periodId) {
+        return fulfillJson({ code: 'PERIOD_NOT_FOUND', message: 'Schedule period not found' }, 404);
+      }
+      if (periodStatus !== 'PUBLISHED') {
+        return fulfillJson(
+          { code: 'PERIOD_INVALID_TRANSITION', message: 'Schedule period must be published to unpublish' },
+          409,
+        );
+      }
+      periodStatus = 'APPROVED';
+      return fulfillJson({ periodId, status: periodStatus, version: 4 });
     }
 
     if (path === '/schedule/shifts/bulk' && method === 'DELETE') {
@@ -506,6 +570,44 @@ test.describe('Grafik (manager)', () => {
     await expect(page.getByText('Usuń zaznaczone zmiany')).toBeVisible();
   });
 
+  test('Lifecycle approval/publish/unpublish toggles readonly', async ({ page }, testInfo) => {
+    const weekStart = startOfWeek(new Date());
+    const employees = buildBaseEmployees();
+    const shifts = [buildShift('shift-1', employees[0].id, baseLocation.id, weekStart, 0)];
+
+    await setupGrafikMocks(page, {
+      role: 'MANAGER',
+      employees,
+      shifts,
+      location: baseLocation,
+      periodStatus: 'DRAFT',
+    });
+
+    await openGrafikPage(page);
+
+    const statusBadge = page.getByTestId('grafik-status-badge');
+    await expect(statusBadge).toHaveText(/Roboczy/i);
+
+    await page.getByRole('button', { name: 'Zatwierdź grafik' }).click();
+    await expect(statusBadge).toHaveText(/Zatwierdzony/i);
+
+    await page.getByRole('button', { name: 'Opublikuj grafik' }).click();
+    await page.getByRole('button', { name: 'Publikuj' }).click();
+    await expect(statusBadge).toHaveText(/Opublikowany/i);
+    await expect(
+      page.getByText('Grafik opublikowany — obowiązuje pracowników (tryb tylko do odczytu)'),
+    ).toBeVisible();
+
+    const editToggle = page.getByRole('button', { name: /Tryb edycji/i });
+    await expect(editToggle).toBeDisabled();
+
+    await page.screenshot({ path: testInfo.outputPath('grafik-lifecycle-manager.png') });
+
+    await page.getByRole('button', { name: 'Cofnij publikację' }).click();
+    await expect(statusBadge).toHaveText(/Zatwierdzony/i);
+    await expect(editToggle).toBeEnabled();
+  });
+
   test('Row reorder via drag handle persists', async ({ page }) => {
     const weekStart = startOfWeek(new Date());
     const employees = buildBaseEmployees();
@@ -594,6 +696,30 @@ test.describe('Grafik (manager)', () => {
 });
 
 test.describe('Grafik (employee)', () => {
+  test('Lifecycle status visible and actions hidden for employee', async ({ page }, testInfo) => {
+    const weekStart = startOfWeek(new Date());
+    const employees = buildBaseEmployees();
+    const shifts = [buildShift('shift-1', employees[0].id, baseLocation.id, weekStart, 0)];
+
+    await setupGrafikMocks(page, {
+      role: 'EMPLOYEE',
+      employees,
+      shifts,
+      location: baseLocation,
+      periodStatus: 'PUBLISHED',
+    });
+
+    await openGrafikPage(page);
+
+    await expect(page.getByTestId('grafik-status-badge')).toHaveText(/Opublikowany/i);
+    await expect(page.getByRole('button', { name: 'Zatwierdź grafik' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Opublikuj grafik' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Cofnij publikację' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Tryb edycji/i })).toBeDisabled();
+
+    await page.screenshot({ path: testInfo.outputPath('grafik-lifecycle-employee.png') });
+  });
+
   test('RBAC disables edit mode and ordering', async ({ page }) => {
     const weekStart = startOfWeek(new Date());
     const employees = buildBaseEmployees();

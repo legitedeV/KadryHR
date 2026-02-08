@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  apiApproveGrafikPeriod,
   apiCreateScheduleShiftsBulk,
   apiCreateScheduleShift,
   apiCreateLeaveRequest,
@@ -26,18 +27,21 @@ import {
   apiListOrgEmployees,
   apiListEmployees,
   apiListLocations,
-  apiPublishSchedule,
+  apiPublishGrafikPeriod,
+  apiUnpublishGrafikPeriod,
   apiUpdateOrgEmployeeOrder,
   apiUpdateShift,
   ApprovedLeaveRecord,
   AvailabilityRecord,
   EmployeeRecord,
   LocationRecord,
+  SchedulePeriodStatus,
   ScheduleShiftPayload,
   ScheduleShiftRecord,
   ShiftPayload,
   ShiftRecord,
 } from "@/lib/api";
+import { ApiError } from "@/lib/api-client";
 import { getAccessToken } from "@/lib/auth";
 import { pushToast } from "@/lib/toast";
 import { usePermissions } from "@/lib/use-permissions";
@@ -65,7 +69,6 @@ import { useAuth } from "@/lib/auth-context";
 import { ScheduleCostSummaryBar } from "./ScheduleCostSummaryBar";
 import { usePathname } from "next/navigation";
 
-const PUBLISHED_STORAGE_KEY = "kadryhr:schedule-v2:published";
 const EDIT_MODE_HOLD_MS = 1000;
 const DEFAULT_EDIT_MODE_TIMEOUT_MS = 120000;
 const EDIT_MODE_TIMEOUT_MS = (() => {
@@ -85,6 +88,12 @@ const EDIT_MODE_TIMEOUT_MS = (() => {
   }
   return DEFAULT_EDIT_MODE_TIMEOUT_MS;
 })();
+
+const STATUS_LABELS: Record<SchedulePeriodStatus, string> = {
+  DRAFT: "Roboczy",
+  APPROVED: "Zatwierdzony",
+  PUBLISHED: "Opublikowany",
+};
 
 export function SchedulePage() {
   const { hasAnyPermission } = usePermissions();
@@ -150,6 +159,7 @@ export function SchedulePage() {
   const [lockedEmployeeId, setLockedEmployeeId] = useState<string | null>(null);
   const [dateRangeModalOpen, setDateRangeModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [lifecyclePending, setLifecyclePending] = useState(false);
   const [optionsDrawerOpen, setOptionsDrawerOpen] = useState(false);
 
   const [showLoadBars, setShowLoadBars] = useState(true);
@@ -173,21 +183,6 @@ export function SchedulePage() {
   const gridActiveRef = useRef(false);
   const [gridActive, setGridActive] = useState(false);
 
-  const [publishedWeeks, setPublishedWeeks] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem(PUBLISHED_STORAGE_KEY);
-    if (!stored) return [];
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((value): value is string => typeof value === "string");
-      }
-    } catch {
-      // ignore parse errors, reset below
-    }
-    localStorage.removeItem(PUBLISHED_STORAGE_KEY);
-    return [];
-  });
 
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
   const weekDays = useMemo(
@@ -202,10 +197,6 @@ export function SchedulePage() {
     return match?.id ?? null;
   }, [employees, user?.email]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(PUBLISHED_STORAGE_KEY, JSON.stringify(publishedWeeks));
-  }, [publishedWeeks]);
 
   const getLastRequestId = useCallback(() => {
     if (typeof window === "undefined") return undefined;
@@ -238,6 +229,27 @@ export function SchedulePage() {
       });
     },
     [getLastRequestId, pathname],
+  );
+
+  const handleReadonlyError = useCallback(
+    (error: unknown) => {
+      if (error instanceof ApiError && error.status === 409) {
+        const code = (error.data as { code?: string } | null)?.code;
+        if (code === "PERIOD_READONLY") {
+          pushToast({
+            title: "Grafik opublikowany",
+            description: "Grafik opublikowany — odblokuj, aby edytować.",
+            variant: "warning",
+          });
+          if (editModeEnabled) {
+            disableEditMode();
+          }
+          return true;
+        }
+      }
+      return false;
+    },
+    [disableEditMode, editModeEnabled],
   );
 
   const isTypingTarget = useCallback((target: EventTarget | null) => {
@@ -438,6 +450,10 @@ export function SchedulePage() {
     enabled: hasToken,
   });
 
+  const schedulePeriod = scheduleQuery.data?.period ?? null;
+  const isPublished = schedulePeriod?.status === "PUBLISHED";
+  const periodId = schedulePeriod?.id ?? null;
+
   const summaryQuery = useQuery({
     queryKey: ["schedule-summary", formatDateKey(weekStart), selectedLocationId],
     queryFn: () =>
@@ -455,11 +471,26 @@ export function SchedulePage() {
     }
   }, [scheduleQuery.error]);
 
+  useEffect(() => {
+    if (isPublished && editModeEnabled) {
+      disableEditMode();
+    }
+  }, [disableEditMode, editModeEnabled, isPublished]);
+
   const updateScheduleCache = useCallback(
     (updater: (current: ScheduleShiftRecord[]) => ScheduleShiftRecord[]) => {
-      queryClient.setQueryData<ScheduleShiftRecord[]>(
+      queryClient.setQueryData(
         ["schedule", formatDateKey(weekStart), selectedLocationId],
-        (current) => (current ? updater(current) : current),
+        (current) => {
+          if (!current) return current;
+          if (Array.isArray(current)) {
+            return updater(current);
+          }
+          return {
+            ...current,
+            shifts: updater((current as { shifts?: ScheduleShiftRecord[] }).shifts ?? []),
+          };
+        },
       );
     },
     [queryClient, selectedLocationId, weekStart],
@@ -483,9 +514,12 @@ export function SchedulePage() {
       updateScheduleCache((current) => [...current, ...optimisticRecords]);
       return { optimisticIds: optimisticRecords.map((record) => record.id) };
     },
-    onError: (_error, _payload, context) => {
+    onError: (error, _payload, context) => {
       if (!context?.optimisticIds) return;
       updateScheduleCache((current) => current.filter((shift) => !context.optimisticIds.includes(shift.id)));
+      if (handleReadonlyError(error)) {
+        return;
+      }
       pushToast({ title: "Nie udało się dodać zmian", variant: "error" });
     },
     onSuccess: (result, _payload, context) => {
@@ -506,7 +540,7 @@ export function SchedulePage() {
     mutationFn: apiDeleteScheduleShiftsBulk,
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: ["schedule"] });
-      const previous = queryClient.getQueryData<ScheduleShiftRecord[]>([
+      const previous = queryClient.getQueryData([
         "schedule",
         formatDateKey(weekStart),
         selectedLocationId,
@@ -514,12 +548,15 @@ export function SchedulePage() {
       updateScheduleCache((current) => current.filter((shift) => !payload.shiftIds.includes(shift.id)));
       return { previous };
     },
-    onError: (_error, _payload, context) => {
+    onError: (error, _payload, context) => {
       if (context?.previous) {
         queryClient.setQueryData(
           ["schedule", formatDateKey(weekStart), selectedLocationId],
           context.previous,
         );
+      }
+      if (handleReadonlyError(error)) {
+        return;
       }
       logDeleteFailure();
       pushToast({ title: "Nie udało się usunąć zmian", variant: "error" });
@@ -582,13 +619,20 @@ export function SchedulePage() {
   }, [employees, positionFilter, searchValue, selectedLocationId, sortMode]);
 
   const keyboardDisabled = !selectedLocationId;
-  const orderingEnabled = editModeEnabled && canEnableEditMode && sortMode === "custom";
+  const orderingEnabled = editModeEnabled && canEnableEditMode && sortMode === "custom" && !isPublished;
 
   const persistEmployeeOrder = useCallback(
     async (nextEmployees: EmployeeRecord[], previousEmployees: EmployeeRecord[]) => {
       try {
-        await apiUpdateOrgEmployeeOrder(nextEmployees.map((employee) => employee.id));
-      } catch {
+        await apiUpdateOrgEmployeeOrder(
+          nextEmployees.map((employee) => employee.id),
+          periodId ?? undefined,
+        );
+      } catch (error) {
+        if (handleReadonlyError(error)) {
+          setEmployees(previousEmployees);
+          return;
+        }
         console.warn("employee_order_update_failed", {
           route: pathname,
           requestId: getLastRequestId(),
@@ -600,7 +644,7 @@ export function SchedulePage() {
         });
       }
     },
-    [getLastRequestId, pathname],
+    [getLastRequestId, handleReadonlyError, pathname, periodId],
   );
 
   const reorderEmployeesById = useCallback(
@@ -655,7 +699,7 @@ export function SchedulePage() {
   }, [clearEditModeHoldTimer, gridActive]);
 
   const shifts = useMemo(() => {
-    const scheduleShifts = (scheduleQuery.data ?? []) as ScheduleShiftRecord[];
+    const scheduleShifts = (scheduleQuery.data?.shifts ?? []) as ScheduleShiftRecord[];
     const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
     const locationMap = new Map(locations.map((location) => [location.id, location]));
     return scheduleShifts.map((shift) => ({
@@ -742,8 +786,9 @@ export function SchedulePage() {
       note: shift.notes ?? undefined,
       startAt: shift.startsAt,
       endAt: shift.endsAt,
+      periodId: periodId ?? undefined,
     };
-  }, []);
+  }, [periodId]);
 
   const getFocusedCellMeta = useCallback(() => {
     if (!focusedCell) return null;
@@ -919,7 +964,7 @@ export function SchedulePage() {
   }, [bulkCreateMutation, focusedCell, hasOverlap, pushHistoryEntry, visibleEmployees, weekDays]);
 
   const handleDeleteSelection = useCallback(() => {
-    if (!canManage || !editModeEnabled) return false;
+    if (!canManage || !editModeEnabled || isPublished) return false;
     if (!selectedShifts.length) {
       return false;
     }
@@ -947,6 +992,7 @@ export function SchedulePage() {
     bulkDeleteMutation,
     canManage,
     editModeEnabled,
+    isPublished,
     pushHistoryEntry,
     selectedShifts,
     skipDeleteConfirm,
@@ -988,6 +1034,14 @@ export function SchedulePage() {
   const openShiftModal = useCallback(
     (employeeId?: string, date?: Date) => {
       if (!canManage) return;
+      if (isPublished) {
+        pushToast({
+          title: "Grafik opublikowany",
+          description: "Grafik opublikowany — odblokuj, aby edytować.",
+          variant: "warning",
+        });
+        return;
+      }
       if (employeeId) {
         setActiveShift(null);
         setLockedEmployeeId(employeeId);
@@ -1000,17 +1054,25 @@ export function SchedulePage() {
         setShiftModalOpen(true);
       }
     },
-    [canManage, weekStart],
+    [canManage, isPublished, weekStart],
   );
 
   const handleEditShift = useCallback(
     (shift: ShiftRecord) => {
       if (!canManage) return;
+      if (isPublished) {
+        pushToast({
+          title: "Grafik opublikowany",
+          description: "Grafik opublikowany — odblokuj, aby edytować.",
+          variant: "warning",
+        });
+        return;
+      }
       setActiveShift(shift);
       setLockedEmployeeId(null);
       setShiftModalOpen(true);
     },
-    [canManage],
+    [canManage, isPublished],
   );
 
   const handleOpenDetailsModal = useCallback(() => {
@@ -1023,9 +1085,6 @@ export function SchedulePage() {
     handleEditShift(meta.shifts[0]);
     return true;
   }, [getFocusedCellMeta, handleEditShift, openShiftModal]);
-
-  const weekKey = formatDateKey(weekStart);
-  const isPublished = publishedWeeks.includes(weekKey);
 
   const scrollToGridCell = useCallback((employeeIndex: number, dayIndex: number) => {
     if (typeof document === "undefined") return;
@@ -1115,7 +1174,7 @@ export function SchedulePage() {
       }
 
       if (event.code === "KeyE" && !withMeta && !event.altKey) {
-        if (!canEnableEditMode) return;
+        if (!canEnableEditMode || isPublished) return;
         if (event.repeat) return;
         event.preventDefault();
 
@@ -1149,7 +1208,7 @@ export function SchedulePage() {
           return;
         }
         if (lowerKey === "v") {
-          if (!canManage || !editModeEnabled) return;
+          if (!canManage || !editModeEnabled || isPublished) return;
           const handled = handlePasteSelection();
           if (handled) {
             event.preventDefault();
@@ -1158,7 +1217,7 @@ export function SchedulePage() {
           return;
         }
         if (lowerKey === "z") {
-          if (!canManage || !editModeEnabled) return;
+          if (!canManage || !editModeEnabled || isPublished) return;
           const canHandle = event.shiftKey
             ? redoStackRef.current.length > 0
             : undoStackRef.current.length > 0;
@@ -1174,7 +1233,7 @@ export function SchedulePage() {
           return;
         }
         if (lowerKey === "y") {
-          if (!canManage || !editModeEnabled) return;
+          if (!canManage || !editModeEnabled || isPublished) return;
           if (!redoStackRef.current.length) return;
           event.preventDefault();
           void redoHistory();
@@ -1184,7 +1243,7 @@ export function SchedulePage() {
       }
 
       if (key === "Delete" || key === "Backspace") {
-        if (!canManage || !editModeEnabled) return;
+        if (!canManage || !editModeEnabled || isPublished) return;
         const handled = handleDeleteSelection();
         if (handled) {
           event.preventDefault();
@@ -1245,6 +1304,7 @@ export function SchedulePage() {
       handleOpenDetailsModal,
       handlePasteSelection,
       isGridActive,
+      isPublished,
       isTypingTarget,
       keyboardMode,
       leaveModalState,
@@ -1297,14 +1357,35 @@ export function SchedulePage() {
   useEffect(() => {
     setActionsSlot(
       <>
-        {canManage && (
+        {canManage && periodId && schedulePeriod?.status === "DRAFT" && (
+          <button
+            type="button"
+            onClick={handleApprovePeriod}
+            disabled={lifecyclePending}
+            className="rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-semibold text-surface-700 hover:bg-surface-100 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Zatwierdź grafik
+          </button>
+        )}
+        {canManage && periodId && schedulePeriod?.status === "APPROVED" && (
           <button
             type="button"
             onClick={() => setPublishModalOpen(true)}
-            className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
+            disabled={lifecyclePending}
+            className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             data-onboarding-target="schedule-publish"
           >
-            Publikuj
+            Opublikuj grafik
+          </button>
+        )}
+        {canManage && periodId && schedulePeriod?.status === "PUBLISHED" && (
+          <button
+            type="button"
+            onClick={handleUnpublishPeriod}
+            disabled={lifecyclePending}
+            className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cofnij publikację
           </button>
         )}
         <button
@@ -1323,7 +1404,17 @@ export function SchedulePage() {
     );
 
     return () => setActionsSlot(null);
-  }, [canManage, keyboardMode, keyboardDisabled, setActionsSlot]);
+  }, [
+    canManage,
+    handleApprovePeriod,
+    handleUnpublishPeriod,
+    keyboardDisabled,
+    keyboardMode,
+    lifecyclePending,
+    periodId,
+    schedulePeriod?.status,
+    setActionsSlot,
+  ]);
 
   const contextMenuOptions = useMemo(() => {
     if (!contextMenuState) return [];
@@ -1333,8 +1424,9 @@ export function SchedulePage() {
       canManage,
       hasShift,
       isOwnShift: Boolean(isOwnShift),
+      isPublished,
     });
-  }, [canManage, contextMenuState, currentEmployeeId]);
+  }, [canManage, contextMenuState, currentEmployeeId, isPublished]);
 
   const handleOpenContextMenu = useCallback(
     (params: {
@@ -1349,11 +1441,12 @@ export function SchedulePage() {
         canManage,
         hasShift,
         isOwnShift: Boolean(isOwnShift),
+        isPublished,
       });
       if (!options.length) return;
       setContextMenuState(params);
     },
-    [canManage, currentEmployeeId],
+    [canManage, currentEmployeeId, isPublished],
   );
 
   const handleMarkDayOff = useCallback(
@@ -1412,6 +1505,14 @@ export function SchedulePage() {
   );
 
   const handleDropShift = async (shiftId: string, targetEmployeeId: string, targetDate: Date, copy: boolean) => {
+    if (isPublished) {
+      pushToast({
+        title: "Grafik opublikowany",
+        description: "Grafik opublikowany — odblokuj, aby edytować.",
+        variant: "warning",
+      });
+      return;
+    }
     const sourceShift = shifts.find((shift) => shift.id === shiftId);
     if (!sourceShift) return;
     const originalStart = new Date(sourceShift.startsAt);
@@ -1426,84 +1527,99 @@ export function SchedulePage() {
       return;
     }
 
-    if (copy) {
-      await apiCreateScheduleShift({
+    try {
+      if (copy) {
+        await apiCreateScheduleShift({
+          employeeId: targetEmployeeId,
+          locationId: sourceShift.locationId ?? undefined,
+          position: sourceShift.position ?? undefined,
+          note: sourceShift.notes ?? undefined,
+          startAt: nextStart.toISOString(),
+          endAt: nextEnd.toISOString(),
+          periodId: periodId ?? undefined,
+        });
+        queryClient.invalidateQueries({ queryKey: ["schedule"] });
+        pushToast({ title: "Skopiowano zmianę", variant: "success" });
+        if (editModeEnabled) {
+          markEditModeActivity();
+        }
+        return;
+      }
+
+      await apiUpdateShift(shiftId, {
         employeeId: targetEmployeeId,
         locationId: sourceShift.locationId ?? undefined,
         position: sourceShift.position ?? undefined,
-        note: sourceShift.notes ?? undefined,
-        startAt: nextStart.toISOString(),
-        endAt: nextEnd.toISOString(),
+        notes: sourceShift.notes ?? undefined,
+        color: sourceShift.color ?? undefined,
+        startsAt: nextStart.toISOString(),
+        endsAt: nextEnd.toISOString(),
       });
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
-      pushToast({ title: "Skopiowano zmianę", variant: "success" });
+      pushToast({ title: "Przeniesiono zmianę", variant: "success" });
       if (editModeEnabled) {
         markEditModeActivity();
       }
-      return;
-    }
-
-    await apiUpdateShift(shiftId, {
-      employeeId: targetEmployeeId,
-      locationId: sourceShift.locationId ?? undefined,
-      position: sourceShift.position ?? undefined,
-      notes: sourceShift.notes ?? undefined,
-      color: sourceShift.color ?? undefined,
-      startsAt: nextStart.toISOString(),
-      endsAt: nextEnd.toISOString(),
-    });
-    queryClient.invalidateQueries({ queryKey: ["schedule"] });
-    pushToast({ title: "Przeniesiono zmianę", variant: "success" });
-    if (editModeEnabled) {
-      markEditModeActivity();
+    } catch (error) {
+      handleReadonlyError(error);
     }
   };
 
   const handleSaveShift = async (payload: ShiftPayload, shiftId?: string) => {
-    if (shiftId) {
-      const result = await apiUpdateShift(shiftId, payload);
-      if (result.availabilityWarning || result.leaveWarning) {
+    try {
+      if (shiftId) {
+        const result = await apiUpdateShift(shiftId, payload);
+        if (result.availabilityWarning || result.leaveWarning) {
+          pushToast({
+            title: "Uwaga",
+            description: result.availabilityWarning ?? result.leaveWarning ?? undefined,
+            variant: "warning",
+          });
+        }
+      } else {
+        await apiCreateScheduleShift({
+          employeeId: payload.employeeId,
+          locationId: payload.locationId,
+          position: payload.position,
+          note: payload.notes,
+          startAt: payload.startsAt,
+          endAt: payload.endsAt,
+          periodId: periodId ?? undefined,
+        });
         pushToast({
-          title: "Uwaga",
-          description: result.availabilityWarning ?? result.leaveWarning ?? undefined,
-          variant: "warning",
+          title: "Dodano zmianę!",
+          variant: "success",
         });
       }
-    } else {
-      await apiCreateScheduleShift({
-        employeeId: payload.employeeId,
-        locationId: payload.locationId,
-        position: payload.position,
-        note: payload.notes,
-        startAt: payload.startsAt,
-        endAt: payload.endsAt,
-      });
-      pushToast({
-        title: "Dodano zmianę!",
-        variant: "success",
-      });
-    }
-    await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-    if (editModeEnabled) {
-      markEditModeActivity();
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
+    } catch (error) {
+      handleReadonlyError(error);
     }
   };
 
   const handleSaveBulk = async (payloads: ShiftPayload[]) => {
     if (!payloads.length) return;
-    await bulkCreateMutation.mutateAsync({
-      shifts: payloads.map((payload) => ({
-        employeeId: payload.employeeId,
-        locationId: payload.locationId,
-        position: payload.position,
-        note: payload.notes,
-        startAt: payload.startsAt,
-        endAt: payload.endsAt,
-      })),
-    });
-    pushToast({ title: "Dodano serię zmian", variant: "success" });
-    if (editModeEnabled) {
-      markEditModeActivity();
+    try {
+      await bulkCreateMutation.mutateAsync({
+        shifts: payloads.map((payload) => ({
+          employeeId: payload.employeeId,
+          locationId: payload.locationId,
+          position: payload.position,
+          note: payload.notes,
+          startAt: payload.startsAt,
+          endAt: payload.endsAt,
+          periodId: periodId ?? undefined,
+        })),
+      });
+      pushToast({ title: "Dodano serię zmian", variant: "success" });
+      if (editModeEnabled) {
+        markEditModeActivity();
+      }
+    } catch (error) {
+      handleReadonlyError(error);
     }
   };
 
@@ -1518,7 +1634,10 @@ export function SchedulePage() {
       if (editModeEnabled) {
         markEditModeActivity();
       }
-    } catch {
+    } catch (error) {
+      if (handleReadonlyError(error)) {
+        return;
+      }
       logDeleteFailure();
       pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
     }
@@ -1534,7 +1653,10 @@ export function SchedulePage() {
       if (editModeEnabled) {
         markEditModeActivity();
       }
-    } catch {
+    } catch (error) {
+      if (handleReadonlyError(error)) {
+        return;
+      }
       logDeleteFailure();
       pushToast({ title: "Nie udało się usunąć zmiany", variant: "error" });
     }
@@ -1583,8 +1705,38 @@ export function SchedulePage() {
     }
   };
 
+  const handleApprovePeriod = useCallback(async () => {
+    if (!canManage) return;
+    if (!periodId) {
+      pushToast({
+        title: "Brak okresu grafiku",
+        description: "Wybierz lokalizację, aby zatwierdzić grafik.",
+        variant: "warning",
+      });
+      return;
+    }
+    setLifecyclePending(true);
+    try {
+      await apiApproveGrafikPeriod({ periodId });
+      pushToast({ title: "Grafik zatwierdzony", variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    } catch (error) {
+      handleReadonlyError(error);
+    } finally {
+      setLifecyclePending(false);
+    }
+  }, [canManage, handleReadonlyError, periodId, queryClient]);
+
   const handlePublishSchedule = async () => {
     if (!canManage) return;
+    if (!periodId) {
+      pushToast({
+        title: "Brak okresu grafiku",
+        description: "Wybierz lokalizację, aby opublikować grafik.",
+        variant: "warning",
+      });
+      return;
+    }
     const employeeIds = Array.from(new Set(shifts.map((shift) => shift.employeeId)));
     if (!employeeIds.length) {
       pushToast({
@@ -1594,20 +1746,47 @@ export function SchedulePage() {
       });
       return;
     }
-    const from = formatDateKey(weekStart);
-    const to = formatDateKey(weekEnd);
-    const result = await apiPublishSchedule({
-      employeeIds,
-      dateRange: { from, to },
-    });
-    setPublishedWeeks((prev) => Array.from(new Set([...prev, weekKey])));
-    pushToast({
-      title: "Grafik opublikowany",
-      description: `Powiadomiono ${result.notified} pracowników.`,
-      variant: "success",
-    });
-    setPublishModalOpen(false);
+    setLifecyclePending(true);
+    try {
+      const result = await apiPublishGrafikPeriod({
+        periodId,
+        notify: true,
+      });
+      pushToast({
+        title: "Grafik opublikowany",
+        description: `Powiadomiono ${result.notifiedCount} pracowników.`,
+        variant: "success",
+      });
+      setPublishModalOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    } catch (error) {
+      handleReadonlyError(error);
+    } finally {
+      setLifecyclePending(false);
+    }
   };
+
+  const handleUnpublishPeriod = useCallback(async () => {
+    if (!canManage) return;
+    if (!periodId) {
+      pushToast({
+        title: "Brak okresu grafiku",
+        description: "Wybierz lokalizację, aby cofnąć publikację.",
+        variant: "warning",
+      });
+      return;
+    }
+    setLifecyclePending(true);
+    try {
+      await apiUnpublishGrafikPeriod({ periodId });
+      pushToast({ title: "Cofnięto publikację grafiku", variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    } catch (error) {
+      handleReadonlyError(error);
+    } finally {
+      setLifecyclePending(false);
+    }
+  }, [canManage, handleReadonlyError, periodId, queryClient]);
 
   const handleSortAction = useCallback(() => {
     setSortMode((prev) => (prev === "custom" ? "lastName" : "custom"));
@@ -1632,6 +1811,16 @@ export function SchedulePage() {
   );
 
   const rangeLabel = formatShortRangeLabel(weekStart, weekEnd);
+  const statusLabel = schedulePeriod ? STATUS_LABELS[schedulePeriod.status] : "Brak okresu";
+  const statusTone = schedulePeriod?.status ?? "DRAFT";
+  const statusClasses: Record<SchedulePeriodStatus, string> = {
+    DRAFT: "border-amber-200 bg-amber-50 text-amber-700",
+    APPROVED: "border-blue-200 bg-blue-50 text-blue-700",
+    PUBLISHED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  };
+  const statusClassName = schedulePeriod
+    ? statusClasses[statusTone]
+    : "border-surface-200 bg-surface-50 text-surface-600";
   const activeDescendantId = focusedCell
     ? buildGridCellId(focusedCell.employeeIndex, focusedCell.dayIndex)
     : undefined;
@@ -1657,6 +1846,12 @@ export function SchedulePage() {
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-[clamp(1.4rem,1.1vw+1rem,2rem)] font-semibold text-surface-900">Grafik pracy</h1>
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${statusClassName}`}
+            data-testid="grafik-status-badge"
+          >
+            {statusLabel}
+          </span>
           {editModeEnabled && (
             <span
               className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700"
@@ -1669,6 +1864,11 @@ export function SchedulePage() {
         <p className="text-sm text-surface-600">
           Układaj zmiany, sprawdzaj dyspozycje i publikuj grafik dla zespołu.
         </p>
+        {isPublished && (
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Grafik opublikowany — obowiązuje pracowników (tryb tylko do odczytu)
+          </div>
+        )}
       </div>
 
       <ScheduleToolbar
@@ -1685,9 +1885,14 @@ export function SchedulePage() {
         timeBuffer={timeBuffer}
         editModeEnabled={editModeEnabled}
         editModeHoldActive={editModeHoldActive}
-        editModeDisabled={!canEnableEditMode}
+        editModeDisabled={!canEnableEditMode || isPublished}
+        editModeDisabledReason={
+          !canEnableEditMode
+            ? "Tryb edycji jest dostępny tylko dla managerów i administratorów."
+            : "Grafik opublikowany — odblokuj, aby edytować."
+        }
         onToggleEditMode={() => {
-          if (!canEnableEditMode) return;
+          if (!canEnableEditMode || isPublished) return;
           if (editModeEnabled) {
             disableEditMode();
           } else {
@@ -1972,7 +2177,8 @@ export function SchedulePage() {
             <button
               type="button"
               onClick={handlePublishSchedule}
-              className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              disabled={lifecyclePending}
+              className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Publikuj
             </button>
