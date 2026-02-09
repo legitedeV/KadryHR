@@ -67,7 +67,7 @@ import { useOnboarding } from "@/features/onboarding/OnboardingProvider";
 import { DateRangeModal } from "./DateRangeModal";
 import { useAuth } from "@/lib/auth-context";
 import { ScheduleCostSummaryBar } from "./ScheduleCostSummaryBar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const EDIT_MODE_HOLD_MS = 1000;
 const DEFAULT_EDIT_MODE_TIMEOUT_MS = 120000;
@@ -97,11 +97,12 @@ const STATUS_LABELS: Record<SchedulePeriodStatus, string> = {
 
 export function SchedulePage() {
   const { hasAnyPermission } = usePermissions();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { startScheduleTour, hasScheduleTourCompleted, hasScheduleTourSkipped, isReady } = useOnboarding();
   const { setActionsSlot } = useTopbarActions();
-  const [hasToken] = useState(() => Boolean(getAccessToken()));
+  const hasToken = Boolean(getAccessToken());
   const canManage = hasAnyPermission(["SCHEDULE_MANAGE", "RCP_EDIT"]);
   const canEnableEditMode = user?.role === "MANAGER" || user?.role === "ADMIN";
   const canViewCosts = user?.role === "OWNER" || user?.role === "MANAGER";
@@ -111,9 +112,9 @@ export function SchedulePage() {
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [availability, setAvailability] = useState<AvailabilityRecord[]>([]);
   const [leaves, setLeaves] = useState<ApprovedLeaveRecord[]>([]);
-  const [loading, setLoading] = useState(() => Boolean(getAccessToken()));
+  const [loading, setLoading] = useState(() => hasToken);
   const [error, setError] = useState<string | null>(() =>
-    getAccessToken() ? null : "Zaloguj się, aby zobaczyć grafik.",
+    hasToken ? null : "Zaloguj się, aby zobaczyć grafik.",
   );
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -253,6 +254,25 @@ export function SchedulePage() {
     setGridActive(next);
   }, []);
 
+  const clearEditModeInactivityTimer = useCallback(() => {
+    if (editModeInactivityTimerRef.current) {
+      window.clearTimeout(editModeInactivityTimerRef.current);
+      editModeInactivityTimerRef.current = null;
+    }
+  }, []);
+
+  const clearEditModeHoldTimer = useCallback(() => {
+    if (editModeHoldTimerRef.current) {
+      window.clearTimeout(editModeHoldTimerRef.current);
+      editModeHoldTimerRef.current = null;
+    }
+    setEditModeHoldActive(false);
+  }, []);
+
+  if (process.env.NODE_ENV !== "production" && typeof clearEditModeHoldTimer !== "function") {
+    throw new Error("[grafik] edit mode hold timer handler missing");
+  }
+
   const handleGridFocusCapture = useCallback(() => {
     setGridActiveState(true);
   }, [setGridActiveState]);
@@ -287,21 +307,6 @@ export function SchedulePage() {
     if (flag) {
       setSkipDeleteConfirm(true);
     }
-  }, []);
-
-  const clearEditModeInactivityTimer = useCallback(() => {
-    if (editModeInactivityTimerRef.current) {
-      window.clearTimeout(editModeInactivityTimerRef.current);
-      editModeInactivityTimerRef.current = null;
-    }
-  }, []);
-
-  const clearEditModeHoldTimer = useCallback(() => {
-    if (editModeHoldTimerRef.current) {
-      window.clearTimeout(editModeHoldTimerRef.current);
-      editModeHoldTimerRef.current = null;
-    }
-    setEditModeHoldActive(false);
   }, []);
 
   const disableEditMode = useCallback(
@@ -383,14 +388,33 @@ export function SchedulePage() {
   }, [disableEditMode, editModeEnabled, pathname]);
 
   useEffect(() => {
-    if (!editModeEnabled) return;
     const handleUnauthorized = (event: Event) => {
       const detail = (event as CustomEvent<{ requestId?: string }>).detail;
+      console.info("[grafik] unauthorized", {
+        route: pathname,
+        requestId: detail?.requestId,
+        statusCode: 401,
+      });
       disableEditMode(detail?.requestId);
+      setError("Sesja wygasła — zaloguj się ponownie.");
+      setLoading(false);
+      pushToast({
+        title: "Sesja wygasła — zaloguj się ponownie",
+        variant: "warning",
+      });
+      router.replace("/login");
     };
     window.addEventListener("kadryhr:unauthorized", handleUnauthorized);
     return () => window.removeEventListener("kadryhr:unauthorized", handleUnauthorized);
-  }, [disableEditMode, editModeEnabled]);
+  }, [disableEditMode, pathname, router]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (hasToken) return;
+    setError("Zaloguj się, aby zobaczyć grafik.");
+    setLoading(false);
+    router.replace("/login");
+  }, [authLoading, hasToken, router]);
 
   const refreshAvailabilityAndLeaves = useCallback(async () => {
     const from = formatDateKey(weekStart);
