@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { apiClient } from "./api-client";
 import {
   apiGetMe,
@@ -27,6 +28,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const redirectingRef = useRef(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +56,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = (event: Event) => {
+      const detail = (event as CustomEvent<{ requestId?: string }>).detail;
+      console.info("[auth] unauthorized", {
+        route: pathname,
+        requestId: detail?.requestId,
+        statusCode: 401,
+      });
+      clearAuthTokens();
+      setUser(null);
+      setLoading(false);
+      pushToast({
+        title: "Sesja wygasła",
+        description: "Zaloguj się ponownie.",
+        variant: "warning",
+      });
+      if (pathname !== "/login" && !redirectingRef.current) {
+        redirectingRef.current = true;
+        router.replace("/login");
+      }
+    };
+    window.addEventListener("kadryhr:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("kadryhr:unauthorized", handleUnauthorized);
+  }, [pathname, router]);
 
   const login = async (email: string, password: string) => {
     try {

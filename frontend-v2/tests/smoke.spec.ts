@@ -69,26 +69,40 @@ test.describe('Smoke Tests', () => {
     expect(url).toMatch(/\/(panel\/pracownicy|login)/);
   });
 
-  test('schedule page route responds', async ({ page }) => {
+  test('panel grafik redirects unauthenticated users without crashing', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        pageErrors.push(msg.text());
+      }
+    });
+
+    await page.route('**/api/auth/me', async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      });
+    });
+
     await page.goto('/panel/grafik');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForURL('**/login');
 
-    const currentUrl = page.url();
-    if (currentUrl.includes('/login')) {
-      await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
-      return;
-    }
-
-    const errorMessage = page.getByText(/Zaloguj się, aby zobaczyć grafik/i);
-    if (await errorMessage.isVisible()) {
-      await expect(errorMessage).toBeVisible();
-      return;
-    }
-
-    await expect(page.getByRole('heading', { name: /grafik pracy/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Coś poszło nie tak/i })).toHaveCount(0);
+    expect(pageErrors.join('\n')).not.toMatch(/ReferenceError|Cannot access/i);
   });
 
   test('panel grafik renders schedule grid for authenticated user', async ({ page }, testInfo) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        pageErrors.push(msg.text());
+      }
+    });
+
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'kadryhr_auth_tokens',
@@ -231,6 +245,7 @@ test.describe('Smoke Tests', () => {
 
     await expect(page.getByRole('heading', { name: /Coś poszło nie tak/i })).toHaveCount(0);
     await expect(page.locator('[data-onboarding-target="schedule-grid"]')).toBeVisible();
+    expect(pageErrors.join('\n')).not.toMatch(/ReferenceError|Cannot access/i);
 
     await page.screenshot({
       path: testInfo.outputPath('panel-grafik.png'),
