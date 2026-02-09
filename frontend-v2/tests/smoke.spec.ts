@@ -78,7 +78,39 @@ test.describe('Smoke Tests', () => {
       }
     });
 
-    await page.route('**/api/auth/me', async (route) => {
+    await page.route('https://fonts.googleapis.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/css',
+        body: '',
+      });
+    });
+
+    await page.route('https://fonts.gstatic.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'font/woff2',
+        body: '',
+      });
+    });
+
+    await page.route('**/favicon.ico*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/x-icon',
+        body: '',
+      });
+    });
+
+    await page.route('**/api/auth/refresh**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ accessToken: '' }),
+      });
+    });
+
+    await page.route('**/api/auth/me**', async (route) => {
       await route.fulfill({
         status: 401,
         contentType: 'application/json',
@@ -91,7 +123,7 @@ test.describe('Smoke Tests', () => {
 
     await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Coś poszło nie tak/i })).toHaveCount(0);
-    expect(pageErrors.join('\n')).not.toMatch(/ReferenceError|Cannot access/i);
+    expect(pageErrors, `Console errors on /panel/grafik:\n${pageErrors.join('\n')}`).toEqual([]);
   });
 
   test('panel grafik renders schedule grid for authenticated user', async ({ page }, testInfo) => {
@@ -103,6 +135,22 @@ test.describe('Smoke Tests', () => {
       }
     });
 
+    await page.route('**/favicon.ico*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/x-icon',
+        body: '',
+      });
+    });
+
+    await page.route('**/api/auth/refresh**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ accessToken: 'test-token' }),
+      });
+    });
+
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'kadryhr_auth_tokens',
@@ -110,7 +158,7 @@ test.describe('Smoke Tests', () => {
       );
     });
 
-    await page.route('**/api/auth/me', async (route) => {
+    await page.route('**/api/auth/me**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -122,6 +170,31 @@ test.describe('Smoke Tests', () => {
           lastName: 'Manager',
           organisation: { id: 'org-1', name: 'Test Org' },
           permissions: ['SCHEDULE_VIEW', 'SCHEDULE_MANAGE'],
+        }),
+      });
+    });
+
+    await page.route('**/api/org/employees**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [
+            {
+              id: 'emp-1',
+              firstName: 'Jan',
+              lastName: 'Kowalski',
+              email: 'jan@example.com',
+              locations: [{ id: 'loc-1', name: 'Warszawa' }],
+              isActive: true,
+              isDeleted: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+          total: 1,
+          skip: 0,
+          take: 10,
         }),
       });
     });
@@ -245,7 +318,7 @@ test.describe('Smoke Tests', () => {
 
     await expect(page.getByRole('heading', { name: /Coś poszło nie tak/i })).toHaveCount(0);
     await expect(page.locator('[data-onboarding-target="schedule-grid"]')).toBeVisible();
-    expect(pageErrors.join('\n')).not.toMatch(/ReferenceError|Cannot access/i);
+    expect(pageErrors, `Console errors on /panel/grafik:\n${pageErrors.join('\n')}`).toEqual([]);
 
     await page.screenshot({
       path: testInfo.outputPath('panel-grafik.png'),

@@ -1377,6 +1377,50 @@ export function SchedulePage() {
     return () => window.clearTimeout(timer);
   }, [timeBuffer]);
 
+  const handleApprovePeriod = useCallback(async () => {
+    if (!canManage) return;
+    if (!periodId) {
+      pushToast({
+        title: "Brak okresu grafiku",
+        description: "Wybierz lokalizację, aby zatwierdzić grafik.",
+        variant: "warning",
+      });
+      return;
+    }
+    setLifecyclePending(true);
+    try {
+      await apiApproveGrafikPeriod({ periodId });
+      pushToast({ title: "Grafik zatwierdzony", variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    } catch (error) {
+      handleReadonlyError(error);
+    } finally {
+      setLifecyclePending(false);
+    }
+  }, [canManage, handleReadonlyError, periodId, queryClient]);
+
+  const handleUnpublishPeriod = useCallback(async () => {
+    if (!canManage) return;
+    if (!periodId) {
+      pushToast({
+        title: "Brak okresu grafiku",
+        description: "Wybierz lokalizację, aby cofnąć publikację.",
+        variant: "warning",
+      });
+      return;
+    }
+    setLifecyclePending(true);
+    try {
+      await apiUnpublishGrafikPeriod({ periodId });
+      pushToast({ title: "Cofnięto publikację grafiku", variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    } catch (error) {
+      handleReadonlyError(error);
+    } finally {
+      setLifecyclePending(false);
+    }
+  }, [canManage, handleReadonlyError, periodId, queryClient]);
+
   // Set topbar actions
   useEffect(() => {
     setActionsSlot(
@@ -1729,28 +1773,6 @@ export function SchedulePage() {
     }
   };
 
-  const handleApprovePeriod = useCallback(async () => {
-    if (!canManage) return;
-    if (!periodId) {
-      pushToast({
-        title: "Brak okresu grafiku",
-        description: "Wybierz lokalizację, aby zatwierdzić grafik.",
-        variant: "warning",
-      });
-      return;
-    }
-    setLifecyclePending(true);
-    try {
-      await apiApproveGrafikPeriod({ periodId });
-      pushToast({ title: "Grafik zatwierdzony", variant: "success" });
-      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-    } catch (error) {
-      handleReadonlyError(error);
-    } finally {
-      setLifecyclePending(false);
-    }
-  }, [canManage, handleReadonlyError, periodId, queryClient]);
-
   const handlePublishSchedule = async () => {
     if (!canManage) return;
     if (!periodId) {
@@ -1789,28 +1811,6 @@ export function SchedulePage() {
       setLifecyclePending(false);
     }
   };
-
-  const handleUnpublishPeriod = useCallback(async () => {
-    if (!canManage) return;
-    if (!periodId) {
-      pushToast({
-        title: "Brak okresu grafiku",
-        description: "Wybierz lokalizację, aby cofnąć publikację.",
-        variant: "warning",
-      });
-      return;
-    }
-    setLifecyclePending(true);
-    try {
-      await apiUnpublishGrafikPeriod({ periodId });
-      pushToast({ title: "Cofnięto publikację grafiku", variant: "success" });
-      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-    } catch (error) {
-      handleReadonlyError(error);
-    } finally {
-      setLifecyclePending(false);
-    }
-  }, [canManage, handleReadonlyError, periodId, queryClient]);
 
   const handleSortAction = useCallback(() => {
     setSortMode((prev) => (prev === "custom" ? "lastName" : "custom"));
