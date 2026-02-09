@@ -14,11 +14,28 @@ import type { AuthenticatedUser } from '../../auth/types/authenticated-user.type
 export class PermissionsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  private expandLegacyPermissions(permissions: Permission[]): Permission[] {
+    const expanded = new Set(permissions);
+    if (expanded.has(Permission.SCHEDULE_MANAGE)) {
+      expanded.add(Permission.RCP_EDIT);
+    }
+    if (expanded.has(Permission.RCP_EDIT)) {
+      expanded.add(Permission.SCHEDULE_MANAGE);
+    }
+    if (expanded.has(Permission.REPORTS_EXPORT)) {
+      expanded.add(Permission.REPORT_EXPORT);
+    }
+    if (expanded.has(Permission.REPORT_EXPORT)) {
+      expanded.add(Permission.REPORTS_EXPORT);
+    }
+    return Array.from(expanded);
+  }
+
   private resolvePermissions(user: AuthenticatedUser): Permission[] {
     if (user.permissions && user.permissions.length > 0) {
-      return user.permissions;
+      return this.expandLegacyPermissions(user.permissions);
     }
-    return getPermissionsForRole(user.role);
+    return this.expandLegacyPermissions(getPermissionsForRole(user.role));
   }
 
   canActivate(context: ExecutionContext): boolean {
