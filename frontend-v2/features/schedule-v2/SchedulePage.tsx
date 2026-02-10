@@ -632,7 +632,7 @@ export function SchedulePage() {
   ];
 
   const visibleEmployees = useMemo(() => {
-    let filtered = employees;
+    let filtered = employees.filter((employee) => employee.status !== "ARCHIVED");
     if (selectedLocationId) {
       filtered = filtered.filter((employee) =>
         employee.locations?.some((location) => location.id === selectedLocationId),

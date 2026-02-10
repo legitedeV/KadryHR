@@ -59,9 +59,9 @@ export function EmployeeDocumentsList({
             <button type="button" onClick={() => onEdit(doc)} className="btn-secondary">
               Edytuj
             </button>
-            {doc.status !== "ARCHIVED" && (
+            {doc.status !== "EXPIRED" && (
               <button type="button" onClick={() => onArchive(doc.id)} className="btn-secondary">
-                Archiwizuj
+                Oznacz jako wygasły
               </button>
             )}
             <button type="button" onClick={() => onDelete(doc.id)} className="btn-danger">

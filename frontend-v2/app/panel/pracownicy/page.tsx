@@ -344,9 +344,9 @@ export default function PracownicyPage() {
   };
 
   const documentStatusLabels: Record<EmployeeDocumentStatus, string> = {
+    DRAFT: "Szkic",
     ACTIVE: "Aktywny",
     EXPIRED: "Wygasły",
-    ARCHIVED: "Archiwum",
   };
 
   const contractTypeLabels: Record<EmployeeContractRecord["contractType"], string> = {
@@ -481,19 +481,19 @@ export default function PracownicyPage() {
     }
   };
 
-  const handleDocumentArchive = async (documentId: string) => {
+  const handleDocumentExpire = async (documentId: string) => {
     if (!selectedEmployee) return;
     try {
       await apiUpdateEmployeeDocument({
         employeeId: selectedEmployee.id,
         documentId,
-        data: { status: "ARCHIVED" },
+        data: { status: "EXPIRED" },
       });
       await refreshDocuments(selectedEmployee.id);
-      pushToast({ title: "Dokument zarchiwizowany", variant: "success" });
+      pushToast({ title: "Dokument oznaczono jako wygasły", variant: "success" });
     } catch (err) {
       pushToast({
-        title: "Nie udało się zarchiwizować dokumentu",
+        title: "Nie udało się oznaczyć dokumentu jako wygasły",
         description: err instanceof Error ? err.message : undefined,
         variant: "error",
       });
@@ -778,7 +778,7 @@ export default function PracownicyPage() {
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {employee.isActive && !employee.isDeleted ? "Aktywny" : "Nieaktywny"}
+                        {employee.status === "ACTIVE" ? "Aktywny" : employee.status === "SUSPENDED" ? "Zawieszony" : "Zarchiwizowany"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -1034,7 +1034,7 @@ export default function PracownicyPage() {
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {selectedEmployee.isActive && !selectedEmployee.isDeleted ? "Aktywny" : "Nieaktywny"}
+                    {selectedEmployee.status === "ACTIVE" ? "Aktywny" : selectedEmployee.status === "SUSPENDED" ? "Zawieszony" : "Zarchiwizowany"}
                   </span>
                 </div>
               </div>
@@ -1249,7 +1249,7 @@ export default function PracownicyPage() {
                       documentStatusLabels={documentStatusLabels}
                       formatFileSize={formatFileSize}
                       onEdit={handleDocumentEdit}
-                      onArchive={handleDocumentArchive}
+                      onArchive={handleDocumentExpire}
                       onDelete={handleDocumentDelete}
                     />
                   )}

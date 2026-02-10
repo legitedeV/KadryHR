@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { NotificationType, ScheduleStatus, type Prisma } from '@prisma/client';
+import { EmployeeStatus, NotificationType, ScheduleStatus, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditService } from '../audit/audit.service';
@@ -122,7 +122,7 @@ export class EmployeesService {
    */
   async findAllForOrganisationOrdering(organisationId: string) {
     const items = await this.prisma.employee.findMany({
-      where: { organisationId },
+      where: { organisationId, status: { not: EmployeeStatus.ARCHIVED }, isDeleted: false },
       orderBy: [
         { sortOrder: { sort: 'asc', nulls: 'last' } },
         { lastName: 'asc' },
@@ -267,26 +267,28 @@ export class EmployeesService {
       ];
     }
 
-    if (query.status && query.status !== 'all') {
-      if (query.status === 'active') {
-        where.isActive = true;
-        where.isDeleted = false;
-      }
+    if (!query.status || query.status === 'all') {
+      where.status = { not: EmployeeStatus.ARCHIVED };
+    }
 
-      if (query.status === 'inactive') {
-        const existingAnd = Array.isArray(where.AND)
-          ? where.AND
-          : where.AND
-            ? [where.AND]
-            : [];
+    if (query.status === 'active') {
+      where.status = EmployeeStatus.ACTIVE;
+      where.isDeleted = false;
+    }
 
-        where.AND = [
-          ...existingAnd,
-          {
-            OR: [{ isActive: false }, { isDeleted: true }],
-          },
-        ];
-      }
+    if (query.status === 'inactive') {
+      const existingAnd = Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : [];
+
+      where.AND = [
+        ...existingAnd,
+        {
+          OR: [{ status: { not: EmployeeStatus.ACTIVE } }, { isDeleted: true }],
+        },
+      ];
     }
 
     const [items, total] = await this.prisma.$transaction([
@@ -429,6 +431,7 @@ export class EmployeesService {
       const data: Prisma.EmployeeUpdateInput = {
         isDeleted: true,
         isActive: false,
+        status: EmployeeStatus.ARCHIVED,
       };
 
       if (!existing.employmentEndDate) {
@@ -494,6 +497,7 @@ export class EmployeesService {
 
     const data: Prisma.EmployeeUpdateInput = {
       isActive: false,
+      status: EmployeeStatus.SUSPENDED,
     };
 
     if (!employee.employmentEndDate) {
@@ -538,6 +542,7 @@ export class EmployeesService {
       data: {
         isActive: true,
         isDeleted: false,
+        status: EmployeeStatus.ACTIVE,
         employmentEndDate: null,
       },
     });
