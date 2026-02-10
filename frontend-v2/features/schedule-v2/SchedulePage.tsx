@@ -68,6 +68,7 @@ import { useOnboarding } from "@/features/onboarding/OnboardingProvider";
 import { DateRangeModal } from "./DateRangeModal";
 import { useAuth } from "@/lib/auth-context";
 import { ScheduleCostSummaryBar } from "./ScheduleCostSummaryBar";
+import { AuditHistoryDrawer } from "@/components/AuditHistoryDrawer";
 import { usePathname, useRouter } from "next/navigation";
 
 const EDIT_MODE_HOLD_MS = 1000;
@@ -184,6 +185,7 @@ export function SchedulePage() {
   const gridRootRef = useRef<HTMLDivElement | null>(null);
   const gridActiveRef = useRef(false);
   const [gridActive, setGridActive] = useState(false);
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
 
 
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
@@ -1485,6 +1487,15 @@ export function SchedulePage() {
             Cofnij publikację
           </button>
         )}
+        {user?.role !== "EMPLOYEE" && (
+          <button
+            type="button"
+            onClick={() => setAuditDrawerOpen(true)}
+            className="rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-semibold text-surface-700 hover:bg-surface-100 transition-colors"
+          >
+            Historia zmian
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setKeyboardMode((prev) => !prev)}
@@ -1511,6 +1522,7 @@ export function SchedulePage() {
     periodId,
     schedulePeriod?.status,
     setActionsSlot,
+    user?.role,
   ]);
 
   const contextMenuOptions = useMemo(() => {
@@ -2202,6 +2214,13 @@ export function SchedulePage() {
           </label>
         </div>
       </Modal>
+
+      <AuditHistoryDrawer
+        open={auditDrawerOpen}
+        onClose={() => setAuditDrawerOpen(false)}
+        title="Historia zmian · Grafik"
+        actions={["grafik.publish", "grafik.unpublish", "shift.create", "shift.update", "shift.delete", "employee.reorder"]}
+      />
 
       <DateRangeModal
         open={dateRangeModalOpen}

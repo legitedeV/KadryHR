@@ -16,6 +16,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditService } from '../audit/audit.service';
+import { AUDIT_ACTIONS } from '../audit/audit-events';
 import { LeaveBalanceService } from './leave-balance.service';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
@@ -421,11 +422,29 @@ export class LeaveRequestsService {
     await this.auditService.log({
       organisationId,
       actorUserId: approverUserId,
-      action: 'leave.status_change',
+      action:
+        dto.status === LeaveStatus.APPROVED
+          ? AUDIT_ACTIONS.LEAVE_APPROVE
+          : dto.status === LeaveStatus.REJECTED
+            ? AUDIT_ACTIONS.LEAVE_REJECT
+            : 'leave.status_change',
       entityType: 'LeaveRequest',
       entityId: id,
-      before: existing,
-      after: updated,
+      before: {
+        status: existing.status,
+        employeeId: existing.employeeId,
+        startDate: existing.startDate,
+        endDate: existing.endDate,
+        leaveTypeId: existing.leaveTypeId,
+      },
+      after: {
+        status: updated.status,
+        employeeId: updated.employeeId,
+        startDate: updated.startDate,
+        endDate: updated.endDate,
+        leaveTypeId: updated.leaveTypeId,
+        decisionAt: updated.decisionAt,
+      },
     });
 
     await this.notifyStatusChange(updated, organisationId, dto.status);

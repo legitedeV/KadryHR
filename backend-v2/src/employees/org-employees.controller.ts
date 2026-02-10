@@ -89,6 +89,7 @@ export class OrgEmployeesController {
         user.organisationId,
         dto.orderedEmployeeIds ?? [],
         dto.periodId,
+        user.id,
       );
       this.logger.log(
         JSON.stringify({
