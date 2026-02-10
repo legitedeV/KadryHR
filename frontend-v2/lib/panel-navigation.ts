@@ -84,5 +84,6 @@ export const titleByPath: Record<string, string> = {
   "/panel/pracownicy": "Pracownicy",
   "/panel/organizacja": "Ustawienia organizacji",
   "/panel/profil": "Profil",
+  "/panel/urlopy": "Urlopy",
   "/panel/dashboard": "Dashboard",
 };

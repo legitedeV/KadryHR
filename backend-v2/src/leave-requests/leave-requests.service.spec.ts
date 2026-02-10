@@ -72,14 +72,7 @@ describe('LeaveRequestsService', () => {
       organisationId: 'org-1',
       employeeId: 'emp-1',
     });
-    mockPrisma.leaveRequest.findFirst.mockResolvedValue({
-      id: 'lr-1',
-      organisationId: 'org-1',
-      status: LeaveStatus.PENDING,
-      startDate: new Date('2024-01-01T00:00:00.000Z'),
-      endDate: new Date('2024-01-02T00:00:00.000Z'),
-      type: LeaveCategory.PAID_LEAVE,
-    });
+    mockPrisma.leaveRequest.findFirst.mockResolvedValue(null);
     mockLeaveBalanceService.validateBalance.mockResolvedValue({ valid: true });
     mockLeaveBalanceService.updateUsedBalance.mockResolvedValue(undefined);
   });
@@ -122,7 +115,35 @@ describe('LeaveRequestsService', () => {
     );
   });
 
+
+  it('blocks overlapping leave requests with conflict error', async () => {
+    mockPrisma.leaveRequest.findFirst.mockResolvedValueOnce({ id: 'lr-existing' });
+
+    await expect(
+      service.create(
+        'org-1',
+        {
+          employeeId: 'emp-1',
+          type: LeaveCategory.PAID_LEAVE,
+          startDate: '2024-02-02T00:00:00.000Z',
+          endDate: '2024-02-05T00:00:00.000Z',
+        },
+        { userId: 'user-1', role: Role.MANAGER },
+      ),
+    ).rejects.toThrow('Istnieje już wniosek urlopowy pracownika');
+  });
+
   it('sets approval metadata when status changes', async () => {
+    mockPrisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'lr-1',
+      organisationId: 'org-1',
+      employeeId: 'emp-1',
+      status: LeaveStatus.PENDING,
+      startDate: new Date('2024-01-01T00:00:00.000Z'),
+      endDate: new Date('2024-01-02T00:00:00.000Z'),
+      type: LeaveCategory.PAID_LEAVE,
+      leaveTypeId: null,
+    });
     mockPrisma.leaveRequest.update.mockResolvedValue({
       id: 'lr-1',
       status: LeaveStatus.APPROVED,

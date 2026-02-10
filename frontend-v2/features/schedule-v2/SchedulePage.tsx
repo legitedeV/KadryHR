@@ -1066,6 +1066,24 @@ export function SchedulePage() {
         });
         return;
       }
+
+      if (employeeId && date) {
+        const leave = leaves.find((item) => {
+          if (item.employeeId !== employeeId) return false;
+          const dayKey = date.toISOString().slice(0, 10);
+          return item.startDate.slice(0, 10) <= dayKey && item.endDate.slice(0, 10) >= dayKey;
+        });
+
+        if (leave) {
+          pushToast({
+            title: "Urlop zatwierdzony",
+            description: "Nie można dodać zmiany dla pracownika w dniu zatwierdzonego urlopu.",
+            variant: "warning",
+          });
+          return;
+        }
+      }
+
       if (employeeId) {
         setActiveShift(null);
         setLockedEmployeeId(employeeId);
@@ -1078,7 +1096,7 @@ export function SchedulePage() {
         setShiftModalOpen(true);
       }
     },
-    [canManage, isPublished, weekStart],
+    [canManage, isPublished, leaves, weekStart],
   );
 
   const handleEditShift = useCallback(
