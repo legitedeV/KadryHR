@@ -13,11 +13,14 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
+import { RequireOrganisationModule } from '../common/decorators/organisation-module.decorator';
+import { OrganisationModuleGuard } from '../common/guards/organisation-module.guard';
 import { LeaveTypesService } from './leave-types.service';
 import { CreateLeaveTypeDto } from './dto/create-leave-type.dto';
 import { UpdateLeaveTypeDto } from './dto/update-leave-type.dto';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, OrganisationModuleGuard)
+@RequireOrganisationModule('urlopy')
 @Controller('leave-types')
 export class LeaveTypesController {
   constructor(private readonly leaveTypesService: LeaveTypesService) {}

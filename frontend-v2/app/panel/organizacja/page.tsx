@@ -7,18 +7,22 @@ import {
   apiGetMe,
   apiGetOrganisationDetails,
   apiGetOrganisationLocations,
+  apiGetOrganisationModules,
   apiGetOrganisationMembers,
   apiGetOrganisationScheduleSettings,
   apiInviteOrganisationMember,
   apiToggleOrganisationLocation,
   apiUpdateOrganisationDetails,
   apiUpdateOrganisationLocation,
+  apiUpdateOrganisationModules,
   apiUpdateOrganisationMemberRole,
   apiUpdateOrganisationScheduleSettings,
   apiUploadOrganisationLogo,
   OrganisationDetails,
   OrganisationLocation,
   OrganisationMember,
+  OrganisationModuleKey,
+  OrganisationModulesState,
   SchedulePeriodType,
   User,
   UserRole,
@@ -27,6 +31,7 @@ import {
 import { ApiError } from "@/lib/api-client";
 import { pushToast } from "@/lib/toast";
 import { Modal } from "@/components/Modal";
+import { MODULE_LABELS } from "@/lib/organisation-modules";
 import {
   applyLocationUpdate,
   applyMemberRoleUpdate,
@@ -38,6 +43,7 @@ const TABS = [
   { id: "locations", label: "Lokalizacje" },
   { id: "members", label: "Użytkownicy i role" },
   { id: "schedule", label: "Grafik i czas pracy" },
+  { id: "modules", label: "Moduły systemu" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -71,6 +77,10 @@ export default function OrganisationSettingsPage() {
   const [organisation, setOrganisation] = useState<OrganisationDetails | null>(null);
   const [locations, setLocations] = useState<OrganisationLocation[]>([]);
   const [members, setMembers] = useState<OrganisationMember[]>([]);
+  const [moduleState, setModuleState] = useState<OrganisationModulesState | null>(null);
+  const [coreModules, setCoreModules] = useState<OrganisationModuleKey[]>([]);
+  const [moduleSaving, setModuleSaving] = useState<OrganisationModuleKey | null>(null);
+  const [confirmDisable, setConfirmDisable] = useState<{ module: OrganisationModuleKey } | null>(null);
 
   const [companyForm, setCompanyForm] = useState({
     displayName: "",
@@ -133,18 +143,21 @@ export default function OrganisationSettingsPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [me, organisationData, locationData, memberData, scheduleData] = await Promise.all([
+      const [me, organisationData, locationData, memberData, scheduleData, modulesData] = await Promise.all([
         apiGetMe(),
         apiGetOrganisationDetails(),
         apiGetOrganisationLocations(),
         apiGetOrganisationMembers(),
         apiGetOrganisationScheduleSettings(),
+        apiGetOrganisationModules(),
       ]);
 
       setUser(me);
       setOrganisation(organisationData);
       setLocations(locationData);
       setMembers(memberData);
+      setModuleState(modulesData.modules);
+      setCoreModules(modulesData.coreModules);
       setScheduleForm({
         defaultWorkdayStart: scheduleData.defaultWorkdayStart,
         defaultWorkdayEnd: scheduleData.defaultWorkdayEnd,
@@ -440,6 +453,56 @@ export default function OrganisationSettingsPage() {
       setScheduleSaving(false);
     }
   }, [scheduleForm]);
+
+  const broadcastModulesUpdate = useCallback((modules: OrganisationModulesState) => {
+    window.dispatchEvent(new CustomEvent("kadryhr:modules-updated", { detail: modules }));
+  }, []);
+
+  const handleModuleToggle = useCallback(async (module: OrganisationModuleKey, enabled: boolean) => {
+    if (!moduleState) return;
+
+    if (!enabled && coreModules.includes(module)) {
+      return;
+    }
+
+    if (!enabled) {
+      setConfirmDisable({ module });
+      return;
+    }
+
+    setModuleSaving(module);
+    try {
+      const response = await apiUpdateOrganisationModules({ [module]: true });
+      setModuleState(response.modules);
+      setCoreModules(response.coreModules);
+      broadcastModulesUpdate(response.modules);
+      pushToast({ title: "Sukces", description: "Moduł został włączony.", variant: "success" });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Nie udało się zaktualizować modułu";
+      pushToast({ title: "Błąd", description: message, variant: "error" });
+    } finally {
+      setModuleSaving(null);
+    }
+  }, [broadcastModulesUpdate, coreModules, moduleState]);
+
+  const confirmDisableModule = useCallback(async () => {
+    if (!confirmDisable) return;
+
+    setModuleSaving(confirmDisable.module);
+    try {
+      const response = await apiUpdateOrganisationModules({ [confirmDisable.module]: false });
+      setModuleState(response.modules);
+      setCoreModules(response.coreModules);
+      broadcastModulesUpdate(response.modules);
+      pushToast({ title: "Sukces", description: "Moduł został wyłączony.", variant: "success" });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Nie udało się zaktualizować modułu";
+      pushToast({ title: "Błąd", description: message, variant: "error" });
+    } finally {
+      setModuleSaving(null);
+      setConfirmDisable(null);
+    }
+  }, [broadcastModulesUpdate, confirmDisable]);
 
   if (loading) {
     return <div className="text-sm text-surface-600">Ładowanie ustawień organizacji...</div>;
@@ -780,6 +843,40 @@ export default function OrganisationSettingsPage() {
           </div>
         )}
 
+
+        {activeTab === "modules" && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-main)]">Moduły systemu</p>
+              <p className="text-xs text-[var(--text-muted)]">Włączaj lub wyłączaj moduły dostępne dla całej organizacji.</p>
+            </div>
+
+            <div className="space-y-2">
+              {moduleState && (Object.entries(moduleState) as Array<[OrganisationModuleKey, boolean]>).map(([module, enabled]) => {
+                const locked = coreModules.includes(module);
+
+                return (
+                  <div key={module} className="flex items-center justify-between rounded-lg border border-[var(--panel-card-border)] bg-[var(--bg-page)] p-3">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-main)]">{MODULE_LABELS[module]}</p>
+                      {locked && <p className="text-xs text-[var(--text-muted)]">Moduł bazowy (nie można wyłączyć)</p>}
+                    </div>
+                    <label className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                      <input
+                        type="checkbox"
+                        checked={enabled}
+                        disabled={locked || moduleSaving === module}
+                        onChange={(e) => handleModuleToggle(module, e.target.checked)}
+                      />
+                      {enabled ? "Włączony" : "Wyłączony"}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {activeTab === "schedule" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -896,6 +993,20 @@ export default function OrganisationSettingsPage() {
           </div>
         )}
       </section>
+
+      <Modal
+        open={Boolean(confirmDisable)}
+        onClose={() => setConfirmDisable(null)}
+        title="Wyłączyć moduł?"
+        description="Wyłączenie modułu ukryje go wszystkim użytkownikom organizacji. Dane NIE zostaną usunięte."
+      >
+        <div className="flex justify-end gap-2">
+          <button className="panel-button" onClick={() => setConfirmDisable(null)}>Anuluj</button>
+          <button className="panel-button-primary" onClick={confirmDisableModule} disabled={!confirmDisable || moduleSaving !== null}>
+            Potwierdź
+          </button>
+        </div>
+      </Modal>
 
       <Modal
         open={locationModalOpen}

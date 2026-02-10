@@ -20,6 +20,7 @@ import {
   UpdateOrganisationLocationDto,
 } from './dto/organisation-location.dto';
 import { UpdateScheduleSettingsDto } from './dto/update-schedule-settings.dto';
+import { UpdateOrganisationModulesDto } from './dto/update-organisation-modules.dto';
 import {
   CreateOrganisationInvitationDto,
   UpdateOrganisationMemberRoleDto,
@@ -81,6 +82,25 @@ export class OrganisationSettingsController {
       user.organisationId,
       dto,
       user.id,
+    );
+  }
+
+  @Get('modules')
+  async getModules(@CurrentUser() user: AuthenticatedUser) {
+    return this.organisationSettingsService.getOrganisationModules(
+      user.organisationId,
+    );
+  }
+
+  @Patch('modules')
+  async updateModules(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateOrganisationModulesDto,
+  ) {
+    return this.organisationSettingsService.updateOrganisationModules(
+      user.organisationId,
+      user.id,
+      dto,
     );
   }
 

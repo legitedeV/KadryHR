@@ -55,6 +55,20 @@ export interface OrganisationScheduleSettings {
 
 export type SchedulePeriodStatus = "DRAFT" | "APPROVED" | "PUBLISHED";
 
+export type OrganisationModuleKey =
+  | "grafik"
+  | "dyspozycje"
+  | "rcp"
+  | "urlopy"
+  | "raporty";
+
+export type OrganisationModulesState = Record<OrganisationModuleKey, boolean>;
+
+export interface OrganisationModulesResponse {
+  modules: OrganisationModulesState;
+  coreModules: OrganisationModuleKey[];
+}
+
 export interface OrganisationLocation {
   id: string;
   name: string;
@@ -1757,6 +1771,21 @@ export async function apiDeleteOrganisationLogo(): Promise<{
       method: "DELETE",
     },
   );
+}
+
+export async function apiGetOrganisationModules(): Promise<OrganisationModulesResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationModulesResponse>(`${ORGANISATIONS_PREFIX}/me/modules`);
+}
+
+export async function apiUpdateOrganisationModules(
+  payload: Partial<OrganisationModulesState>,
+): Promise<OrganisationModulesResponse> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<OrganisationModulesResponse>(`${ORGANISATION_PREFIX}/modules`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function apiGetOrganisationScheduleSettings(): Promise<OrganisationScheduleSettings> {

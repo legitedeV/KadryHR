@@ -7,15 +7,26 @@ import { UpdateOrganisationDto } from './dto/update-organisation.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { OrganisationSettingsService } from './organisation-settings.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('organisations')
 export class OrganisationsController {
-  constructor(private readonly organisationsService: OrganisationsService) {}
+  constructor(
+    private readonly organisationsService: OrganisationsService,
+    private readonly organisationSettingsService: OrganisationSettingsService,
+  ) {}
 
   @Get('me')
   async me(@CurrentUser() user: AuthenticatedUser) {
     return this.organisationsService.findOne(user.organisationId);
+  }
+
+  @Get('me/modules')
+  async getModules(@CurrentUser() user: AuthenticatedUser) {
+    return this.organisationSettingsService.getOrganisationModules(
+      user.organisationId,
+    );
   }
 
   @Patch('me')

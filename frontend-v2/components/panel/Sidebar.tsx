@@ -5,9 +5,10 @@ import type { ReactNode } from "react";
 import { panelNavItems, PanelNavItemId } from "@/lib/panel-navigation";
 import { BrandLogoStatic } from "@/components/brand/BrandLogoStatic";
 import { Avatar } from "@/components/Avatar";
-import type { User } from "@/lib/api";
+import type { OrganisationModulesState, User } from "@/lib/api";
 import type { OnboardingTargetId } from "@/features/onboarding/onboarding.types";
 import { buildAvatarSrc } from "@/lib/avatar";
+import { NAV_ITEM_TO_MODULE } from "@/lib/organisation-modules";
 
 const navItemToOnboardingTarget: Partial<Record<PanelNavItemId, OnboardingTargetId>> = {
   schedule: "nav-schedule",
@@ -24,6 +25,7 @@ type SidebarProps = {
   collapsed?: boolean;
   isLoading?: boolean;
   errorMessage?: string | null;
+  modules?: OrganisationModulesState | null;
 };
 
 const roleLabels: Record<User["role"], string> = {
@@ -42,6 +44,7 @@ export function Sidebar({
   collapsed = false,
   isLoading = false,
   errorMessage,
+  modules,
 }: SidebarProps) {
   const userPermissions = user?.permissions ?? [];
   const userName = user?.name?.trim() ?? "";
@@ -63,6 +66,11 @@ export function Sidebar({
         </p>
         {panelNavItems
           .filter((item) => {
+            const mappedModule = NAV_ITEM_TO_MODULE[item.id];
+            if (mappedModule && modules && !modules[mappedModule]) {
+              return false;
+            }
+
             if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
               return true;
             }
