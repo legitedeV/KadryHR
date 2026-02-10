@@ -130,6 +130,7 @@ export class OrganisationsService {
       date: string;
       type: 'ZMIANA_PROMOCJI' | 'MALA_PROMOCJA';
     }>;
+    holidays: string[];
   }> {
     const DAYS_IN_WEEK = 7;
     const TUESDAY = 2; // JS day number for Tuesday
@@ -196,6 +197,10 @@ export class OrganisationsService {
       current.setDate(current.getDate() + 1);
     }
 
-    return { deliveryDays, promotionDays };
+    return {
+      deliveryDays,
+      promotionDays,
+      holidays: (org.holidays ?? []).filter((holiday) => holiday >= from.toISOString().slice(0, 10) && holiday <= to.toISOString().slice(0, 10)),
+    };
   }
 }

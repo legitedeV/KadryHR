@@ -48,6 +48,7 @@ type ScheduleGridProps = {
   isPublished: boolean;
   summaryByDay?: Array<{ date: string; hours: number; cost: number }>;
   summaryCurrency?: string;
+  holidays?: string[];
   showLoadBars?: boolean;
   showSummaryRow?: boolean;
   showWeekendHighlight?: boolean;
@@ -80,6 +81,7 @@ export function ScheduleGrid({
   isPublished,
   summaryByDay,
   summaryCurrency,
+  holidays = [],
   showLoadBars = true,
   showSummaryRow = true,
   showWeekendHighlight = true,
@@ -148,6 +150,7 @@ export function ScheduleGrid({
   const summaryByDate = new Map(
     (summaryByDay ?? []).map((entry) => [entry.date, entry]),
   );
+  const holidaySet = new Set(holidays);
   const currencyFormatter = new Intl.NumberFormat("pl-PL", {
     style: "currency",
     currency: summaryCurrency ?? "PLN",
@@ -209,12 +212,18 @@ export function ScheduleGrid({
             </div>
             {days.map((day) => {
               const isWeekend = WEEKEND_DAYS.has(day.date.getDay());
+              const isHoliday = holidaySet.has(day.iso);
               return (
                 <div key={day.iso} className={`px-3 py-3 ${showWeekendHighlight && isWeekend ? "bg-surface-100/80" : ""}`}>
                   <p className="text-xs uppercase tracking-[0.18em] text-surface-400">
                     {formatWeekdayLabel(day.date)}
                   </p>
                   <p className="text-sm font-semibold text-surface-800">{formatDayLabel(day.date)}</p>
+                  {isHoliday && (
+                    <span data-testid={`holiday-marker-${day.iso}`} className="mt-1 inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-rose-700">
+                      Święto
+                    </span>
+                  )}
                 </div>
               );
             })}

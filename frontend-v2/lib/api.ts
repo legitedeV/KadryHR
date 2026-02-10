@@ -46,7 +46,10 @@ export interface OrganisationScheduleSettings {
   defaultWorkdayStart: string;
   defaultWorkdayEnd: string;
   defaultBreakMinutes: number;
+  dailyWorkNormHours: number;
+  weeklyWorkNormHours: number;
   workDays: Weekday[];
+  holidays: string[];
   schedulePeriod: SchedulePeriodType;
 }
 
@@ -342,6 +345,7 @@ export interface ScheduleMetadata {
     date: string;
     type: "ZMIANA_PROMOCJI" | "MALA_PROMOCJA";
   }>;
+  holidays: string[];
 }
 
 export interface ApprovedLeaveRecord {

@@ -125,7 +125,10 @@ export class OrganisationSettingsService {
       defaultWorkdayStart: organisation.defaultWorkdayStart ?? '08:00',
       defaultWorkdayEnd: organisation.defaultWorkdayEnd ?? '16:00',
       defaultBreakMinutes: organisation.defaultBreakMinutes ?? 30,
+      dailyWorkNormHours: organisation.dailyWorkNormHours ?? 8,
+      weeklyWorkNormHours: organisation.weeklyWorkNormHours ?? 40,
       workDays: organisation.workDays ?? [],
+      holidays: organisation.holidays ?? [],
       schedulePeriod: organisation.schedulePeriod ?? SchedulePeriodType.WEEKLY,
     };
   }
@@ -137,9 +140,14 @@ export class OrganisationSettingsService {
   ) {
     const before = await this.getOrganisationDetails(organisationId);
 
+    const scheduleData: UpdateScheduleSettingsDto = { ...dto };
+    if (dto.holidays) {
+      scheduleData.holidays = Array.from(new Set(dto.holidays)).sort();
+    }
+
     const updated = await this.prisma.organisation.update({
       where: { id: organisationId },
-      data: dto,
+      data: scheduleData,
     });
 
     await this.auditService.record({
@@ -152,14 +160,20 @@ export class OrganisationSettingsService {
         defaultWorkdayStart: before.defaultWorkdayStart,
         defaultWorkdayEnd: before.defaultWorkdayEnd,
         defaultBreakMinutes: before.defaultBreakMinutes,
+        dailyWorkNormHours: before.dailyWorkNormHours,
+        weeklyWorkNormHours: before.weeklyWorkNormHours,
         workDays: before.workDays,
+        holidays: before.holidays,
         schedulePeriod: before.schedulePeriod,
       },
       after: {
         defaultWorkdayStart: updated.defaultWorkdayStart,
         defaultWorkdayEnd: updated.defaultWorkdayEnd,
         defaultBreakMinutes: updated.defaultBreakMinutes,
+        dailyWorkNormHours: updated.dailyWorkNormHours,
+        weeklyWorkNormHours: updated.weeklyWorkNormHours,
         workDays: updated.workDays,
+        holidays: updated.holidays,
         schedulePeriod: updated.schedulePeriod,
       },
     });
@@ -168,7 +182,10 @@ export class OrganisationSettingsService {
       defaultWorkdayStart: updated.defaultWorkdayStart,
       defaultWorkdayEnd: updated.defaultWorkdayEnd,
       defaultBreakMinutes: updated.defaultBreakMinutes,
+      dailyWorkNormHours: updated.dailyWorkNormHours,
+      weeklyWorkNormHours: updated.weeklyWorkNormHours,
       workDays: updated.workDays,
+      holidays: updated.holidays,
       schedulePeriod: updated.schedulePeriod,
     };
   }

@@ -34,7 +34,7 @@ import {
 } from "./organisation-settings.utils";
 
 const TABS = [
-  { id: "company", label: "Dane firmy" },
+  { id: "company", label: "Ustawienia" },
   { id: "locations", label: "Lokalizacje" },
   { id: "members", label: "Użytkownicy i role" },
   { id: "schedule", label: "Grafik i czas pracy" },
@@ -116,7 +116,11 @@ export default function OrganisationSettingsPage() {
     defaultWorkdayStart: "08:00",
     defaultWorkdayEnd: "16:00",
     defaultBreakMinutes: 30,
+    dailyWorkNormHours: 8,
+    weeklyWorkNormHours: 40,
     workDays: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] as Weekday[],
+    holidays: [] as string[],
+    holidaysInput: "",
     schedulePeriod: "WEEKLY" as SchedulePeriodType,
   });
   const [scheduleSaving, setScheduleSaving] = useState(false);
@@ -145,7 +149,11 @@ export default function OrganisationSettingsPage() {
         defaultWorkdayStart: scheduleData.defaultWorkdayStart,
         defaultWorkdayEnd: scheduleData.defaultWorkdayEnd,
         defaultBreakMinutes: scheduleData.defaultBreakMinutes,
+        dailyWorkNormHours: scheduleData.dailyWorkNormHours,
+        weeklyWorkNormHours: scheduleData.weeklyWorkNormHours,
         workDays: scheduleData.workDays,
+        holidays: scheduleData.holidays,
+        holidaysInput: scheduleData.holidays.join(", "),
         schedulePeriod: scheduleData.schedulePeriod,
       });
       setCompanyForm({
@@ -406,13 +414,24 @@ export default function OrganisationSettingsPage() {
   const handleScheduleSave = useCallback(async () => {
     setScheduleSaving(true);
     try {
-      const updated = await apiUpdateOrganisationScheduleSettings({
+      const holidays = scheduleForm.holidaysInput
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      const normalizedHolidays = Array.from(new Set(holidays)).sort();
+
+      await apiUpdateOrganisationScheduleSettings({
         defaultWorkdayStart: scheduleForm.defaultWorkdayStart,
         defaultWorkdayEnd: scheduleForm.defaultWorkdayEnd,
         defaultBreakMinutes: scheduleForm.defaultBreakMinutes,
+        dailyWorkNormHours: scheduleForm.dailyWorkNormHours,
+        weeklyWorkNormHours: scheduleForm.weeklyWorkNormHours,
         workDays: scheduleForm.workDays,
+        holidays: normalizedHolidays,
         schedulePeriod: scheduleForm.schedulePeriod,
       });
+      setScheduleForm((prev) => ({ ...prev, holidays: normalizedHolidays, holidaysInput: normalizedHolidays.join(", ") }));
       pushToast({ title: "Zapisano", description: "Ustawienia grafiku zostały zapisane.", variant: "success" });
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "Nie udało się zapisać ustawień";
@@ -775,7 +794,7 @@ export default function OrganisationSettingsPage() {
               </button>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-5">
               <label className="text-xs text-[var(--text-muted)]">
                 Start pracy
                 <input
@@ -805,6 +824,28 @@ export default function OrganisationSettingsPage() {
                   onChange={(e) => setScheduleForm((prev) => ({ ...prev, defaultBreakMinutes: Number(e.target.value) }))}
                 />
               </label>
+              <label className="text-xs text-[var(--text-muted)]">
+                Norma dobowa (h)
+                <input
+                  type="number"
+                  className="panel-input mt-1"
+                  min={1}
+                  max={24}
+                  value={scheduleForm.dailyWorkNormHours}
+                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, dailyWorkNormHours: Number(e.target.value) }))}
+                />
+              </label>
+              <label className="text-xs text-[var(--text-muted)]">
+                Norma tygodniowa (h)
+                <input
+                  type="number"
+                  className="panel-input mt-1"
+                  min={1}
+                  max={168}
+                  value={scheduleForm.weeklyWorkNormHours}
+                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, weeklyWorkNormHours: Number(e.target.value) }))}
+                />
+              </label>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -830,6 +871,15 @@ export default function OrganisationSettingsPage() {
                   ))}
                 </div>
               </div>
+              <label className="text-xs text-[var(--text-muted)]">
+                Święta (YYYY-MM-DD, po przecinku)
+                <input
+                  className="panel-input mt-1"
+                  value={scheduleForm.holidaysInput}
+                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, holidaysInput: e.target.value }))}
+                  placeholder="2026-01-01, 2026-12-25"
+                />
+              </label>
               <label className="text-xs text-[var(--text-muted)]">
                 Okres planowania
                 <select

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -71,6 +72,18 @@ export class OrganisationSettingsController {
     );
   }
 
+  @Put('schedule-settings')
+  async replaceScheduleSettings(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateScheduleSettingsDto,
+  ) {
+    return this.organisationSettingsService.updateScheduleSettings(
+      user.organisationId,
+      dto,
+      user.id,
+    );
+  }
+
   @Get('locations')
   async listLocations(@CurrentUser() user: AuthenticatedUser) {
     return this.organisationSettingsService.listLocations(user.organisationId);
@@ -90,6 +103,20 @@ export class OrganisationSettingsController {
 
   @Patch('locations/:id')
   async updateLocation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateOrganisationLocationDto,
+  ) {
+    return this.organisationSettingsService.updateLocation(
+      user.organisationId,
+      id,
+      dto,
+      user.id,
+    );
+  }
+
+  @Put('locations/:id')
+  async replaceLocation(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: UpdateOrganisationLocationDto,

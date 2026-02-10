@@ -169,7 +169,10 @@ model Organisation {
   defaultWorkdayStart         String?  @default("08:00")
   defaultWorkdayEnd           String?  @default("16:00")
   defaultBreakMinutes         Int?     @default(30)
+  dailyWorkNormHours          Int?     @default(8)
+  weeklyWorkNormHours         Int?     @default(40)
   workDays                    Weekday[] @default([])
+  holidays                    String[] @default([])
   schedulePeriod              SchedulePeriodType @default(WEEKLY)
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
