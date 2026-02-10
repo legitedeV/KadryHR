@@ -1,4 +1,9 @@
-import { AuthTokens, clearAuthTokens, getAuthTokens, saveAuthTokens } from "./auth";
+import {
+  AuthTokens,
+  clearAuthTokens,
+  getAuthTokens,
+  saveAuthTokens,
+} from "./auth";
 import { pushToast } from "./toast";
 
 export const API_BASE_URL =
@@ -69,6 +74,28 @@ class ApiClient {
     }
   }
 
+  async requestRaw(
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<Response> {
+    const { auth = true, ...init } = options;
+    const headers = new Headers(init.headers ?? {});
+
+    if (auth) {
+      this.hydrateFromStorage();
+      const token = this.tokens?.accessToken;
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    }
+
+    return fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers,
+      credentials: init.credentials ?? "include",
+    });
+  }
+
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const {
       auth = true,
@@ -87,7 +114,11 @@ class ApiClient {
       }
     }
 
-    if (init.body && !headers.has("Content-Type") && !(init.body instanceof FormData)) {
+    if (
+      init.body &&
+      !headers.has("Content-Type") &&
+      !(init.body instanceof FormData)
+    ) {
       headers.set("Content-Type", "application/json");
     }
 
@@ -155,7 +186,7 @@ class ApiClient {
       });
       if (!suppressToast) {
         pushToast({
-          title: "Błąd", 
+          title: "Błąd",
           description: message ?? "Coś poszło nie tak. Spróbuj ponownie.",
           variant: "error",
         });

@@ -1,73 +1,73 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  PayloadTooLargeException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { LeaveStatus, RcpEventType } from '@prisma/client';
+import * as XLSX from 'xlsx';
+
+export type ReportType = 'work-time' | 'absences';
+export type ReportFormat = 'csv' | 'xlsx';
+
+export type ReportExportListItem = {
+  id: string;
+  reportType: ReportType;
+  format: ReportFormat;
+  rowCount: number;
+  filters: Record<string, string | null>;
+  createdAt: Date;
+  createdBy: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
+};
 
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private readonly MS_PER_HOUR = 1000 * 60 * 60;
-  private readonly NO_LOCATION_LABEL = 'Bez lokalizacji';
+  private readonly MAX_EXPORT_ROWS_SYNC = 5000;
 
-  /**
-   * Get schedule summary for date range
-   */
-  async getScheduleSummary(
+  normalizeDateRange(from?: string, to?: string) {
+    if (!from || !to) {
+      throw new BadRequestException('Parametry from i to są wymagane');
+    }
+
+    const fromDate = new Date(`${from}T00:00:00.000Z`);
+    const toDate = new Date(`${to}T23:59:59.999Z`);
+
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+      throw new BadRequestException('Nieprawidłowy zakres dat');
+    }
+
+    if (fromDate > toDate) {
+      throw new BadRequestException(
+        'Data od nie może być późniejsza niż data do',
+      );
+    }
+
+    return { fromDate, toDate };
+  }
+
+  async getWorkTimeReport(
     organisationId: string,
     from: Date,
     to: Date,
-    locationId?: string,
+    filters: { locationId?: string; employeeId?: string },
   ) {
-    const shifts = await this.prisma.shift.findMany({
+    const events = await this.prisma.rcpEvent.findMany({
       where: {
         organisationId,
-        startsAt: {
-          gte: from,
-          lte: to,
-        },
-        ...(locationId ? { locationId } : {}),
+        happenedAt: { gte: from, lte: to },
+        ...(filters.locationId ? { locationId: filters.locationId } : {}),
+        ...(filters.employeeId ? { userId: filters.employeeId } : {}),
       },
       include: {
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        location: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    return shifts;
-  }
-
-  getShiftDurationHours(startsAt: Date, endsAt: Date) {
-    const diff = (endsAt.getTime() - startsAt.getTime()) / this.MS_PER_HOUR;
-    return Math.round((Math.max(diff, 0) + Number.EPSILON) * 100) / 100;
-  }
-
-  async getHoursSummary(
-    organisationId: string,
-    from: Date,
-    to: Date,
-    locationId?: string,
-  ) {
-    const shifts = await this.prisma.shift.findMany({
-      where: {
-        organisationId,
-        startsAt: {
-          gte: from,
-          lte: to,
-        },
-        ...(locationId ? { locationId } : {}),
-      },
-      include: {
-        employee: {
+        user: {
           select: {
             id: true,
             firstName: true,
@@ -82,60 +82,93 @@ export class ReportsService {
           },
         },
       },
+      orderBy: { happenedAt: 'asc' },
     });
 
-    const totals = new Map<
-      string,
-      {
-        employeeId: string;
-        employeeName: string;
-        locationId: string | null;
-        locationName: string;
-        hours: number;
-        shiftCount: number;
-      }
-    >();
-
-    for (const shift of shifts) {
-      if (!shift.employeeId) continue;
-      const locationName = shift.location?.name ?? this.NO_LOCATION_LABEL;
-      const key = `${shift.employeeId}:${shift.locationId ?? 'none'}`;
-      const current = totals.get(key) ?? {
-        employeeId: shift.employeeId,
-        employeeName:
-          `${shift.employee?.firstName ?? ''} ${shift.employee?.lastName ?? ''}`.trim() ||
-          shift.employee?.email ||
-          'Pracownik',
-        locationId: shift.locationId ?? null,
-        locationName,
-        hours: 0,
-        shiftCount: 0,
-      };
-
-      current.hours += this.getShiftDurationHours(shift.startsAt, shift.endsAt);
-      current.shiftCount += 1;
-      totals.set(key, current);
+    const grouped = new Map<string, typeof events>();
+    for (const event of events) {
+      const day = event.happenedAt.toISOString().slice(0, 10);
+      const key = `${event.userId}:${event.locationId}:${day}`;
+      const current = grouped.get(key) ?? [];
+      current.push(event);
+      grouped.set(key, current);
     }
 
-    return Array.from(totals.values()).map((row) => ({
-      ...row,
-      hours: Math.round((row.hours + Number.EPSILON) * 100) / 100,
-    }));
+    const rows: Array<{
+      employeeId: string;
+      employeeName: string;
+      locationId: string;
+      locationName: string;
+      date: string;
+      firstClockIn: string | null;
+      lastClockOut: string | null;
+      totalHours: number;
+      entries: number;
+    }> = [];
+
+    grouped.forEach((groupEvents) => {
+      let totalMs = 0;
+      let currentIn: Date | null = null;
+
+      for (const event of groupEvents) {
+        if (event.type === RcpEventType.CLOCK_IN) {
+          currentIn = event.happenedAt;
+          continue;
+        }
+
+        if (event.type === RcpEventType.CLOCK_OUT && currentIn) {
+          totalMs += Math.max(
+            event.happenedAt.getTime() - currentIn.getTime(),
+            0,
+          );
+          currentIn = null;
+        }
+      }
+
+      const firstIn = groupEvents.find(
+        (event) => event.type === RcpEventType.CLOCK_IN,
+      );
+      const reversed = [...groupEvents].reverse();
+      const lastOut = reversed.find(
+        (event) => event.type === RcpEventType.CLOCK_OUT,
+      );
+      const ref = groupEvents[0];
+
+      rows.push({
+        employeeId: ref.user.id,
+        employeeName:
+          `${ref.user.firstName ?? ''} ${ref.user.lastName ?? ''}`.trim() ||
+          ref.user.email,
+        locationId: ref.location.id,
+        locationName: ref.location.name,
+        date: ref.happenedAt.toISOString().slice(0, 10),
+        firstClockIn: firstIn ? firstIn.happenedAt.toISOString() : null,
+        lastClockOut: lastOut ? lastOut.happenedAt.toISOString() : null,
+        totalHours:
+          Math.round((totalMs / this.MS_PER_HOUR + Number.EPSILON) * 100) / 100,
+        entries: groupEvents.length,
+      });
+    });
+
+    return rows.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.employeeName.localeCompare(b.employeeName);
+    });
   }
 
-  /**
-   * Get leave requests summary for date range
-   */
-  async getLeavesSummary(organisationId: string, from: Date, to: Date) {
-    const leaveRequests = await this.prisma.leaveRequest.findMany({
+  async getAbsencesReport(
+    organisationId: string,
+    from: Date,
+    to: Date,
+    filters: { status?: LeaveStatus; employeeId?: string },
+  ) {
+    return this.prisma.leaveRequest.findMany({
       where: {
         organisationId,
-        startDate: {
-          lte: to,
-        },
-        endDate: {
-          gte: from,
-        },
+        startDate: { lte: to },
+        endDate: { gte: from },
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.employeeId ? { employeeId: filters.employeeId } : {}),
       },
       include: {
         employee: {
@@ -143,6 +176,7 @@ export class ReportsService {
             id: true,
             firstName: true,
             lastName: true,
+            email: true,
           },
         },
         leaveType: {
@@ -153,17 +187,74 @@ export class ReportsService {
           },
         },
       },
+      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
     });
-
-    return leaveRequests;
   }
 
-  /**
-   * Convert data to CSV format with proper escaping to prevent CSV injection
-   */
-  convertToCSV(data: any[], headers: string[]): string {
+  ensureExportSize(rowsCount: number) {
+    if (rowsCount > this.MAX_EXPORT_ROWS_SYNC) {
+      throw new PayloadTooLargeException(
+        `Eksport zbyt duży (${rowsCount} rekordów). Maksymalnie ${this.MAX_EXPORT_ROWS_SYNC}.`,
+      );
+    }
+  }
+
+  async createExportMetadata(params: {
+    organisationId: string;
+    userId: string;
+    reportType: ReportType;
+    format: ReportFormat;
+    rowCount: number;
+    filters: Record<string, string | null>;
+  }) {
+    return this.prisma.reportExport.create({
+      data: {
+        organisationId: params.organisationId,
+        createdByUserId: params.userId,
+        reportType: params.reportType,
+        format: params.format,
+        rowCount: params.rowCount,
+        filters: params.filters,
+      },
+    });
+  }
+
+  async getRecentExports(
+    organisationId: string,
+  ): Promise<ReportExportListItem[]> {
+    const exports = await this.prisma.reportExport.findMany({
+      where: { organisationId },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return exports.map((item) => ({
+      id: item.id,
+      reportType: item.reportType as ReportType,
+      format: item.format as ReportFormat,
+      rowCount: item.rowCount,
+      filters: (item.filters as Record<string, string | null>) ?? {},
+      createdAt: item.createdAt,
+      createdBy: item.createdBy,
+    }));
+  }
+
+  convertToCSV(
+    data: Array<Record<string, unknown>>,
+    headers: string[],
+  ): string {
     if (!data || data.length === 0) {
-      return headers.join(',') + '\n';
+      return `${headers.join(',')}\n`;
     }
 
     const csvRows = [headers.join(',')];
@@ -174,31 +265,35 @@ export class ReportsService {
         if (value === null || value === undefined) {
           return '';
         }
-        // Convert to string
         let escaped = String(value);
-
-        // Prevent CSV injection by prefixing dangerous characters
         if (escaped.match(/^[=+\-@]/)) {
-          escaped = "'" + escaped;
+          escaped = `'${escaped}`;
         }
-
-        // Replace newlines and carriage returns with spaces
         escaped = escaped.replace(/\r?\n/g, ' ');
-
-        // Escape quotes and wrap in quotes if contains comma, quotes, or was modified
-        if (
-          escaped.includes(',') ||
-          escaped.includes('"') ||
-          value !== escaped
-        ) {
-          escaped = '"' + escaped.replace(/"/g, '""') + '"';
+        if (escaped.includes(',') || escaped.includes('"')) {
+          escaped = `"${escaped.replace(/"/g, '""')}"`;
         }
-
         return escaped;
       });
       csvRows.push(values.join(','));
     }
 
     return csvRows.join('\n');
+  }
+
+  convertToXlsxBuffer(
+    data: Array<Record<string, unknown>>,
+    headers: string[],
+  ): Buffer {
+    const worksheetData = [
+      headers,
+      ...data.map((row) => headers.map((header) => row[header] ?? '')),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Raport');
+
+    const output = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return Buffer.isBuffer(output) ? output : Buffer.from(output);
   }
 }
