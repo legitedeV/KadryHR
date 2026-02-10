@@ -220,6 +220,7 @@ model Organisation {
   autoPlanTemplateBlocks  AutoPlanTemplateBlock[]
   rcpQrConfigs            RcpQrConfig[]
   rcpEvents               RcpEvent[]
+  reportExports           ReportExport[]
 }
 
 model User {
@@ -258,6 +259,7 @@ model User {
   scheduleAudits           ScheduleAudit[]          @relation("ScheduleAuditActor")
   autoPlanTemplates        AutoPlanTemplate[]
   rcpEvents                RcpEvent[]
+  reportExports            ReportExport[]
   oauthAccounts            OAuthAccount[]
 
   @@index([organisationId])
@@ -1215,6 +1217,24 @@ model Subscription {
   updatedAt      DateTime  @updatedAt
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+}
+
+
+model ReportExport {
+  id             String   @id @default(uuid())
+  organisationId String
+  createdByUserId String
+  reportType     String
+  format         String
+  rowCount       Int
+  filters        Json
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId, createdAt])
+  @@index([createdByUserId])
 }
 
 model RcpQrConfig {

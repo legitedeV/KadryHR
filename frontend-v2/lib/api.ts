@@ -7,7 +7,11 @@ export type Permission =
   | "SCHEDULE_VIEW"
   | "AVAILABILITY_MANAGE"
   | "RCP_EDIT"
-  | "ORGANISATION_SETTINGS";
+  | "ORGANISATION_SETTINGS"
+  | "REPORTS_EXPORT"
+  | "LEAVE_APPROVE"
+  | "LEAVE_REQUEST"
+  | "EMPLOYEE_VIEW";
 
 export interface OrganisationSummary {
   id: string;
@@ -124,7 +128,6 @@ export interface LeaveRequestPayload {
 }
 
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
-
 
 export interface LeaveTypeSummary {
   id: string;
@@ -292,7 +295,14 @@ export interface AvailabilityWindowInput {
   isOpen?: boolean;
 }
 
-export type Weekday = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+export type Weekday =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
 
 export interface AvailabilityInput {
   weekday?: Weekday;
@@ -303,7 +313,11 @@ export interface AvailabilityInput {
   notes?: string;
 }
 
-export type AvailabilitySubmissionStatus = "DRAFT" | "SUBMITTED" | "REVIEWED" | "REOPENED";
+export type AvailabilitySubmissionStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "REVIEWED"
+  | "REOPENED";
 
 export interface AvailabilityWindowSubmissionResponse {
   window: AvailabilityWindowRecord;
@@ -324,7 +338,10 @@ export interface AvailabilityWindowTeamStats {
 
 export interface ScheduleMetadata {
   deliveryDays: string[];
-  promotionDays: Array<{ date: string; type: "ZMIANA_PROMOCJI" | "MALA_PROMOCJA" }>;
+  promotionDays: Array<{
+    date: string;
+    type: "ZMIANA_PROMOCJI" | "MALA_PROMOCJA";
+  }>;
 }
 
 export interface ApprovedLeaveRecord {
@@ -536,12 +553,15 @@ export async function apiRegisterOwner(payload: {
   email: string;
   password: string;
 }) {
-  const data = await apiClient.request<LoginResponse>(`${AUTH_PREFIX}/register`, {
-    method: "POST",
-    auth: false,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const data = await apiClient.request<LoginResponse>(
+    `${AUTH_PREFIX}/register`,
+    {
+      method: "POST",
+      auth: false,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
 
   const user = mapUser(data?.user);
   apiClient.setTokens({ accessToken: data.accessToken });
@@ -549,23 +569,32 @@ export async function apiRegisterOwner(payload: {
 }
 
 export async function apiRequestPasswordReset(email: string) {
-  return apiClient.request<{ success: boolean }>(`${AUTH_PREFIX}/password-reset/request`, {
-    method: "POST",
-    auth: false,
-    suppressToast: true,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
+  return apiClient.request<{ success: boolean }>(
+    `${AUTH_PREFIX}/password-reset/request`,
+    {
+      method: "POST",
+      auth: false,
+      suppressToast: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    },
+  );
 }
 
-export async function apiResetPassword(payload: { token: string; password: string }) {
-  return apiClient.request<{ success: boolean }>(`${AUTH_PREFIX}/password-reset/confirm`, {
-    method: "POST",
-    auth: false,
-    suppressToast: true,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export async function apiResetPassword(payload: {
+  token: string;
+  password: string;
+}) {
+  return apiClient.request<{ success: boolean }>(
+    `${AUTH_PREFIX}/password-reset/confirm`,
+    {
+      method: "POST",
+      auth: false,
+      suppressToast: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function apiGetMe(): Promise<User> {
@@ -611,7 +640,9 @@ export async function apiGetShifts(params: {
   if (params.locationId) search.set("locationId", params.locationId);
   if (params.employeeId) search.set("employeeId", params.employeeId);
 
-  return apiClient.request<ShiftResponse[]>(`${SHIFTS_PREFIX}?${search.toString()}`);
+  return apiClient.request<ShiftResponse[]>(
+    `${SHIFTS_PREFIX}?${search.toString()}`,
+  );
 }
 
 export async function apiGetSchedule(params: {
@@ -628,24 +659,35 @@ export async function apiGetSchedule(params: {
   params.locationIds?.forEach((id) => search.append("locationIds[]", id));
   params.positionIds?.forEach((id) => search.append("positionIds[]", id));
 
-  return apiClient.request<ScheduleResponse>(`${SCHEDULE_PREFIX}?${search.toString()}`);
-}
-
-export async function apiListOrgEmployees(): Promise<{ data: EmployeeRecord[]; total: number }> {
-  apiClient.hydrateFromStorage();
-  return apiClient.request<{ data: EmployeeRecord[]; total: number }>(`${ORG_EMPLOYEES_PREFIX}`);
-}
-
-export async function apiUpdateOrgEmployeeOrder(orderedEmployeeIds: string[], periodId?: string) {
-  apiClient.hydrateFromStorage();
-  return apiClient.request<{ success: boolean; updatedCount?: number; requestId?: string }>(
-    `${ORG_EMPLOYEES_PREFIX}/order`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedEmployeeIds, periodId }),
-    },
+  return apiClient.request<ScheduleResponse>(
+    `${SCHEDULE_PREFIX}?${search.toString()}`,
   );
+}
+
+export async function apiListOrgEmployees(): Promise<{
+  data: EmployeeRecord[];
+  total: number;
+}> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{ data: EmployeeRecord[]; total: number }>(
+    `${ORG_EMPLOYEES_PREFIX}`,
+  );
+}
+
+export async function apiUpdateOrgEmployeeOrder(
+  orderedEmployeeIds: string[],
+  periodId?: string,
+) {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<{
+    success: boolean;
+    updatedCount?: number;
+    requestId?: string;
+  }>(`${ORG_EMPLOYEES_PREFIX}/order`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderedEmployeeIds, periodId }),
+  });
 }
 
 export async function apiGetShiftSummary(params: {
@@ -653,7 +695,9 @@ export async function apiGetShiftSummary(params: {
   to: string;
   locationId?: string;
   employeeId?: string;
-}): Promise<Array<{ employeeId: string; employeeName: string; hours: number }>> {
+}): Promise<
+  Array<{ employeeId: string; employeeName: string; hours: number }>
+> {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams({
     from: params.from,
@@ -665,7 +709,9 @@ export async function apiGetShiftSummary(params: {
   return apiClient.request(`${SHIFTS_PREFIX}/summary?${search.toString()}`);
 }
 
-export async function apiCreateShift(payload: ShiftPayload): Promise<ShiftRecord> {
+export async function apiCreateShift(
+  payload: ShiftPayload,
+): Promise<ShiftRecord> {
   apiClient.hydrateFromStorage();
   return apiClient.request<ShiftResponse>(`${SHIFTS_PREFIX}`, {
     method: "POST",
@@ -673,7 +719,9 @@ export async function apiCreateShift(payload: ShiftPayload): Promise<ShiftRecord
   });
 }
 
-export async function apiCreateScheduleShift(payload: ScheduleShiftPayload): Promise<ScheduleShiftRecord> {
+export async function apiCreateScheduleShift(
+  payload: ScheduleShiftPayload,
+): Promise<ScheduleShiftRecord> {
   apiClient.hydrateFromStorage();
   return apiClient.request<ScheduleShiftRecord>(`${SCHEDULE_PREFIX}/shifts`, {
     method: "POST",
@@ -685,13 +733,18 @@ export async function apiCreateScheduleShiftsBulk(
   payload: ScheduleShiftBulkPayload,
 ): Promise<ScheduleShiftRecord[]> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<ScheduleShiftRecord[]>(`${SCHEDULE_PREFIX}/shifts/bulk`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<ScheduleShiftRecord[]>(
+    `${SCHEDULE_PREFIX}/shifts/bulk`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
-export async function apiDeleteScheduleShiftsBulk(payload: { shiftIds: string[] }) {
+export async function apiDeleteScheduleShiftsBulk(payload: {
+  shiftIds: string[];
+}) {
   apiClient.hydrateFromStorage();
   await apiClient.request(`${SCHEDULE_PREFIX}/shifts/bulk`, {
     method: "DELETE",
@@ -720,13 +773,18 @@ export async function apiPublishSchedule(payload: {
   dateRange?: { from: string; to: string };
 }): Promise<{ success: boolean; notified: number }> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<{ success: boolean; notified: number }>(`${SHIFTS_PREFIX}/publish-schedule`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<{ success: boolean; notified: number }>(
+    `${SHIFTS_PREFIX}/publish-schedule`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
-export async function apiApproveGrafikPeriod(payload: { periodId: string }): Promise<{
+export async function apiApproveGrafikPeriod(payload: {
+  periodId: string;
+}): Promise<{
   periodId: string;
   status: SchedulePeriodStatus;
   version: number;
@@ -742,7 +800,12 @@ export async function apiPublishGrafikPeriod(payload: {
   periodId: string;
   notify?: boolean;
   comment?: string;
-}): Promise<{ periodId: string; version: number; notifiedCount: number; publishedAt?: string | null }> {
+}): Promise<{
+  periodId: string;
+  version: number;
+  notifiedCount: number;
+  publishedAt?: string | null;
+}> {
   apiClient.hydrateFromStorage();
   return apiClient.request(`${GRAFIK_PREFIX}/publish`, {
     method: "POST",
@@ -750,7 +813,9 @@ export async function apiPublishGrafikPeriod(payload: {
   });
 }
 
-export async function apiUnpublishGrafikPeriod(payload: { periodId: string }): Promise<{
+export async function apiUnpublishGrafikPeriod(payload: {
+  periodId: string;
+}): Promise<{
   periodId: string;
   status: SchedulePeriodStatus;
   version: number;
@@ -768,10 +833,13 @@ export async function apiClearWeek(payload: {
   locationId?: string;
 }): Promise<{ success: boolean; deletedCount: number }> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<{ success: boolean; deletedCount: number }>(`${SHIFTS_PREFIX}/clear-week`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<{ success: boolean; deletedCount: number }>(
+    `${SHIFTS_PREFIX}/clear-week`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function apiCopyPreviousWeek(payload: {
@@ -780,10 +848,13 @@ export async function apiCopyPreviousWeek(payload: {
   locationId?: string;
 }): Promise<ShiftPayload[]> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<ShiftPayload[]>(`${SHIFTS_PREFIX}/copy-previous-week`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<ShiftPayload[]>(
+    `${SHIFTS_PREFIX}/copy-previous-week`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function apiCopyRange(payload: {
@@ -810,13 +881,19 @@ export async function apiGetAvailability(params: {
   if (params.to) search.set("to", params.to);
   if (params.employeeId) search.set("employeeId", params.employeeId);
   const query = search.toString();
-  return apiClient.request<AvailabilityRecord[]>(`${AVAILABILITY_PREFIX}${query ? `?${query}` : ""}`);
+  return apiClient.request<AvailabilityRecord[]>(
+    `${AVAILABILITY_PREFIX}${query ? `?${query}` : ""}`,
+  );
 }
 
 // Availability Windows API
-export async function apiGetAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
+export async function apiGetAvailabilityWindows(): Promise<
+  AvailabilityWindowRecord[]
+> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<AvailabilityWindowRecord[]>(`${AVAILABILITY_PREFIX}/windows`);
+  return apiClient.request<AvailabilityWindowRecord[]>(
+    `${AVAILABILITY_PREFIX}/windows`,
+  );
 }
 
 export async function apiGetApprovedLeaves(params: {
@@ -841,13 +918,15 @@ export async function apiCreateLeaveRequest(payload: LeaveRequestPayload) {
   });
 }
 
-export async function apiGetLeaveRequests(params: {
-  status?: LeaveStatus;
-  page?: number;
-  pageSize?: number;
-  from?: string;
-  to?: string;
-} = {}): Promise<LeaveRequestListResponse> {
+export async function apiGetLeaveRequests(
+  params: {
+    status?: LeaveStatus;
+    page?: number;
+    pageSize?: number;
+    from?: string;
+    to?: string;
+  } = {},
+): Promise<LeaveRequestListResponse> {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams();
   if (params.status) search.set("status", params.status);
@@ -856,12 +935,18 @@ export async function apiGetLeaveRequests(params: {
   if (params.from) search.set("from", params.from);
   if (params.to) search.set("to", params.to);
   const query = search.toString();
-  return apiClient.request<LeaveRequestListResponse>(`/leave-requests${query ? `?${query}` : ""}`);
+  return apiClient.request<LeaveRequestListResponse>(
+    `/leave-requests${query ? `?${query}` : ""}`,
+  );
 }
 
-export async function apiGetLeaveRequestHistory(leaveRequestId: string): Promise<LeaveRequestHistoryRecord[]> {
+export async function apiGetLeaveRequestHistory(
+  leaveRequestId: string,
+): Promise<LeaveRequestHistoryRecord[]> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<LeaveRequestHistoryRecord[]>(`/leave-requests/${leaveRequestId}/history`);
+  return apiClient.request<LeaveRequestHistoryRecord[]>(
+    `/leave-requests/${leaveRequestId}/history`,
+  );
 }
 
 export async function apiUpdateLeaveRequestStatus(
@@ -876,7 +961,9 @@ export async function apiUpdateLeaveRequestStatus(
   });
 }
 
-export async function apiCreateShiftSwapRequest(payload: ShiftSwapRequestPayload) {
+export async function apiCreateShiftSwapRequest(
+  payload: ShiftSwapRequestPayload,
+) {
   apiClient.hydrateFromStorage();
   return apiClient.request(`/shift-swaps`, {
     method: "POST",
@@ -884,26 +971,38 @@ export async function apiCreateShiftSwapRequest(payload: ShiftSwapRequestPayload
   });
 }
 
-export async function apiGetActiveAvailabilityWindows(): Promise<AvailabilityWindowRecord[]> {
+export async function apiGetActiveAvailabilityWindows(): Promise<
+  AvailabilityWindowRecord[]
+> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<AvailabilityWindowRecord[]>(`${AVAILABILITY_PREFIX}/windows/active`);
+  return apiClient.request<AvailabilityWindowRecord[]>(
+    `${AVAILABILITY_PREFIX}/windows/active`,
+  );
 }
 
 export async function apiCreateAvailabilityWindow(
   payload: AvailabilityWindowInput,
 ): Promise<AvailabilityWindowRecord> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<AvailabilityWindowRecord>(`${AVAILABILITY_PREFIX}/windows`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<AvailabilityWindowRecord>(
+    `${AVAILABILITY_PREFIX}/windows`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
-export async function apiCloseAvailabilityWindow(windowId: string): Promise<AvailabilityWindowRecord> {
+export async function apiCloseAvailabilityWindow(
+  windowId: string,
+): Promise<AvailabilityWindowRecord> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<AvailabilityWindowRecord>(`${AVAILABILITY_PREFIX}/windows/${windowId}/close`, {
-    method: "PATCH",
-  });
+  return apiClient.request<AvailabilityWindowRecord>(
+    `${AVAILABILITY_PREFIX}/windows/${windowId}/close`,
+    {
+      method: "PATCH",
+    },
+  );
 }
 
 // Team availability API (admin only)
@@ -950,7 +1049,9 @@ export interface EmployeeAvailabilityDetailResponse {
 
 export async function apiGetTeamAvailabilityStats(): Promise<TeamAvailabilityStatsResponse> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<TeamAvailabilityStatsResponse>(`${AVAILABILITY_PREFIX}/team/stats`);
+  return apiClient.request<TeamAvailabilityStatsResponse>(
+    `${AVAILABILITY_PREFIX}/team/stats`,
+  );
 }
 
 export async function apiGetTeamAvailability(params: {
@@ -967,7 +1068,7 @@ export async function apiGetTeamAvailability(params: {
   if (params.role) searchParams.set("role", params.role);
   if (params.page) searchParams.set("page", String(params.page));
   if (params.perPage) searchParams.set("perPage", String(params.perPage));
-  
+
   const query = searchParams.toString();
   return apiClient.request<TeamAvailabilityResponse>(
     `${AVAILABILITY_PREFIX}/employees${query ? `?${query}` : ""}`,
@@ -1055,28 +1156,43 @@ export async function apiGetWindowTeamAvailability(
 export async function apiGetWindowEmployeeAvailability(
   windowId: string,
   employeeId: string,
-): Promise<EmployeeAvailabilityDetailResponse & { status: AvailabilitySubmissionStatus; submittedAt?: string | null; reviewedAt?: string | null }> {
-  apiClient.hydrateFromStorage();
-  return apiClient.request<EmployeeAvailabilityDetailResponse & {
+): Promise<
+  EmployeeAvailabilityDetailResponse & {
     status: AvailabilitySubmissionStatus;
     submittedAt?: string | null;
     reviewedAt?: string | null;
-  }>(`${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}`);
+  }
+> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<
+    EmployeeAvailabilityDetailResponse & {
+      status: AvailabilitySubmissionStatus;
+      submittedAt?: string | null;
+      reviewedAt?: string | null;
+    }
+  >(`${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}`);
 }
 
 export async function apiUpdateWindowEmployeeAvailability(
   windowId: string,
   employeeId: string,
   payload: { availabilities: AvailabilityInput[] },
-): Promise<{ employeeId: string; status: AvailabilitySubmissionStatus; reviewedAt?: string | null; availability: AvailabilityRecord[] }> {
+): Promise<{
+  employeeId: string;
+  status: AvailabilitySubmissionStatus;
+  reviewedAt?: string | null;
+  availability: AvailabilityRecord[];
+}> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<{ employeeId: string; status: AvailabilitySubmissionStatus; reviewedAt?: string | null; availability: AvailabilityRecord[] }>(
-    `${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    },
-  );
+  return apiClient.request<{
+    employeeId: string;
+    status: AvailabilitySubmissionStatus;
+    reviewedAt?: string | null;
+    availability: AvailabilityRecord[];
+  }>(`${AVAILABILITY_PREFIX}/windows/${windowId}/employee/${employeeId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function apiUpdateWindowSubmissionStatus(
@@ -1101,17 +1217,27 @@ export async function apiGetScheduleMetadata(params: {
 }): Promise<ScheduleMetadata> {
   apiClient.hydrateFromStorage();
   const search = new URLSearchParams({ from: params.from, to: params.to });
-  return apiClient.request<ScheduleMetadata>(`${ORGANISATIONS_PREFIX}/me/schedule-metadata?${search.toString()}`);
+  return apiClient.request<ScheduleMetadata>(
+    `${ORGANISATIONS_PREFIX}/me/schedule-metadata?${search.toString()}`,
+  );
 }
 
-export async function apiListScheduleTemplates(): Promise<ScheduleTemplateRecord[]> {
+export async function apiListScheduleTemplates(): Promise<
+  ScheduleTemplateRecord[]
+> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<ScheduleTemplateRecord[]>(`${SCHEDULE_TEMPLATES_PREFIX}`);
+  return apiClient.request<ScheduleTemplateRecord[]>(
+    `${SCHEDULE_TEMPLATES_PREFIX}`,
+  );
 }
 
-export async function apiGetScheduleTemplate(id: string): Promise<ScheduleTemplateDetail> {
+export async function apiGetScheduleTemplate(
+  id: string,
+): Promise<ScheduleTemplateDetail> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<ScheduleTemplateDetail>(`${SCHEDULE_TEMPLATES_PREFIX}/${id}`);
+  return apiClient.request<ScheduleTemplateDetail>(
+    `${SCHEDULE_TEMPLATES_PREFIX}/${id}`,
+  );
 }
 
 export async function apiCreateScheduleTemplateFromWeek(payload: {
@@ -1122,10 +1248,13 @@ export async function apiCreateScheduleTemplateFromWeek(payload: {
   locationId?: string;
 }): Promise<ScheduleTemplateRecord> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<ScheduleTemplateRecord>(`${SCHEDULE_TEMPLATES_PREFIX}/from-week`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<ScheduleTemplateRecord>(
+    `${SCHEDULE_TEMPLATES_PREFIX}/from-week`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function apiListEmployees(
@@ -1133,7 +1262,9 @@ export async function apiListEmployees(
 ): Promise<PaginatedResponse<EmployeeRecord>> {
   apiClient.hydrateFromStorage();
   const take = params.take ?? 10;
-  const skip = params.skip ?? (params.page != null ? Math.max(params.page - 1, 0) * take : 0);
+  const skip =
+    params.skip ??
+    (params.page != null ? Math.max(params.page - 1, 0) * take : 0);
   const searchParams = new URLSearchParams();
   searchParams.set("take", String(take));
   searchParams.set("skip", String(skip));
@@ -1303,7 +1434,9 @@ export async function apiGetScheduleSummary(params: {
 
 export async function apiListLocations(): Promise<LocationRecord[]> {
   apiClient.hydrateFromStorage();
-  const response = await apiClient.request<LocationResponse[]>(`${LOCATIONS_PREFIX}`);
+  const response = await apiClient.request<LocationResponse[]>(
+    `${LOCATIONS_PREFIX}`,
+  );
   return response.map(mapLocation);
 }
 
@@ -1387,7 +1520,12 @@ function formatUserName(
 }
 
 function isUserRole(value: unknown): value is UserRole {
-  return value === "OWNER" || value === "MANAGER" || value === "EMPLOYEE" || value === "ADMIN";
+  return (
+    value === "OWNER" ||
+    value === "MANAGER" ||
+    value === "EMPLOYEE" ||
+    value === "ADMIN"
+  );
 }
 
 export function mapUser(user: UserResponse): User {
@@ -1487,7 +1625,9 @@ export interface AvatarUploadResponse {
   profile?: UserProfile;
 }
 
-export async function apiUploadAvatar(file: File): Promise<AvatarUploadResponse> {
+export async function apiUploadAvatar(
+  file: File,
+): Promise<AvatarUploadResponse> {
   apiClient.hydrateFromStorage();
   const formData = new FormData();
   formData.append("avatar", file);
@@ -1514,10 +1654,13 @@ export async function apiChangeEmail(
   payload: ChangeEmailPayload,
 ): Promise<UserProfile> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<UserProfile>(`${USERS_PREFIX}/profile/change-email`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<UserProfile>(
+    `${USERS_PREFIX}/profile/change-email`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 // Shift Presets API
@@ -1542,51 +1685,73 @@ export async function apiUpdateOrganisationDetails(
   });
 }
 
-export async function apiUploadOrganisationLogo(file: File): Promise<{ logoUrl: string }> {
+export async function apiUploadOrganisationLogo(
+  file: File,
+): Promise<{ logoUrl: string }> {
   apiClient.hydrateFromStorage();
   const formData = new FormData();
   formData.append("file", file);
-  return apiClient.request<{ logoUrl: string }>(`${ORGANISATIONS_PREFIX}/me/avatar`, {
-    method: "POST",
-    body: formData,
-  });
+  return apiClient.request<{ logoUrl: string }>(
+    `${ORGANISATIONS_PREFIX}/me/avatar`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
 }
 
-export async function apiDeleteOrganisationLogo(): Promise<{ success: boolean }> {
+export async function apiDeleteOrganisationLogo(): Promise<{
+  success: boolean;
+}> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<{ success: boolean }>(`${ORGANISATIONS_PREFIX}/me/avatar`, {
-    method: "DELETE",
-  });
+  return apiClient.request<{ success: boolean }>(
+    `${ORGANISATIONS_PREFIX}/me/avatar`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export async function apiGetOrganisationScheduleSettings(): Promise<OrganisationScheduleSettings> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationScheduleSettings>(`${ORGANISATION_PREFIX}/schedule-settings`);
+  return apiClient.request<OrganisationScheduleSettings>(
+    `${ORGANISATION_PREFIX}/schedule-settings`,
+  );
 }
 
 export async function apiUpdateOrganisationScheduleSettings(
   payload: Partial<OrganisationScheduleSettings>,
 ): Promise<OrganisationScheduleSettings> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationScheduleSettings>(`${ORGANISATION_PREFIX}/schedule-settings`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<OrganisationScheduleSettings>(
+    `${ORGANISATION_PREFIX}/schedule-settings`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
-export async function apiGetOrganisationLocations(): Promise<OrganisationLocation[]> {
+export async function apiGetOrganisationLocations(): Promise<
+  OrganisationLocation[]
+> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationLocation[]>(`${ORGANISATION_PREFIX}/locations`);
+  return apiClient.request<OrganisationLocation[]>(
+    `${ORGANISATION_PREFIX}/locations`,
+  );
 }
 
 export async function apiCreateOrganisationLocation(
   payload: Partial<OrganisationLocation> & { name: string },
 ): Promise<OrganisationLocation> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationLocation>(`${ORGANISATION_PREFIX}/locations`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<OrganisationLocation>(
+    `${ORGANISATION_PREFIX}/locations`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function apiUpdateOrganisationLocation(
@@ -1594,22 +1759,34 @@ export async function apiUpdateOrganisationLocation(
   payload: Partial<OrganisationLocation>,
 ): Promise<OrganisationLocation> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationLocation>(`${ORGANISATION_PREFIX}/locations/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.request<OrganisationLocation>(
+    `${ORGANISATION_PREFIX}/locations/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
-export async function apiToggleOrganisationLocation(id: string): Promise<OrganisationLocation> {
+export async function apiToggleOrganisationLocation(
+  id: string,
+): Promise<OrganisationLocation> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationLocation>(`${ORGANISATION_PREFIX}/locations/${id}/toggle`, {
-    method: "PATCH",
-  });
+  return apiClient.request<OrganisationLocation>(
+    `${ORGANISATION_PREFIX}/locations/${id}/toggle`,
+    {
+      method: "PATCH",
+    },
+  );
 }
 
-export async function apiGetOrganisationMembers(): Promise<OrganisationMember[]> {
+export async function apiGetOrganisationMembers(): Promise<
+  OrganisationMember[]
+> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationMember[]>(`${ORGANISATION_PREFIX}/members`);
+  return apiClient.request<OrganisationMember[]>(
+    `${ORGANISATION_PREFIX}/members`,
+  );
 }
 
 export async function apiUpdateOrganisationMemberRole(
@@ -1617,17 +1794,25 @@ export async function apiUpdateOrganisationMemberRole(
   role: UserRole,
 ): Promise<OrganisationMember> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<OrganisationMember>(`${ORGANISATION_PREFIX}/members/${memberId}/role`, {
-    method: "PATCH",
-    body: JSON.stringify({ role }),
-  });
+  return apiClient.request<OrganisationMember>(
+    `${ORGANISATION_PREFIX}/members/${memberId}/role`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    },
+  );
 }
 
-export async function apiDeactivateOrganisationMember(memberId: string): Promise<{ success: boolean }> {
+export async function apiDeactivateOrganisationMember(
+  memberId: string,
+): Promise<{ success: boolean }> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<{ success: boolean }>(`${ORGANISATION_PREFIX}/members/${memberId}/deactivate`, {
-    method: "PATCH",
-  });
+  return apiClient.request<{ success: boolean }>(
+    `${ORGANISATION_PREFIX}/members/${memberId}/deactivate`,
+    {
+      method: "PATCH",
+    },
+  );
 }
 
 export async function apiInviteOrganisationMember(payload: {
@@ -1636,8 +1821,140 @@ export async function apiInviteOrganisationMember(payload: {
   locationId?: string;
 }): Promise<{ success: boolean }> {
   apiClient.hydrateFromStorage();
-  return apiClient.request<{ success: boolean }>(`${ORGANISATION_PREFIX}/invitations`, {
-    method: "POST",
-    body: JSON.stringify(payload),
+  return apiClient.request<{ success: boolean }>(
+    `${ORGANISATION_PREFIX}/invitations`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export type ReportType = "work-time" | "absences";
+export type ReportFormat = "csv" | "xlsx";
+
+export interface WorkTimeReportItem {
+  employeeId: string;
+  employeeName: string;
+  locationId: string;
+  locationName: string;
+  date: string;
+  firstClockIn: string | null;
+  lastClockOut: string | null;
+  totalHours: number;
+  entries: number;
+}
+
+export interface AbsenceReportItem {
+  id: string;
+  employeeId: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  type: string;
+  reason?: string | null;
+  employee: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email: string;
+  };
+  leaveType?: {
+    id: string;
+    name: string;
+    category: string;
+  } | null;
+}
+
+export interface ReportExportHistoryItem {
+  id: string;
+  reportType: ReportType;
+  format: ReportFormat;
+  rowCount: number;
+  filters: Record<string, string | null>;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email: string;
+  };
+}
+
+export async function apiGetWorkTimeReport(params: {
+  from: string;
+  to: string;
+  locationId?: string;
+  employeeId?: string;
+}): Promise<{ items: WorkTimeReportItem[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  const query = new URLSearchParams({ from: params.from, to: params.to });
+  if (params.locationId) query.set("locationId", params.locationId);
+  if (params.employeeId) query.set("employeeId", params.employeeId);
+  return apiClient.request(`/reports/work-time?${query.toString()}`);
+}
+
+export async function apiGetAbsencesReport(params: {
+  from: string;
+  to: string;
+  status?: string;
+  employeeId?: string;
+}): Promise<{ items: AbsenceReportItem[]; total: number }> {
+  apiClient.hydrateFromStorage();
+  const query = new URLSearchParams({ from: params.from, to: params.to });
+  if (params.status) query.set("status", params.status);
+  if (params.employeeId) query.set("employeeId", params.employeeId);
+  return apiClient.request(`/reports/absences?${query.toString()}`);
+}
+
+export async function apiGetReportExportHistory(): Promise<
+  ReportExportHistoryItem[]
+> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request("/reports/exports/recent");
+}
+
+export async function apiDownloadReportExport(params: {
+  reportType: ReportType;
+  format: ReportFormat;
+  from: string;
+  to: string;
+  locationId?: string;
+  employeeId?: string;
+  status?: string;
+}) {
+  apiClient.hydrateFromStorage();
+  const query = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    format: params.format,
   });
+  if (params.locationId) query.set("locationId", params.locationId);
+  if (params.employeeId) query.set("employeeId", params.employeeId);
+  if (params.status) query.set("status", params.status);
+
+  const path =
+    params.reportType === "work-time"
+      ? `/reports/work-time/export?${query.toString()}`
+      : `/reports/absences/export?${query.toString()}`;
+
+  const response = await apiClient.requestRaw(path, { method: "GET" });
+  if (!response.ok) {
+    throw new ApiError(`Eksport nie powiódł się (${response.status})`, {
+      status: response.status,
+    });
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const match = disposition.match(/filename=([^;]+)/);
+  const fileName = (
+    match?.[1] ?? `${params.reportType}.${params.format}`
+  ).replaceAll('"', "");
+
+  return {
+    blob,
+    fileName,
+    contentType: response.headers.get("content-type") ?? "",
+  };
 }
