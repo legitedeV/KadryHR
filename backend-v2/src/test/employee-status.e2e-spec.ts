@@ -2,16 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { EmployeeDocumentStatus, Role } from '@prisma/client';
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 
-describe('Employee status management (e2e)', () => {
+describe('Employee status and document lifecycle (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let organisationId: string;
   let managerToken: string;
   let employeeId: string;
+  let documentId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -55,6 +56,7 @@ describe('Employee status management (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.employeeDocument.deleteMany({ where: { organisationId } });
     await prisma.shift.deleteMany({ where: { organisationId } });
     await prisma.employee.deleteMany({ where: { organisationId } });
     await prisma.user.deleteMany({ where: { organisationId } });
@@ -62,7 +64,7 @@ describe('Employee status management (e2e)', () => {
     await app.close();
   });
 
-  it('deactivates and reactivates an employee', async () => {
+  it('deactivates and reactivates an employee with lifecycle status', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/employees')
       .set('Authorization', `Bearer ${managerToken}`)
@@ -77,6 +79,7 @@ describe('Employee status management (e2e)', () => {
       .expect(200);
 
     expect(deactivateRes.body.isActive).toBe(false);
+    expect(deactivateRes.body.status).toBe('SUSPENDED');
 
     const activateRes = await request(app.getHttpServer())
       .patch(`/employees/${employeeId}/activate`)
@@ -84,9 +87,10 @@ describe('Employee status management (e2e)', () => {
       .expect(200);
 
     expect(activateRes.body.isActive).toBe(true);
+    expect(activateRes.body.status).toBe('ACTIVE');
   });
 
-  it('soft deletes employee when history exists', async () => {
+  it('archives employee and hides them from default list and grafik source', async () => {
     await prisma.shift.create({
       data: {
         organisationId,
@@ -109,5 +113,73 @@ describe('Employee status management (e2e)', () => {
 
     expect(employee?.isDeleted).toBe(true);
     expect(employee?.isActive).toBe(false);
+    expect(employee?.status).toBe('ARCHIVED');
+
+    const defaultListRes = await request(app.getHttpServer())
+      .get('/employees?status=active')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    expect(defaultListRes.body.data.some((item: { id: string }) => item.id === employeeId)).toBe(false);
+
+    const grafikSourceRes = await request(app.getHttpServer())
+      .get('/org/employees')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    expect(grafikSourceRes.body.data.some((item: { id: string }) => item.id === employeeId)).toBe(false);
+  });
+
+  it('exposes document metadata lifecycle status changes', async () => {
+    const freshEmployee = await prisma.employee.create({
+      data: {
+        organisationId,
+        firstName: 'Anna',
+        lastName: 'Nowak',
+      },
+    });
+
+    const document = await prisma.employeeDocument.create({
+      data: {
+        organisationId,
+        employeeId: freshEmployee.id,
+        title: 'Badania okresowe',
+        type: 'MEDICAL',
+        issuedAt: new Date('2026-01-01T00:00:00.000Z'),
+        expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+        status: EmployeeDocumentStatus.DRAFT,
+        filename: 'badania.pdf',
+        storagePath: 'metadata-only/badania.pdf',
+        mimeType: 'application/pdf',
+        fileSize: 123,
+      },
+    });
+    documentId = document.id;
+
+    const draftListRes = await request(app.getHttpServer())
+      .get(`/employees/${freshEmployee.id}/documents`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    expect(draftListRes.body.find((item: { id: string }) => item.id === documentId)?.status).toBe('DRAFT');
+
+    await request(app.getHttpServer())
+      .patch(`/employees/${freshEmployee.id}/documents/${documentId}`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({ status: EmployeeDocumentStatus.ACTIVE })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .patch(`/employees/${freshEmployee.id}/documents/${documentId}`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({ status: EmployeeDocumentStatus.EXPIRED })
+      .expect(200);
+
+    const expiredListRes = await request(app.getHttpServer())
+      .get(`/employees/${freshEmployee.id}/documents`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    expect(expiredListRes.body.find((item: { id: string }) => item.id === documentId)?.status).toBe('EXPIRED');
   });
 });

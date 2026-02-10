@@ -452,6 +452,8 @@ export interface LocationSummary {
   address?: string | null;
 }
 
+export type EmployeeStatus = "ACTIVE" | "SUSPENDED" | "ARCHIVED";
+
 export interface EmployeeRecord {
   id: string;
   firstName: string;
@@ -464,6 +466,7 @@ export interface EmployeeRecord {
   locations: LocationSummary[];
   isActive: boolean;
   isDeleted: boolean;
+  status: EmployeeStatus;
   employmentEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -476,7 +479,7 @@ export type EmployeeDocumentType =
   | "SICK_LEAVE"
   | "OTHER";
 
-export type EmployeeDocumentStatus = "ACTIVE" | "EXPIRED" | "ARCHIVED";
+export type EmployeeDocumentStatus = "DRAFT" | "ACTIVE" | "EXPIRED";
 
 export interface EmployeeDocumentRecord {
   id: string;
@@ -1530,6 +1533,7 @@ interface EmployeeResponse {
   locations?: LocationSummary[];
   isActive: boolean;
   isDeleted: boolean;
+  status: EmployeeStatus;
   employmentEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -1596,6 +1600,7 @@ function mapEmployee(employee: EmployeeResponse): EmployeeRecord {
     locations: employee.locations ?? [],
     isActive: employee.isActive,
     isDeleted: employee.isDeleted,
+    status: employee.status,
     employmentEndDate: employee.employmentEndDate ?? undefined,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,

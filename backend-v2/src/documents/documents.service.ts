@@ -48,7 +48,7 @@ export class DocumentsService {
         description: dto.description,
         issuedAt: new Date(dto.issuedAt),
         expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
-        status: dto.status ?? EmployeeDocumentStatus.ACTIVE,
+        status: dto.status ?? EmployeeDocumentStatus.DRAFT,
         filename: dto.filename,
         storagePath: dto.storagePath,
         mimeType: dto.mimeType,
@@ -152,10 +152,6 @@ export class DocumentsService {
               : null
             : document.expiresAt,
         status: nextStatus,
-        archivedAt:
-          nextStatus === EmployeeDocumentStatus.ARCHIVED
-            ? document.archivedAt ?? new Date()
-            : document.archivedAt,
       },
     });
   }
