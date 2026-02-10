@@ -142,6 +142,12 @@ enum RcpEventType {
   CLOCK_OUT
 }
 
+enum RcpCorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum SchedulePeriodType {
   WEEKLY
   MONTHLY
@@ -223,6 +229,7 @@ model Organisation {
   autoPlanTemplateBlocks  AutoPlanTemplateBlock[]
   rcpQrConfigs            RcpQrConfig[]
   rcpEvents               RcpEvent[]
+  rcpCorrections          RcpCorrection[]
   reportExports           ReportExport[]
 }
 
@@ -262,6 +269,8 @@ model User {
   scheduleAudits           ScheduleAudit[]          @relation("ScheduleAuditActor")
   autoPlanTemplates        AutoPlanTemplate[]
   rcpEvents                RcpEvent[]
+  rcpCorrectionsRequested  RcpCorrection[] @relation("RcpCorrectionRequestedBy")
+  rcpCorrectionsReviewed   RcpCorrection[] @relation("RcpCorrectionReviewedBy")
   reportExports            ReportExport[]
   oauthAccounts            OAuthAccount[]
 
@@ -1276,9 +1285,35 @@ model RcpEvent {
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  corrections  RcpCorrection[]
 
   @@index([organisationId])
   @@index([userId])
   @@index([locationId])
   @@index([happenedAt])
+}
+
+model RcpCorrection {
+  id                 String              @id @default(uuid())
+  organisationId     String
+  eventId            String
+  requestedByUserId  String
+  requestedType      RcpEventType
+  requestedHappenedAt DateTime
+  reason             String
+  status             RcpCorrectionStatus @default(PENDING)
+  managerNote        String?
+  reviewedByUserId   String?
+  reviewedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  event        RcpEvent      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  requestedBy  User          @relation("RcpCorrectionRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  reviewedBy   User?         @relation("RcpCorrectionReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId, status])
+  @@index([requestedByUserId, status])
+  @@index([eventId])
 }

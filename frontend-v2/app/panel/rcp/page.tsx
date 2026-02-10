@@ -123,6 +123,15 @@ export default function PanelRcpPage() {
     take: 25,
     total: 0,
   });
+  const [pendingCorrections, setPendingCorrections] = useState<any[]>([]);
+  const [correctionsLoading, setCorrectionsLoading] = useState(false);
+  const [activeWorkforce, setActiveWorkforce] = useState<any[]>([]);
+  const [dailySummary, setDailySummary] = useState<{
+    date: string;
+    clockInCount: number;
+    clockOutCount: number;
+    pendingCorrections: number;
+  } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // RBAC Guard - tylko Manager/Owner/Admin
@@ -137,8 +146,54 @@ export default function PanelRcpPage() {
       fetchLocations();
       fetchMembers();
       fetchEvents(0);
+      fetchManagerWidgets();
     }
   }, [hasRcpAccess, router]);
+
+  const fetchManagerWidgets = async () => {
+    try {
+      const [corrections, workforce, summary] = await Promise.all([
+        apiClient.request<{ items: any[] }>('/rcp/corrections?status=PENDING&take=10', { auth: true }),
+        apiClient.request<{ items: any[] }>('/rcp/workforce/active', { auth: true }),
+        apiClient.request<{
+          date: string;
+          clockInCount: number;
+          clockOutCount: number;
+          pendingCorrections: number;
+        }>('/rcp/summary/daily', { auth: true }),
+      ]);
+      setPendingCorrections(corrections.items);
+      setActiveWorkforce(workforce.items ?? []);
+      setDailySummary(summary);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Nie udało się załadować widżetów managera';
+      pushToast(errorMessage, 'error');
+    }
+  };
+
+  const handleReviewCorrection = async (
+    id: string,
+    decision: 'APPROVED' | 'REJECTED',
+  ) => {
+    setCorrectionsLoading(true);
+    try {
+      await apiClient.request(`/rcp/corrections/${id}/review`, {
+        method: 'POST',
+        auth: true,
+        body: JSON.stringify({ decision }),
+      });
+      pushToast(
+        decision === 'APPROVED' ? 'Korekta zatwierdzona' : 'Korekta odrzucona',
+        'success',
+      );
+      await Promise.all([fetchManagerWidgets(), fetchEvents(0)]);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Nie udało się obsłużyć korekty';
+      pushToast(errorMessage, 'error');
+    } finally {
+      setCorrectionsLoading(false);
+    }
+  };
 
   const fetchMembers = async () => {
     try {
@@ -726,6 +781,68 @@ export default function PanelRcpPage() {
         </div>
 
         {/* Events Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="bg-surface-50 border border-surface-300 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-surface-800 mb-2">Kto jest w pracy</h3>
+            <div className="text-xs text-surface-500 mb-3">Aktualnie zalogowani pracownicy</div>
+            <div className="space-y-2 max-h-48 overflow-auto">
+              {activeWorkforce.length === 0 && (
+                <div className="text-sm text-surface-500">Brak aktywnych pracowników</div>
+              )}
+              {activeWorkforce.map((entry) => (
+                <div key={entry.user.id} className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm">
+                  <div className="font-medium text-surface-900">{entry.user.firstName || ''} {entry.user.lastName || ''}</div>
+                  <div className="text-xs text-surface-500">{entry.location?.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-surface-50 border border-surface-300 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-surface-800 mb-2">Podsumowanie dnia</h3>
+            <div className="text-xs text-surface-500 mb-3">{dailySummary?.date || '-'}</div>
+            <div className="space-y-2 text-sm text-surface-700">
+              <div>Wejścia: <span className="font-semibold text-surface-900">{dailySummary?.clockInCount ?? 0}</span></div>
+              <div>Wyjścia: <span className="font-semibold text-surface-900">{dailySummary?.clockOutCount ?? 0}</span></div>
+              <div>Oczekujące korekty: <span className="font-semibold text-surface-900">{dailySummary?.pendingCorrections ?? 0}</span></div>
+            </div>
+          </div>
+          <div className="bg-surface-50 border border-surface-300 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-surface-800">Korekty oczekujące</h3>
+              <button
+                type="button"
+                onClick={fetchManagerWidgets}
+                className="text-xs text-brand-600 hover:text-brand-700"
+              >Odśwież</button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-auto">
+              {pendingCorrections.length === 0 && (
+                <div className="text-sm text-surface-500">Brak oczekujących korekt</div>
+              )}
+              {pendingCorrections.map((item) => (
+                <div key={item.id} className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm space-y-2">
+                  <div className="font-medium text-surface-900">{item.requestedBy?.firstName || ''} {item.requestedBy?.lastName || ''}</div>
+                  <div className="text-xs text-surface-500">{item.reason}</div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={correctionsLoading}
+                      onClick={() => handleReviewCorrection(item.id, 'APPROVED')}
+                      className="rounded bg-green-600 px-2 py-1 text-xs text-white disabled:bg-surface-300"
+                    >Zatwierdź</button>
+                    <button
+                      type="button"
+                      disabled={correctionsLoading}
+                      onClick={() => handleReviewCorrection(item.id, 'REJECTED')}
+                      className="rounded bg-red-600 px-2 py-1 text-xs text-white disabled:bg-surface-300"
+                    >Odrzuć</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="bg-surface-50 border border-surface-300 rounded-xl p-6 space-y-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>

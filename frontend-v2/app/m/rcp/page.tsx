@@ -80,6 +80,10 @@ function MobileRcpContent() {
     message: string;
     distance?: number;
   } | null>(null);
+  const [correctionEventId, setCorrectionEventId] = useState<string>('');
+  const [correctionType, setCorrectionType] = useState<'CLOCK_IN' | 'CLOCK_OUT'>('CLOCK_IN');
+  const [correctionReason, setCorrectionReason] = useState('');
+  const [correctionLoading, setCorrectionLoading] = useState(false);
 
   // Check authentication
   useEffect(() => {
@@ -368,6 +372,44 @@ function MobileRcpContent() {
       pushToast(errorMessage, 'error');
     } finally {
       setClockLoading(false);
+    }
+  };
+
+  const handleSubmitCorrection = async () => {
+    if (!correctionEventId) {
+      pushToast('Wybierz zdarzenie do korekty', 'warning');
+      return;
+    }
+    if (correctionReason.trim().length < 3) {
+      pushToast('Podaj powód korekty (min. 3 znaki)', 'warning');
+      return;
+    }
+
+    const sourceEvent = history.find((event) => event.id === correctionEventId);
+    if (!sourceEvent) {
+      pushToast('Nie znaleziono wybranego zdarzenia', 'error');
+      return;
+    }
+
+    setCorrectionLoading(true);
+    try {
+      await apiClient.request('/rcp/corrections', {
+        method: 'POST',
+        auth: true,
+        body: JSON.stringify({
+          eventId: correctionEventId,
+          requestedType: correctionType,
+          requestedHappenedAt: sourceEvent.happenedAt,
+          reason: correctionReason.trim(),
+        }),
+      });
+      pushToast('Wysłano wniosek o korektę', 'success');
+      setCorrectionReason('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Nie udało się wysłać korekty';
+      pushToast(message, 'error');
+    } finally {
+      setCorrectionLoading(false);
     }
   };
 
@@ -762,6 +804,52 @@ function MobileRcpContent() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-3">
+          <div className="text-sm font-medium text-white">Wniosek o korektę</div>
+          <select
+            value={correctionEventId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setCorrectionEventId(id);
+              const selectedEvent = history.find((event) => event.id === id);
+              if (selectedEvent) {
+                setCorrectionType(selectedEvent.type === 'CLOCK_IN' ? 'CLOCK_OUT' : 'CLOCK_IN');
+              }
+            }}
+            className="w-full rounded-lg bg-gray-900 border border-gray-700 text-sm text-white px-3 py-2"
+          >
+            <option value="">Wybierz zdarzenie</option>
+            {history.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.type === 'CLOCK_IN' ? 'Wejście' : 'Wyjście'} • {new Date(event.happenedAt).toLocaleString('pl-PL')}
+              </option>
+            ))}
+          </select>
+          <select
+            value={correctionType}
+            onChange={(e) => setCorrectionType(e.target.value as 'CLOCK_IN' | 'CLOCK_OUT')}
+            className="w-full rounded-lg bg-gray-900 border border-gray-700 text-sm text-white px-3 py-2"
+          >
+            <option value="CLOCK_IN">Koryguj na: Wejście</option>
+            <option value="CLOCK_OUT">Koryguj na: Wyjście</option>
+          </select>
+          <textarea
+            value={correctionReason}
+            onChange={(e) => setCorrectionReason(e.target.value)}
+            rows={3}
+            placeholder="Powód korekty"
+            className="w-full rounded-lg bg-gray-900 border border-gray-700 text-sm text-white px-3 py-2"
+          />
+          <button
+            type="button"
+            onClick={handleSubmitCorrection}
+            disabled={correctionLoading}
+            className="w-full rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-gray-700 text-white py-2 text-sm font-medium"
+          >
+            {correctionLoading ? 'Wysyłanie...' : 'Wyślij korektę'}
+          </button>
         </div>
 
         <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-800">

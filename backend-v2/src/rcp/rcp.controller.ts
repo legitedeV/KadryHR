@@ -6,6 +6,7 @@ import {
   UseGuards,
   Req,
   Query,
+  Param,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -16,6 +17,9 @@ import { GenerateQrDto } from './dto/generate-qr.dto';
 import { ClockDto } from './dto/clock.dto';
 import { ListRcpEventsDto } from './dto/list-rcp-events.dto';
 import { MobileRcpSessionDto } from './dto/mobile-session.dto';
+import { CreateRcpCorrectionDto } from './dto/create-rcp-correction.dto';
+import { ListRcpCorrectionsDto } from './dto/list-rcp-corrections.dto';
+import { ReviewRcpCorrectionDto } from './dto/review-rcp-correction.dto';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 import { ConfigService } from '@nestjs/config';
 
@@ -119,5 +123,75 @@ export class RcpController {
       req.user.organisationId,
       query,
     );
+  }
+
+  @Post('corrections')
+  async createCorrection(
+    @Body() dto: CreateRcpCorrectionDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.createCorrection(
+      req.user.id,
+      req.user.organisationId,
+      dto,
+    );
+  }
+
+  @Get('corrections/me')
+  async listMyCorrections(
+    @Query() query: ListRcpCorrectionsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.listCorrectionsForUser(
+      req.user.id,
+      req.user.organisationId,
+      query,
+    );
+  }
+
+  @Get('corrections')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async listCorrections(
+    @Query() query: ListRcpCorrectionsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.listCorrectionsForOrganisation(
+      req.user.organisationId,
+      query,
+    );
+  }
+
+  @Post('corrections/:id/review')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async reviewCorrection(
+    @Param('id') id: string,
+    @Body() dto: ReviewRcpCorrectionDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.reviewCorrection(
+      id,
+      req.user.id,
+      req.user.organisationId,
+      dto,
+    );
+  }
+
+  @Get('workforce/active')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async getActiveWorkforce(@Req() req: RequestWithUser) {
+    return this.rcpService.getActiveWorkforce(req.user.organisationId);
+  }
+
+  @Get('summary/daily')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async getDailySummary(
+    @Query('date') date: string | undefined,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.rcpService.getDailySummary(req.user.organisationId, date);
   }
 }
