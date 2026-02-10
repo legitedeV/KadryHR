@@ -23,6 +23,7 @@ import {
   apiGetApprovedLeaves,
   apiGetAvailability,
   apiGetSchedule,
+  apiGetScheduleMetadata,
   apiGetScheduleSummary,
   apiListOrgEmployees,
   apiListEmployees,
@@ -487,6 +488,16 @@ export function SchedulePage() {
         locationIds: selectedLocationId ? [selectedLocationId] : undefined,
       }),
     enabled: hasToken && canViewCosts,
+  });
+
+  const metadataQuery = useQuery({
+    queryKey: ["schedule-metadata", formatDateKey(weekStart)],
+    queryFn: () =>
+      apiGetScheduleMetadata({
+        from: formatDateKey(weekStart),
+        to: formatDateKey(weekEnd),
+      }),
+    enabled: hasToken,
   });
 
   useEffect(() => {
@@ -1984,6 +1995,7 @@ export function SchedulePage() {
           isPublished={isPublished}
           summaryByDay={summaryQuery.data?.byDay}
           summaryCurrency={summaryQuery.data?.totals?.currency}
+          holidays={metadataQuery.data?.holidays ?? []}
           showLoadBars={showLoadBars}
           showSummaryRow={showSummaryRow}
           showWeekendHighlight={showWeekendHighlight}

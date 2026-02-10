@@ -213,6 +213,10 @@ const setupGrafikMocks = async (page: Page, options: GrafikMockOptions): Promise
       });
     }
 
+    if (path === '/organisations/me/schedule-metadata' && method === 'GET') {
+      return fulfillJson({ deliveryDays: [], promotionDays: [], holidays: [] });
+    }
+
     if (path === '/schedule/shifts/bulk' && method === 'POST') {
       const payload = request.postDataJSON() as {
         shifts?: Array<{
