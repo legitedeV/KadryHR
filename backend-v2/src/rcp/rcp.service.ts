@@ -10,6 +10,9 @@ import { RcpTokenService } from './services/rcp-token.service';
 import { RcpRateLimitService } from './services/rcp-rate-limit.service';
 import { calculateHaversineDistance } from './utils/haversine.util';
 import { RcpEventType, Prisma } from '@prisma/client';
+import { CreateRcpCorrectionDto } from './dto/create-rcp-correction.dto';
+import { ListRcpCorrectionsDto } from './dto/list-rcp-corrections.dto';
+import { ReviewRcpCorrectionDto } from './dto/review-rcp-correction.dto';
 
 export interface GenerateQrResult {
   qrUrl: string;
@@ -76,6 +79,13 @@ export interface RcpEventListResult {
   skip: number;
   take: number;
   items: RcpEventListItem[];
+}
+
+export interface RcpCorrectionListResult {
+  total: number;
+  skip: number;
+  take: number;
+  items: Array<Record<string, unknown>>;
 }
 
 @Injectable()
@@ -695,5 +705,184 @@ export class RcpService {
         userAgent: userAgent || null,
       },
     });
+  }
+
+  async createCorrection(
+    userId: string,
+    organisationId: string,
+    dto: CreateRcpCorrectionDto,
+  ) {
+    const event = await this.prisma.rcpEvent.findFirst({
+      where: {
+        id: dto.eventId,
+        organisationId,
+        userId,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException('RCP event not found');
+    }
+
+    const existingPending = await (this.prisma as any).rcpCorrection.findFirst({
+      where: {
+        eventId: dto.eventId,
+        status: 'PENDING',
+      },
+    });
+    if (existingPending) {
+      throw new BadRequestException('Pending correction already exists for this event');
+    }
+
+    return (this.prisma as any).rcpCorrection.create({
+      data: {
+        organisationId,
+        eventId: dto.eventId,
+        requestedByUserId: userId,
+        requestedType: dto.requestedType,
+        requestedHappenedAt: new Date(dto.requestedHappenedAt),
+        reason: dto.reason,
+      },
+    });
+  }
+
+  async listCorrectionsForUser(
+    userId: string,
+    organisationId: string,
+    query: ListRcpCorrectionsDto,
+  ): Promise<RcpCorrectionListResult> {
+    const where: Record<string, unknown> = {
+      organisationId,
+      requestedByUserId: userId,
+    };
+    if (query.status) where.status = query.status;
+
+    const [total, items] = await this.prisma.$transaction([
+      (this.prisma as any).rcpCorrection.count({ where }),
+      (this.prisma as any).rcpCorrection.findMany({
+        where,
+        skip: query.skip,
+        take: query.take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          event: { include: { location: true } },
+          reviewedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+        },
+      }),
+    ]);
+
+    return { total, skip: query.skip, take: query.take, items };
+  }
+
+  async listCorrectionsForOrganisation(
+    organisationId: string,
+    query: ListRcpCorrectionsDto,
+  ): Promise<RcpCorrectionListResult> {
+    const where: Record<string, unknown> = { organisationId };
+    if (query.status) where.status = query.status;
+
+    const [total, items] = await this.prisma.$transaction([
+      (this.prisma as any).rcpCorrection.count({ where }),
+      (this.prisma as any).rcpCorrection.findMany({
+        where,
+        skip: query.skip,
+        take: query.take,
+        orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          event: { include: { location: true, user: true } },
+          requestedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+          reviewedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+        },
+      }),
+    ]);
+
+    return { total, skip: query.skip, take: query.take, items };
+  }
+
+  async reviewCorrection(
+    id: string,
+    reviewerUserId: string,
+    organisationId: string,
+    dto: ReviewRcpCorrectionDto,
+  ) {
+    const correction = await (this.prisma as any).rcpCorrection.findFirst({
+      where: { id, organisationId },
+    });
+    if (!correction) {
+      throw new NotFoundException('Correction not found');
+    }
+    if (correction.status !== 'PENDING') {
+      throw new BadRequestException('Correction already reviewed');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedCorrection = await (tx as any).rcpCorrection.update({
+        where: { id },
+        data: {
+          status: dto.decision,
+          managerNote: dto.managerNote || null,
+          reviewedByUserId: reviewerUserId,
+          reviewedAt: new Date(),
+        },
+      });
+
+      if (dto.decision === 'APPROVED') {
+        await tx.rcpEvent.update({
+          where: { id: correction.eventId },
+          data: {
+            type: correction.requestedType,
+            happenedAt: correction.requestedHappenedAt,
+          },
+        });
+      }
+
+      return updatedCorrection;
+    });
+  }
+
+  async getActiveWorkforce(organisationId: string) {
+    const users = await this.prisma.user.findMany({
+      where: { organisationId },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+
+    const active: Array<Record<string, unknown>> = [];
+    for (const user of users) {
+      const last = await this.prisma.rcpEvent.findFirst({
+        where: { organisationId, userId: user.id },
+        include: { location: true },
+        orderBy: { happenedAt: 'desc' },
+      });
+      if (last?.type === 'CLOCK_IN') {
+        active.push({
+          user,
+          location: { id: last.location.id, name: last.location.name },
+          happenedAt: last.happenedAt,
+        });
+      }
+    }
+
+    return { activeCount: active.length, items: active };
+  }
+
+  async getDailySummary(organisationId: string, date?: string) {
+    const source = date ? new Date(date) : new Date();
+    const start = new Date(source);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(source);
+    end.setHours(23, 59, 59, 999);
+
+    const [clockInCount, clockOutCount, pendingCorrections] = await Promise.all([
+      this.prisma.rcpEvent.count({ where: { organisationId, type: 'CLOCK_IN', happenedAt: { gte: start, lte: end } } }),
+      this.prisma.rcpEvent.count({ where: { organisationId, type: 'CLOCK_OUT', happenedAt: { gte: start, lte: end } } }),
+      (this.prisma as any).rcpCorrection.count({ where: { organisationId, status: 'PENDING' } }),
+    ]);
+
+    return {
+      date: start.toISOString().slice(0, 10),
+      clockInCount,
+      clockOutCount,
+      pendingCorrections,
+    };
   }
 }
