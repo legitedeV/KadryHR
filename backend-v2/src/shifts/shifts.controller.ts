@@ -76,7 +76,7 @@ export class ShiftsController {
   @RequirePermissions(Permission.RCP_EDIT)
   @Post()
   @AuditLog({
-    action: 'SHIFT_CREATE',
+    action: 'shift.create',
     entityType: 'shift',
     captureBody: true,
   })
@@ -90,7 +90,7 @@ export class ShiftsController {
   @RequirePermissions(Permission.RCP_EDIT)
   @Patch(':id')
   @AuditLog({
-    action: 'SHIFT_UPDATE',
+    action: 'shift.update',
     entityType: 'shift',
     entityIdParam: 'id',
     fetchBefore: true,
@@ -107,7 +107,7 @@ export class ShiftsController {
   @RequirePermissions(Permission.RCP_EDIT)
   @Delete(':id')
   @AuditLog({
-    action: 'SHIFT_DELETE',
+    action: 'shift.delete',
     entityType: 'shift',
     entityIdParam: 'id',
     fetchBefore: true,

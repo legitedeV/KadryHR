@@ -167,6 +167,27 @@ export interface LeaveRequestRecord {
   } | null;
 }
 
+
+export interface AuditLogRecord {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  createdAt: string;
+  actor?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null;
+}
+
+export interface AuditLogListResponse {
+  data: AuditLogRecord[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
 export interface LeaveRequestHistoryRecord {
   id: string;
   action: string;
@@ -942,6 +963,23 @@ export async function apiGetLeaveRequests(
   return apiClient.request<LeaveRequestListResponse>(
     `/leave-requests${query ? `?${query}` : ""}`,
   );
+}
+
+
+export async function apiGetAuditLogs(params: {
+  take?: number;
+  skip?: number;
+  entityTypes?: string[];
+  actions?: string[];
+} = {}): Promise<AuditLogListResponse> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.take) search.set("take", String(params.take));
+  if (params.skip) search.set("skip", String(params.skip));
+  params.entityTypes?.forEach((value) => search.append("entityType", value));
+  params.actions?.forEach((value) => search.append("action", value));
+  const query = search.toString();
+  return apiClient.request<AuditLogListResponse>(`/audit${query ? `?${query}` : ""}`);
 }
 
 export async function apiGetLeaveRequestHistory(

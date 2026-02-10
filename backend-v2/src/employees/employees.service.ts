@@ -8,6 +8,7 @@ import { NotificationType, ScheduleStatus, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditService } from '../audit/audit.service';
+import { AUDIT_ACTIONS } from '../audit/audit-events';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
@@ -147,6 +148,7 @@ export class EmployeesService {
     organisationId: string,
     orderedEmployeeIds: string[],
     periodId?: string,
+    actorUserId?: string,
   ) {
     if (periodId) {
       const period = await this.prisma.schedulePeriod.findFirst({
@@ -195,6 +197,19 @@ export class EmployeesService {
 
     const results = await this.prisma.$transaction(updates);
     const updatedCount = results.reduce((sum, result) => sum + result.count, 0);
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId: actorUserId ?? undefined,
+      action: AUDIT_ACTIONS.EMPLOYEE_REORDER,
+      entityType: 'employee_order',
+      entityId: periodId ?? null,
+      after: {
+        periodId: periodId ?? null,
+        orderedEmployeeIds: filteredOrderedIds,
+        updatedCount,
+      },
+    });
 
     return { updatedCount, orderedIds: filteredOrderedIds };
   }

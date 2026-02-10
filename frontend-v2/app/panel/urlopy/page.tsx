@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { LeaveCategory, LeaveRequestRecord, apiCreateLeaveRequest, apiGetLeaveRequestHistory, apiGetLeaveRequests, apiUpdateLeaveRequestStatus } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { pushToast } from "@/lib/toast";
+import { AuditHistoryDrawer } from "@/components/AuditHistoryDrawer";
 
 const leaveTypeOptions: Array<{ value: LeaveCategory; label: string }> = [
   { value: "PAID_LEAVE", label: "Wypoczynkowy" },
@@ -24,6 +25,7 @@ export default function UrlopyPage() {
   const [history, setHistory] = useState<LeaveRequestRecord[]>([]);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<Array<{ id: string; action: string; actorName: string; createdAt: string }>>([]);
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -117,6 +119,9 @@ export default function UrlopyPage() {
       <div>
         <h1 className="text-2xl font-semibold text-surface-900">Urlopy</h1>
         <p className="text-sm text-surface-600">Składaj wnioski urlopowe i śledź decyzje.</p>
+        {isManager && (
+          <button type="button" onClick={() => setAuditDrawerOpen(true)} className="mt-3 panel-button-secondary">Historia zmian</button>
+        )}
       </div>
 
       <section className="rounded-xl border border-surface-200 bg-white p-4">
@@ -186,6 +191,12 @@ export default function UrlopyPage() {
           )}
         </section>
       )}
+      <AuditHistoryDrawer
+        open={auditDrawerOpen}
+        onClose={() => setAuditDrawerOpen(false)}
+        title="Historia zmian · Urlopy"
+        actions={["leave.approve", "leave.reject"]}
+      />
     </div>
   );
 }

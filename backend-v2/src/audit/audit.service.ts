@@ -21,8 +21,8 @@ export interface AuditLogPayload {
 export interface AuditLogQuery {
   from?: string;
   to?: string;
-  action?: string;
-  entityType?: string;
+  action?: string | string[];
+  entityType?: string | string[];
   actorUserId?: string;
   take?: number;
   skip?: number;
@@ -139,10 +139,10 @@ export class AuditService {
       where.createdAt = { ...(where.createdAt as object), lte: new Date(to) };
     }
     if (action) {
-      where.action = action;
+      where.action = Array.isArray(action) ? { in: action } : action;
     }
     if (entityType) {
-      where.entityType = entityType;
+      where.entityType = Array.isArray(entityType) ? { in: entityType } : entityType;
     }
     if (actorUserId) {
       where.actorUserId = actorUserId;

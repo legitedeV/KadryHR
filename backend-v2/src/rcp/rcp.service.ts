@@ -13,6 +13,8 @@ import { RcpEventType, Prisma } from '@prisma/client';
 import { CreateRcpCorrectionDto } from './dto/create-rcp-correction.dto';
 import { ListRcpCorrectionsDto } from './dto/list-rcp-corrections.dto';
 import { ReviewRcpCorrectionDto } from './dto/review-rcp-correction.dto';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_ACTIONS } from '../audit/audit-events';
 
 export interface GenerateQrResult {
   qrUrl: string;
@@ -94,6 +96,7 @@ export class RcpService {
     private readonly prisma: PrismaService,
     private readonly tokenService: RcpTokenService,
     private readonly rateLimitService: RcpRateLimitService,
+    private readonly auditService: AuditService,
   ) {}
 
   async generateQr(
@@ -815,8 +818,8 @@ export class RcpService {
       throw new BadRequestException('Correction already reviewed');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const updatedCorrection = await (tx as any).rcpCorrection.update({
+    const updatedCorrection = await this.prisma.$transaction(async (tx) => {
+      const nextCorrection = await (tx as any).rcpCorrection.update({
         where: { id },
         data: {
           status: dto.decision,
@@ -836,8 +839,25 @@ export class RcpService {
         });
       }
 
-      return updatedCorrection;
+      return nextCorrection;
     });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId: reviewerUserId,
+      action:
+        dto.decision === 'APPROVED'
+          ? AUDIT_ACTIONS.RCP_CORRECTION_APPROVE
+          : AUDIT_ACTIONS.RCP_CORRECTION_REJECT,
+      entityType: 'rcp_correction',
+      entityId: id,
+      after: {
+        correctionId: id,
+        decision: dto.decision,
+      },
+    });
+
+    return updatedCorrection;
   }
 
   async getActiveWorkforce(organisationId: string) {

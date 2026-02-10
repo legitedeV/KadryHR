@@ -20,6 +20,8 @@ import { PublishScheduleDto } from './dto/publish-schedule.dto';
 import { DuplicatePreviousPeriodDto } from './dto/duplicate-prev.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_ACTIONS } from '../audit/audit-events';
 import { buildScheduleRange } from './schedule-date.utils';
 
 type ErrorPayload = {
@@ -34,6 +36,7 @@ export class ScheduleService {
     private readonly scheduleRepository: ScheduleRepository,
     private readonly notificationsService: NotificationsService,
     private readonly emailTemplatesService: EmailTemplatesService,
+    private readonly auditService: AuditService,
   ) {}
 
   private buildAvatarUrl(
@@ -655,6 +658,20 @@ export class ScheduleService {
       actor: { connect: { id: actorId } },
     });
 
+    await this.auditService.record({
+      organisationId,
+      actorUserId: actorId,
+      action: AUDIT_ACTIONS.GRAFIK_PUBLISH,
+      entityType: 'schedule_period',
+      entityId: period.id,
+      after: {
+        periodId: period.id,
+        status: ScheduleStatus.PUBLISHED,
+        version: updatedPeriod.version,
+        notifiedCount,
+      },
+    });
+
     return {
       periodId: period.id,
       version: updatedPeriod.version,
@@ -786,6 +803,19 @@ export class ScheduleService {
         version: updatedPeriod.version,
       } as Prisma.JsonObject,
       actor: { connect: { id: actorId } },
+    });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId: actorId,
+      action: AUDIT_ACTIONS.GRAFIK_UNPUBLISH,
+      entityType: 'schedule_period',
+      entityId: period.id,
+      after: {
+        periodId: period.id,
+        status: ScheduleStatus.APPROVED,
+        version: updatedPeriod.version,
+      },
     });
 
     return {
