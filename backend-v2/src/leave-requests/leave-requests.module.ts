@@ -3,6 +3,7 @@ import { LeaveRequestsController } from './leave-requests.controller';
 import { LeaveRequestsService } from './leave-requests.service';
 import { LeaveBalanceService } from './leave-balance.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { OrganisationModuleGuard } from '../common/guards/organisation-module.guard';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditModule } from '../audit/audit.module';
 import { EmployeesModule } from '../employees/employees.module';
@@ -10,7 +11,7 @@ import { EmployeesModule } from '../employees/employees.module';
 @Module({
   imports: [PrismaModule, NotificationsModule, AuditModule, EmployeesModule],
   controllers: [LeaveRequestsController],
-  providers: [LeaveRequestsService, LeaveBalanceService],
+  providers: [LeaveRequestsService, LeaveBalanceService, OrganisationModuleGuard],
   exports: [LeaveRequestsService, LeaveBalanceService],
 })
 export class LeaveRequestsModule {}

@@ -183,6 +183,7 @@ model Organisation {
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
   preventShiftOnApprovedLeave Boolean  @default(false)
+  enabledModules              Json?    @db.JsonB
 
   // Delivery days configuration (Task 4.4)
   deliveryDays       Weekday[] @default([])

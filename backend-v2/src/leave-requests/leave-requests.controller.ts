@@ -22,8 +22,11 @@ import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import { UpdateLeaveRequestStatusDto } from './dto/update-leave-request-status.dto';
 import { FindLeaveRequestsQueryDto } from './dto/find-leave-requests-query.dto';
+import { RequireOrganisationModule } from '../common/decorators/organisation-module.decorator';
+import { OrganisationModuleGuard } from '../common/guards/organisation-module.guard';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, OrganisationModuleGuard)
+@RequireOrganisationModule('urlopy')
 @Controller('leave-requests')
 export class LeaveRequestsController {
   constructor(

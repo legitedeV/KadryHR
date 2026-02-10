@@ -3,17 +3,17 @@
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { clearAuthTokens, getAccessToken } from "@/lib/auth";
-import { apiGetMe, User } from "@/lib/api";
+import { apiGetMe, apiGetOrganisationModules, OrganisationModulesState, User } from "@/lib/api";
 import { OnboardingProvider } from "@/features/onboarding/OnboardingProvider";
 import { TopbarActionsProvider, useTopbarActions } from "@/lib/topbar-actions-context";
 import { PanelShell } from "@/components/panel/PanelShell";
 import { LoadingSkeleton } from "@/components/panel/LoadingSkeleton";
 
-function PanelContent({ children, user, onLogout }: { children: ReactNode; user: User; onLogout: () => void }) {
+function PanelContent({ children, user, onLogout, modules }: { children: ReactNode; user: User; onLogout: () => void; modules: OrganisationModulesState | null; }) {
   const { actionsSlot } = useTopbarActions();
 
   return (
-    <PanelShell user={user} onLogout={onLogout} actionsSlot={actionsSlot}>
+    <PanelShell user={user} onLogout={onLogout} actionsSlot={actionsSlot} modules={modules}>
       {children}
     </PanelShell>
   );
@@ -24,8 +24,17 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [modules, setModules] = useState<OrganisationModulesState | null>(null);
 
   useEffect(() => {
+    const handleModulesUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<OrganisationModulesState>;
+      if (!customEvent.detail) return;
+      setModules(customEvent.detail);
+    };
+
+    window.addEventListener("kadryhr:modules-updated", handleModulesUpdated as EventListener);
+
     const token = getAccessToken();
     if (!token) {
       setHasSession(false);
@@ -38,10 +47,11 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    apiGetMe()
-      .then((me) => {
+    Promise.all([apiGetMe(), apiGetOrganisationModules()])
+      .then(([me, moduleResponse]) => {
         if (cancelled) return;
         setUser(me);
+        setModules(moduleResponse.modules);
       })
       .catch(() => {
         if (cancelled) return;
@@ -55,6 +65,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("kadryhr:modules-updated", handleModulesUpdated as EventListener);
     };
   }, [router]);
 
@@ -82,7 +93,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
     <OnboardingProvider userId={user.id}>
       <TopbarActionsProvider>
-        <PanelContent user={user} onLogout={handleLogout}>
+        <PanelContent user={user} onLogout={handleLogout} modules={modules}>
           {children}
         </PanelContent>
       </TopbarActionsProvider>

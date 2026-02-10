@@ -21,10 +21,10 @@ import { CreateRcpCorrectionDto } from './dto/create-rcp-correction.dto';
 import { ListRcpCorrectionsDto } from './dto/list-rcp-corrections.dto';
 import { ReviewRcpCorrectionDto } from './dto/review-rcp-correction.dto';
 import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
-import { ConfigService } from '@nestjs/config';
 
 @Controller('rcp')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, OrganisationModuleGuard)
+@RequireOrganisationModule('rcp')
 export class RcpController {
   constructor(
     private readonly rcpService: RcpService,

@@ -6,9 +6,12 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ReportFormat, ReportType, ReportsService } from './reports.service';
+import { RequireOrganisationModule } from '../common/decorators/organisation-module.decorator';
+import { OrganisationModuleGuard } from '../common/guards/organisation-module.guard';
 
 @Controller('reports')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, OrganisationModuleGuard)
+@RequireOrganisationModule('raporty')
 @Roles('OWNER', 'ADMIN', 'MANAGER')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

@@ -23,6 +23,11 @@ import {
   UpdateOrganisationMemberRoleDto,
 } from './dto/organisation-member.dto';
 import { InvitationsService } from '../auth/invitations.service';
+import {
+  CORE_ORGANISATION_MODULES,
+  normalizeOrganisationModules,
+} from '../common/constants/organisation-modules.constant';
+import { UpdateOrganisationModulesDto } from './dto/update-organisation-modules.dto';
 
 @Injectable()
 export class OrganisationSettingsService {
@@ -187,6 +192,55 @@ export class OrganisationSettingsService {
       workDays: updated.workDays ?? [],
       holidays: updated.holidays ?? [],
       schedulePeriod: updated.schedulePeriod ?? SchedulePeriodType.WEEKLY,
+    };
+  }
+
+  async getOrganisationModules(organisationId: string) {
+    const organisation = await this.getOrganisationDetails(organisationId);
+    const modules = normalizeOrganisationModules(organisation.enabledModules);
+
+    return {
+      modules,
+      coreModules: Array.from(CORE_ORGANISATION_MODULES),
+    };
+  }
+
+  async updateOrganisationModules(
+    organisationId: string,
+    actorUserId: string,
+    dto: UpdateOrganisationModulesDto,
+  ) {
+    const before = await this.getOrganisationDetails(organisationId);
+    const beforeModules = normalizeOrganisationModules(before.enabledModules);
+    const nextModules = {
+      ...beforeModules,
+      ...dto,
+    };
+
+    for (const moduleName of CORE_ORGANISATION_MODULES) {
+      nextModules[moduleName] = true;
+    }
+
+    const updated = await this.prisma.organisation.update({
+      where: { id: organisationId },
+      data: {
+        enabledModules: nextModules,
+      },
+    });
+
+    await this.auditService.record({
+      organisationId,
+      actorUserId,
+      action: 'UPDATE',
+      entityType: 'organisation-modules',
+      entityId: organisationId,
+      before: { modules: beforeModules },
+      after: { modules: normalizeOrganisationModules(updated.enabledModules) },
+    });
+
+    return {
+      modules: normalizeOrganisationModules(updated.enabledModules),
+      coreModules: Array.from(CORE_ORGANISATION_MODULES),
     };
   }
 

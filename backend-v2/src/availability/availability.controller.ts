@@ -29,8 +29,11 @@ import { SubmitAvailabilityWindowDto } from './dto/submit-availability-window.dt
 import { UpdateAvailabilitySubmissionStatusDto } from './dto/update-availability-submission-status.dto';
 import { AuditLog } from '../audit/audit-log.decorator';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor';
+import { RequireOrganisationModule } from '../common/decorators/organisation-module.decorator';
+import { OrganisationModuleGuard } from '../common/guards/organisation-module.guard';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, OrganisationModuleGuard)
+@RequireOrganisationModule('dyspozycje')
 @UseInterceptors(AuditLogInterceptor)
 @Controller('availability')
 export class AvailabilityController {
