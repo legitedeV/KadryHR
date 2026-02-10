@@ -179,14 +179,14 @@ export class OrganisationSettingsService {
     });
 
     return {
-      defaultWorkdayStart: updated.defaultWorkdayStart,
-      defaultWorkdayEnd: updated.defaultWorkdayEnd,
-      defaultBreakMinutes: updated.defaultBreakMinutes,
-      dailyWorkNormHours: updated.dailyWorkNormHours,
-      weeklyWorkNormHours: updated.weeklyWorkNormHours,
-      workDays: updated.workDays,
-      holidays: updated.holidays,
-      schedulePeriod: updated.schedulePeriod,
+      defaultWorkdayStart: updated.defaultWorkdayStart ?? '08:00',
+      defaultWorkdayEnd: updated.defaultWorkdayEnd ?? '16:00',
+      defaultBreakMinutes: updated.defaultBreakMinutes ?? 30,
+      dailyWorkNormHours: updated.dailyWorkNormHours ?? 8,
+      weeklyWorkNormHours: updated.weeklyWorkNormHours ?? 40,
+      workDays: updated.workDays ?? [],
+      holidays: updated.holidays ?? [],
+      schedulePeriod: updated.schedulePeriod ?? SchedulePeriodType.WEEKLY,
     };
   }
 
