@@ -125,6 +125,59 @@ export interface LeaveRequestPayload {
 
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
+
+export interface LeaveTypeSummary {
+  id: string;
+  name: string;
+  color?: string | null;
+}
+
+export interface LeaveRequestRecord {
+  id: string;
+  employeeId: string;
+  organisationId?: string;
+  leaveTypeId?: string | null;
+  type: LeaveCategory;
+  status: LeaveStatus;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+  rejectionReason?: string | null;
+  decisionAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  };
+  leaveType?: LeaveTypeSummary | null;
+  approvedBy?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  } | null;
+}
+
+export interface LeaveRequestHistoryRecord {
+  id: string;
+  action: string;
+  actorName: string;
+  actorEmail: string;
+  createdAt: string;
+  before?: unknown;
+  after?: unknown;
+}
+
+export interface LeaveRequestListResponse {
+  data: LeaveRequestRecord[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
 export interface ShiftSwapRequestPayload {
   shiftId: string;
   targetEmployeeId: string;
@@ -788,11 +841,38 @@ export async function apiCreateLeaveRequest(payload: LeaveRequestPayload) {
   });
 }
 
-export async function apiUpdateLeaveRequestStatus(leaveRequestId: string, status: LeaveStatus) {
+export async function apiGetLeaveRequests(params: {
+  status?: LeaveStatus;
+  page?: number;
+  pageSize?: number;
+  from?: string;
+  to?: string;
+} = {}): Promise<LeaveRequestListResponse> {
+  apiClient.hydrateFromStorage();
+  const search = new URLSearchParams();
+  if (params.status) search.set("status", params.status);
+  if (params.page) search.set("page", String(params.page));
+  if (params.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  const query = search.toString();
+  return apiClient.request<LeaveRequestListResponse>(`/leave-requests${query ? `?${query}` : ""}`);
+}
+
+export async function apiGetLeaveRequestHistory(leaveRequestId: string): Promise<LeaveRequestHistoryRecord[]> {
+  apiClient.hydrateFromStorage();
+  return apiClient.request<LeaveRequestHistoryRecord[]>(`/leave-requests/${leaveRequestId}/history`);
+}
+
+export async function apiUpdateLeaveRequestStatus(
+  leaveRequestId: string,
+  status: LeaveStatus,
+  note?: string,
+) {
   apiClient.hydrateFromStorage();
   return apiClient.request(`/leave-requests/${leaveRequestId}/status`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, note }),
   });
 }
 

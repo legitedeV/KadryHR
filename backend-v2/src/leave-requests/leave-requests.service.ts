@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -232,6 +233,8 @@ export class LeaveRequestsService {
 
     const { startDate, endDate } = this.resolveDates(dto);
 
+    await this.ensureNoDateOverlap(organisationId, targetEmployeeId, startDate, endDate);
+
     if (dto.leaveTypeId) {
       await this.ensureLeaveType(organisationId, dto.leaveTypeId);
 
@@ -291,6 +294,13 @@ export class LeaveRequestsService {
 
     if (dto.startsAt || dto.startDate || dto.endsAt || dto.endDate) {
       const { startDate, endDate } = this.resolveDates(dto);
+      await this.ensureNoDateOverlap(
+        organisationId,
+        existing.employeeId,
+        startDate,
+        endDate,
+        id,
+      );
       data.startDate = startDate;
       data.endDate = endDate;
     }
@@ -361,6 +371,14 @@ export class LeaveRequestsService {
 
     // Validate balance before approval
     if (dto.status === LeaveStatus.APPROVED && existing.leaveTypeId) {
+      await this.ensureNoDateOverlap(
+        organisationId,
+        existing.employeeId,
+        existing.startDate,
+        existing.endDate,
+        id,
+      );
+
       const balanceCheck = await this.leaveBalanceService.validateBalance(
         organisationId,
         existing.employeeId,
@@ -456,6 +474,34 @@ export class LeaveRequestsService {
     }
 
     return leaveType;
+  }
+
+  private async ensureNoDateOverlap(
+    organisationId: string,
+    employeeId: string,
+    startDate: Date,
+    endDate: Date,
+    ignoreRequestId?: string,
+  ) {
+    const overlap = await this.prisma.leaveRequest.findFirst({
+      where: {
+        organisationId,
+        employeeId,
+        id: ignoreRequestId ? { not: ignoreRequestId } : undefined,
+        status: {
+          in: [LeaveStatus.PENDING, LeaveStatus.APPROVED],
+        },
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+      },
+      select: { id: true },
+    });
+
+    if (overlap) {
+      throw new ConflictException(
+        'Istnieje już wniosek urlopowy pracownika nakładający się na ten zakres dat.',
+      );
+    }
   }
 
   private ensureStatusTransition(current: LeaveStatus, next: LeaveStatus) {
