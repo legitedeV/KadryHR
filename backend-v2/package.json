@@ -23,7 +23,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node --transpile-only prisma/seed/index.ts",
-    "seed:dev": "ts-node --transpile-only prisma/seed-dev.ts"
+    "seed:dev": "dotenv -e .env -- ts-node --transpile-only prisma/seed-dev.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",
@@ -70,6 +70,7 @@
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

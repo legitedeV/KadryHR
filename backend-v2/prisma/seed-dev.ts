@@ -60,7 +60,7 @@ const prisma = new PrismaClient({
 async function main() {
   await prisma.organisation.deleteMany({ where: { id: DEV_ORG_ID } });
 
-  const passwordHash = await bcrypt.hash('Dev123!', 10);
+  const passwordHash = await bcrypt.hash('Dev123!.!.', 10);
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
   const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59));
