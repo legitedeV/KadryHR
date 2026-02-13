@@ -22,7 +22,8 @@
     "test:e2e": "jest --config ./src/test/jest-e2e.config.ts --runInBand",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "ts-node --transpile-only prisma/seed/index.ts"
+    "prisma:seed": "ts-node --transpile-only prisma/seed/index.ts",
+    "seed:dev": "ts-node --transpile-only prisma/seed-dev.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",

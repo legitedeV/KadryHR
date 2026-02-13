@@ -7,7 +7,7 @@ import type { StringValue } from 'ms';
 import { PrismaModule } from '../prisma/prisma.module';
 import { QueueModule } from '../queue/queue.module';
 import { AuditModule } from '../audit/audit.module';
-import { ShiftPresetsModule } from '../shift-presets/shift-presets.module';
+import { BootstrapModule } from '../bootstrap/bootstrap.module';
 import { AvatarsModule } from '../avatars/avatars.module';
 import { EmployeesModule } from '../employees/employees.module';
 
@@ -48,7 +48,7 @@ import { OAuthService } from './oauth.service';
     QueueModule,
     ConfigModule,
     AuditModule,
-    ShiftPresetsModule,
+    BootstrapModule,
   ],
   controllers: [AuthController],
   providers: [

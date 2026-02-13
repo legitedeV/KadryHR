@@ -15,7 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { Role } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { QueueService } from '../queue/queue.service';
-import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
+import { OrganisationBootstrapService } from '../bootstrap/organisation-bootstrap.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
 import { createHash, randomBytes } from 'crypto';
 import { AvatarsService } from '../avatars/avatars.service';
@@ -30,7 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly queueService: QueueService,
-    private readonly shiftPresetsService: ShiftPresetsService,
+    private readonly organisationBootstrapService: OrganisationBootstrapService,
     private readonly emailTemplates: EmailTemplatesService,
     private readonly avatarsService: AvatarsService,
   ) {}
@@ -367,8 +367,7 @@ export class AuthService {
 
     this.attachRefreshTokenCookie(res, refreshToken, refreshTokenTtl);
 
-    // Create default shift presets for the new organisation
-    await this.shiftPresetsService.createDefaultPresets(organisation.id);
+    await this.organisationBootstrapService.bootstrapOrganisation(organisation.id);
 
     await this.queueService.addEmailDeliveryJob({
       to: dto.email,

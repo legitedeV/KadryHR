@@ -4,12 +4,14 @@ import { CreateOrganisationDto } from './dto/create-organisation.dto';
 import { UpdateOrganisationDto } from './dto/update-organisation.dto';
 import { AuditService } from '../audit/audit.service';
 import { Weekday } from '@prisma/client';
+import { OrganisationBootstrapService } from '../bootstrap/organisation-bootstrap.service';
 
 @Injectable()
 export class OrganisationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly organisationBootstrapService: OrganisationBootstrapService,
   ) {}
 
   private mapUserAvatar<T extends { avatarPath?: string | null; avatarUrl?: string | null }>(
@@ -35,8 +37,8 @@ export class OrganisationsService {
     return pathValue;
   }
 
-  create(ownerId: string, data: CreateOrganisationDto) {
-    return this.prisma.organisation.create({
+  async create(ownerId: string, data: CreateOrganisationDto) {
+    const organisation = await this.prisma.organisation.create({
       data: {
         ...data,
         deliveryDays: data.deliveryDays ?? [],
@@ -48,6 +50,10 @@ export class OrganisationsService {
         },
       },
     });
+
+    await this.organisationBootstrapService.bootstrapOrganisation(organisation.id);
+
+    return organisation;
   }
 
   async findOne(organisationId: string) {
