@@ -71,7 +71,6 @@ import { ScheduleCostSummaryBar } from "./ScheduleCostSummaryBar";
 import { AuditHistoryDrawer } from "@/components/AuditHistoryDrawer";
 import { usePathname, useRouter } from "next/navigation";
 
-const EDIT_MODE_HOLD_MS = 1000;
 const DEFAULT_EDIT_MODE_TIMEOUT_MS = 120000;
 const EDIT_MODE_TIMEOUT_MS = (() => {
   if (process.env.NEXT_PUBLIC_E2E === "true") {
@@ -170,8 +169,6 @@ export function SchedulePage() {
   const [showWeekendHighlight, setShowWeekendHighlight] = useState(true);
   const [showEmployeesWithoutShifts, setShowEmployeesWithoutShifts] = useState(true);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
-  const [editModeHoldActive, setEditModeHoldActive] = useState(false);
-  const editModeHoldTimerRef = useRef<number | null>(null);
   const editModeInactivityTimerRef = useRef<number | null>(null);
   const editModeLastActivityRef = useRef<number>(Date.now());
   const [draggedEmployeeId, setDraggedEmployeeId] = useState<string | null>(null);
@@ -264,18 +261,6 @@ export function SchedulePage() {
     }
   }, []);
 
-  const clearEditModeHoldTimer = useCallback(() => {
-    if (editModeHoldTimerRef.current) {
-      window.clearTimeout(editModeHoldTimerRef.current);
-      editModeHoldTimerRef.current = null;
-    }
-    setEditModeHoldActive(false);
-  }, []);
-
-  if (process.env.NODE_ENV !== "production" && typeof clearEditModeHoldTimer !== "function") {
-    throw new Error("[grafik] edit mode hold timer handler missing");
-  }
-
   const handleGridFocusCapture = useCallback(() => {
     setGridActiveState(true);
   }, [setGridActiveState]);
@@ -285,9 +270,8 @@ export function SchedulePage() {
       const nextTarget = event.relatedTarget as HTMLElement | null;
       if (nextTarget && gridRootRef.current?.contains(nextTarget)) return;
       setGridActiveState(false);
-      clearEditModeHoldTimer();
     },
-    [clearEditModeHoldTimer, setGridActiveState],
+    [setGridActiveState],
   );
 
   const handleGridPointerDown = useCallback(
@@ -315,12 +299,10 @@ export function SchedulePage() {
   const disableEditMode = useCallback(
     (requestId?: string) => {
       setEditModeEnabled(false);
-      setEditModeHoldActive(false);
       clearEditModeInactivityTimer();
-      clearEditModeHoldTimer();
       logEditModeEvent("edit_mode_disabled", requestId ?? getLastRequestId());
     },
-    [clearEditModeHoldTimer, clearEditModeInactivityTimer, getLastRequestId, logEditModeEvent],
+    [clearEditModeInactivityTimer, getLastRequestId, logEditModeEvent],
   );
 
   const handleReadonlyError = useCallback(
@@ -365,7 +347,6 @@ export function SchedulePage() {
     if (!canEnableEditMode) return;
     editModeLastActivityRef.current = Date.now();
     setEditModeEnabled(true);
-    setEditModeHoldActive(false);
     scheduleEditModeTimeout();
     logEditModeEvent("edit_mode_enabled", getLastRequestId());
   }, [canEnableEditMode, getLastRequestId, logEditModeEvent, scheduleEditModeTimeout]);
@@ -728,12 +709,6 @@ export function SchedulePage() {
     if (!keyboardDisabled) return;
     setKeyboardMode(false);
   }, [keyboardDisabled]);
-
-  useEffect(() => {
-    if (!gridActive) {
-      clearEditModeHoldTimer();
-    }
-  }, [clearEditModeHoldTimer, gridActive]);
 
   const shifts = useMemo(() => {
     const scheduleShifts = (scheduleQuery.data?.shifts ?? []) as ScheduleShiftRecord[];
@@ -1150,6 +1125,49 @@ export function SchedulePage() {
     });
   }, []);
 
+  const isAnyModalOpen =
+    shiftModalOpen ||
+    dateRangeModalOpen ||
+    publishModalOpen ||
+    optionsDrawerOpen ||
+    Boolean(leaveModalState) ||
+    Boolean(swapModalShift) ||
+    Boolean(confirmDeleteShift) ||
+    confirmBulkDelete ||
+    auditDrawerOpen;
+
+  useEffect(() => {
+    const handleEditModeShortcut = (event: globalThis.KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key.toLowerCase() !== "e") return;
+      if (isTypingTarget(event.target)) return;
+      if (isAnyModalOpen) return;
+      if (!canEnableEditMode || isPublished) return;
+
+      event.preventDefault();
+      if (editModeEnabled) {
+        disableEditMode();
+        logHotkeyAction("edit-mode-disable");
+        return;
+      }
+      enableEditMode();
+      logHotkeyAction("edit-mode-enable");
+    };
+
+    window.addEventListener("keydown", handleEditModeShortcut);
+    return () => window.removeEventListener("keydown", handleEditModeShortcut);
+  }, [
+    canEnableEditMode,
+    disableEditMode,
+    editModeEnabled,
+    enableEditMode,
+    isAnyModalOpen,
+    isPublished,
+    isTypingTarget,
+    logHotkeyAction,
+  ]);
+
   const handleGridKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
       if (!isGridActive()) return;
@@ -1162,10 +1180,6 @@ export function SchedulePage() {
 
       if (key === "Escape") {
         let handled = false;
-        if (editModeHoldActive) {
-          clearEditModeHoldTimer();
-          handled = true;
-        }
         if (contextMenuState) {
           setContextMenuState(null);
           handled = true;
@@ -1225,30 +1239,6 @@ export function SchedulePage() {
         event.preventDefault();
         setShowShortcuts(true);
         logHotkeyAction("shortcuts");
-        return;
-      }
-
-      if (event.code === "KeyE" && !withMeta && !event.altKey) {
-        if (!canEnableEditMode || isPublished) return;
-        if (event.repeat) return;
-        event.preventDefault();
-
-        if (editModeEnabled) {
-          disableEditMode();
-          logHotkeyAction("edit-mode-disable");
-          return;
-        }
-
-        if (!editModeHoldActive) {
-          setEditModeHoldActive(true);
-          editModeHoldTimerRef.current = window.setTimeout(() => {
-            editModeHoldTimerRef.current = null;
-            enableEditMode();
-            setEditModeHoldActive(false);
-            logHotkeyAction("edit-mode-enable");
-          }, EDIT_MODE_HOLD_MS);
-          logHotkeyAction("edit-mode-hold-start");
-        }
         return;
       }
 
@@ -1338,21 +1328,15 @@ export function SchedulePage() {
         scrollToGridCell(nextRow, nextCol);
         event.preventDefault();
         logHotkeyAction("navigate");
-        return;
       }
     },
     [
-      canEnableEditMode,
       canManage,
-      clearEditModeHoldTimer,
       confirmBulkDelete,
       confirmDeleteShift,
       contextMenuState,
       dateRangeModalOpen,
-      disableEditMode,
       editModeEnabled,
-      editModeHoldActive,
-      enableEditMode,
       focusedCell,
       handleCopySelection,
       handleDeleteSelection,
@@ -1385,13 +1369,9 @@ export function SchedulePage() {
       if (isTypingTarget(event.target)) return;
       if (event.code === "Space" && keyboardMode) {
         setShowShortcuts(false);
-        return;
-      }
-      if (event.code === "KeyE") {
-        clearEditModeHoldTimer();
       }
     },
-    [clearEditModeHoldTimer, isGridActive, isTypingTarget, keyboardMode],
+    [isGridActive, isTypingTarget, keyboardMode],
   );
 
   useEffect(() => {
@@ -1907,7 +1887,7 @@ export function SchedulePage() {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className={`relative space-y-6 ${editModeEnabled ? "rounded-xl bg-amber-50/40 p-3" : ""}`}>
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-[clamp(1.4rem,1.1vw+1rem,2rem)] font-semibold text-surface-900">Grafik pracy</h1>
@@ -1922,7 +1902,7 @@ export function SchedulePage() {
               className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700"
               data-testid="grafik-edit-mode-badge"
             >
-              TRYB EDYCJI
+              EDIT MODE
             </span>
           )}
         </div>
@@ -1949,7 +1929,7 @@ export function SchedulePage() {
         searchValue={searchValue}
         timeBuffer={timeBuffer}
         editModeEnabled={editModeEnabled}
-        editModeHoldActive={editModeHoldActive}
+        editModeHoldActive={false}
         editModeDisabled={!canEnableEditMode || isPublished}
         editModeDisabledReason={
           !canEnableEditMode
