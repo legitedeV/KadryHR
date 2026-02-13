@@ -3,21 +3,21 @@ import { OAuthService } from './oauth.service';
 describe('OAuthService', () => {
   const makeService = (overrides?: {
     prisma?: any;
-    shiftPresetsService?: any;
+    organisationBootstrapService?: any;
   }) => {
     const configService = { get: jest.fn() };
     const prisma = overrides?.prisma ?? { $transaction: jest.fn() };
     const authService = { createSessionForUser: jest.fn() };
-    const shiftPresetsService =
-      overrides?.shiftPresetsService ?? {
-        createDefaultPresets: jest.fn(),
+    const organisationBootstrapService =
+      overrides?.organisationBootstrapService ?? {
+        bootstrapOrganisation: jest.fn(),
       };
 
     return new OAuthService(
       configService as any,
       prisma as any,
       authService as any,
-      shiftPresetsService as any,
+      organisationBootstrapService as any,
     );
   };
 
@@ -57,17 +57,17 @@ describe('OAuthService', () => {
     const prisma = {
       $transaction: jest.fn(async (callback: any) => callback(tx)),
     };
-    const shiftPresetsService = {
-      createDefaultPresets: jest.fn(),
+    const organisationBootstrapService = {
+      bootstrapOrganisation: jest.fn(),
     };
 
-    const service = makeService({ prisma, shiftPresetsService });
+    const service = makeService({ prisma, organisationBootstrapService });
 
     await (service as any).findOrCreateUser('google', profile, 'request-id');
 
     expect(tx.organisation.create).not.toHaveBeenCalled();
     expect(tx.user.update).toHaveBeenCalled();
-    expect(shiftPresetsService.createDefaultPresets).not.toHaveBeenCalled();
+    expect(organisationBootstrapService.bootstrapOrganisation).not.toHaveBeenCalled();
   });
 
   it('creates a new organisation and owner user for new email', async () => {
@@ -95,11 +95,11 @@ describe('OAuthService', () => {
     const prisma = {
       $transaction: jest.fn(async (callback: any) => callback(tx)),
     };
-    const shiftPresetsService = {
-      createDefaultPresets: jest.fn(),
+    const organisationBootstrapService = {
+      bootstrapOrganisation: jest.fn(),
     };
 
-    const service = makeService({ prisma, shiftPresetsService });
+    const service = makeService({ prisma, organisationBootstrapService });
     const newProfile = {
       ...profile,
       email: 'new@example.com',
@@ -114,7 +114,7 @@ describe('OAuthService', () => {
     });
     expect(tx.user.create).toHaveBeenCalled();
     expect(tx.employee.create).toHaveBeenCalled();
-    expect(shiftPresetsService.createDefaultPresets).toHaveBeenCalledWith(
+    expect(organisationBootstrapService.bootstrapOrganisation).toHaveBeenCalledWith(
       'org-new',
     );
   });

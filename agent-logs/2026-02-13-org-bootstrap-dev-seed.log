@@ -1,0 +1,7 @@
+[2026-02-13] Task: organisation bootstrap defaults + deterministic dev seed + smoke test
+- Added OrganisationBootstrapService and BootstrapModule in backend-v2.
+- Wired bootstrap flow after organisation creation in auth register, OAuth create, and organisations service create.
+- Added Organisation.requireScheduleValidationBeforePublish with Prisma migration.
+- Added deterministic non-production seed script backend-v2/prisma/seed-dev.ts and npm script seed:dev.
+- Added e2e smoke test backend-v2/src/test/organisation-bootstrap.e2e-spec.ts.
+- Ran prisma generate, unit tests for auth/oauth specs, build; e2e smoke blocked by missing DB/Redis in environment.

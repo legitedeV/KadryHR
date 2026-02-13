@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { QueueService } from '../queue/queue.service';
-import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
+import { OrganisationBootstrapService } from '../bootstrap/organisation-bootstrap.service';
 import { EmailTemplatesService } from '../email/email-templates.service';
 import { AvatarsService } from '../avatars/avatars.service';
 type Role = string;
@@ -15,7 +15,7 @@ describe('AuthService', () => {
   let prisma: Partial<Record<keyof PrismaService, jest.Mock>>;
   let jwtService: Partial<Record<keyof JwtService, jest.Mock>>;
   let queueService: { addEmailDeliveryJob: jest.Mock };
-  let shiftPresetsService: { createDefaultPresets: jest.Mock };
+  let organisationBootstrapService: { bootstrapOrganisation: jest.Mock };
   let emailTemplates: { passwordResetTemplate: jest.Mock };
   let avatarsService: { getInitials: jest.Mock; generateAvatarUrl: jest.Mock };
 
@@ -45,8 +45,8 @@ describe('AuthService', () => {
 
     queueService = { addEmailDeliveryJob: jest.fn() };
 
-    shiftPresetsService = {
-      createDefaultPresets: jest.fn().mockResolvedValue(undefined),
+    organisationBootstrapService = {
+      bootstrapOrganisation: jest.fn().mockResolvedValue(undefined),
     };
 
     emailTemplates = {
@@ -74,7 +74,7 @@ describe('AuthService', () => {
           },
         },
         { provide: QueueService, useValue: queueService },
-        { provide: ShiftPresetsService, useValue: shiftPresetsService },
+        { provide: OrganisationBootstrapService, useValue: organisationBootstrapService },
         { provide: EmailTemplatesService, useValue: emailTemplates },
         { provide: AvatarsService, useValue: avatarsService },
       ],

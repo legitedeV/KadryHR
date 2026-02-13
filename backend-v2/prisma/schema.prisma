@@ -184,6 +184,7 @@ model Organisation {
   updatedAt                   DateTime @updatedAt
   preventShiftOnApprovedLeave Boolean  @default(false)
   enabledModules              Json?    @db.JsonB
+  requireScheduleValidationBeforePublish Boolean @default(true)
 
   // Delivery days configuration (Task 4.4)
   deliveryDays       Weekday[] @default([])

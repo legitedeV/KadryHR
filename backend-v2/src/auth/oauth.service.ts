@@ -13,7 +13,7 @@ import { Response, Request } from 'express';
 import { randomBytes, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { Prisma, Role } from '@prisma/client';
-import { ShiftPresetsService } from '../shift-presets/shift-presets.service';
+import { OrganisationBootstrapService } from '../bootstrap/organisation-bootstrap.service';
 
 const DEFAULT_PUBLIC_BASE_URL = 'https://kadryhr.pl';
 const DEFAULT_REDIRECT_PATH = '/panel';
@@ -39,7 +39,7 @@ export class OAuthService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
-    private readonly shiftPresetsService: ShiftPresetsService,
+    private readonly organisationBootstrapService: OrganisationBootstrapService,
   ) {}
 
   private getPublicBaseUrl() {
@@ -945,7 +945,7 @@ export class OAuthService {
     );
 
     if (createdOrganisationId) {
-      await this.shiftPresetsService.createDefaultPresets(createdOrganisationId);
+      await this.organisationBootstrapService.bootstrapOrganisation(createdOrganisationId);
     }
 
     return user;
