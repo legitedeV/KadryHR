@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEnum,
   IsISO8601,
   IsOptional,
@@ -26,6 +27,10 @@ export class CreateLeaveRequestDto {
   @IsOptional()
   @IsISO8601()
   startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 
   @IsEnum(LeaveCategory)
   type!: LeaveCategory;
