@@ -1,0 +1,35 @@
+name: Security Audit Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    name: npm-audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backend production dependency audit (HIGH+)
+        working-directory: backend-v2
+        run: |
+          npm ci --no-audit --no-fund
+          npm audit --omit=dev --audit-level=high
+
+      - name: Frontend production dependency audit (HIGH+)
+        working-directory: frontend-v2
+        run: |
+          npm ci --no-audit --no-fund
+          npm audit --omit=dev --audit-level=high

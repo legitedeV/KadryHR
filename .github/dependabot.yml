@@ -1,42 +1,73 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/backend-v2"
+  - package-ecosystem: npm
+    directory: /backend-v2
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-    open-pull-requests-limit: 5
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: UTC
+    open-pull-requests-limit: 10
     labels:
-      - "dependencies"
-      - "backend"
+      - dependencies
+      - security
     commit-message:
-      prefix: "chore(backend)"
-      include: "scope"
+      prefix: chore(deps)
+    groups:
+      backend-npm-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    # Breaking major upgrades are intentionally deferred for planned migrations.
+    ignore:
+      - dependency-name: prisma
+        update-types:
+          - version-update:semver-major
+      - dependency-name: '@prisma/client'
+        update-types:
+          - version-update:semver-major
+      - dependency-name: '@nestjs/*'
+        update-types:
+          - version-update:semver-major
 
-  - package-ecosystem: "npm"
-    directory: "/frontend-v2"
+  - package-ecosystem: npm
+    directory: /frontend-v2
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-    open-pull-requests-limit: 5
+      interval: weekly
+      day: monday
+      time: '06:10'
+      timezone: UTC
+    open-pull-requests-limit: 10
     labels:
-      - "dependencies"
-      - "frontend"
+      - dependencies
+      - security
     commit-message:
-      prefix: "chore(frontend)"
-      include: "scope"
+      prefix: chore(deps)
+    groups:
+      frontend-npm-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    # Breaking major upgrades are intentionally deferred for planned migrations.
+    ignore:
+      - dependency-name: next
+        update-types:
+          - version-update:semver-major
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
+      interval: weekly
+      day: monday
+      time: '06:20'
+      timezone: UTC
+    open-pull-requests-limit: 10
     labels:
-      - "dependencies"
-      - "ci"
+      - dependencies
+      - security
     commit-message:
-      prefix: "chore(ci)"
-      include: "scope"
+      prefix: chore(deps)

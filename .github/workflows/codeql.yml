@@ -1,0 +1,73 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Fail PR on HIGH/CRITICAL code scanning alerts
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const ref = `refs/pull/${prNumber}/merge`;
+
+            const alerts = await github.paginate(
+              github.rest.codeScanning.listAlertsForRepo,
+              {
+                owner,
+                repo,
+                ref,
+                state: 'open',
+                per_page: 100,
+              }
+            );
+
+            const blocking = alerts.filter((alert) => {
+              const severity = alert.rule?.security_severity_level || alert.rule?.severity || '';
+              return ['high', 'critical'].includes(String(severity).toLowerCase());
+            });
+
+            if (blocking.length > 0) {
+              core.setFailed(
+                `Blocking CodeQL alerts found for PR #${prNumber}: ${blocking.length} HIGH/CRITICAL open alert(s).`
+              );
+            } else {
+              core.info(`No HIGH/CRITICAL open code scanning alerts found for PR #${prNumber}.`);
+            }
