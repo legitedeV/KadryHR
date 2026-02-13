@@ -428,7 +428,7 @@ test.describe('Grafik (manager)', () => {
     await expect(gridRoot).toHaveAttribute('aria-activedescendant', 'grafik-cell-r1-c2');
   });
 
-  test('Hold-to-edit respects press duration', async ({ page }) => {
+  test('Edit mode toggles with "e" shortcut', async ({ page }) => {
     const weekStart = startOfWeek(new Date());
     const employees = buildBaseEmployees();
     const shifts = [buildShift('shift-1', employees[0].id, baseLocation.id, weekStart, 0)];
@@ -443,18 +443,33 @@ test.describe('Grafik (manager)', () => {
 
     await openGrafikPage(page);
 
-    await selectLocationAndEnableKeyboard(page);
-    await focusGrafikGrid(page);
-
-    await expect(page.getByRole('button', { name: /Tryb edycji: Wyłączony/i })).toBeVisible();
-    await page.keyboard.press('E', { delay: 100 });
     await expect(getEditModePill(page)).toHaveCount(0);
-
-    await page.keyboard.down('E');
-    await page.waitForTimeout(1100);
-    await page.keyboard.up('E');
-
+    await page.keyboard.press('e');
     await expect(getEditModePill(page)).toBeVisible();
+
+    await page.keyboard.press('E');
+    await expect(getEditModePill(page)).toHaveCount(0);
+  });
+
+  test('Published grafik ignores "e" shortcut', async ({ page }) => {
+    const weekStart = startOfWeek(new Date());
+    const employees = buildBaseEmployees();
+    const shifts = [buildShift('shift-1', employees[0].id, baseLocation.id, weekStart, 0)];
+
+    await setupGrafikMocks(page, {
+      role: 'MANAGER',
+      employees,
+      shifts,
+      location: baseLocation,
+      periodStatus: 'PUBLISHED',
+      editModeTimeoutMs: 15000,
+    });
+
+    await openGrafikPage(page);
+
+    await page.keyboard.press('e');
+    await expect(getEditModePill(page)).toHaveCount(0);
+    await expect(page.getByText(/Grafik opublikowany — obowiązuje pracowników/i)).toBeVisible();
   });
 
   test('Clipboard hotkeys copy/paste and undo/redo', async ({ page }) => {
