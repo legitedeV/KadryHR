@@ -33,7 +33,35 @@ export class AvatarsService {
     entityType: AvatarEntityType,
     entityId: string,
   ): string {
-    return path.join(this.baseUploadDir, organisationId, entityType, entityId);
+    return this.getSafeUploadDir(organisationId, entityType, entityId);
+  }
+
+  /**
+   * Build and validate the upload directory path to ensure it stays within the base upload directory.
+   */
+  private getSafeUploadDir(
+    organisationId: string,
+    entityType: AvatarEntityType,
+    entityId: string,
+  ): string {
+    const uploadDir = path.resolve(
+      this.baseUploadDir,
+      organisationId,
+      entityType,
+      entityId,
+    );
+
+    const normalizedBase = path.resolve(this.baseUploadDir) + path.sep;
+    const normalizedUploadDir = uploadDir + path.sep;
+
+    if (!normalizedUploadDir.startsWith(normalizedBase)) {
+      this.logger.warn(
+        `Attempted to access avatar upload directory outside of base path: ${uploadDir}`,
+      );
+      throw new BadRequestException('Invalid avatar path parameters.');
+    }
+
+    return uploadDir;
   }
 
   async ensureUploadDir(
