@@ -27,6 +27,10 @@ export class CreateLeaveRequestDto {
   @IsISO8601()
   startDate?: string;
 
+  @IsOptional()
+  @IsISO8601()
+  endDate?: string;
+
   @IsEnum(LeaveCategory)
   type!: LeaveCategory;
 
