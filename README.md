@@ -14,6 +14,14 @@ Dependabot is configured for:
 Update PRs use labels `dependencies` + `security`, with grouped minor/patch updates to reduce PR noise.
 Major updates for `next`, `prisma`, `@prisma/client`, and `@nestjs/*` are deferred for controlled migrations.
 
+
+## Label Bootstrap (Dependabot Prerequisite)
+
+Dependabot PRs in this repository require the labels `dependencies` and `security`.
+These labels are auto-managed by `.github/workflows/labels-bootstrap.yml`.
+
+After enabling GitHub Actions for a new repository copy/fork, run **Labels Bootstrap** once via `workflow_dispatch` to ensure required labels exist.
+
 ## Security
 
 Repository security checks include:

@@ -1,0 +1,54 @@
+name: Labels Bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  ensure-labels:
+    name: Ensure Dependabot labels exist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create missing labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [
+              { name: 'dependencies', color: '0366d6', description: 'Dependency updates and maintenance' },
+              { name: 'security', color: 'd73a4a', description: 'Security fixes and hardening' },
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                });
+                core.info(`Label exists: ${label.name}`);
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description,
+                  });
+                  core.info(`Label created: ${label.name}`);
+                } else {
+                  throw error;
+                }
+              }
+            }
