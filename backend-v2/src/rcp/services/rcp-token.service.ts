@@ -132,13 +132,13 @@ export class RcpTokenService {
   }
 
   private secureCompare(a: string, b: string): boolean {
-    if (a.length !== b.length) {
+    const aBuffer = Buffer.from(a, 'utf8');
+    const bBuffer = Buffer.from(b, 'utf8');
+
+    if (aBuffer.length !== bBuffer.length) {
       return false;
     }
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    }
-    return result === 0;
+
+    return crypto.timingSafeEqual(aBuffer, bBuffer);
   }
 }
