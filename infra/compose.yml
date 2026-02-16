@@ -1,0 +1,65 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: forestcatering-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: forestcatering-redis
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: forestcatering-adminer
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8080"
+
+  prestashop:
+    image: prestashop/prestashop:9.0.2
+    container_name: forestcatering-prestashop
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_SERVER: mariadb
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWD: ${MYSQL_PASSWORD}
+      PS_INSTALL_AUTO: "1"
+      PS_FOLDER_ADMIN: ${PS_FOLDER_ADMIN:-admin-dev}
+      PS_DOMAIN: ${SERVER_IP}
+      PS_DEV_MODE: ${PS_DEV_MODE:-0}
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - prestashop_data:/var/www/html
+      - ./theme/forestcatering-premium:/var/www/html/themes/forestcatering-premium
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+volumes:
+  mariadb_data:
+  prestashop_data:
