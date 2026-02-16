@@ -4,14 +4,20 @@ version: 1.0.0
 author:
   name: Forest Catering
   email: dev@forestcatering.local
+  url: https://kadryhr.pl
+parent: classic
 meta:
   compatibility:
     from: 9.0.0
     to: ~
+    framework: bootstrap-v4.0.0-alpha.5
   available_layouts:
     layout-full-width:
       name: Full width
       description: Main content area with no side columns.
+    layout-both-columns:
+      name: Three columns
+      description: Main content area with left and right sidebars.
     layout-left-column:
       name: Left column
       description: Main content with a left sidebar column.
@@ -19,14 +25,32 @@ meta:
       name: Right column
       description: Main content with a right sidebar column.
   default_layout: layout-full-width
+assets:
+  use_parent_assets: true
+  css:
+    all:
+      - id: forestcatering-theme
+        path: assets/css/theme.css
+        media: all
+        priority: 200
+  js:
+    all:
+      - id: forestcatering-theme
+        path: assets/js/theme.js
+        priority: 200
 global_settings:
   configuration:
     PS_IMAGE_QUALITY: png
+    HOME_FEATURED_NBR: 8
   modules:
     to_enable: []
     to_disable: []
   hooks:
-    modules_to_hook: []
+    modules_to_hook:
+      displayHome:
+        - ps_imageslider
+        - ps_featuredproducts
+        - ~
   image_types:
     cart_default:
       width: 125
@@ -76,3 +100,12 @@ global_settings:
       width: 98
       height: 98
       scope: [customizations]
+  new_password_policy_feature: true
+theme_settings:
+  default_layout: layout-full-width
+  layouts:
+    category: layout-left-column
+    best-sales: layout-left-column
+    new-products: layout-left-column
+    prices-drop: layout-left-column
+    contact: layout-left-column
