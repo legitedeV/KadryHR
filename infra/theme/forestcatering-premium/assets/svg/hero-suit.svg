@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="460" viewBox="0 0 520 460" role="img" aria-labelledby="title desc">
+  <title id="title">Stylized suit figure with red and blue capsules</title>
+  <desc id="desc">Original vector illustration for ForestCatering premium hero section</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4e9dc"/>
+      <stop offset="100%" stop-color="#e4d4c3"/>
+    </linearGradient>
+    <linearGradient id="suit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b222d"/>
+      <stop offset="100%" stop-color="#11161d"/>
+    </linearGradient>
+  </defs>
+  <rect x="20" y="20" width="480" height="420" rx="32" fill="url(#bg)"/>
+  <ellipse cx="260" cy="110" rx="52" ry="58" fill="#f1d1b5"/>
+  <path d="M205 118c20 18 90 16 110 0v24c0 31-23 56-55 56s-55-25-55-56z" fill="#ebc5a3"/>
+  <path d="M167 398l34-144 59 31 59-31 34 144z" fill="url(#suit)"/>
+  <path d="M201 254l58 32 60-32-20-46h-78z" fill="#ffffff"/>
+  <path d="M247 246h26l-5 78h-16z" fill="#8b5e3c"/>
+  <path d="M220 210h80l-40 38z" fill="#253042"/>
+  <g transform="translate(120 340)">
+    <rect x="0" y="0" rx="26" ry="26" width="120" height="46" fill="#f8f8f8" stroke="#d8d8d8"/>
+    <rect x="4" y="4" rx="22" ry="22" width="54" height="38" fill="#d13636"/>
+    <rect x="62" y="4" rx="22" ry="22" width="54" height="38" fill="#2c5de0"/>
+  </g>
+  <g transform="translate(280 340)">
+    <rect x="0" y="0" rx="26" ry="26" width="120" height="46" fill="#f8f8f8" stroke="#d8d8d8"/>
+    <rect x="4" y="4" rx="22" ry="22" width="54" height="38" fill="#d13636"/>
+    <rect x="62" y="4" rx="22" ry="22" width="54" height="38" fill="#2c5de0"/>
+  </g>
+</svg>

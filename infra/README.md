@@ -1,22 +1,26 @@
 # ForestCatering infra
 
-## PrestaShop theme activation (`forestcatering-premium`)
+## Theme deploy (`forestcatering-premium`)
 
-1. Ensure the stack is running:
-   ```bash
-   cd infra
-   docker compose --env-file .env -f compose.yml up -d
-   ```
-2. The theme is mounted to `/var/www/html/themes/forestcatering-premium` by `compose.yml`.
-3. Repair locale/shop DB metadata if needed:
-   ```bash
-   ./scripts/fix-prestashop-db.sh
-   ```
-4. In Back Office, go to **Design → Theme & Logo**, then activate **Forest Catering Premium**.
-5. Clear cache after activation:
-   ```bash
-   docker compose --env-file .env -f compose.yml exec prestashop sh -lc 'rm -rf /var/www/html/var/cache/*'
-   ```
+Run end-to-end deployment (copy theme, activate, clear cache, smoke check):
+
+```bash
+cd infra && ./scripts/theme-deploy.sh
+```
+
+Script behavior:
+
+1. Detects running `prestashop` container via `docker compose ps -q prestashop`.
+2. Copies `infra/theme/forestcatering-premium` to `/var/www/html/themes/forestcatering-premium`.
+3. Fixes ownership to `www-data:www-data`.
+4. Clears PrestaShop cache.
+5. Activates theme via database update (`PS_THEME_NAME`, `ps_shop.theme_name`, `ps_shop.id_theme` if theme id exists).
+6. Smoke-checks front office using `curl http://127.0.0.1:8080/` and prints Apache logs on failure.
+
+Successful run prints:
+
+- `OK`
+- `active_theme=forestcatering-premium`
 
 ## Smoke runbook
 
