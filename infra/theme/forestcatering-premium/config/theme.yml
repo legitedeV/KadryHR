@@ -1,0 +1,78 @@
+name: forestcatering-premium
+display_name: Forest Catering Premium
+version: 1.0.0
+author:
+  name: Forest Catering
+  email: dev@forestcatering.local
+meta:
+  compatibility:
+    from: 9.0.0
+    to: ~
+  available_layouts:
+    layout-full-width:
+      name: Full width
+      description: Main content area with no side columns.
+    layout-left-column:
+      name: Left column
+      description: Main content with a left sidebar column.
+    layout-right-column:
+      name: Right column
+      description: Main content with a right sidebar column.
+  default_layout: layout-full-width
+global_settings:
+  configuration:
+    PS_IMAGE_QUALITY: png
+  modules:
+    to_enable: []
+    to_disable: []
+  hooks:
+    modules_to_hook: []
+  image_types:
+    cart_default:
+      width: 125
+      height: 125
+      scope: [products]
+    small_default:
+      width: 98
+      height: 98
+      scope: [products, categories, manufacturers, suppliers]
+    medium_default:
+      width: 452
+      height: 452
+      scope: [products, manufacturers, suppliers]
+    home_default:
+      width: 250
+      height: 250
+      scope: [products]
+    large_default:
+      width: 800
+      height: 800
+      scope: [products, manufacturers, suppliers]
+    category_default:
+      width: 141
+      height: 180
+      scope: [categories]
+    thickbox_default:
+      width: 1200
+      height: 1200
+      scope: [products]
+    stores_default:
+      width: 170
+      height: 115
+      scope: [stores]
+    psmall_default:
+      width: 80
+      height: 80
+      scope: [products]
+    pmedium_default:
+      width: 452
+      height: 452
+      scope: [products]
+    plarge_default:
+      width: 800
+      height: 800
+      scope: [products]
+    customizations_default:
+      width: 98
+      height: 98
+      scope: [customizations]
