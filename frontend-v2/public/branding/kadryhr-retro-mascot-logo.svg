@@ -1,0 +1,69 @@
+<svg width="1600" height="600" viewBox="0 0 1600 600" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">KadryHR.pl retro mascot logo</title>
+  <desc id="desc">A vintage industrial clock mascot with rubber hose limbs walking confidently while holding a punch card, paired with the wordmark KADRYHR.PL.</desc>
+  <rect width="1600" height="600" fill="#F5F1E8"/>
+
+  <!-- Sparkles -->
+  <path d="M150 120L160 145L185 155L160 165L150 190L140 165L115 155L140 145L150 120Z" fill="#C9A227" stroke="#0F1B2D" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M500 90L507 108L525 115L507 122L500 140L493 122L475 115L493 108L500 90Z" fill="#C9A227" stroke="#0F1B2D" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M440 470L448 486L464 494L448 502L440 518L432 502L416 494L432 486L440 470Z" fill="#C9A227" stroke="#0F1B2D" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- Arms -->
+  <path d="M510 270C560 245 590 235 622 248" stroke="#0F1B2D" stroke-width="18" stroke-linecap="round"/>
+  <path d="M208 300C145 326 115 357 95 402" stroke="#0F1B2D" stroke-width="18" stroke-linecap="round"/>
+
+  <!-- Left glove -->
+  <ellipse cx="84" cy="418" rx="28" ry="24" fill="#FF4A00" stroke="#0F1B2D" stroke-width="10"/>
+  <circle cx="68" cy="413" r="8" fill="#F5F1E8"/>
+  <circle cx="87" cy="404" r="7" fill="#F5F1E8"/>
+
+  <!-- Right hand + punch card -->
+  <ellipse cx="639" cy="252" rx="26" ry="22" fill="#FF4A00" stroke="#0F1B2D" stroke-width="10"/>
+  <rect x="666" y="189" width="80" height="112" rx="10" fill="#F5F1E8" stroke="#0F1B2D" stroke-width="10"/>
+  <line x1="683" y1="221" x2="729" y2="221" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+  <line x1="683" y1="244" x2="729" y2="244" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+  <line x1="683" y1="267" x2="713" y2="267" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Clock body -->
+  <circle cx="360" cy="295" r="182" fill="#FF4A00" stroke="#0F1B2D" stroke-width="20"/>
+  <circle cx="360" cy="295" r="145" fill="#F5F1E8" stroke="#0F1B2D" stroke-width="12"/>
+
+  <!-- Clock ticks -->
+  <line x1="360" y1="155" x2="360" y2="178" stroke="#0F1B2D" stroke-width="10" stroke-linecap="round"/>
+  <line x1="360" y1="412" x2="360" y2="435" stroke="#0F1B2D" stroke-width="10" stroke-linecap="round"/>
+  <line x1="220" y1="295" x2="243" y2="295" stroke="#0F1B2D" stroke-width="10" stroke-linecap="round"/>
+  <line x1="477" y1="295" x2="500" y2="295" stroke="#0F1B2D" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Clock hands (9:00 -> working hours start) -->
+  <line x1="360" y1="295" x2="360" y2="220" stroke="#0F1B2D" stroke-width="14" stroke-linecap="round"/>
+  <line x1="360" y1="295" x2="295" y2="295" stroke="#0F1B2D" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="360" cy="295" r="14" fill="#0F1B2D"/>
+
+  <!-- Face -->
+  <ellipse cx="312" cy="274" rx="19" ry="23" fill="#0F1B2D"/>
+  <ellipse cx="408" cy="274" rx="19" ry="23" fill="#0F1B2D"/>
+  <path d="M300 340C319 367 401 367 420 340" stroke="#0F1B2D" stroke-width="12" stroke-linecap="round"/>
+  <path d="M314 336C332 352 388 352 406 336" stroke="#F5F1E8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M284 238C302 221 327 220 344 234" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M376 234C393 220 418 221 436 238" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Legs / walking pose -->
+  <path d="M335 468C315 510 285 540 250 552" stroke="#0F1B2D" stroke-width="20" stroke-linecap="round"/>
+  <path d="M388 469C421 502 463 533 510 541" stroke="#0F1B2D" stroke-width="20" stroke-linecap="round"/>
+  <ellipse cx="232" cy="554" rx="49" ry="19" fill="#FF4A00" stroke="#0F1B2D" stroke-width="10"/>
+  <ellipse cx="528" cy="544" rx="53" ry="21" fill="#FF4A00" stroke="#0F1B2D" stroke-width="10"/>
+
+  <!-- Motion lines -->
+  <line x1="180" y1="537" x2="144" y2="548" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+  <line x1="186" y1="555" x2="136" y2="570" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+  <line x1="192" y1="573" x2="153" y2="586" stroke="#0F1B2D" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Optional monogram block -->
+  <rect x="760" y="130" width="112" height="112" rx="16" fill="#FF4A00" stroke="#0F1B2D" stroke-width="10"/>
+  <text x="816" y="185" text-anchor="middle" fill="#0F1B2D" font-size="46" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" letter-spacing="1">K</text>
+  <text x="816" y="226" text-anchor="middle" fill="#0F1B2D" font-size="40" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" letter-spacing="1">HR</text>
+
+  <!-- Wordmark -->
+  <text x="905" y="304" fill="#0F1B2D" font-size="132" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" letter-spacing="3">KADRYHR.PL</text>
+  <rect x="905" y="328" width="610" height="20" fill="#FF4A00"/>
+</svg>
