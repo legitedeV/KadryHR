@@ -49,6 +49,9 @@ else
   echo "==> Backend deps unchanged – skipping npm ci"
 fi
 
+echo "==> Running Prisma migrations"
+npx prisma migrate deploy --schema=prisma/schema.prisma
+
 echo "==> Building backend"
 npm run build
 
