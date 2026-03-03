@@ -10,7 +10,12 @@ import { ScheduleCostService } from './schedule-cost.service';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, EmployeeContractsModule, AuditModule],
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    EmployeeContractsModule,
+    AuditModule,
+  ],
   controllers: [ScheduleController, GrafikController],
   providers: [ScheduleService, ScheduleRepository, ScheduleCostService],
   exports: [ScheduleService],

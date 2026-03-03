@@ -74,7 +74,10 @@ describe('AuthService', () => {
           },
         },
         { provide: QueueService, useValue: queueService },
-        { provide: OrganisationBootstrapService, useValue: organisationBootstrapService },
+        {
+          provide: OrganisationBootstrapService,
+          useValue: organisationBootstrapService,
+        },
         { provide: EmailTemplatesService, useValue: emailTemplates },
         { provide: AvatarsService, useValue: avatarsService },
       ],

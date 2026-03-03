@@ -11,7 +11,12 @@ import { AuditModule } from '../audit/audit.module';
 @Module({
   imports: [ConfigModule, PrismaModule, AuditModule],
   controllers: [RcpController],
-  providers: [RcpService, RcpTokenService, RcpRateLimitService, OrganisationModuleGuard],
+  providers: [
+    RcpService,
+    RcpTokenService,
+    RcpRateLimitService,
+    OrganisationModuleGuard,
+  ],
   exports: [RcpService],
 })
 export class RcpModule {}

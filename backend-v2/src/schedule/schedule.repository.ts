@@ -10,9 +10,7 @@ export class ScheduleRepository {
     const rawIds = ids.filter((id): id is string => typeof id === 'string');
     return rawIds
       .map((id) => id.trim())
-      .filter(
-        (id) => id.length > 0 && id !== 'undefined' && id !== 'null',
-      );
+      .filter((id) => id.length > 0 && id !== 'undefined' && id !== 'null');
   }
 
   findShifts(params: Prisma.ShiftFindManyArgs) {

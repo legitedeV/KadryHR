@@ -11,7 +11,11 @@ import { EmployeesModule } from '../employees/employees.module';
 @Module({
   imports: [PrismaModule, NotificationsModule, AuditModule, EmployeesModule],
   controllers: [LeaveRequestsController],
-  providers: [LeaveRequestsService, LeaveBalanceService, OrganisationModuleGuard],
+  providers: [
+    LeaveRequestsService,
+    LeaveBalanceService,
+    OrganisationModuleGuard,
+  ],
   exports: [LeaveRequestsService, LeaveBalanceService],
 })
 export class LeaveRequestsModule {}

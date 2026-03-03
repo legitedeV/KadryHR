@@ -37,12 +37,14 @@ export class UsersService {
       avatarUrl?: string | null;
       updatedAt?: Date | string | null;
     },
-  >(user: T): Omit<T, 'avatarPath'> & { avatarUpdatedAt?: Date | string | null } {
+  >(
+    user: T,
+  ): Omit<T, 'avatarPath'> & { avatarUpdatedAt?: Date | string | null } {
     const { avatarPath, ...rest } = user;
     const updatedAt =
       (user as { updatedAt?: Date | string | null }).updatedAt ?? null;
     return {
-      ...(rest as Omit<T, 'avatarPath'>),
+      ...rest,
       avatarUrl: this.avatarsService.buildPublicUrl(
         avatarPath ?? null,
         user.avatarUrl ?? null,
@@ -123,28 +125,30 @@ export class UsersService {
   }
 
   async findAll(organisationId: string) {
-    return this.prisma.user.findMany({
-      where: { organisationId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        firstName: true,
-        lastName: true,
-        avatarUrl: true,
-        avatarPath: true,
-        createdAt: true,
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            position: true,
+    return this.prisma.user
+      .findMany({
+        where: { organisationId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+          avatarPath: true,
+          createdAt: true,
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              position: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    }).then((users) => users.map((user) => this.mapUserAvatar(user)));
+        orderBy: { createdAt: 'desc' },
+      })
+      .then((users) => users.map((user) => this.mapUserAvatar(user)));
   }
 
   async update(
@@ -441,7 +445,10 @@ export class UsersService {
     return this.mapUserAvatar(updated);
   }
 
-  async uploadProfileAvatar(user: AuthenticatedUser, file: Express.Multer.File) {
+  async uploadProfileAvatar(
+    user: AuthenticatedUser,
+    file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('Nie przesłano pliku');
     }

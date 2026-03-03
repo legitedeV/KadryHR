@@ -199,10 +199,7 @@ export class OAuthService {
       return message;
     }
     return message
-      .replace(
-        /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
-        '[redacted-email]',
-      )
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
       .replace(
         /\b(code|state|token|client_secret)=([^\s&]+)/gi,
         '$1=[redacted]',
@@ -220,7 +217,9 @@ export class OAuthService {
     }
   }
 
-  private sanitizePrismaMeta(meta: Prisma.PrismaClientKnownRequestError['meta']) {
+  private sanitizePrismaMeta(
+    meta: Prisma.PrismaClientKnownRequestError['meta'],
+  ) {
     if (!meta || typeof meta !== 'object') {
       return meta;
     }
@@ -268,7 +267,10 @@ export class OAuthService {
       }
     }
 
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'oauth_db_failed' };
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      code: 'oauth_db_failed',
+    };
   }
 
   private logOAuthDbError(
@@ -529,7 +531,11 @@ export class OAuthService {
         const providerError = this.parseProviderError(tokenBody);
         this.logger.warn(
           `OAuth token exchange failed`,
-          JSON.stringify({ requestId, provider: resolvedProvider, providerError }),
+          JSON.stringify({
+            requestId,
+            provider: resolvedProvider,
+            providerError,
+          }),
         );
         return this.sendOAuthError(
           res,
@@ -616,7 +622,8 @@ export class OAuthService {
         const status = error.getStatus();
         const message = this.sanitizeErrorMessage(error.message);
         const isSchemaError =
-          message === 'oauth_db_schema_missing' || message === 'oauth_tx_invalid';
+          message === 'oauth_db_schema_missing' ||
+          message === 'oauth_tx_invalid';
         this.logger.warn(
           'OAuth callback failed with auth exception',
           JSON.stringify({
@@ -670,13 +677,9 @@ export class OAuthService {
           JSON.stringify(payload),
         );
       }
-      return this.sendOAuthError(
-        res,
-        mapped.status,
-        mapped.code,
-        requestId,
-        { provider: resolvedProvider },
-      );
+      return this.sendOAuthError(res, mapped.status, mapped.code, requestId, {
+        provider: resolvedProvider,
+      });
     }
 
     if (!redirectCookie) {
@@ -778,11 +781,7 @@ export class OAuthService {
 
     const { user, createdOrganisationId } = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        if (
-          !tx ||
-          typeof (tx as Prisma.TransactionClient)?.user?.findUnique !==
-            'function'
-        ) {
+        if (!tx || typeof tx?.user?.findUnique !== 'function') {
           this.logger.error(
             'OAuth transaction client invalid',
             JSON.stringify({ requestId, provider }),
@@ -945,7 +944,9 @@ export class OAuthService {
     );
 
     if (createdOrganisationId) {
-      await this.organisationBootstrapService.bootstrapOrganisation(createdOrganisationId);
+      await this.organisationBootstrapService.bootstrapOrganisation(
+        createdOrganisationId,
+      );
     }
 
     return user;

@@ -13,7 +13,9 @@ export class ScheduleCostService {
     private readonly employeeContractsService: EmployeeContractsService,
   ) {}
 
-  calculateShiftHours(shift: Pick<Shift, 'startsAt' | 'endsAt' | 'note' | 'notes'>) {
+  calculateShiftHours(
+    shift: Pick<Shift, 'startsAt' | 'endsAt' | 'note' | 'notes'>,
+  ) {
     const start = new Date(shift.startsAt).getTime();
     const end = new Date(shift.endsAt).getTime();
     const totalMinutes = Math.max(0, (end - start) / 60000);
@@ -63,7 +65,10 @@ export class ScheduleCostService {
     locationIds?: string[];
     positionIds?: string[];
   }) {
-    const { from, to, toExclusive } = buildScheduleRange(params.from, params.to);
+    const { from, to, toExclusive } = buildScheduleRange(
+      params.from,
+      params.to,
+    );
     const shifts = await this.scheduleRepository.findShifts({
       where: {
         organisationId: params.organisationId,
@@ -89,14 +94,21 @@ export class ScheduleCostService {
     };
 
     const missingRateEmployees = new Set<string>();
-    const byDayMap = new Map<string, { date: string; hours: number; cost: number }>();
+    const byDayMap = new Map<
+      string,
+      { date: string; hours: number; cost: number }
+    >();
 
     for (const shift of shifts) {
       const result = await this.calculateShiftCost(shift);
       totals.hours += result.hours;
 
       const dayKey = shift.startsAt.toISOString().slice(0, 10);
-      const current = byDayMap.get(dayKey) ?? { date: dayKey, hours: 0, cost: 0 };
+      const current = byDayMap.get(dayKey) ?? {
+        date: dayKey,
+        hours: 0,
+        cost: 0,
+      };
       current.hours += result.hours;
 
       if (result.hasRate && result.cost !== null) {

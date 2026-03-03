@@ -115,9 +115,10 @@ describe('LeaveRequestsService', () => {
     );
   });
 
-
   it('blocks overlapping leave requests with conflict error', async () => {
-    mockPrisma.leaveRequest.findFirst.mockResolvedValueOnce({ id: 'lr-existing' });
+    mockPrisma.leaveRequest.findFirst.mockResolvedValueOnce({
+      id: 'lr-existing',
+    });
 
     await expect(
       service.create(

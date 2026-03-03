@@ -52,7 +52,9 @@ describe('AvatarsService', () => {
     );
 
     expect(result.avatarPath).toContain('avatars/org-1/users/user-1/');
-    expect(result.avatarUrl).toMatch(/^\/static\/avatars\/org-1\/users\/user-1\//);
+    expect(result.avatarUrl).toMatch(
+      /^\/static\/avatars\/org-1\/users\/user-1\//,
+    );
 
     const filename = path.basename(result.avatarPath);
     const storedPath = path.join(

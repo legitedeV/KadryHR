@@ -14,13 +14,16 @@ export class OrganisationsService {
     private readonly organisationBootstrapService: OrganisationBootstrapService,
   ) {}
 
-  private mapUserAvatar<T extends { avatarPath?: string | null; avatarUrl?: string | null }>(
-    user: T,
-  ): Omit<T, 'avatarPath'> {
+  private mapUserAvatar<
+    T extends { avatarPath?: string | null; avatarUrl?: string | null },
+  >(user: T): Omit<T, 'avatarPath'> {
     const { avatarPath, ...rest } = user;
     return {
-      ...(rest as Omit<T, 'avatarPath'>),
-      avatarUrl: this.buildAvatarUrl(avatarPath ?? null, user.avatarUrl ?? null),
+      ...rest,
+      avatarUrl: this.buildAvatarUrl(
+        avatarPath ?? null,
+        user.avatarUrl ?? null,
+      ),
     };
   }
 
@@ -51,7 +54,9 @@ export class OrganisationsService {
       },
     });
 
-    await this.organisationBootstrapService.bootstrapOrganisation(organisation.id);
+    await this.organisationBootstrapService.bootstrapOrganisation(
+      organisation.id,
+    );
 
     return organisation;
   }
@@ -107,20 +112,22 @@ export class OrganisationsService {
   }
 
   async getMembers(organisationId: string) {
-    return this.prisma.user.findMany({
-      where: { organisationId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        avatarUrl: true,
-        avatarPath: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    }).then((users) => users.map((user) => this.mapUserAvatar(user)));
+    return this.prisma.user
+      .findMany({
+        where: { organisationId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          avatarUrl: true,
+          avatarPath: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      .then((users) => users.map((user) => this.mapUserAvatar(user)));
   }
 
   /**
@@ -206,7 +213,11 @@ export class OrganisationsService {
     return {
       deliveryDays,
       promotionDays,
-      holidays: (org.holidays ?? []).filter((holiday) => holiday >= from.toISOString().slice(0, 10) && holiday <= to.toISOString().slice(0, 10)),
+      holidays: (org.holidays ?? []).filter(
+        (holiday) =>
+          holiday >= from.toISOString().slice(0, 10) &&
+          holiday <= to.toISOString().slice(0, 10),
+      ),
     };
   }
 }

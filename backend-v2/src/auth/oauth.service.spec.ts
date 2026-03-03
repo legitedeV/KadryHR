@@ -15,9 +15,9 @@ describe('OAuthService', () => {
 
     return new OAuthService(
       configService as any,
-      prisma as any,
+      prisma,
       authService as any,
-      organisationBootstrapService as any,
+      organisationBootstrapService,
     );
   };
 
@@ -67,7 +67,9 @@ describe('OAuthService', () => {
 
     expect(tx.organisation.create).not.toHaveBeenCalled();
     expect(tx.user.update).toHaveBeenCalled();
-    expect(organisationBootstrapService.bootstrapOrganisation).not.toHaveBeenCalled();
+    expect(
+      organisationBootstrapService.bootstrapOrganisation,
+    ).not.toHaveBeenCalled();
   });
 
   it('creates a new organisation and owner user for new email', async () => {
@@ -114,8 +116,8 @@ describe('OAuthService', () => {
     });
     expect(tx.user.create).toHaveBeenCalled();
     expect(tx.employee.create).toHaveBeenCalled();
-    expect(organisationBootstrapService.bootstrapOrganisation).toHaveBeenCalledWith(
-      'org-new',
-    );
+    expect(
+      organisationBootstrapService.bootstrapOrganisation,
+    ).toHaveBeenCalledWith('org-new');
   });
 });

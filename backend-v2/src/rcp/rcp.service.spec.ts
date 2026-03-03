@@ -364,11 +364,7 @@ describe('RcpService - Integration', () => {
       );
 
       await expect(
-        service.getMobileSession(
-          mockUser.id,
-          mockUser.organisationId,
-          token,
-        ),
+        service.getMobileSession(mockUser.id, mockUser.organisationId, token),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -390,11 +386,7 @@ describe('RcpService - Integration', () => {
       );
 
       await expect(
-        service.getMobileSession(
-          mockUser.id,
-          mockUser.organisationId,
-          token,
-        ),
+        service.getMobileSession(mockUser.id, mockUser.organisationId, token),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -455,11 +447,10 @@ describe('RcpService - Integration', () => {
       mockPrismaService.rcpEvent.count.mockResolvedValue(1);
       mockPrismaService.rcpEvent.findMany.mockResolvedValue(mockEvents);
 
-      const result = await service.listEventsForUser(
-        mockUser.id,
-        mockOrg.id,
-        { take: 10, skip: 0 },
-      );
+      const result = await service.listEventsForUser(mockUser.id, mockOrg.id, {
+        take: 10,
+        skip: 0,
+      });
 
       expect(result.total).toBe(1);
       expect(result.items).toHaveLength(1);

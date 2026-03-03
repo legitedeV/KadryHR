@@ -19,4 +19,3 @@ export class ListRcpCorrectionsDto {
   @IsString()
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
-

@@ -60,7 +60,9 @@ export class ShiftSwapsService {
       }
 
       if (employee.id !== shift.employeeId) {
-        throw new ForbiddenException('You can only request swaps for your own shifts');
+        throw new ForbiddenException(
+          'You can only request swaps for your own shifts',
+        );
       }
 
       requesterId = employee.id;

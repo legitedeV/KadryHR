@@ -367,7 +367,9 @@ export class AuthService {
 
     this.attachRefreshTokenCookie(res, refreshToken, refreshTokenTtl);
 
-    await this.organisationBootstrapService.bootstrapOrganisation(organisation.id);
+    await this.organisationBootstrapService.bootstrapOrganisation(
+      organisation.id,
+    );
 
     await this.queueService.addEmailDeliveryJob({
       to: dto.email,

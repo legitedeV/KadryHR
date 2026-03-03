@@ -43,7 +43,8 @@ export class OrgEmployeesController {
   async updateOrder(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: OrderEmployeesDto,
-    @Req() req: { requestId?: string; headers?: Record<string, string | string[]> },
+    @Req()
+    req: { requestId?: string; headers?: Record<string, string | string[]> },
   ) {
     const requestId = req.requestId;
     const rawHeader = req.headers?.['idempotency-key'];

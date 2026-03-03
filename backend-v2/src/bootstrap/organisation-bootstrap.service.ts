@@ -9,10 +9,34 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DEFAULT_ORGANISATION_MODULES } from '../common/constants/organisation-modules.constant';
 
 const DEFAULT_SHIFT_PRESETS = [
-  { code: 'MORNING', name: 'Rano', startMinutes: 360, endMinutes: 840, sortOrder: 0 },
-  { code: 'AFTERNOON', name: 'Popołudnie', startMinutes: 840, endMinutes: 1320, sortOrder: 1 },
-  { code: 'NIGHT', name: 'Noc', startMinutes: 1320, endMinutes: 360, sortOrder: 2 },
-  { code: 'MIDSHIFT', name: 'Międzyzmiana', startMinutes: 600, endMinutes: 1080, sortOrder: 3 },
+  {
+    code: 'MORNING',
+    name: 'Rano',
+    startMinutes: 360,
+    endMinutes: 840,
+    sortOrder: 0,
+  },
+  {
+    code: 'AFTERNOON',
+    name: 'Popołudnie',
+    startMinutes: 840,
+    endMinutes: 1320,
+    sortOrder: 1,
+  },
+  {
+    code: 'NIGHT',
+    name: 'Noc',
+    startMinutes: 1320,
+    endMinutes: 360,
+    sortOrder: 2,
+  },
+  {
+    code: 'MIDSHIFT',
+    name: 'Międzyzmiana',
+    startMinutes: 600,
+    endMinutes: 1080,
+    sortOrder: 3,
+  },
 ] as const;
 
 const DEFAULT_LEAVE_TYPES = [
@@ -86,8 +110,14 @@ export class OrganisationBootstrapService {
 
     for (const leaveType of DEFAULT_LEAVE_TYPES) {
       await this.prisma.leaveType.upsert({
-        where: { organisationId_name: { organisationId, name: leaveType.name } },
-        update: { code: leaveType.code, isPaid: leaveType.isPaid, isActive: true },
+        where: {
+          organisationId_name: { organisationId, name: leaveType.name },
+        },
+        update: {
+          code: leaveType.code,
+          isPaid: leaveType.isPaid,
+          isActive: true,
+        },
         create: {
           organisationId,
           name: leaveType.name,

@@ -11,11 +11,7 @@ import * as crypto from 'crypto';
 
 export type AvatarEntityType = 'employees' | 'organisations' | 'users';
 
-export const ALLOWED_MIME_TYPES = [
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-];
+export const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 

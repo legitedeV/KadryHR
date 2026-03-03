@@ -30,9 +30,15 @@ describe('Leave requests payload validation (e2e)', () => {
 
     prisma = app.get<PrismaService>(PrismaService);
 
-    await prisma.leaveRequest.deleteMany({ where: { organisationId: 'leave-e2e-org' } });
-    await prisma.employee.deleteMany({ where: { organisationId: 'leave-e2e-org' } });
-    await prisma.user.deleteMany({ where: { organisationId: 'leave-e2e-org' } });
+    await prisma.leaveRequest.deleteMany({
+      where: { organisationId: 'leave-e2e-org' },
+    });
+    await prisma.employee.deleteMany({
+      where: { organisationId: 'leave-e2e-org' },
+    });
+    await prisma.user.deleteMany({
+      where: { organisationId: 'leave-e2e-org' },
+    });
     await prisma.organisation.deleteMany({ where: { id: 'leave-e2e-org' } });
 
     const organisation = await prisma.organisation.create({

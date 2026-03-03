@@ -1,9 +1,4 @@
-import {
-  IsEnum,
-  IsISO8601,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsEnum, IsISO8601, IsOptional, IsString } from 'class-validator';
 import { EmployeeDocumentStatus, EmployeeDocumentType } from '@prisma/client';
 
 export class UpdateDocumentDto {

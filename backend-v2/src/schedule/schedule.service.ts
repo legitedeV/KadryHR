@@ -96,7 +96,12 @@ export class ScheduleService {
       locationCandidates.length === 1 ? locationCandidates[0] : null;
 
     const period = locationId
-      ? await this.findOrCreatePeriod(organisationId, locationId, from, query.to)
+      ? await this.findOrCreatePeriod(
+          organisationId,
+          locationId,
+          from,
+          query.to,
+        )
       : null;
 
     const mappedShifts = shifts.map((shift) => {
@@ -987,8 +992,8 @@ export class ScheduleService {
     organisationId: string,
     ...periodIds: string[]
   ) {
-    const filteredIds = periodIds.filter(
-      (periodId): periodId is string => Boolean(periodId),
+    const filteredIds = periodIds.filter((periodId): periodId is string =>
+      Boolean(periodId),
     );
     if (filteredIds.length === 0) return;
     const uniqueIds = Array.from(new Set(filteredIds));

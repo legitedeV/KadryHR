@@ -10,4 +10,3 @@ export const AUDIT_ACTIONS = {
   RCP_CORRECTION_APPROVE: 'rcp.correction.approve',
   RCP_CORRECTION_REJECT: 'rcp.correction.reject',
 } as const;
-

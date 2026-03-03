@@ -445,11 +445,7 @@ export class RcpService {
       });
     }
 
-    const status = await this.getStatus(
-      userId,
-      organisationId,
-      location.id,
-    );
+    const status = await this.getStatus(userId, organisationId, location.id);
 
     return {
       organization,
@@ -734,7 +730,9 @@ export class RcpService {
       },
     });
     if (existingPending) {
-      throw new BadRequestException('Pending correction already exists for this event');
+      throw new BadRequestException(
+        'Pending correction already exists for this event',
+      );
     }
 
     return (this.prisma as any).rcpCorrection.create({
@@ -769,7 +767,9 @@ export class RcpService {
         orderBy: { createdAt: 'desc' },
         include: {
           event: { include: { location: true } },
-          reviewedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+          reviewedBy: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
         },
       }),
     ]);
@@ -793,8 +793,12 @@ export class RcpService {
         orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
         include: {
           event: { include: { location: true, user: true } },
-          requestedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
-          reviewedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+          requestedBy: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          reviewedBy: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
         },
       }),
     ]);
@@ -892,11 +896,27 @@ export class RcpService {
     const end = new Date(source);
     end.setHours(23, 59, 59, 999);
 
-    const [clockInCount, clockOutCount, pendingCorrections] = await Promise.all([
-      this.prisma.rcpEvent.count({ where: { organisationId, type: 'CLOCK_IN', happenedAt: { gte: start, lte: end } } }),
-      this.prisma.rcpEvent.count({ where: { organisationId, type: 'CLOCK_OUT', happenedAt: { gte: start, lte: end } } }),
-      (this.prisma as any).rcpCorrection.count({ where: { organisationId, status: 'PENDING' } }),
-    ]);
+    const [clockInCount, clockOutCount, pendingCorrections] = await Promise.all(
+      [
+        this.prisma.rcpEvent.count({
+          where: {
+            organisationId,
+            type: 'CLOCK_IN',
+            happenedAt: { gte: start, lte: end },
+          },
+        }),
+        this.prisma.rcpEvent.count({
+          where: {
+            organisationId,
+            type: 'CLOCK_OUT',
+            happenedAt: { gte: start, lte: end },
+          },
+        }),
+        (this.prisma as any).rcpCorrection.count({
+          where: { organisationId, status: 'PENDING' },
+        }),
+      ],
+    );
 
     return {
       date: start.toISOString().slice(0, 10),

@@ -1,4 +1,14 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, Matches, Max, Min, ArrayUnique } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min,
+  ArrayUnique,
+} from 'class-validator';
 import { SchedulePeriodType, Weekday } from '@prisma/client';
 
 export class UpdateScheduleSettingsDto {
@@ -22,7 +32,6 @@ export class UpdateScheduleSettingsDto {
   @Max(480)
   defaultBreakMinutes?: number;
 
-
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -39,7 +48,10 @@ export class UpdateScheduleSettingsDto {
   @IsArray()
   @ArrayUnique()
   @IsString({ each: true })
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { each: true, message: 'holidays must be an array of YYYY-MM-DD dates' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    each: true,
+    message: 'holidays must be an array of YYYY-MM-DD dates',
+  })
   holidays?: string[];
 
   @IsOptional()

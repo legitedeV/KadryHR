@@ -120,14 +120,22 @@ describe('Employee status and document lifecycle (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    expect(defaultListRes.body.data.some((item: { id: string }) => item.id === employeeId)).toBe(false);
+    expect(
+      defaultListRes.body.data.some(
+        (item: { id: string }) => item.id === employeeId,
+      ),
+    ).toBe(false);
 
     const grafikSourceRes = await request(app.getHttpServer())
       .get('/org/employees')
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    expect(grafikSourceRes.body.data.some((item: { id: string }) => item.id === employeeId)).toBe(false);
+    expect(
+      grafikSourceRes.body.data.some(
+        (item: { id: string }) => item.id === employeeId,
+      ),
+    ).toBe(false);
   });
 
   it('exposes document metadata lifecycle status changes', async () => {
@@ -161,7 +169,10 @@ describe('Employee status and document lifecycle (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    expect(draftListRes.body.find((item: { id: string }) => item.id === documentId)?.status).toBe('DRAFT');
+    expect(
+      draftListRes.body.find((item: { id: string }) => item.id === documentId)
+        ?.status,
+    ).toBe('DRAFT');
 
     await request(app.getHttpServer())
       .patch(`/employees/${freshEmployee.id}/documents/${documentId}`)
@@ -180,6 +191,9 @@ describe('Employee status and document lifecycle (e2e)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
-    expect(expiredListRes.body.find((item: { id: string }) => item.id === documentId)?.status).toBe('EXPIRED');
+    expect(
+      expiredListRes.body.find((item: { id: string }) => item.id === documentId)
+        ?.status,
+    ).toBe('EXPIRED');
   });
 });
