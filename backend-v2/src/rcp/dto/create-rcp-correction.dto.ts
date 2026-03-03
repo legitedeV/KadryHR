@@ -1,4 +1,10 @@
-import { IsDateString, IsEnum, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { RcpEventType } from '@prisma/client';
 
 export class CreateRcpCorrectionDto {
@@ -16,4 +22,3 @@ export class CreateRcpCorrectionDto {
   @MaxLength(1000)
   reason: string;
 }
-

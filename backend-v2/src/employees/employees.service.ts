@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EmployeeStatus, NotificationType, ScheduleStatus, type Prisma } from '@prisma/client';
+import {
+  EmployeeStatus,
+  NotificationType,
+  ScheduleStatus,
+  type Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
 import { AuditService } from '../audit/audit.service';
@@ -25,10 +30,12 @@ export class EmployeesService {
       avatarUrl?: string | null;
       updatedAt?: Date | string | null;
     },
-  >(employee: T): Omit<T, 'avatarPath'> & { avatarUpdatedAt?: Date | string | null } {
+  >(
+    employee: T,
+  ): Omit<T, 'avatarPath'> & { avatarUpdatedAt?: Date | string | null } {
     const { avatarPath, ...rest } = employee;
     return {
-      ...(rest as Omit<T, 'avatarPath'>),
+      ...rest,
       avatarUrl: this.buildAvatarUrl(
         avatarPath ?? null,
         employee.avatarUrl ?? null,
@@ -122,7 +129,11 @@ export class EmployeesService {
    */
   async findAllForOrganisationOrdering(organisationId: string) {
     const items = await this.prisma.employee.findMany({
-      where: { organisationId, status: { not: EmployeeStatus.ARCHIVED }, isDeleted: false },
+      where: {
+        organisationId,
+        status: { not: EmployeeStatus.ARCHIVED },
+        isDeleted: false,
+      },
       orderBy: [
         { sortOrder: { sort: 'asc', nulls: 'last' } },
         { lastName: 'asc' },
@@ -161,13 +172,11 @@ export class EmployeesService {
       }
 
       if (period.status === ScheduleStatus.PUBLISHED) {
-        throw new ConflictException(
-          {
-            code: 'PERIOD_READONLY',
-            message: 'Grafik opublikowany — odblokuj, aby edytować',
-            details: { periodId: period.id },
-          },
-        );
+        throw new ConflictException({
+          code: 'PERIOD_READONLY',
+          message: 'Grafik opublikowany — odblokuj, aby edytować',
+          details: { periodId: period.id },
+        });
       }
     }
 
@@ -323,15 +332,15 @@ export class EmployeesService {
   create(organisationId: string, dto: any) {
     return this.prisma.employee
       .create({
-      data: {
-        organisationId,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        email: dto.email ?? null,
-        phone: dto.phone ?? null,
-        position: dto.position ?? null,
-      },
-    })
+        data: {
+          organisationId,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          email: dto.email ?? null,
+          phone: dto.phone ?? null,
+          position: dto.position ?? null,
+        },
+      })
       .then((employee) => this.mapEmployeeAvatar(employee));
   }
 
@@ -373,15 +382,15 @@ export class EmployeesService {
 
     return this.prisma.employee
       .update({
-      where: { id: employeeId },
-      data: {
-        firstName: dto.firstName ?? existing.firstName,
-        lastName: dto.lastName ?? existing.lastName,
-        email: dto.email ?? existing.email,
-        phone: dto.phone ?? existing.phone,
-        position: dto.position ?? existing.position,
-      },
-    })
+        where: { id: employeeId },
+        data: {
+          firstName: dto.firstName ?? existing.firstName,
+          lastName: dto.lastName ?? existing.lastName,
+          email: dto.email ?? existing.email,
+          phone: dto.phone ?? existing.phone,
+          position: dto.position ?? existing.position,
+        },
+      })
       .then((employee) => this.mapEmployeeAvatar(employee));
   }
 

@@ -934,6 +934,7 @@ model NotificationDeliveryAttempt {
 model WebsitePage {
   id             String   @id @default(uuid())
   slug           String   @unique
+  title          String?
   seoTitle       String?
   seoDescription String?
   seoImageUrl    String?

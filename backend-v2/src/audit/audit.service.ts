@@ -142,7 +142,9 @@ export class AuditService {
       where.action = Array.isArray(action) ? { in: action } : action;
     }
     if (entityType) {
-      where.entityType = Array.isArray(entityType) ? { in: entityType } : entityType;
+      where.entityType = Array.isArray(entityType)
+        ? { in: entityType }
+        : entityType;
     }
     if (actorUserId) {
       where.actorUserId = actorUserId;

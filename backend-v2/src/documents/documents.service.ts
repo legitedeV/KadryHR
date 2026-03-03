@@ -143,7 +143,9 @@ export class DocumentsService {
         type: dto.type ?? document.type,
         title: dto.title ?? document.title,
         description:
-          dto.description !== undefined ? dto.description : document.description,
+          dto.description !== undefined
+            ? dto.description
+            : document.description,
         issuedAt: dto.issuedAt ? new Date(dto.issuedAt) : document.issuedAt,
         expiresAt:
           dto.expiresAt !== undefined

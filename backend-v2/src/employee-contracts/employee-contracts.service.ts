@@ -22,7 +22,10 @@ type ContractRateInfo = {
 export class EmployeeContractsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async ensureEmployeeExists(organisationId: string, employeeId: string) {
+  private async ensureEmployeeExists(
+    organisationId: string,
+    employeeId: string,
+  ) {
     const employee = await this.prisma.employee.findFirst({
       where: { id: employeeId, organisationId },
       select: { id: true },
@@ -160,7 +163,7 @@ export class EmployeeContractsService {
         data: {
           organisationId,
           employeeId,
-          type: dto.contractType as ContractType,
+          type: dto.contractType,
           status: ContractStatus.ACTIVE,
           workTimeType: 'FULL_TIME',
           startDate: validFrom,
@@ -222,7 +225,9 @@ export class EmployeeContractsService {
       throw new NotFoundException('Contract not found');
     }
 
-    const nextStart = dto.validFrom ? new Date(dto.validFrom) : contract.startDate;
+    const nextStart = dto.validFrom
+      ? new Date(dto.validFrom)
+      : contract.startDate;
     const nextEnd =
       dto.validTo !== undefined
         ? dto.validTo
@@ -247,7 +252,12 @@ export class EmployeeContractsService {
       },
     });
 
-    if (dto.hourlyRate !== undefined || dto.currency || dto.validFrom || dto.validTo !== undefined) {
+    if (
+      dto.hourlyRate !== undefined ||
+      dto.currency ||
+      dto.validFrom ||
+      dto.validTo !== undefined
+    ) {
       const existingCompensation = contract.compensations?.[0];
       if (existingCompensation) {
         await this.prisma.compensation.update({

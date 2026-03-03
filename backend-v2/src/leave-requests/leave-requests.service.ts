@@ -234,7 +234,12 @@ export class LeaveRequestsService {
 
     const { startDate, endDate } = this.resolveDates(dto);
 
-    await this.ensureNoDateOverlap(organisationId, targetEmployeeId, startDate, endDate);
+    await this.ensureNoDateOverlap(
+      organisationId,
+      targetEmployeeId,
+      startDate,
+      endDate,
+    );
 
     if (dto.leaveTypeId) {
       await this.ensureLeaveType(organisationId, dto.leaveTypeId);

@@ -29,6 +29,7 @@ export class WebsiteService {
       select: {
         id: true,
         slug: true,
+        title: true,
         seoTitle: true,
         seoDescription: true,
         seoImageUrl: true,
@@ -37,6 +38,23 @@ export class WebsiteService {
         updatedAt: true,
         createdAt: true,
         _count: { select: { sections: true } },
+      },
+    });
+  }
+
+  async listPublishedPages() {
+    return this.prisma.websitePage.findMany({
+      where: { isPublished: true },
+      orderBy: { slug: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        seoTitle: true,
+        seoDescription: true,
+        seoImageUrl: true,
+        version: true,
+        updatedAt: true,
       },
     });
   }
@@ -85,6 +103,7 @@ export class WebsiteService {
     const page = await this.prisma.websitePage.create({
       data: {
         slug: dto.slug,
+        title: dto.title ?? null,
         seoTitle: dto.seoTitle ?? null,
         seoDescription: dto.seoDescription ?? null,
         seoImageUrl: dto.seoImageUrl ?? null,
@@ -122,6 +141,7 @@ export class WebsiteService {
       where: { id: existing.id },
       data: {
         slug: dto.slug ?? undefined,
+        title: dto.title ?? undefined,
         seoTitle: dto.seoTitle ?? undefined,
         seoDescription: dto.seoDescription ?? undefined,
         seoImageUrl: dto.seoImageUrl ?? undefined,

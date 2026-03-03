@@ -29,9 +29,8 @@ async function bootstrap() {
   app.use((req: any, res, next) => {
     const headerRequestId = req.headers?.['x-request-id'];
     const requestId =
-      (Array.isArray(headerRequestId)
-        ? headerRequestId[0]
-        : headerRequestId) ?? randomUUID();
+      (Array.isArray(headerRequestId) ? headerRequestId[0] : headerRequestId) ??
+      randomUUID();
     req.requestId = requestId;
     res.setHeader('x-request-id', requestId);
     res.on('finish', () => {

@@ -86,9 +86,10 @@ export class RcpTokenService {
     }
   }
 
-  verifyTokenDetailed(
-    token: string,
-  ): { payload?: RcpTokenPayload; error?: RcpTokenValidationError } {
+  verifyTokenDetailed(token: string): {
+    payload?: RcpTokenPayload;
+    error?: RcpTokenValidationError;
+  } {
     try {
       const [payloadBase64, signature] = token.split('.');
       if (!payloadBase64 || !signature) {

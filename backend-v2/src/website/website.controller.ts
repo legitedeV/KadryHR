@@ -28,6 +28,11 @@ import { UpdateWebsiteSettingsDto } from './dto/update-website-settings.dto';
 export class WebsitePublicController {
   constructor(private readonly websiteService: WebsiteService) {}
 
+  @Get('pages')
+  listPublishedPages() {
+    return this.websiteService.listPublishedPages();
+  }
+
   @Get('pages/:slug')
   getPublishedPage(@Param('slug') slug: string) {
     return this.websiteService.getPublishedPage(slug);

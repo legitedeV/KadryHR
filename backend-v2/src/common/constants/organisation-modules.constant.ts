@@ -8,9 +8,8 @@ export const ORGANISATION_MODULES = [
 
 export type OrganisationModule = (typeof ORGANISATION_MODULES)[number];
 
-export const CORE_ORGANISATION_MODULES: ReadonlySet<OrganisationModule> = new Set([
-  'grafik',
-]);
+export const CORE_ORGANISATION_MODULES: ReadonlySet<OrganisationModule> =
+  new Set(['grafik']);
 
 export type OrganisationModuleState = Record<OrganisationModule, boolean>;
 
@@ -30,14 +29,20 @@ export function normalizeOrganisationModules(
       ? (value as Partial<Record<OrganisationModule, unknown>>)
       : {};
 
-  return ORGANISATION_MODULES.reduce<OrganisationModuleState>((acc, moduleName) => {
-    const raw = input[moduleName];
-    if (CORE_ORGANISATION_MODULES.has(moduleName)) {
-      acc[moduleName] = true;
-      return acc;
-    }
+  return ORGANISATION_MODULES.reduce<OrganisationModuleState>(
+    (acc, moduleName) => {
+      const raw = input[moduleName];
+      if (CORE_ORGANISATION_MODULES.has(moduleName)) {
+        acc[moduleName] = true;
+        return acc;
+      }
 
-    acc[moduleName] = typeof raw === 'boolean' ? raw : DEFAULT_ORGANISATION_MODULES[moduleName];
-    return acc;
-  }, { ...DEFAULT_ORGANISATION_MODULES });
+      acc[moduleName] =
+        typeof raw === 'boolean'
+          ? raw
+          : DEFAULT_ORGANISATION_MODULES[moduleName];
+      return acc;
+    },
+    { ...DEFAULT_ORGANISATION_MODULES },
+  );
 }

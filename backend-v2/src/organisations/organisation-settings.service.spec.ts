@@ -196,13 +196,9 @@ describe('OrganisationSettingsService', () => {
     mockPrisma.user.count.mockResolvedValue(1);
 
     await expect(
-      service.updateMemberRole(
-        'org-1',
-        'actor-1',
-        Role.OWNER,
-        'owner-1',
-        { role: Role.ADMIN },
-      ),
+      service.updateMemberRole('org-1', 'actor-1', Role.OWNER, 'owner-1', {
+        role: Role.ADMIN,
+      }),
     ).rejects.toThrow('Nie można odebrać roli ostatniemu właścicielowi');
   });
 });

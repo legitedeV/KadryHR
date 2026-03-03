@@ -487,7 +487,10 @@ export class OrganisationSettingsService {
     }
 
     if (dto.locationId) {
-      await this.validateLocationForOrganisation(organisationId, dto.locationId);
+      await this.validateLocationForOrganisation(
+        organisationId,
+        dto.locationId,
+      );
     }
 
     const existingEmployee = await this.prisma.employee.findFirst({

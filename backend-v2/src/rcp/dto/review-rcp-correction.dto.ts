@@ -10,4 +10,3 @@ export class ReviewRcpCorrectionDto {
   @MaxLength(1000)
   managerNote?: string;
 }
-

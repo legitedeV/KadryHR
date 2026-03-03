@@ -963,10 +963,7 @@ export class AvailabilityService {
     };
   }
 
-  private async findUsersByRole(
-    organisationId: string,
-    roles: Role[],
-  ) {
+  private async findUsersByRole(organisationId: string, roles: Role[]) {
     try {
       return await this.prisma.user.findMany({
         where: {

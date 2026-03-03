@@ -40,9 +40,9 @@ describe('LocationsService geocodeLocation', () => {
 
   it('should reject when api key is missing', async () => {
     configService.get.mockReturnValue(undefined);
-    await expect(service.geocodeLocation(52.2297, 21.0122)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.geocodeLocation(52.2297, 21.0122),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('should normalize geocode response', async () => {
@@ -104,8 +104,8 @@ describe('LocationsService geocodeLocation', () => {
       }),
     });
 
-    await expect(service.geocodeLocation(52.2297, 21.0122)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.geocodeLocation(52.2297, 21.0122),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
